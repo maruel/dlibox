@@ -35,6 +35,7 @@ type Strip interface {
 	MinDelay() time.Duration
 }
 
+// Painter handles the "draw frame, write" loop.
 type Painter struct {
 	s  Strip
 	c  chan Pattern

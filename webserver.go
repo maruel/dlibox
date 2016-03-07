@@ -8,51 +8,54 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
-
-	"github.com/maruel/interrupt"
 )
 
 type WebServer struct {
-	cond  sync.Cond
-	state string
+	painter *Painter
 }
 
-func StartWebServer(port int) *WebServer {
-	s := &WebServer{
-		cond: *sync.NewCond(&sync.Mutex{}),
-	}
+func StartWebServer(painter *Painter, port int) *WebServer {
+	ws := &WebServer{painter: painter}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", s.root)
-	mux.HandleFunc("/favicon.ico", s.favicon)
-	fmt.Printf("Listening on %d\n", port)
+	mux.HandleFunc("/", ws.rootHandler)
+	mux.HandleFunc("/switch", ws.switchHandler)
+	mux.HandleFunc("/favicon.ico", ws.faviconHandler)
 	go http.ListenAndServe(fmt.Sprintf(":%d", port), loggingHandler{mux})
-	go func() {
-		<-interrupt.Channel
-		s.cond.Broadcast()
-	}()
-	return s
+	return ws
 }
 
-func (s *WebServer) Close() error {
-	s.cond.Broadcast()
-	return nil
-}
-
-func (s *WebServer) root(w http.ResponseWriter, r *http.Request) {
+func (s *WebServer) rootHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
+	if r.Method != "GET" {
+		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
+		return
+	}
 	w.Header().Set("Content-Type", "text/html")
-	s.cond.L.Lock()
-	defer s.cond.L.Unlock()
 	if _, err := w.Write(read("root.html")); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func (s *WebServer) favicon(w http.ResponseWriter, r *http.Request) {
+func (s *WebServer) switchHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
+		return
+	}
+	if n := r.PostFormValue("new"); len(n) != 0 {
+		if p := Patterns[n]; p != nil {
+			s.painter.SetPattern(p)
+		}
+	}
+}
+
+func (s *WebServer) faviconHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
+		return
+	}
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
 	w.Write(read("dotstar.png"))

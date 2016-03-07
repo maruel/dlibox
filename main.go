@@ -94,9 +94,6 @@ func mainImpl() error {
 		return nil
 	}
 
-	ws := StartWebServer(*port)
-	defer ws.Close()
-
 	var err error
 	var s Strip
 	if *fake {
@@ -109,6 +106,9 @@ func mainImpl() error {
 	}
 	p := MakePainter(s, 80)
 
+	StartWebServer(p, *port)
+
+	// TODO(maruel): Remove.
 	go func() {
 		patterns := []struct {
 			d int
@@ -139,6 +139,7 @@ func mainImpl() error {
 			}
 		}
 	}()
+
 	defer fmt.Printf("\033[0m\n")
 	return watchFile(os.Args[0])
 }
