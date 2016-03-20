@@ -55,6 +55,7 @@ func mainImpl() error {
 	verbose := flag.Bool("verbose", false, "enable log output")
 	fake := flag.Bool("fake", false, "use a fake camera mock, useful to test without the hardware")
 	colorTest := flag.Bool("color-test", false, "prints all term-256 colors and exit")
+	cycle := flag.Bool("cycle", false, "enable cycling through a few animations")
 	flag.Parse()
 	if flag.NArg() != 0 {
 		return errors.New("unknown arguments")
@@ -108,37 +109,38 @@ func mainImpl() error {
 
 	StartWebServer(p, *port)
 
-	// TODO(maruel): Remove.
-	go func() {
-		patterns := []struct {
-			d int
-			p Pattern
-		}{
-			{3, Patterns["rainbow static"]},
-			{10, Patterns["glow rainbow"]},
-			{10, Patterns["étoile floue"]},
-			{7, Patterns["canne"]},
-			{7, Patterns["K2000"]},
-			{7, Patterns["comète"]},
-			{5, Patterns["pingpong"]},
-			{5, Patterns["glow"]},
-			{5, Patterns["glow gris"]},
-			{3, Patterns["red"]},
-		}
-		i := 0
-		p.SetPattern(patterns[i].p)
-		delay := time.Duration(patterns[i].d) * time.Second
-		for {
-			select {
-			case <-time.After(delay):
-				i = (i + 1) % len(patterns)
-				p.SetPattern(patterns[i].p)
-				delay = time.Duration(patterns[i].d) * time.Second
-			case <-interrupt.Channel:
-				return
+	if *cycle {
+		go func() {
+			patterns := []struct {
+				d int
+				p Pattern
+			}{
+				{3, Patterns["rainbow static"]},
+				{10, Patterns["glow rainbow"]},
+				{10, Patterns["étoile floue"]},
+				{7, Patterns["canne"]},
+				{7, Patterns["K2000"]},
+				{7, Patterns["comète"]},
+				{5, Patterns["pingpong"]},
+				{5, Patterns["glow"]},
+				{5, Patterns["glow gris"]},
+				{3, Patterns["red"]},
 			}
-		}
-	}()
+			i := 0
+			p.SetPattern(patterns[i].p)
+			delay := time.Duration(patterns[i].d) * time.Second
+			for {
+				select {
+				case <-time.After(delay):
+					i = (i + 1) % len(patterns)
+					p.SetPattern(patterns[i].p)
+					delay = time.Duration(patterns[i].d) * time.Second
+				case <-interrupt.Channel:
+					return
+				}
+			}
+		}()
+	}
 
 	defer fmt.Printf("\033[0m\n")
 	return watchFile(os.Args[0])

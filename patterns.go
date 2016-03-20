@@ -155,7 +155,7 @@ type Animate struct {
 // Returns nil if the file can't be found. If vertical is true, rotate the
 // image by 90°.
 func LoadAnimate(name string, frameDuration time.Duration, vertical bool) *Animate {
-	content := read(name)
+	content := mustRead(name)
 	if content == nil {
 		return nil
 	}

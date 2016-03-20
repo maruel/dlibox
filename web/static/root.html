@@ -1,16 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>DotStar</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-  </head>
-  <body>
-    <h1>Hello, world!</h1>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.1/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>DotStar</title>
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/css/bootstrap-colorpicker.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+  <script src="/static/js/bootstrap-colorpicker.min.js"></script>
+
+  <style>
+    #background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      z-index: -1;
+      overflow: hidden;
+      color: #dddddd;
+      font-size: 128px;
+    }
+    #colorpicker {
+      display: inline-block;
+    }
+  </style>
+  <script>
+    "use strict";
+
+    function onload() {
+      // Set background.
+      var text = '';
+      for (var i=0; i<50; i++) {
+        text += '🐉🐢🐇🌴';
+      }
+      document.getElementById('background').innerText = text;
+
+      // Create buttons.
+      var styles = [
+        "btn-primary", "btn-info", "btn-warning", "btn-danger", "btn-success",
+        "btn-default",
+      ];
+      var buttons = [
+        ["Canne de Noël", "canne"],
+        ["Comète", "comète"],
+        ["Étoile floue", "étoile floue"],
+        ["K2000", "K2000"],
+        ["Glow", "glow"],
+        ["Glow gris", "glow gris"],
+        ["Glow arc-en-ciel", "glow rainbow"],
+        ["Ping-pong", "pingpong"],
+        ["Arc-en-ciel", "rainbow static"],
+        ["Rouge", "red"],
+      ];
+      var j = 0;
+      var dst = document.getElementById('boutons');
+      for (var i = 0; i < buttons.length; i++) {
+        var node = document.createElement('button');
+        node.type = 'button';
+        node.id = 'button-' + buttons[i][1];
+        node.className = 'btn btn-lg ' + styles[j];
+        node.attributes['data-mode'] = buttons[i][1];
+        node.innerText = buttons[i][0];
+        node.addEventListener('click', function (event) {
+          update(this.attributes['data-mode']);
+        });
+        dst.appendChild(node);
+        var space = document.createElement('span');
+        space.innerText = ' ';
+        dst.appendChild(space);
+        j = (j + 1) % styles.length;
+      }
+
+      // Add picker.
+      $('#colorpicker').colorpicker().on(
+          'changeColor.colorpicker', function(event){
+          update(event.color.toHex());
+      });
+    }
+
+    function update(mode) {
+      var oReq = new XMLHttpRequest();
+      oReq.open('post', '/switch', true);
+      oReq.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+      oReq.send("mode=" + encodeURI(mode));
+    }
+  </script>
+</head>
+<body role="document" onload="onload()">
+  <div id="background"></div>
+
+  <h1>Luminou</h1>
+  <div class="page-header"><h2>Choix d'animations</h2></div>
+  <div id="boutons"></div>
+  <div class="page-header"><h2>Couleur manuelle</h2></div>
+  <div style="display:block">
+  <div id="colorpicker" data-container="#colorpicker"
+    data-color="rgba(150,216,62,0.55)" data-inline="true"></div>
+  </div>
+</body>
 </html>

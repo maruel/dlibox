@@ -7,7 +7,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"mime"
 	"net/http"
+	"path"
 )
 
 type WebServer struct {
@@ -18,6 +20,7 @@ func StartWebServer(painter *Painter, port int) *WebServer {
 	ws := &WebServer{painter: painter}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", ws.rootHandler)
+	mux.HandleFunc("/static/", ws.staticHandler)
 	mux.HandleFunc("/switch", ws.switchHandler)
 	mux.HandleFunc("/favicon.ico", ws.faviconHandler)
 	go http.ListenAndServe(fmt.Sprintf(":%d", port), loggingHandler{mux})
@@ -34,7 +37,7 @@ func (s *WebServer) rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")
-	if _, err := w.Write(read("root.html")); err != nil {
+	if _, err := w.Write(mustRead("root.html")); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -44,11 +47,14 @@ func (s *WebServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
 		return
 	}
-	if n := r.PostFormValue("new"); len(n) != 0 {
+	if n := r.PostFormValue("mode"); len(n) != 0 {
+		log.Printf("mode = %s", n)
 		if p := Patterns[n]; p != nil {
 			s.painter.SetPattern(p)
+			return
 		}
 	}
+	// TODO(maruel): return an error.
 }
 
 func (s *WebServer) faviconHandler(w http.ResponseWriter, r *http.Request) {
@@ -57,8 +63,23 @@ func (s *WebServer) faviconHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
-	w.Write(read("dotstar.png"))
+	//w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
+	w.Write(mustRead("favicon.ico"))
+}
+
+func (s *WebServer) staticHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
+		return
+	}
+	p := r.URL.Path[len("/static/"):]
+	w.Header().Set("Content-Type", mime.TypeByExtension(path.Ext(p)))
+	//w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
+	if content := read(p); content != nil {
+		w.Write(content)
+		return
+	}
+	http.Error(w, "Not Found", http.StatusNotFound)
 }
 
 // Private details.
