@@ -144,7 +144,8 @@ func (p *PingPong) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	}
 }
 
-// Animate represents an animatable looping frame.
+// Animate represents an animatable looping frame. If the image is smaller than
+// the strip, doesn't touch the rest of the pixels.
 type Animate struct {
 	Frames        [][]color.NRGBA
 	FrameDuration time.Duration
@@ -186,9 +187,6 @@ func LoadAnimate(name string, frameDuration time.Duration, vertical bool) *Anima
 
 func (a *Animate) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	copy(pixels, a.Frames[int(sinceStart/a.FrameDuration)%len(a.Frames)])
-	for i := len(a.Frames[0]); i < len(pixels); i++ {
-		pixels[i] = color.NRGBA{}
-	}
 }
 
 // MakeRainbow returns rainbow colors including alpha.
@@ -201,6 +199,7 @@ func (r *Rainbow) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	end := 790.
 	step := (end - start) / float64(len(pixels)-1)
 	for i := range pixels {
+		// TODO(maruel): Use log scale.
 		pixels[i] = waveLength2RGB(start + step*float64(i))
 	}
 }
@@ -239,24 +238,6 @@ func waveLength2RGB(w float64) (c color.NRGBA) {
 	return
 }
 
-/*
-type point struct {
-	star  int
-	start time.Time
-}
-
-type Stars struct {
-	Stars     []Animate
-	Frequency float64 // Number of explosions by second.
-	points    []point
-}
-
-func (s *Stars) NextFrame(pixels []color.NRGBA,  sinceStart time.Duration) {
-	// random
-	// animate.
-}
-*/
-
 // Repeated prints a repeated pattern that can also cycle either way.
 //
 // Use negative to go left. Can be used for 'candy bar'.
@@ -272,47 +253,39 @@ func (r *Repeated) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	}
 }
 
+type point struct {
+	star  int
+	start time.Time
+}
+
+// CielÉtoilé has:
 //
-
-/*
-
-// Mixer merges the output from multiple patterns.
-type Mixer struct {
-	Patterns []Pattern
-	Weight   []float64
-	buf      []color.NRGBA
+//    - Étoiles cintillantes (ou non).
+//    - Étoiles filantes.
+//    - Aurores
+//    - Super nova.
+//    - Rotation de la terre?
+//    - Station Internationale?
+type CielÉtoilé struct {
+	Stars     []Animate
+	Frequency float64 // Number of explosions by second.
+	points    []point
 }
 
-func (m *Mixer) NextFrame(pixels []color.NRGBA,  sinceStart time.Duration) {
-	if len(m.buf) != len(pixels) {
-		m.buf = make([]color.NRGBA, len(pixels))
-	}
-	delay := time.Hour
-	for i := range pixels {
-		pixels[i] = color.NRGBA{}
-	}
-	for i := range m.Patterns {
-		for i := range m.buf {
-			m.buf[i] = color.NRGBA{}
-		}
-		d := m.Patterns[i].NextFrame(m.buf,  sinceStart)
-		if d < delay {
-			delay = d
-		}
-		for i := range pixels {
-			m.buf[i].A = uint8(m.Weight[i] * 255)
-			r, g, b, _ := m.buf[i].RGBA()
-			pixels[i].R += uint8(r)
-			pixels[i].G += uint8(g)
-			pixels[i].B += uint8(b)
-		}
-	}
+func (c *CielÉtoilé) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+	// random
+	// animate.
 }
 
-func roundF(x float64) float64 {
-	if x < 0 {
-		return math.Ceil(x - 0.5)
-	}
-	return math.Floor(x + 0.5)
+// LevéDeSoleil est utilisé pour faire un réveil matin.
+// Passe de Orange à Jaune à Blanc. C'est un Glow mais avec un début et une fin
+// sans repeat.
+type LevéDeSoleil struct {
+	Intensity int     // Between 0 and 255.
+	Duration  float64 // Duration in seconds.
 }
-*/
+
+func (l *LevéDeSoleil) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+	// random
+	// animate.
+}

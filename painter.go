@@ -7,6 +7,7 @@ package main
 import (
 	"image/color"
 	"io"
+	"log"
 	"sync"
 	"time"
 
@@ -22,8 +23,6 @@ type Pattern interface {
 	//
 	// First call is guaranteed to be called with sinceStart == 0.
 	NextFrame(pixels []color.NRGBA, sinceStart time.Duration)
-
-	// TODO(maruel): Add generic function to increase/decrease the speed.
 }
 
 // Strip is an 1D output device.
@@ -56,8 +55,15 @@ func (p *Painter) Close() error {
 // Strip.
 func MakePainter(s Strip, numLights int) *Painter {
 	p := &Painter{s: s, c: make(chan Pattern)}
-	p.wg.Add(1)
-	go p.runPattern(numLights)
+	// Tripple buffering.
+	cGen := make(chan []color.NRGBA, 3)
+	cWrite := make(chan []color.NRGBA, cap(cGen))
+	for i := 0; i < cap(cGen); i++ {
+		cGen <- make([]color.NRGBA, numLights)
+	}
+	p.wg.Add(2)
+	go p.runPattern(cGen, cWrite)
+	go p.runWrite(cGen, cWrite)
 	return p
 }
 
@@ -66,60 +72,76 @@ func MakePainter(s Strip, numLights int) *Painter {
 // d60Hz is the duration of one frame at 60Hz.
 const d60Hz = 16666666 * time.Nanosecond
 
-func (p *Painter) runPattern(numLights int) {
-	defer p.wg.Done()
-	var pat Pattern = &StaticColor{color.NRGBA{}}
-	pixels := make([]color.NRGBA, numLights)
-	start := time.Now()
-	var since time.Duration
-	delay := p.s.MinDelay()
+func getDelay(s Strip) time.Duration {
+	delay := s.MinDelay()
 	if delay < d60Hz {
 		delay = d60Hz
 	}
-	timer := time.After(delay)
+	return delay
+}
+
+func (p *Painter) runPattern(cGen, cWrite chan []color.NRGBA) {
+	defer p.wg.Done()
+	defer func() {
+		cWrite <- nil
+	}()
+	ease := EaseOut{
+		In:       &StaticColor{color.NRGBA{}},
+		Out:      &StaticColor{color.NRGBA{}},
+		Duration: 500 * time.Millisecond,
+	}
+	var since time.Duration
+	delay := getDelay(p.s)
 	for {
-		// TODO(maruel): If ever become CPU bound or SPI I/O bound, call
-		// NextFrame() in one goroutine and Write() in another one. This is
-		// especially useful in multicore systems like rPi2.
-		pat.NextFrame(pixels, since)
-		if err := p.s.Write(pixels); err != nil {
-			return
-		}
 		select {
-		case pat = <-p.c:
-			if pat == nil {
+		case newPat := <-p.c:
+			if newPat == nil {
 				// Request to terminate.
 				return
 			}
+
 			// New pattern.
-			// TODO(maruel): Use a fade-in, fade-out of 500ms.
-			start = time.Now()
+			ease.Out = ease.In
+			ease.In = newPat
+			ease.Offset = since
 			since = 0
-			timer = time.After(delay)
-		case <-timer:
-			since = time.Since(start)
-			timer = time.After(delay)
+
+		case pixels := <-cGen:
+			for i := range pixels {
+				pixels[i] = color.NRGBA{}
+			}
+			ease.NextFrame(pixels, since)
+			since += delay
+			cWrite <- pixels
+
 		case <-interrupt.Channel:
 			return
 		}
 	}
 }
 
-/*
-type subset struct {
-	s     Strip
-	start int
-	end   int
-}
+func (p *Painter) runWrite(cGen, cWrite chan []color.NRGBA) {
+	defer p.wg.Done()
+	delay := getDelay(p.s)
+	tick := time.NewTicker(delay)
+	defer tick.Stop()
+	var err error
+	for {
+		pixels := <-cWrite
+		if len(pixels) == 0 {
+			return
+		}
+		if err == nil {
+			if err = p.s.Write(pixels); err != nil {
+				log.Printf("Writing failed: %s", err)
+			}
+		}
+		cGen <- pixels
 
-func (s*subset) Write(pixels[]color.NRGBA) error {
-	// Argh.
-	return s.s.Write(pixels[:end])
+		select {
+		case <-tick.C:
+		case <-interrupt.Channel:
+			return
+		}
+	}
 }
-
-// Subset returns a new Strip that only affects the subset of the original
-// Strip.
-func Subset(s Strip, start, end int) Strip {
-	return &subset{s, start, end}
-}
-*/
