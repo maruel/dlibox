@@ -5,7 +5,9 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
+	"image/color"
 	"log"
 	"mime"
 	"net/http"
@@ -53,7 +55,25 @@ func (s *WebServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 			s.painter.SetPattern(p)
 			return
 		}
+		// TODO(maruel): return an error.
+		return
 	}
+
+	if n := r.PostFormValue("color"); len(n) != 0 {
+		log.Printf("color = %s", n)
+		if len(n) != 7 || n[0] != '#' {
+			// TODO(maruel): return an error.
+			return
+		}
+		b, err := hex.DecodeString(n[1:])
+		if err != nil {
+			// TODO(maruel): return an error.
+			return
+		}
+		s.painter.SetPattern(&StaticColor{color.NRGBA{b[0], b[1], b[2], 255}})
+		return
+	}
+
 	// TODO(maruel): return an error.
 }
 

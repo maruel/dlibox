@@ -29,6 +29,21 @@
     #colorpicker {
       display: inline-block;
     }
+    #colorpicker .colorpicker-saturation {
+      width: 300px;
+      height: 300px;
+    }
+    #colorpicker .colorpicker-hue {
+      width: 100px;
+      height: 300px;
+    }
+    #colorpicker .colorpicker-alpha {
+      width: 0px;
+    }
+    #colorpicker .colorpicker-color {
+      height: 0px;
+      visibility: hidden;
+    }
   </style>
   <script>
     "use strict";
@@ -68,7 +83,7 @@
         node.attributes['data-mode'] = buttons[i][1];
         node.innerText = buttons[i][0];
         node.addEventListener('click', function (event) {
-          update(this.attributes['data-mode']);
+          update("mode=" + encodeURI(this.attributes['data-mode']));
         });
         dst.appendChild(node);
         var space = document.createElement('span');
@@ -78,17 +93,25 @@
       }
 
       // Add picker.
-      $('#colorpicker').colorpicker().on(
+      $('#colorpicker').colorpicker(
+          {
+            sliders: {
+              saturation: { maxLeft: 300, maxTop: 300 },
+              hue: { maxTop: 300 },
+              alpha: { maxTop: 300 }
+            }
+          }
+        ).on(
           'changeColor.colorpicker', function(event){
-          update(event.color.toHex());
+          update("color=" + encodeURI(event.color.toHex()));
       });
     }
 
-    function update(mode) {
+    function update(data) {
       var oReq = new XMLHttpRequest();
       oReq.open('post', '/switch', true);
       oReq.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-      oReq.send("mode=" + encodeURI(mode));
+      oReq.send(data);
     }
   </script>
 </head>
