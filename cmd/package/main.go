@@ -40,7 +40,11 @@ var staticFiles = map[string]string{
 {{end}}}
 `))
 
-func walk(path string, info os.FileInfo, err error) error {
+type context struct {
+	basePath string
+}
+
+func (c *context) walk(path string, info os.FileInfo, err error) error {
 	if info.Name()[0] == '.' {
 		return nil
 	}
@@ -51,7 +55,8 @@ func walk(path string, info os.FileInfo, err error) error {
 	if err != nil {
 		return err
 	}
-	contents[strconv.Quote(info.Name())] = strconv.Quote(string(data))
+	p := path[len(c.basePath)+1:]
+	contents[strconv.Quote(p)] = strconv.Quote(string(data))
 	return nil
 }
 
@@ -63,7 +68,12 @@ func mainImpl() error {
 	}
 	contents = map[string]string{}
 	for _, inputDir := range flag.Args() {
-		if err := filepath.Walk(inputDir, walk); err != nil {
+		inputDir, err := filepath.Abs(inputDir)
+		if err != nil {
+			return err
+		}
+		c := &context{inputDir}
+		if err := filepath.Walk(inputDir, c.walk); err != nil {
 			return err
 		}
 	}

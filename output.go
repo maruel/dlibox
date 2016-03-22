@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package main
+package dotstar
 
 import (
 	"bytes"
@@ -66,7 +66,7 @@ func MakeDotStar() (Strip, error) {
 	// The speed must be high, as there's 32 bits sent per LED, creating a
 	// staggered effect. See
 	// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
-	w, err := MakeSPI("", 20000000)
+	w, err := makeSPI("", 20000000)
 	if err != nil {
 		return nil, err
 	}

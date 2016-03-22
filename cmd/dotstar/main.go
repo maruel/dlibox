@@ -3,7 +3,7 @@
 // that can be found in the LICENSE file.
 
 // Packages the static files in a .go file.
-//go:generate go run package/main.go -out static_files_gen.go web/static images
+//go:generate go run ../package/main.go -out static_files_gen.go web/static images
 
 package main
 
@@ -17,9 +17,10 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"golang.org/x/exp/inotify"
-
+	"github.com/kardianos/osext"
+	"github.com/maruel/dotstar"
 	"github.com/maruel/interrupt"
+	"golang.org/x/exp/inotify"
 )
 
 func watchFile(fileName string) error {
@@ -49,7 +50,27 @@ func watchFile(fileName string) error {
 	}
 }
 
+func doColorTest() error {
+	for y := 0; y < 32; y++ {
+		extra := "  "
+		for x := 0; x < 8; x++ {
+			i := x + 8*y
+			if x == 7 {
+				extra = ""
+			}
+			fmt.Printf("\033[48;5;%dm   %3d   \033[0m%s", i, i, extra)
+		}
+		fmt.Printf("\n")
+	}
+	return nil
+}
+
 func mainImpl() error {
+	thisFile, err := osext.Executable()
+	if err != nil {
+		return err
+	}
+
 	cpuprofile := flag.String("cpuprofile", "", "dump CPU profile in file")
 	port := flag.Int("port", 8010, "http port to listen on")
 	verbose := flag.Bool("verbose", false, "enable log output")
@@ -60,9 +81,16 @@ func mainImpl() error {
 	if flag.NArg() != 0 {
 		return errors.New("unknown arguments")
 	}
+	if len(flag.Args()) != 0 {
+		return fmt.Errorf("unexpected argument: %s", flag.Args())
+	}
+
 	if !*verbose {
 		log.SetOutput(ioutil.Discard)
 	}
+
+	interrupt.HandleCtrlC()
+	defer interrupt.Set()
 
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
@@ -73,39 +101,22 @@ func mainImpl() error {
 		defer pprof.StopCPUProfile()
 	}
 
-	interrupt.HandleCtrlC()
-	defer interrupt.Set()
-
-	if len(flag.Args()) != 0 {
-		return fmt.Errorf("unexpected argument: %s", flag.Args())
-	}
-
 	if *colorTest {
-		for y := 0; y < 32; y++ {
-			extra := "  "
-			for x := 0; x < 8; x++ {
-				i := x + 8*y
-				if x == 7 {
-					extra = ""
-				}
-				fmt.Printf("\033[48;5;%dm   %3d   \033[0m%s", i, i, extra)
-			}
-			fmt.Printf("\n")
-		}
-		return nil
+		return doColorTest()
 	}
 
-	var err error
-	var s Strip
+	dotstar.Patterns["étoile floue"] = dotstar.LoadAnimate(mustRead("étoile floue.png"), 16*time.Millisecond, false)
+
+	var s dotstar.Strip
 	if *fake {
-		s = MakeScreen()
+		s = dotstar.MakeScreen()
 	} else {
-		s, err = MakeDotStar()
+		s, err = dotstar.MakeDotStar()
 		if err != nil {
 			return err
 		}
 	}
-	p := MakePainter(s, 80)
+	p := dotstar.MakePainter(s, 80)
 
 	StartWebServer(p, *port)
 
@@ -113,18 +124,18 @@ func mainImpl() error {
 		go func() {
 			patterns := []struct {
 				d int
-				p Pattern
+				p dotstar.Pattern
 			}{
-				{3, Patterns["rainbow static"]},
-				{10, Patterns["glow rainbow"]},
-				{10, Patterns["étoile floue"]},
-				{7, Patterns["canne"]},
-				{7, Patterns["K2000"]},
-				{7, Patterns["comète"]},
-				{5, Patterns["pingpong"]},
-				{5, Patterns["glow"]},
-				{5, Patterns["glow gris"]},
-				{3, Patterns["red"]},
+				{3, dotstar.Patterns["rainbow static"]},
+				{10, dotstar.Patterns["glow rainbow"]},
+				{10, dotstar.Patterns["étoile floue"]},
+				{7, dotstar.Patterns["canne"]},
+				{7, dotstar.Patterns["K2000"]},
+				{7, dotstar.Patterns["comète"]},
+				{5, dotstar.Patterns["pingpong"]},
+				{5, dotstar.Patterns["glow"]},
+				{5, dotstar.Patterns["glow gris"]},
+				{3, dotstar.Patterns["red"]},
 			}
 			i := 0
 			p.SetPattern(patterns[i].p)
@@ -143,7 +154,7 @@ func mainImpl() error {
 	}
 
 	defer fmt.Printf("\033[0m\n")
-	return watchFile(os.Args[0])
+	return watchFile(thisFile)
 }
 
 func main() {

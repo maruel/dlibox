@@ -2,9 +2,10 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package main
+package dotstar
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -62,13 +63,13 @@ func (s *Subset) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 // Mixer is a generic mixer that merges the output from multiple patterns.
 type Mixer struct {
 	Patterns []Pattern
-	Weights  []float64 // In theory Sum(Weights) should be 1 but it doesn't need to.
+	Weights  []float64 // In theory Sum(Weights) should be 1 but it doesn't need to. For example, mixing a night sky will likely have all of the Weights set to 1.
 	bufs     [][]color.NRGBA
 }
 
 func (m *Mixer) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	if len(m.Patterns) != len(m.Weights) {
-		panic("Invalid Weights")
+		panic(fmt.Errorf("len(Patterns) (%d) != len(Weights) (%d)", len(m.Patterns), len(m.Weights)))
 	}
 	if len(m.bufs) != len(m.Patterns) {
 		m.bufs = make([][]color.NRGBA, len(m.Patterns))
@@ -106,8 +107,10 @@ func (m *Mixer) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	}
 }
 
-// Interpolate creates a N times larger striped then scale down. This is useful
-// to create smoother animations.
+// Interpolate creates a N times larger striped then scale down.
+//
+// This is useful to create smoother animations or scale down images for
+// example. It always use Lanczos3.
 type Interpolate struct {
 	Child Pattern
 	X     float64
@@ -196,43 +199,4 @@ func floatToUint8(x float64) uint8 {
 		return 0
 	}
 	return uint8(roundF(x))
-}
-
-// cubicBezier returns [0, 1] for input `t` based on the cubic bezier curve
-// (x0,y0), (x1, y1).
-// Inspired by https://github.com/golang/mobile/blob/master/exp/sprite/clock/tween.go.
-func cubicBezier(x0, y0, x1, y1, x float64) float64 {
-	t := x
-	for i := 0; i < 5; i++ {
-		t2 := t * t
-		t3 := t2 * t
-		d := 1 - t
-		d2 := d * d
-
-		nx := 3*d2*t*x0 + 3*d*t2*x1 + t3
-		dxdt := 3*d2*x0 + 6*d*t*(x1-x0) + 3*t2*(1-x1)
-		if dxdt == 0 {
-			break
-		}
-
-		t -= (nx - x) / dxdt
-		if t <= 0 || t >= 1 {
-			break
-		}
-	}
-	if t < 0 {
-		t = 0
-	}
-	if t > 1 {
-		t = 1
-	}
-
-	// Solve for y using t.
-	t2 := t * t
-	t3 := t2 * t
-	d := 1 - t
-	d2 := d * d
-	y := 3*d2*t*y0 + 3*d*t2*y1 + t3
-
-	return y
 }

@@ -12,13 +12,15 @@ import (
 	"mime"
 	"net/http"
 	"path"
+
+	"github.com/maruel/dotstar"
 )
 
 type WebServer struct {
-	painter *Painter
+	painter *dotstar.Painter
 }
 
-func StartWebServer(painter *Painter, port int) *WebServer {
+func StartWebServer(painter *dotstar.Painter, port int) *WebServer {
 	ws := &WebServer{painter: painter}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", ws.rootHandler)
@@ -51,7 +53,7 @@ func (s *WebServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if n := r.PostFormValue("mode"); len(n) != 0 {
 		log.Printf("mode = %s", n)
-		if p := Patterns[n]; p != nil {
+		if p := dotstar.Patterns[n]; p != nil {
 			s.painter.SetPattern(p)
 			return
 		}
@@ -70,7 +72,7 @@ func (s *WebServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 			// TODO(maruel): return an error.
 			return
 		}
-		s.painter.SetPattern(&StaticColor{color.NRGBA{b[0], b[1], b[2], 255}})
+		s.painter.SetPattern(&dotstar.StaticColor{color.NRGBA{b[0], b[1], b[2], 255}})
 		return
 	}
 

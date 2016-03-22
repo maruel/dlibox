@@ -24,8 +24,8 @@ func mustRead(name string) []byte {
 func read(name string) []byte {
 	gopath := strings.Split(os.Getenv("GOPATH"), string(os.PathListSeparator))[0]
 	staticPaths := []string{
-		filepath.Join(gopath, "src", "github.com", "maruel", "dotstar", "web", "static"),
-		filepath.Join(gopath, "src", "github.com", "maruel", "dotstar", "images"),
+		filepath.Join(gopath, "src", "github.com", "maruel", "dotstar", "cmd", "dotstar", "web", "static"),
+		filepath.Join(gopath, "src", "github.com", "maruel", "dotstar", "cmd", "dotstar", "images"),
 	}
 	for _, p := range staticPaths {
 		if content, err := ioutil.ReadFile(filepath.Join(p, name)); err == nil {

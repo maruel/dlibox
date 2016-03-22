@@ -5,7 +5,7 @@
 // Feel free to copy-paste this file along the license when you need a quick
 // and dirty SPI client.
 
-package main
+package dotstar
 
 import (
 	"fmt"
@@ -17,8 +17,8 @@ import (
 	"unsafe"
 )
 
-// SPI is a thread-safe SPI writer.
-type SPI struct {
+// spi is a thread-safe SPI writer.
+type spi struct {
 	closed int32
 	path   string
 	speed  int
@@ -26,7 +26,7 @@ type SPI struct {
 	f      *os.File
 }
 
-func MakeSPI(path string, speed int) (*SPI, error) {
+func makeSPI(path string, speed int) (*spi, error) {
 	if path == "" {
 		path = "/dev/spidev0.0"
 	}
@@ -34,7 +34,7 @@ func MakeSPI(path string, speed int) (*SPI, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &SPI{path: path, speed: speed, f: f}
+	s := &spi{path: path, speed: speed, f: f}
 	if err := s.setFlag(spiIOCMode, 3); err != nil {
 		s.Close()
 		return nil, err
@@ -50,7 +50,7 @@ func MakeSPI(path string, speed int) (*SPI, error) {
 	return s, nil
 }
 
-func (s *SPI) Close() error {
+func (s *spi) Close() error {
 	if !atomic.CompareAndSwapInt32(&s.closed, 0, 1) {
 		return io.ErrClosedPipe
 	}
@@ -65,7 +65,7 @@ func (s *SPI) Close() error {
 }
 
 // Write pushes a buffer as-is.
-func (s *SPI) Write(b []byte) (int, error) {
+func (s *spi) Write(b []byte) (int, error) {
 	if atomic.LoadInt32(&s.closed) != 0 {
 		return 0, io.ErrClosedPipe
 	}
@@ -75,7 +75,7 @@ func (s *SPI) Write(b []byte) (int, error) {
 }
 
 // Read returns a buffer as-is.
-func (s *SPI) Read(b []byte) (int, error) {
+func (s *spi) Read(b []byte) (int, error) {
 	if atomic.LoadInt32(&s.closed) != 0 {
 		return 0, io.ErrClosedPipe
 	}
@@ -97,7 +97,7 @@ const (
 	spiIOCMaxSpeedHz  = 0x46B04
 )
 
-func (s *SPI) setFlag(op uint, arg uint64) error {
+func (s *spi) setFlag(op uint, arg uint64) error {
 	if atomic.LoadInt32(&s.closed) != 0 {
 		return io.ErrClosedPipe
 	}
@@ -117,7 +117,7 @@ func (s *SPI) setFlag(op uint, arg uint64) error {
 	return nil
 }
 
-func (s *SPI) ioctl(op uint, arg unsafe.Pointer) error {
+func (s *spi) ioctl(op uint, arg unsafe.Pointer) error {
 	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, s.f.Fd(), uintptr(op), uintptr(arg)); errno != 0 {
 		return fmt.Errorf("spi ioctl: %s", syscall.Errno(errno))
 	}

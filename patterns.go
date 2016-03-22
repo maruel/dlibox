@@ -2,12 +2,13 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package main
+package dotstar
 
 import (
 	"bytes"
 	"image/color"
 	"image/png"
+	"math/rand"
 	"time"
 )
 
@@ -19,7 +20,7 @@ func init() {
 	white := color.NRGBA{255, 255, 255, 255}
 	Patterns = map[string]Pattern{
 		"canne": &Repeated{[]color.NRGBA{red, red, red, red, white, white, white, white}, 6},
-		"comète": &PingPong{
+		"pingpong bleue": &PingPong{
 			Trail: []color.NRGBA{
 				{0xff, 0xff, 255, 255},
 				{0xD7, 0xD7, 255, 255},
@@ -29,14 +30,21 @@ func init() {
 			},
 			MovesPerSec: 30,
 		},
-		"étoile floue":   LoadAnimate("étoile floue.png", 16*time.Millisecond, false),
-		"K2000":          &PingPong{K2000, color.NRGBA{0, 0, 0, 255}, 30},
-		"glow":           &Glow{[]color.NRGBA{{255, 255, 255, 255}, {0, 128, 0, 255}}, 1},
-		"glow gris":      &Glow{[]color.NRGBA{{255, 255, 255, 255}, {}}, 0.33},
-		"glow rainbow":   &Glow{RainbowColors, 1.},
-		"pingpong":       &PingPong{Trail: []color.NRGBA{{255, 255, 255, 255}}, MovesPerSec: 30},
-		"rainbow static": &Rainbow{},
-		"red":            &StaticColor{color.NRGBA{255, 70, 70, 0}},
+		"K2000":                &PingPong{K2000, color.NRGBA{0, 0, 0, 255}, 30},
+		"glow":                 &Glow{[]color.NRGBA{{255, 255, 255, 255}, {0, 128, 0, 255}}, 1},
+		"glow gris":            &Glow{[]color.NRGBA{{255, 255, 255, 255}, {}}, 0.33},
+		"glow rainbow":         &Glow{RainbowColors, 1.},
+		"pingpong":             &PingPong{Trail: []color.NRGBA{{255, 255, 255, 255}}, MovesPerSec: 30},
+		"rainbow static":       &Rainbow{},
+		"étoiles cintillantes": &ÉtoilesCintillantes{},
+		"ciel étoilé": &Mixer{
+			Patterns: []Pattern{
+				&Aurore{},
+				&ÉtoilesCintillantes{},
+				&ÉtoileFilante{},
+			},
+			Weights: []float64{1, 1, 1},
+		},
 	}
 }
 
@@ -155,11 +163,7 @@ type Animate struct {
 //
 // Returns nil if the file can't be found. If vertical is true, rotate the
 // image by 90°.
-func LoadAnimate(name string, frameDuration time.Duration, vertical bool) *Animate {
-	content := mustRead(name)
-	if content == nil {
-		return nil
-	}
+func LoadAnimate(content []byte, frameDuration time.Duration, vertical bool) *Animate {
 	img, err := png.Decode(bytes.NewReader(content))
 	if err != nil {
 		return nil
@@ -288,4 +292,77 @@ type LevéDeSoleil struct {
 func (l *LevéDeSoleil) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	// random
 	// animate.
+}
+
+// Aurore commence lentement, se transforme lentement et éventuellement
+// disparait.
+type Aurore struct {
+	oscillators []float64 // color, phase, amplitude + deformation.
+}
+
+func (a *Aurore) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+
+}
+
+type ÉtoileCintillante struct {
+	Intensity uint8
+	Type      int
+}
+
+type ÉtoilesCintillantes struct {
+	Étoiles []ÉtoileCintillante
+	Seed    int // Change it to create a different pseudo-random animation.
+	r       *rand.Rand
+}
+
+func (e *ÉtoilesCintillantes) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+	if e.r == nil {
+		e.r = rand.New(rand.NewSource(int64(e.Seed)))
+	}
+	if len(e.Étoiles) != len(pixels) {
+		e.Étoiles = make([]ÉtoileCintillante, len(pixels))
+		for i := 0; i < len(pixels); {
+			// Add a star. Decide it's relative position, intensity and type.
+			// ExpFloat64() ?
+			f := e.r.NormFloat64() + 3
+			if f < 0.5 {
+				continue
+			}
+			i += int(roundF(f))
+			if i >= len(pixels) {
+				break
+			}
+			e.Étoiles[i].Intensity = uint8(e.r.Intn(255))
+		}
+	}
+	for i := range e.Étoiles {
+		if j := e.Étoiles[i].Intensity; j != 0 {
+			// TODO(maruel): Type, oscillation.
+			f := floatToUint8(e.r.NormFloat64()*4 + 128)
+			pixels[i] = color.NRGBA{f, f, f, j}
+		}
+	}
+}
+
+// ÉtoileFilante will only draw one star at a time. To increase the likelihood
+// of getting many simultaneously, create multiple instances and use Mixer with
+// Weights of 1.
+type ÉtoileFilante struct {
+	Duration     time.Duration
+	AverageDelay time.Duration
+	Seed         int // Change it to create a different pseudo-random animation.
+	r            *rand.Rand
+	last         time.Duration
+	length       float64
+	intensity    float64
+}
+
+func (e *ÉtoileFilante) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+	if e.r == nil {
+		e.r = rand.New(rand.NewSource(int64(e.Seed)))
+	}
+	if sinceStart < e.last+e.Duration {
+		// TODO(maruel): Decide the length of the star, max intensity, intensity
+		// curvature.
+	}
 }
