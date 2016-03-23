@@ -50,21 +50,6 @@ func watchFile(fileName string) error {
 	}
 }
 
-func doColorTest() error {
-	for y := 0; y < 32; y++ {
-		extra := "  "
-		for x := 0; x < 8; x++ {
-			i := x + 8*y
-			if x == 7 {
-				extra = ""
-			}
-			fmt.Printf("\033[48;5;%dm   %3d   \033[0m%s", i, i, extra)
-		}
-		fmt.Printf("\n")
-	}
-	return nil
-}
-
 func mainImpl() error {
 	thisFile, err := osext.Executable()
 	if err != nil {
@@ -75,7 +60,6 @@ func mainImpl() error {
 	port := flag.Int("port", 8010, "http port to listen on")
 	verbose := flag.Bool("verbose", false, "enable log output")
 	fake := flag.Bool("fake", false, "use a fake camera mock, useful to test without the hardware")
-	colorTest := flag.Bool("color-test", false, "prints all term-256 colors and exit")
 	cycle := flag.Bool("cycle", false, "enable cycling through a few animations")
 	flag.Parse()
 	if flag.NArg() != 0 {
@@ -99,10 +83,6 @@ func mainImpl() error {
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
-	}
-
-	if *colorTest {
-		return doColorTest()
 	}
 
 	dotstar.Patterns["étoile floue"] = dotstar.LoadAnimate(mustRead("étoile floue.png"), 16*time.Millisecond, false)
