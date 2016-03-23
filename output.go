@@ -6,7 +6,6 @@ package dotstar
 
 import (
 	"bytes"
-	"fmt"
 	"image/color"
 	"io"
 	"time"
@@ -89,15 +88,9 @@ func (s *screenStrip) Write(pixels []color.NRGBA) error {
 	// This code is designed to minimize the amount of memory allocated per call.
 	s.b.Reset()
 	_, _ = s.b.WriteString("\r\033[0m")
-	lastI := -1
 	for _, c := range pixels {
-		newI := ansi256.TermOSX.ANSI(c)
-		if newI != lastI {
-			// Only send the ANSI code when the color changes.
-			lastI = newI
-			_, _ = fmt.Fprintf(&s.b, "\033[48;5;%dm", newI)
-		}
-		_, _ = s.b.WriteString(" ")
+		_, _ = io.WriteString(&s.b, ansi256.TermOSX.Block(c))
+		//_, _ = io.WriteString(&s.b, ansi256.Raw(false, c))
 	}
 	_, _ = s.b.WriteString("\033[0m ")
 	_, err := s.b.WriteTo(s.w)
