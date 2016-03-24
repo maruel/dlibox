@@ -89,8 +89,7 @@ func (s *screenStrip) Write(pixels []color.NRGBA) error {
 	s.b.Reset()
 	_, _ = s.b.WriteString("\r\033[0m")
 	for _, c := range pixels {
-		_, _ = io.WriteString(&s.b, ansi256.TermOSX.Block(c))
-		//_, _ = io.WriteString(&s.b, ansi256.Raw(false, c))
+		_, _ = io.WriteString(&s.b, ansi256.Default.Block(c))
 	}
 	_, _ = s.b.WriteString("\033[0m ")
 	_, err := s.b.WriteTo(s.w)
