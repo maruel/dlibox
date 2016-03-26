@@ -5,21 +5,24 @@
 // Packages the static files in a .go file.
 //go:generate go run ../package/main.go -out static_files_gen.go web/static images
 
+// dotstar drives the dotstar LED strip on a Raspberry Pi. It runs a web server
+// for remote control.
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"runtime/pprof"
+	"sort"
 	"time"
 
 	"github.com/kardianos/osext"
 	"github.com/maruel/dotstar"
 	"github.com/maruel/interrupt"
+	"github.com/stianeikeland/go-rpio"
 	"golang.org/x/exp/inotify"
 )
 
@@ -50,6 +53,33 @@ func watchFile(fileName string) error {
 	}
 }
 
+func listenToPin(pinNumber int, p *dotstar.Painter) {
+	pin := rpio.Pin(pinNumber)
+	pin.Input()
+	pin.PullUp()
+	last := rpio.High
+	names := make([]string, 0, len(dotstar.Patterns))
+	for n := range dotstar.Patterns {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	index := 0
+	for {
+		if state := pin.Read(); state != last {
+			last = state
+			if state == rpio.Low {
+				index = (index + 1) % len(names)
+				p.SetPattern(dotstar.Patterns[names[index]])
+			}
+		}
+		select {
+		case <-interrupt.Channel:
+			return
+		case <-time.After(time.Millisecond):
+		}
+	}
+}
+
 func mainImpl() error {
 	thisFile, err := osext.Executable()
 	if err != nil {
@@ -60,13 +90,14 @@ func mainImpl() error {
 	port := flag.Int("port", 8010, "http port to listen on")
 	verbose := flag.Bool("verbose", false, "enable log output")
 	fake := flag.Bool("fake", false, "use a fake camera mock, useful to test without the hardware")
-	cycle := flag.Bool("cycle", false, "enable cycling through a few animations")
+	demoMode := flag.Bool("demo", false, "enable cycling through a few animations as a demo")
+	pinNumber := flag.Int("pin", 0, "pin to listen to")
 	flag.Parse()
 	if flag.NArg() != 0 {
-		return errors.New("unknown arguments")
-	}
-	if len(flag.Args()) != 0 {
 		return fmt.Errorf("unexpected argument: %s", flag.Args())
+	}
+	if *demoMode && *pinNumber != 0 {
+		return fmt.Errorf("use only one of -demo or -pin")
 	}
 
 	if !*verbose {
@@ -77,6 +108,8 @@ func mainImpl() error {
 	defer interrupt.Set()
 
 	if *cpuprofile != "" {
+		// Run with cpuprofile, then use 'go tool pprof' to analyze it. See
+		// http://blog.golang.org/profiling-go-programs for more details.
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
 			return err
@@ -100,7 +133,7 @@ func mainImpl() error {
 
 	StartWebServer(p, *port)
 
-	if *cycle {
+	if *demoMode {
 		go func() {
 			patterns := []struct {
 				d int
@@ -131,6 +164,15 @@ func mainImpl() error {
 				}
 			}
 		}()
+	}
+
+	if *pinNumber != 0 {
+		// Open and map memory to access gpio, check for errors
+		if err := rpio.Open(); err != nil {
+			return err
+		}
+		defer rpio.Close()
+		go listenToPin(*pinNumber, p)
 	}
 
 	defer fmt.Printf("\033[0m\n")

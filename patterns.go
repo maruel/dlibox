@@ -19,6 +19,7 @@ func init() {
 	red := color.NRGBA{255, 0, 0, 255}
 	white := color.NRGBA{255, 255, 255, 255}
 	Patterns = map[string]Pattern{
+		"black": &StaticColor{},
 		"canne": &Repeated{[]color.NRGBA{red, red, red, red, white, white, white, white}, 6},
 		"pingpong bleue": &PingPong{
 			Trail: []color.NRGBA{

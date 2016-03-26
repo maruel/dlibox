@@ -169,19 +169,6 @@ func (s *Skip) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	}
 }
 
-// Limit the maximum intensity. Does this by scaling the alpha channel.
-type IntensityLimiter struct {
-	Child Pattern
-	Max   int // Maximum value between 0 (off) to 255 (full intensity).
-}
-
-func (i *IntensityLimiter) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
-	i.Child.NextFrame(pixels, sinceStart)
-	for j := range pixels {
-		pixels[j].A = uint8((int(pixels[j].A) + i.Max - 1) * 255 / i.Max)
-	}
-}
-
 //
 
 func roundF(x float64) float64 {

@@ -1,0 +1,19 @@
+[Unit]
+Description=Runs dotstar
+
+# https://www.freedesktop.org/software/systemd/man/systemd.service.html
+[Service]
+# One way is to run it as user and use capabilities to let it bind to port 80.
+# this means access to spi (and optionally pi-blaster) still need to be
+# configured accordingly.
+#
+# ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/USER/dotstar
+# ExecStart=/bin/su - USER -c "/home/USER/dotstar -port 80"
+#
+# Otherwise, you may just run as root, which is sad but not a big deal if you
+# don't anything personal on it.
+ExecStart=/home/USER/dotstar -port 80
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

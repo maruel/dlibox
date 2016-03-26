@@ -39,3 +39,20 @@ You need to enable the SPI port on the Raspberry Pi. We assume you use Raspbian
 Jessie.
 
 etc...
+
+
+## Enabling port 80
+
+One way is to use [linux's capabilities
+support](http://man7.org/linux/man-pages/man7/capabilities.7.html):
+
+    sudo apt-get install libcap2-bin
+    sudo setcap 'cap_net_bind_service=+ep' dotstar
+
+The main problem is that it makes scp'ing new version harder, as the new file
+has to be sudo called to enabled the functionality when pushing a new version.
+
+The other way is to simply redirect port 80 to port 8080.
+
+    sudo systemctl enable dotstar
+    sudo service dotstar start
