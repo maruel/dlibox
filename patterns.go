@@ -12,43 +12,6 @@ import (
 	"time"
 )
 
-// Patterns is a map of nice predefined patterns.
-var Patterns map[string]Pattern
-
-func init() {
-	red := color.NRGBA{255, 0, 0, 255}
-	white := color.NRGBA{255, 255, 255, 255}
-	Patterns = map[string]Pattern{
-		"black": &StaticColor{},
-		"canne": &Repeated{[]color.NRGBA{red, red, red, red, white, white, white, white}, 6},
-		"pingpong bleue": &PingPong{
-			Trail: []color.NRGBA{
-				{0xff, 0xff, 255, 255},
-				{0xD7, 0xD7, 255, 255},
-				{0xAF, 0xAF, 255, 255},
-				{0x87, 0x87, 255, 255},
-				{0x5F, 0x5F, 255, 255},
-			},
-			MovesPerSec: 30,
-		},
-		"K2000":                &PingPong{K2000, color.NRGBA{0, 0, 0, 255}, 30},
-		"glow":                 &Glow{[]color.NRGBA{{255, 255, 255, 255}, {0, 128, 0, 255}}, 1},
-		"glow gris":            &Glow{[]color.NRGBA{{255, 255, 255, 255}, {}}, 0.33},
-		"glow rainbow":         &Glow{RainbowColors, 1.},
-		"pingpong":             &PingPong{Trail: []color.NRGBA{{255, 255, 255, 255}}, MovesPerSec: 30},
-		"rainbow static":       &Rainbow{},
-		"étoiles cintillantes": &ÉtoilesCintillantes{},
-		"ciel étoilé": &Mixer{
-			Patterns: []Pattern{
-				&Aurore{},
-				&ÉtoilesCintillantes{},
-				&ÉtoileFilante{},
-			},
-			Weights: []float64{1, 1, 1},
-		},
-	}
-}
-
 // StaticColor shows a single color on all lights.
 type StaticColor struct {
 	C color.NRGBA
@@ -60,7 +23,7 @@ func (s *StaticColor) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) 
 	}
 }
 
-// Glow alternates betweens colors over time.
+// Glow alternates betweens colors over time using linear interpolation.
 type Glow struct {
 	Colors []color.NRGBA // Colors to cycle through. Use at least 2 colors.
 	Hz     float64       // Color change rate per second. Should be below 0.1 for smooth change.
@@ -71,7 +34,7 @@ func (g *Glow) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	baseIndex := int(cycles)
 	// [0, 1]
 	intensity := cycles - float64(baseIndex)
-	//intensity := 0.5*math.Sin(sinceStart.Seconds()*g.Hz*math.Pi*2) + 0.5
+	// TODO(maruel): Add ease-in-out interpolation?
 	a := g.Colors[baseIndex%len(g.Colors)]
 	b := g.Colors[(baseIndex+1)%len(g.Colors)]
 	c := color.NRGBA{
@@ -85,7 +48,7 @@ func (g *Glow) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	}
 }
 
-// RainbowColors are approximate rainbox colors without alpha.
+// RainbowColors are approximate rainbow colors without alpha.
 var RainbowColors = []color.NRGBA{
 	{255, 0, 0, 255},
 	{255, 127, 0, 255},
@@ -153,18 +116,20 @@ func (p *PingPong) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	}
 }
 
-// Animate represents an animatable looping frame. If the image is smaller than
-// the strip, doesn't touch the rest of the pixels.
-type Animate struct {
+// Animation represents an animatable looping frame.
+//
+// If the image is smaller than the strip, doesn't touch the rest of the
+// pixels. Otherwise, the excess is ignored. Use Interpolate() if desired.
+type Animation struct {
 	Frames        [][]color.NRGBA
 	FrameDuration time.Duration
 }
 
-// LoadAnimate loads an Animate from a PNG file.
+// LoadAnimate loads an Animation from a PNG file.
 //
 // Returns nil if the file can't be found. If vertical is true, rotate the
 // image by 90°.
-func LoadAnimate(content []byte, frameDuration time.Duration, vertical bool) *Animate {
+func LoadAnimate(content []byte, frameDuration time.Duration, vertical bool) *Animation {
 	img, err := png.Decode(bytes.NewReader(content))
 	if err != nil {
 		return nil
@@ -187,10 +152,10 @@ func LoadAnimate(content []byte, frameDuration time.Duration, vertical bool) *An
 			}
 		}
 	}
-	return &Animate{buf, frameDuration}
+	return &Animation{buf, frameDuration}
 }
 
-func (a *Animate) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+func (a *Animation) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	copy(pixels, a.Frames[int(sinceStart/a.FrameDuration)%len(a.Frames)])
 }
 
@@ -272,7 +237,7 @@ type point struct {
 //    - Rotation de la terre?
 //    - Station Internationale?
 type CielÉtoilé struct {
-	Stars     []Animate
+	Stars     []Animation
 	Frequency float64 // Number of explosions by second.
 	points    []point
 }

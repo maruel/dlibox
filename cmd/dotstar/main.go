@@ -58,18 +58,28 @@ func listenToPin(pinNumber int, p *dotstar.Painter) {
 	pin.Input()
 	pin.PullUp()
 	last := rpio.High
-	names := make([]string, 0, len(dotstar.Patterns))
-	for n := range dotstar.Patterns {
+	names := make([]string, 0, len(Registry.Patterns))
+	for n := range Registry.Patterns {
 		names = append(names, n)
 	}
 	sort.Strings(names)
 	index := 0
 	for {
+		// Types of press:
+		// - Short press (<2s)
+		// - 2s press
+		// - 4s press
+		// - double-click (incompatible with repeated short press)
+		//
+		// Functions:
+		// - Bonne nuit
+		// - Next / Prev
+		// - Éteindre (longer press après bonne nuit?)
 		if state := pin.Read(); state != last {
 			last = state
 			if state == rpio.Low {
 				index = (index + 1) % len(names)
-				p.SetPattern(dotstar.Patterns[names[index]])
+				p.SetPattern(Registry.Patterns[names[index]])
 			}
 		}
 		select {
@@ -118,7 +128,7 @@ func mainImpl() error {
 		defer pprof.StopCPUProfile()
 	}
 
-	dotstar.Patterns["étoile floue"] = dotstar.LoadAnimate(mustRead("étoile floue.png"), 16*time.Millisecond, false)
+	Registry.Patterns["étoile floue"] = dotstar.LoadAnimate(mustRead("étoile floue.png"), 16*time.Millisecond, false)
 
 	var s dotstar.Strip
 	if *fake {
@@ -139,16 +149,16 @@ func mainImpl() error {
 				d int
 				p dotstar.Pattern
 			}{
-				{3, dotstar.Patterns["rainbow static"]},
-				{10, dotstar.Patterns["glow rainbow"]},
-				{10, dotstar.Patterns["étoile floue"]},
-				{7, dotstar.Patterns["canne"]},
-				{7, dotstar.Patterns["K2000"]},
-				{7, dotstar.Patterns["comète"]},
-				{5, dotstar.Patterns["pingpong"]},
-				{5, dotstar.Patterns["glow"]},
-				{5, dotstar.Patterns["glow gris"]},
-				{3, dotstar.Patterns["red"]},
+				{3, Registry.Patterns["rainbow static"]},
+				{10, Registry.Patterns["glow rainbow"]},
+				{10, Registry.Patterns["étoile floue"]},
+				{7, Registry.Patterns["canne"]},
+				{7, Registry.Patterns["K2000"]},
+				{7, Registry.Patterns["comète"]},
+				{5, Registry.Patterns["pingpong"]},
+				{5, Registry.Patterns["glow"]},
+				{5, Registry.Patterns["glow gris"]},
+				{3, Registry.Patterns["red"]},
 			}
 			i := 0
 			p.SetPattern(patterns[i].p)

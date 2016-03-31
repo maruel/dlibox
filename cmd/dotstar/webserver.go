@@ -53,7 +53,7 @@ func (s *WebServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if n := r.PostFormValue("mode"); len(n) != 0 {
 		log.Printf("mode = %s", n)
-		if p := dotstar.Patterns[n]; p != nil {
+		if p := Registry.Patterns[n]; p != nil {
 			s.painter.SetPattern(p)
 			return
 		}
