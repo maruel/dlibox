@@ -98,17 +98,17 @@ func MakeDotStar() (*DotStar, error) {
 	// The speed must be high, as there's 32 bits sent per LED, creating a
 	// staggered effect. See
 	// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
-	w, err := makeSPI("", 20000000)
+	w, err := makeSPI("", 10000000)
 	if err != nil {
 		return nil, err
 	}
 	return &DotStar{
 		RedGamma:   1.,
-		RedMax:     1.,
+		RedMax:     0.5,
 		GreenGamma: 1.,
-		GreenMax:   1.,
+		GreenMax:   0.5,
 		BlueGamma:  1.,
-		BlueMax:    1.,
+		BlueMax:    0.5,
 		AmpPerLED:  .02,
 		AmpBudget:  9.,
 		w:          w,

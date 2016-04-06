@@ -26,15 +26,15 @@ func (s *StaticColor) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) 
 // Glow alternates betweens colors over time using linear interpolation.
 type Glow struct {
 	Colors []color.NRGBA // Colors to cycle through. Use at least 2 colors.
-	Hz     float64       // Color change rate per second. Should be below 0.1 for smooth change.
+	Hz     float64       // Color change rate per second. Should be below 0.1 for smooth change. It's not the cycle for a full loop across .Colors but the rate for individual color switch.
 }
 
 func (g *Glow) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	cycles := sinceStart.Seconds() * g.Hz
 	baseIndex := int(cycles)
+	// TODO(maruel): Add ease-in-out interpolation instead of linear?
 	// [0, 1]
-	intensity := cycles - float64(baseIndex)
-	// TODO(maruel): Add ease-in-out interpolation?
+	intensity := 1. - (cycles - float64(baseIndex))
 	a := g.Colors[baseIndex%len(g.Colors)]
 	b := g.Colors[(baseIndex+1)%len(g.Colors)]
 	c := color.NRGBA{

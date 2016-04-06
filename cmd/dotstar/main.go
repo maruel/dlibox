@@ -102,6 +102,7 @@ func mainImpl() error {
 	fake := flag.Bool("fake", false, "use a fake camera mock, useful to test without the hardware")
 	demoMode := flag.Bool("demo", false, "enable cycling through a few animations as a demo")
 	pinNumber := flag.Int("pin", 0, "pin to listen to")
+	numLights := flag.Int("n", 150, "number of lights to display. If lower than the actual number of lights, the remaining lights will flash oddly. When combined with -fake, number of characters to display on the line.")
 	flag.Parse()
 	if flag.NArg() != 0 {
 		return fmt.Errorf("unexpected argument: %s", flag.Args())
@@ -139,7 +140,7 @@ func mainImpl() error {
 			return err
 		}
 	}
-	p := dotstar.MakePainter(s, 80)
+	p := dotstar.MakePainter(s, *numLights)
 
 	StartWebServer(p, *port)
 

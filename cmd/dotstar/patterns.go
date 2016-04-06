@@ -35,7 +35,7 @@ func init() {
 		"K2000":                &dotstar.PingPong{dotstar.K2000, color.NRGBA{0, 0, 0, 255}, 30},
 		"glow":                 &dotstar.Glow{[]color.NRGBA{{255, 255, 255, 255}, {0, 128, 0, 255}}, 1},
 		"glow gris":            &dotstar.Glow{[]color.NRGBA{{255, 255, 255, 255}, {}}, 0.33},
-		"glow rainbow":         &dotstar.Glow{dotstar.RainbowColors, 1.},
+		"glow rainbow":         &dotstar.Glow{dotstar.RainbowColors, 1. / 3.},
 		"pingpong":             &dotstar.PingPong{Trail: []color.NRGBA{{255, 255, 255, 255}}, MovesPerSec: 30},
 		"rainbow static":       &dotstar.Rainbow{},
 		"étoiles cintillantes": &dotstar.ÉtoilesCintillantes{},
