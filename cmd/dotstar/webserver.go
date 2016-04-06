@@ -16,22 +16,24 @@ import (
 	"github.com/maruel/dotstar"
 )
 
-type WebServer struct {
-	painter *dotstar.Painter
+type webServer struct {
+	painter  *dotstar.Painter
+	registry *dotstar.PatternRegistry
 }
 
-func StartWebServer(painter *dotstar.Painter, port int) *WebServer {
-	ws := &WebServer{painter: painter}
+func startWebServer(port int, painter *dotstar.Painter, registry *dotstar.PatternRegistry) *webServer {
+	ws := &webServer{painter: painter, registry: registry}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", ws.rootHandler)
+	mux.HandleFunc("/favicon.ico", ws.faviconHandler)
 	mux.HandleFunc("/static/", ws.staticHandler)
 	mux.HandleFunc("/switch", ws.switchHandler)
-	mux.HandleFunc("/favicon.ico", ws.faviconHandler)
+	mux.HandleFunc("/thumbnail/", ws.thumbnailHandler)
 	go http.ListenAndServe(fmt.Sprintf(":%d", port), loggingHandler{mux})
 	return ws
 }
 
-func (s *WebServer) rootHandler(w http.ResponseWriter, r *http.Request) {
+func (s *webServer) rootHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.Error(w, "Not Found", http.StatusNotFound)
 		return
@@ -46,14 +48,14 @@ func (s *WebServer) rootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *WebServer) switchHandler(w http.ResponseWriter, r *http.Request) {
+func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
 		return
 	}
 	if n := r.PostFormValue("mode"); len(n) != 0 {
 		log.Printf("mode = %s", n)
-		if p := Registry.Patterns[n]; p != nil {
+		if p := s.registry.Patterns[n]; p != nil {
 			s.painter.SetPattern(p)
 			return
 		}
@@ -79,7 +81,7 @@ func (s *WebServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(maruel): return an error.
 }
 
-func (s *WebServer) faviconHandler(w http.ResponseWriter, r *http.Request) {
+func (s *webServer) faviconHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
 		return
@@ -89,7 +91,7 @@ func (s *WebServer) faviconHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(mustRead("favicon.ico"))
 }
 
-func (s *WebServer) staticHandler(w http.ResponseWriter, r *http.Request) {
+func (s *webServer) staticHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
 		return
@@ -102,6 +104,18 @@ func (s *WebServer) staticHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Error(w, "Not Found", http.StatusNotFound)
+}
+
+func (s *webServer) thumbnailHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
+		return
+	}
+	if data := s.registry.Thumbnail(r.URL.Path[len("/thumbnail/"):]); len(data) != 0 {
+		_, _ = w.Write(data)
+	} else {
+		http.Error(w, "Not Found", http.StatusNotFound)
+	}
 }
 
 // Private details.

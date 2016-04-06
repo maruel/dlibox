@@ -53,13 +53,13 @@ func watchFile(fileName string) error {
 	}
 }
 
-func listenToPin(pinNumber int, p *dotstar.Painter) {
+func listenToPin(pinNumber int, p *dotstar.Painter, r *dotstar.PatternRegistry) {
 	pin := rpio.Pin(pinNumber)
 	pin.Input()
 	pin.PullUp()
 	last := rpio.High
-	names := make([]string, 0, len(Registry.Patterns))
-	for n := range Registry.Patterns {
+	names := make([]string, 0, len(r.Patterns))
+	for n := range r.Patterns {
 		names = append(names, n)
 	}
 	sort.Strings(names)
@@ -79,7 +79,7 @@ func listenToPin(pinNumber int, p *dotstar.Painter) {
 			last = state
 			if state == rpio.Low {
 				index = (index + 1) % len(names)
-				p.SetPattern(Registry.Patterns[names[index]])
+				p.SetPattern(r.Patterns[names[index]])
 			}
 		}
 		select {
@@ -129,8 +129,6 @@ func mainImpl() error {
 		defer pprof.StopCPUProfile()
 	}
 
-	Registry.Patterns["étoile floue"] = dotstar.LoadAnimate(mustRead("étoile floue.png"), 16*time.Millisecond, false)
-
 	var s dotstar.Strip
 	if *fake {
 		s = dotstar.MakeScreen()
@@ -142,7 +140,8 @@ func mainImpl() error {
 	}
 	p := dotstar.MakePainter(s, *numLights)
 
-	StartWebServer(p, *port)
+	registry := getRegistry()
+	startWebServer(*port, p, registry)
 
 	if *demoMode {
 		go func() {
@@ -150,16 +149,16 @@ func mainImpl() error {
 				d int
 				p dotstar.Pattern
 			}{
-				{3, Registry.Patterns["rainbow static"]},
-				{10, Registry.Patterns["glow rainbow"]},
-				{10, Registry.Patterns["étoile floue"]},
-				{7, Registry.Patterns["canne"]},
-				{7, Registry.Patterns["K2000"]},
-				{7, Registry.Patterns["comète"]},
-				{5, Registry.Patterns["pingpong"]},
-				{5, Registry.Patterns["glow"]},
-				{5, Registry.Patterns["glow gris"]},
-				{3, Registry.Patterns["red"]},
+				{3, registry.Patterns["rainbow static"]},
+				{10, registry.Patterns["glow rainbow"]},
+				{10, registry.Patterns["étoile floue"]},
+				{7, registry.Patterns["canne"]},
+				{7, registry.Patterns["K2000"]},
+				{7, registry.Patterns["comète"]},
+				{5, registry.Patterns["pingpong"]},
+				{5, registry.Patterns["glow"]},
+				{5, registry.Patterns["glow gris"]},
+				{3, registry.Patterns["red"]},
 			}
 			i := 0
 			p.SetPattern(patterns[i].p)
@@ -183,7 +182,7 @@ func mainImpl() error {
 			return err
 		}
 		defer rpio.Close()
-		go listenToPin(*pinNumber, p)
+		go listenToPin(*pinNumber, p, registry)
 	}
 
 	defer fmt.Printf("\033[0m\n")

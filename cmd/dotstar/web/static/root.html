@@ -82,14 +82,12 @@
         node.id = 'button-' + buttons[i][1];
         node.className = 'btn btn-lg ' + styles[j];
         node.attributes['data-mode'] = buttons[i][1];
-        node.innerText = buttons[i][0];
+        node.innerHTML = buttons[i][0] + ' <img height=5px src="/thumbnail/' + encodeURI(buttons[i][1]) + '" />';
         node.addEventListener('click', function (event) {
           update("mode=" + encodeURI(this.attributes['data-mode']));
         });
         dst.appendChild(node);
-        var space = document.createElement('span');
-        space.innerText = ' ';
-        dst.appendChild(space);
+        dst.appendChild(document.createElement('br'));
         j = (j + 1) % styles.length;
       }
 

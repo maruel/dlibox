@@ -31,7 +31,10 @@ func (p *PatternRegistry) Thumbnail(name string) []byte {
 		return img
 	}
 
-	pat := p.Patterns[name]
+	pat, ok := p.Patterns[name]
+	if !ok {
+		return nil
+	}
 	pixels := make([]color.NRGBA, p.NumberLEDs)
 	nbImg := p.ThumbnailSeconds * p.ThumbnailHz
 	g := &gif.GIF{Image: make([]*image.Paletted, nbImg), Delay: make([]int, nbImg)}
@@ -48,7 +51,9 @@ func (p *PatternRegistry) Thumbnail(name string) []byte {
 		}
 	}
 	b := &bytes.Buffer{}
-	_ = gif.EncodeAll(b, g)
+	if err := gif.EncodeAll(b, g); err != nil {
+		panic(err)
+	}
 	p.cache[name] = b.Bytes()
 	return p.cache[name]
 }

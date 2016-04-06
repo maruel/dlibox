@@ -19,11 +19,11 @@ func TestStaticColor(t *testing.T) {
 func TestGlow1(t *testing.T) {
 	p := &Glow{[]color.NRGBA{{255, 255, 255, 255}, {0, 0, 0, 255}}, 1}
 	e := []expectation{
-		{0, []color.NRGBA{{0x00, 0x00, 0x00, 0xFF}}},
-		{250 * time.Millisecond, []color.NRGBA{{0x3F, 0x3F, 0x3F, 0xFF}}},
+		{0, []color.NRGBA{{0xFF, 0xFF, 0xFF, 0xFF}}},
+		{250 * time.Millisecond, []color.NRGBA{{0xBF, 0xBF, 0xBF, 0xFF}}},
 		{500 * time.Millisecond, []color.NRGBA{{0x7F, 0x7F, 0x7F, 0xFF}}},
-		{750 * time.Millisecond, []color.NRGBA{{0xBF, 0xBF, 0xBF, 0xFF}}},
-		{1000 * time.Millisecond, []color.NRGBA{{0xFF, 0xFF, 0xFF, 0xFF}}},
+		{750 * time.Millisecond, []color.NRGBA{{0x3F, 0x3F, 0x3F, 0xFF}}},
+		{1000 * time.Millisecond, []color.NRGBA{{0x00, 0x00, 0x00, 0xFF}}},
 	}
 	frames(t, p, e)
 }
@@ -31,11 +31,11 @@ func TestGlow1(t *testing.T) {
 func TestGlow2(t *testing.T) {
 	p := &Glow{[]color.NRGBA{{255, 255, 255, 255}, {0, 0, 0, 255}}, 0.1}
 	e := []expectation{
-		{0, []color.NRGBA{{0x00, 0x00, 0x00, 0xFF}}},
-		{2500 * time.Millisecond, []color.NRGBA{{0x3F, 0x3F, 0x3F, 0xFF}}},
+		{0, []color.NRGBA{{0xFF, 0xFF, 0xFF, 0xFF}}},
+		{2500 * time.Millisecond, []color.NRGBA{{0xBF, 0xBF, 0xBF, 0xFF}}},
 		{5000 * time.Millisecond, []color.NRGBA{{0x80, 0x80, 0x80, 0xFF}}},
-		{7500 * time.Millisecond, []color.NRGBA{{0xBF, 0xBF, 0xBF, 0xFF}}},
-		{10000 * time.Millisecond, []color.NRGBA{{0xFF, 0xFF, 0xFF, 0xFF}}},
+		{7500 * time.Millisecond, []color.NRGBA{{0x3F, 0x3F, 0x3F, 0xFF}}},
+		{10000 * time.Millisecond, []color.NRGBA{{0x00, 0x00, 0x00, 0xFF}}},
 	}
 	frames(t, p, e)
 }

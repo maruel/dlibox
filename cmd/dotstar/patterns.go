@@ -6,46 +6,47 @@ package main
 
 import (
 	"image/color"
+	"time"
 
 	"github.com/maruel/dotstar"
 )
 
-var Registry = dotstar.PatternRegistry{
-	NumberLEDs:       150,
-	ThumbnailHz:      10,
-	ThumbnailSeconds: 10,
-}
-
-func init() {
+func getRegistry() *dotstar.PatternRegistry {
 	red := color.NRGBA{255, 0, 0, 255}
 	white := color.NRGBA{255, 255, 255, 255}
-	Registry.Patterns = map[string]dotstar.Pattern{
-		"black": &dotstar.StaticColor{},
-		"canne": &dotstar.Repeated{[]color.NRGBA{red, red, red, red, white, white, white, white}, 6},
-		"pingpong bleue": &dotstar.PingPong{
-			Trail: []color.NRGBA{
-				{0xff, 0xff, 255, 255},
-				{0xD7, 0xD7, 255, 255},
-				{0xAF, 0xAF, 255, 255},
-				{0x87, 0x87, 255, 255},
-				{0x5F, 0x5F, 255, 255},
+	return &dotstar.PatternRegistry{
+		Patterns: map[string]dotstar.Pattern{
+			"black": &dotstar.StaticColor{},
+			"canne": &dotstar.Repeated{[]color.NRGBA{red, red, red, red, white, white, white, white}, 6},
+			"pingpong bleue": &dotstar.PingPong{
+				Trail: []color.NRGBA{
+					{0xff, 0xff, 255, 255},
+					{0xD7, 0xD7, 255, 255},
+					{0xAF, 0xAF, 255, 255},
+					{0x87, 0x87, 255, 255},
+					{0x5F, 0x5F, 255, 255},
+				},
+				MovesPerSec: 30,
 			},
-			MovesPerSec: 30,
-		},
-		"K2000":                &dotstar.PingPong{dotstar.K2000, color.NRGBA{0, 0, 0, 255}, 30},
-		"glow":                 &dotstar.Glow{[]color.NRGBA{{255, 255, 255, 255}, {0, 128, 0, 255}}, 1},
-		"glow gris":            &dotstar.Glow{[]color.NRGBA{{255, 255, 255, 255}, {}}, 0.33},
-		"glow rainbow":         &dotstar.Glow{dotstar.RainbowColors, 1. / 3.},
-		"pingpong":             &dotstar.PingPong{Trail: []color.NRGBA{{255, 255, 255, 255}}, MovesPerSec: 30},
-		"rainbow static":       &dotstar.Rainbow{},
-		"étoiles cintillantes": &dotstar.ÉtoilesCintillantes{},
-		"ciel étoilé": &dotstar.Mixer{
-			Patterns: []dotstar.Pattern{
-				&dotstar.Aurore{},
-				&dotstar.ÉtoilesCintillantes{},
-				&dotstar.ÉtoileFilante{},
+			"K2000":                &dotstar.PingPong{dotstar.K2000, color.NRGBA{0, 0, 0, 255}, 30},
+			"glow":                 &dotstar.Glow{[]color.NRGBA{{255, 255, 255, 255}, {0, 128, 0, 255}}, 1},
+			"glow gris":            &dotstar.Glow{[]color.NRGBA{{255, 255, 255, 255}, {}}, 0.33},
+			"glow rainbow":         &dotstar.Glow{dotstar.RainbowColors, 1. / 3.},
+			"pingpong":             &dotstar.PingPong{Trail: []color.NRGBA{{255, 255, 255, 255}}, MovesPerSec: 30},
+			"rainbow static":       &dotstar.Rainbow{},
+			"étoiles cintillantes": &dotstar.ÉtoilesCintillantes{},
+			"étoile floue":         dotstar.LoadAnimate(mustRead("étoile floue.png"), 16*time.Millisecond, false),
+			"ciel étoilé": &dotstar.Mixer{
+				Patterns: []dotstar.Pattern{
+					&dotstar.Aurore{},
+					&dotstar.ÉtoilesCintillantes{},
+					&dotstar.ÉtoileFilante{},
+				},
+				Weights: []float64{1, 1, 1},
 			},
-			Weights: []float64{1, 1, 1},
 		},
+		NumberLEDs:       150,
+		ThumbnailHz:      10,
+		ThumbnailSeconds: 10,
 	}
 }

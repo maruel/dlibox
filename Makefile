@@ -11,6 +11,7 @@ remote_host = raspberrypi2
 #
 # Luckily, 'go test -i' is super fast on second execution.
 dotstar: *.go cmd/dotstar/*.go
+	go generate ./...
 	GOOS=linux GOARCH=arm go test -i ./cmd/dotstar
 	GOOS=linux GOARCH=arm go build ./cmd/dotstar
 
@@ -30,6 +31,7 @@ push: dotstar
 
 # Runs it locally as a fake display with the web server running on port 8010.
 run: *.go cmd/dotstar/*.go
+	go generate ./...
 	go install ./cmd/dotstar
 	dotstar -fake -n 80 -port 8010
 
