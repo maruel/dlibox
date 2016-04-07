@@ -23,6 +23,18 @@ type PatternRegistry struct {
 	cache            map[string][]byte // Thumbnail as GIF.
 }
 
+func isPixelsEqual(a, b []color.NRGBA) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for j, p := range a {
+		if b[j] != p {
+			return false
+		}
+	}
+	return true
+}
+
 func (p *PatternRegistry) Thumbnail(name string) []byte {
 	if p.cache == nil {
 		p.cache = make(map[string][]byte)
@@ -35,19 +47,41 @@ func (p *PatternRegistry) Thumbnail(name string) []byte {
 	if !ok {
 		return nil
 	}
-	pixels := make([]color.NRGBA, p.NumberLEDs)
+	pixels := [][]color.NRGBA{make([]color.NRGBA, p.NumberLEDs), make([]color.NRGBA, p.NumberLEDs)}
 	nbImg := p.ThumbnailSeconds * p.ThumbnailHz
-	g := &gif.GIF{Image: make([]*image.Paletted, nbImg), Delay: make([]int, nbImg)}
-	d := int(roundF(100. / float64(p.ThumbnailHz)))
-	for i := range g.Image {
-		g.Delay[i] = d
-		g.Image[i] = image.NewPaletted(image.Rect(0, 0, p.NumberLEDs, 1), palette.Plan9)
-		since := (time.Second*time.Duration(i) + time.Duration(p.ThumbnailHz) - 1) / time.Duration(p.ThumbnailHz)
-		pat.NextFrame(pixels, since)
-		for j, p := range pixels {
-			// For now, just use the closest color.
-			// TODO(maruel): draw.FloydSteinberg
-			g.Image[i].Pix[j] = uint8(g.Image[i].Palette.Index(p))
+	// Change dark blue (color index #1) to background, so it can be used to save
+	// more on GIF size. It's better than losing black, which is the default. To
+	// not confused the Index() function, set both to the same color, so index 1
+	// will never be returned by this function.
+	pal := make(color.Palette, 256)
+	copy(pal, palette.Plan9)
+	pal[1] = pal[0]
+	g := &gif.GIF{
+		Image:           make([]*image.Paletted, 0, nbImg),
+		Delay:           make([]int, 0, nbImg),
+		Disposal:        make([]byte, 0, nbImg),
+		Config:          image.Config{pal, p.NumberLEDs, 1},
+		BackgroundIndex: 1,
+	}
+	frameDuration := int(roundF(100. / float64(p.ThumbnailHz)))
+	for frame := 0; frame < nbImg; frame++ {
+		since := (time.Second*time.Duration(frame) + time.Duration(p.ThumbnailHz) - 1) / time.Duration(p.ThumbnailHz)
+		pat.NextFrame(pixels[frame&1], since)
+		if frame > 0 && isPixelsEqual(pixels[0], pixels[1]) {
+			// Skip a frame completely if its pixels didn't change at all from the
+			// previous frame.
+			g.Delay[len(g.Delay)-1] += frameDuration
+			continue
+		}
+		g.Delay = append(g.Delay, frameDuration)
+		g.Disposal = append(g.Disposal, gif.DisposalPrevious)
+		g.Image = append(g.Image, image.NewPaletted(image.Rect(0, 0, p.NumberLEDs, 1), pal))
+		img := g.Image[len(g.Image)-1]
+		// Compare with previous image.
+		for j, p := range pixels[frame&1] {
+			// TODO(maruel): draw.FloydSteinberg assuming we use 5x5 boxes instead of
+			// 1x1. For now, just use the closest color.
+			img.Pix[j] = uint8(pal.Index(p))
 		}
 	}
 	b := &bytes.Buffer{}
