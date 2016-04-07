@@ -3,7 +3,13 @@
 # that can be found in the LICENSE file.
 
 # Set this variable to your host to enable "make push".
-remote_host = raspberrypi2
+remote_host = raspberrypi1
+
+
+# Regenerate the embedded files as needed.
+cmd/dotstar/static_files_gen.go: cmd/dotstar/web/static/* cmd/dotstar/images/*
+	go generate ./...
+
 
 # Use a trick to preinstall all imported packages. 'go build' doesn't permit
 # installing packages, only 'go install' or 'go test -i' can do. But 'go
@@ -11,7 +17,6 @@ remote_host = raspberrypi2
 #
 # Luckily, 'go test -i' is super fast on second execution.
 dotstar: *.go cmd/dotstar/*.go
-	go generate ./...
 	GOOS=linux GOARCH=arm go test -i ./cmd/dotstar
 	GOOS=linux GOARCH=arm go build ./cmd/dotstar
 
@@ -30,8 +35,7 @@ push: dotstar
 
 
 # Runs it locally as a fake display with the web server running on port 8010.
-run: *.go cmd/dotstar/*.go
-	go generate ./...
+run: *.go cmd/dotstar/*.go cmd/dotstar/web/static/* cmd/dotstar/images/*
 	go install ./cmd/dotstar
 	dotstar -fake -n 80 -port 8010
 

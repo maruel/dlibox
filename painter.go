@@ -70,12 +70,18 @@ func MakePainter(s Strip, numLights int) *Painter {
 // Private stuff.
 
 // d60Hz is the duration of one frame at 60Hz.
-const d60Hz = 16666666 * time.Nanosecond
+const d60Hz = 16666667 * time.Nanosecond
+const d30Hz = 33333333 * time.Nanosecond
 
 func getDelay(s Strip) time.Duration {
 	delay := s.MinDelay()
-	if delay < d60Hz {
-		delay = d60Hz
+	defaultHz := d60Hz
+	if getPiVersion() == 1 {
+		// Use 30Hz on a rPi1 because it is too slow.
+		defaultHz = d30Hz
+	}
+	if delay < defaultHz {
+		delay = defaultHz
 	}
 	return delay
 }
