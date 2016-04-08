@@ -55,41 +55,14 @@
         text += '🐉🐢🐇🌴';
       }
       document.getElementById('background').innerText = text;
-
-      // Create buttons.
-      var styles = [
-        "btn-primary", "btn-info", "btn-warning", "btn-danger", "btn-success",
-        "btn-default",
-      ];
-      var buttons = [
-        ["Canne de Noël", "canne"],
-        ["Ping pong bleue", "pingpong bleue"],
-        ["Étoile floue", "étoile floue"],
-        ["K2000", "K2000"],
-        ["Glow", "glow"],
-        ["Glow gris", "glow gris"],
-        ["Glow arc-en-ciel", "glow rainbow"],
-        ["Ping-pong", "pingpong"],
-        ["Arc-en-ciel", "rainbow static"],
-        ["Étoiles cintillantes", "étoiles cintillantes"],
-        ["Ciel étoilé", "ciel étoilé"],
-      ];
-      var j = 0;
-      var dst = document.getElementById('boutons');
-      for (var i = 0; i < buttons.length; i++) {
-        var node = document.createElement('button');
-        node.type = 'button';
-        node.id = 'button-' + buttons[i][1];
-        node.className = 'btn btn-lg ' + styles[j];
-        node.attributes['data-mode'] = buttons[i][1];
-        node.innerHTML = buttons[i][0] + ' <img height=5px src="/thumbnail/' + encodeURI(buttons[i][1]) + '" />';
-        node.addEventListener('click', function (event) {
-          update("mode=" + encodeURI(this.attributes['data-mode']));
-        });
-        dst.appendChild(node);
-        dst.appendChild(document.createElement('br'));
-        j = (j + 1) % styles.length;
-      }
+      var oReq = new XMLHttpRequest();
+      oReq.onreadystatechange = function() {
+        if (oReq.readyState == 4 && oReq.status == 200) {
+          loadButtons(JSON.parse(oReq.responseText));
+        }
+      };
+      oReq.open('GET', '/patterns', true);
+      oReq.send();
 
       // Add picker.
       $('#colorpicker').colorpicker(
@@ -104,6 +77,30 @@
           'changeColor.colorpicker', function(event){
           update("color=" + encodeURI(event.color.toHex()));
       });
+    }
+
+    function loadButtons(buttons) {
+      // Create buttons.
+      var styles = [
+        "btn-primary", "btn-info", "btn-warning", "btn-danger", "btn-success",
+        "btn-default",
+      ];
+      var j = 0;
+      var dst = document.getElementById('boutons');
+      for (var i = 0; i < buttons.length; i++) {
+        var node = document.createElement('button');
+        node.type = 'button';
+        node.id = 'button-' + buttons[i];
+        node.className = 'btn btn-lg ' + styles[j];
+        node.attributes['data-mode'] = buttons[i];
+        node.innerHTML = '<img height=5px src="/thumbnail/' + encodeURI(buttons[i]) + '" /> ' + buttons[i];
+        node.addEventListener('click', function (event) {
+          update("mode=" + encodeURI(this.attributes['data-mode']));
+        });
+        dst.appendChild(node);
+        dst.appendChild(document.createElement('br'));
+        j = (j + 1) % styles.length;
+      }
     }
 
     function update(data) {

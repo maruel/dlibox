@@ -6,12 +6,14 @@ package main
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"image/color"
 	"log"
 	"mime"
 	"net/http"
 	"path"
+	"sort"
 
 	"github.com/maruel/dotstar"
 )
@@ -26,6 +28,7 @@ func startWebServer(port int, painter *dotstar.Painter, registry *dotstar.Patter
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", ws.rootHandler)
 	mux.HandleFunc("/favicon.ico", ws.faviconHandler)
+	mux.HandleFunc("/patterns", ws.patternsHandler)
 	mux.HandleFunc("/static/", ws.staticHandler)
 	mux.HandleFunc("/switch", ws.switchHandler)
 	mux.HandleFunc("/thumbnail/", ws.thumbnailHandler)
@@ -89,6 +92,25 @@ func (s *webServer) faviconHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
 	//w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
 	w.Write(mustRead("favicon.ico"))
+}
+
+func (s *webServer) patternsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
+		return
+	}
+	out := make([]string, 0, len(s.registry.Patterns))
+	for name := range s.registry.Patterns {
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	bytes, err := json.Marshal(out)
+	if err != nil {
+		http.Error(w, "Ugh", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bytes)
 }
 
 func (s *webServer) staticHandler(w http.ResponseWriter, r *http.Request) {

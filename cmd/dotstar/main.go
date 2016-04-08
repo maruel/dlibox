@@ -149,16 +149,14 @@ func mainImpl() error {
 				d int
 				p dotstar.Pattern
 			}{
-				{3, registry.Patterns["rainbow static"]},
-				{10, registry.Patterns["glow rainbow"]},
-				{10, registry.Patterns["étoile floue"]},
-				{7, registry.Patterns["canne"]},
+				{3, registry.Patterns["Rainbow static"]},
+				{10, registry.Patterns["Glow rainbow"]},
+				{10, registry.Patterns["Étoile floue"]},
+				{7, registry.Patterns["Canne de Noël"]},
 				{7, registry.Patterns["K2000"]},
-				{7, registry.Patterns["comète"]},
-				{5, registry.Patterns["pingpong"]},
-				{5, registry.Patterns["glow"]},
-				{5, registry.Patterns["glow gris"]},
-				{3, registry.Patterns["red"]},
+				{5, registry.Patterns["Ping pong"]},
+				{5, registry.Patterns["Glow"]},
+				{5, registry.Patterns["Glow gris"]},
 			}
 			i := 0
 			p.SetPattern(patterns[i].p)

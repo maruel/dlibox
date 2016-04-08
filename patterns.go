@@ -332,3 +332,20 @@ func (e *ÉtoileFilante) NextFrame(pixels []color.NRGBA, sinceStart time.Duratio
 		// curvature.
 	}
 }
+
+// Dégradé does a gradient between 2 colors as a static image.
+type Dégradé struct {
+	A, B color.NRGBA
+}
+
+func (d *Dégradé) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+	for i := range pixels {
+		intensity := float64(i) / float64(len(pixels)-1)
+		pixels[i] = color.NRGBA{
+			uint8((float64(d.A.R)*intensity + float64(d.B.R)*(1-intensity))),
+			uint8((float64(d.A.G)*intensity + float64(d.B.G)*(1-intensity))),
+			uint8((float64(d.A.B)*intensity + float64(d.B.B)*(1-intensity))),
+			uint8((float64(d.A.A)*intensity + float64(d.B.A)*(1-intensity))),
+		}
+	}
+}
