@@ -9,7 +9,7 @@
 #   sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 8080
 #   sudo iptables -t nat -A OUTPUT -o lo -p tcp --dport 80 -j REDIRECT --to-port 8080
 
-set -e
+set -u
 
 # trap ctrl-c and call ctrl_c()
 trap ctrl_c INT
