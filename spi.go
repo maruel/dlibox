@@ -50,6 +50,12 @@ func makeSPI(path string, speed int) (*spi, error) {
 	return s, nil
 }
 
+// MakeSPI is to be used when testing directly to the bus bypassing the DotStar
+// controller.
+func MakeSPI(path string, speed int) (io.WriteCloser, error) {
+	return makeSPI(path, speed)
+}
+
 func (s *spi) Close() error {
 	if !atomic.CompareAndSwapInt32(&s.closed, 0, 1) {
 		return io.ErrClosedPipe

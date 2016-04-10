@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"image/color"
 	"image/png"
+	"math"
 	"math/rand"
 	"time"
 )
@@ -164,13 +165,23 @@ type Rainbow struct {
 }
 
 func (r *Rainbow) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
-	// Add buffer both before and after.
-	start := 370.
-	end := 790.
-	step := (end - start) / float64(len(pixels)-1)
+	start := 380.
+	end := 781.
+	/*
+		step := (end - start) / float64(len(pixels)-1)
+			for i := range pixels {
+				// TODO(maruel): Use log scale.
+				pixels[i] = waveLength2RGB(start + step*float64(i))
+			}
+	*/
+
+	// TODO(maruel): Still too much red not enough pink.
+	delta := end - start
+	scale := math.Log(2.)
+	step := 1. / float64(len(pixels))
 	for i := range pixels {
-		// TODO(maruel): Use log scale.
-		pixels[i] = waveLength2RGB(start + step*float64(i))
+		j := math.Log1p(float64(len(pixels)-i-1)*step) / scale
+		pixels[i] = waveLength2RGB(start + delta*(1-j))
 	}
 }
 
@@ -199,11 +210,11 @@ func waveLength2RGB(w float64) (c color.NRGBA) {
 	}
 	switch {
 	case 380 <= w && w < 420:
-		c.A = byte(255. * (0.3 + 0.7*(w-380)/(420-380)))
+		c.A = byte(255. * (0.1 + 0.9*(w-380)/(420-380)))
 	case 420 <= w && w < 701:
 		c.A = 255
 	case 701 <= w && w < 781:
-		c.A = byte(255.*0.3 + 0.7*(780-w)/(780-700))
+		c.A = byte(255.*0.1 + 0.9*(780-w)/(780-700))
 	}
 	return
 }
@@ -263,11 +274,21 @@ func (l *LevéDeSoleil) NextFrame(pixels []color.NRGBA, sinceStart time.Duration
 // Aurore commence lentement, se transforme lentement et éventuellement
 // disparait.
 type Aurore struct {
-	oscillators []float64 // color, phase, amplitude + deformation.
 }
 
 func (a *Aurore) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
-
+	// TODO(maruel): Redo.
+	y := sinceStart.Seconds() * 10.
+	for i := range pixels {
+		x := float64(i)
+		//a := 32 + 31*math.Sin(x/(37.+15*math.Cos(y/74)))*math.Cos(y/(31+11*math.Sin(x/57)))
+		b := (32 + 31*(math.Sin(math.Hypot(200-y, 320-x)/16))) * (0.5 + 0.5*math.Sin(y*0.1))
+		pixels[i].R = 0
+		//pixels[i].G = uint8(a + b)
+		pixels[i].G = 255
+		pixels[i].B = 0
+		pixels[i].A = uint8(b)
+	}
 }
 
 type ÉtoileCintillante struct {
@@ -290,22 +311,29 @@ func (e *ÉtoilesCintillantes) NextFrame(pixels []color.NRGBA, sinceStart time.D
 		for i := 0; i < len(pixels); {
 			// Add a star. Decide it's relative position, intensity and type.
 			// ExpFloat64() ?
-			f := e.r.NormFloat64() + 3
-			if f < 0.5 {
+			f := math.Abs(3 * e.r.NormFloat64())
+			if f < 1 {
 				continue
 			}
 			i += int(roundF(f))
 			if i >= len(pixels) {
 				break
 			}
-			e.Étoiles[i].Intensity = uint8(e.r.Intn(255))
+			// e.r.Intn(255)
+			intensity := math.Abs(e.r.NormFloat64())
+			if intensity > 255 {
+				intensity = 0
+			}
+			e.Étoiles[i].Intensity = floatToUint8(intensity)
 		}
 	}
 	for i := range e.Étoiles {
 		if j := e.Étoiles[i].Intensity; j != 0 {
 			// TODO(maruel): Type, oscillation.
-			f := floatToUint8(e.r.NormFloat64()*4 + 128)
-			pixels[i] = color.NRGBA{f, f, f, j}
+			if j != 0 {
+				f := floatToUint8(e.r.NormFloat64()*4 + float64(j))
+				pixels[i] = color.NRGBA{255, 255, 255, f}
+			}
 		}
 	}
 }
