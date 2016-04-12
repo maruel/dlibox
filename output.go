@@ -35,271 +35,28 @@ func (d *DotStar) Close() error {
 	return w.Close()
 }
 
-// brightnessRamp is a look up table to convert from 0-255 to 1-0x1EE1 to
-// maximize the visible contrast as output by a APA102 LED.
+const maxIn = float64(0xFFFF)
+const maxOut = float64(0x1EE1)
+const lowCut = 30 * 255
+const rampOffset = (float64(lowCut)/255. + 10.) / maxIn
+const lowCutf = float64(lowCut) / maxIn
+const klow = lowCutf*lowCutf*lowCutf + rampOffset
+
+// Converts input from [0, 0xFFFF] as intensity to lightness on a scale of
+// [0, 0x1EE1].
 //
-// It is intentionally trying to minimize the high intensity values to lower
-// Amperage.
-//
-// TODO(maruel): Smooth out the inflection points by defining a bezier curve,
-// it's currently very rough.
-var brightnessRamp = []uint32{
-	0,
-	1,
-	2,
-	3,
-	4,
-	5,
-	6,
-	7,
-	8,
-	9,
-	10,
-	11,
-	12,
-	13,
-	14,
-	15,
-	16,
-	17,
-	18,
-	19,
-	20,
-	21,
-	22,
-	23,
-	24,
-	25,
-	26,
-	27,
-	28,
-	29,
-	30,
-	1 * 31, // 1/255 at full brightness.
-	47,     // 1.5 * 31
-	2 * 31, //
-	78,     // 2.5 * 31
-	3 * 31, //
-	109,    // 3.5 * 31
-	4 * 31,
-	5 * 31,
-	6 * 31,
-	7 * 31,
-	8 * 31,
-	9 * 31,
-	10 * 31,
-	11 * 31,
-	12 * 31,
-	13 * 31,
-	14 * 31,
-	15 * 31,
-	16 * 31,
-	17 * 31,
-	18 * 31,
-	19 * 31,
-	20 * 31,
-	21 * 31,
-	22 * 31,
-	23 * 31,
-	24 * 31,
-	25 * 31,
-	26 * 31,
-	27 * 31,
-	28 * 31,
-	29 * 31,
-	30 * 31,
-	31 * 31,
-	32 * 31,
-	33 * 31,
-	34 * 31,
-	35 * 31,
-	36 * 31,
-	37 * 31,
-	38 * 31,
-	39 * 31,
-	40 * 31,
-	41 * 31,
-	42 * 31,
-	43 * 31,
-	44 * 31,
-	45 * 31,
-	46 * 31,
-	47 * 31,
-	48 * 31,
-	49 * 31,
-	50 * 31,
-	51 * 31,
-	52 * 31,
-	53 * 31,
-	54 * 31,
-	55 * 31,
-	56 * 31,
-	57 * 31,
-	58 * 31,
-	59 * 31,
-	60 * 31,
-	61 * 31,
-	62 * 31,
-	63 * 31,
-	64 * 31,
-	65 * 31,
-	66 * 31,
-	67 * 31,
-	68 * 31,
-	69 * 31,
-	70 * 31,
-	71 * 31,
-	72 * 31,
-	73 * 31,
-	74 * 31,
-	75 * 31,
-	76 * 31,
-	77 * 31,
-	78 * 31,
-	79 * 31,
-	80 * 31,
-	81 * 31,
-	82 * 31,
-	83 * 31,
-	84 * 31,
-	85 * 31,
-	86 * 31,
-	87 * 31,
-	88 * 31,
-	89 * 31,
-	90 * 31,
-	91 * 31,
-	92 * 31,
-	93 * 31,
-	94 * 31,
-	95 * 31,
-	96 * 31,
-	97 * 31,
-	98 * 31,
-	99 * 31,
-	100 * 31,
-	101 * 31,
-	102 * 31,
-	103 * 31,
-	104 * 31,
-	105 * 31,
-	106 * 31,
-	107 * 31,
-	108 * 31,
-	109 * 31,
-	110 * 31,
-	111 * 31,
-	112 * 31,
-	113 * 31,
-	114 * 31,
-	115 * 31,
-	116 * 31,
-	117 * 31,
-	118 * 31,
-	119 * 31,
-	120 * 31,
-	121 * 31,
-	122 * 31,
-	123 * 31,
-	124 * 31,
-	125 * 31,
-	126 * 31,
-	127 * 31,
-	128 * 31,
-	129 * 31,
-	130 * 31,
-	131 * 31,
-	132 * 31,
-	133 * 31,
-	134 * 31,
-	135 * 31,
-	136 * 31,
-	137 * 31,
-	138 * 31,
-	139 * 31,
-	140 * 31,
-	141 * 31,
-	142 * 31,
-	143 * 31,
-	144 * 31,
-	145 * 31,
-	146 * 31,
-	147 * 31,
-	148 * 31,
-	149 * 31,
-	150 * 31,
-	151 * 31,
-	152 * 31,
-	153 * 31,
-	154 * 31,
-	155 * 31,
-	156 * 31,
-	157 * 31,
-	158 * 31,
-	159 * 31,
-	160 * 31,
-	161 * 31,
-	162 * 31,
-	163 * 31,
-	164 * 31,
-	165 * 31,
-	166 * 31,
-	167 * 31,
-	168 * 31,
-	169 * 31,
-	170 * 31,
-	171 * 31,
-	172 * 31,
-	173 * 31,
-	174 * 31,
-	175 * 31,
-	176 * 31,
-	177 * 31,
-	178 * 31,
-	179 * 31,
-	180 * 31,
-	181 * 31,
-	182 * 31,
-	183 * 31,
-	184 * 31,
-	185 * 31,
-	186 * 31,
-	187 * 31,
-	188 * 31,
-	189 * 31,
-	191 * 31,
-	193 * 31,
-	195 * 31,
-	197 * 31,
-	199 * 31,
-	201 * 31,
-	203 * 31,
-	205 * 31,
-	207 * 31,
-	209 * 31,
-	211 * 31,
-	213 * 31,
-	215 * 31,
-	217 * 31,
-	219 * 31,
-	221 * 31,
-	223 * 31,
-	225 * 31,
-	227 * 31,
-	229 * 31,
-	231 * 31,
-	233 * 31,
-	235 * 31,
-	237 * 31,
-	239 * 31,
-	241 * 31,
-	243 * 31,
-	245 * 31,
-	247 * 31,
-	249 * 31,
-	251 * 31,
-	253 * 31,
-	255 * 31, // 0x1EE1
+// It's the reverse of lightness; https://en.wikipedia.org/wiki/Lightness
+func processRamp(l uint32) uint32 {
+	// Linear [0->0] to [30*255->30].
+	if l < lowCut {
+		return uint32(float64(l)/255. + 0.4)
+	}
+	// Range [lowCut/maxIn, 1]
+	y := float64(l) / maxIn
+	y = y * y * y
+	// Range [(lowCut/maxIn)^3, 1]. We need to realign to [lowCut/255, 1] then
+	// scale to maxOut.
+	return uint32((y+klow)/(1+klow)*maxOut + 0.4)
 }
 
 // ColorToAPA102 converts a color into the 4 bytes needed to control an APA-102
@@ -327,22 +84,18 @@ func ColorToAPA102(c color.NRGBA) (byte, byte, byte, byte) {
 	// Evaluate alpha.
 	r, g, b, _ := c.RGBA()
 
-	// Converts each channel from 1/0xFFFF to units of 1/0x1EE1 (1/7905) in 1/255
-	// units skewed towards the low end; we want 1:1 fidelity in the low end.
-	// TODO(maruel): We lose precision here, could be nice to create the ramp as
-	// a function.
-	r2 := brightnessRamp[r>>8]
-	g2 := brightnessRamp[g>>8]
-	b2 := brightnessRamp[b>>8]
-
-	// TODO(maruel): The transition between the two modes must be seamless.
-	// s1 := floatToUint8(255. * math.Pow(float64(b)/65280.*d.BlueMax, 1/d.BlueGamma))
+	r2 := processRamp(r)
+	g2 := processRamp(g)
+	b2 := processRamp(b)
 	if r2 <= 255 && g2 <= 255 && b2 <= 255 {
-		// Use lower brightness.
 		return byte(0xE0 + 1), byte(b2), byte(g2), byte(r2)
+	} else if r2 <= 511 && g2 <= 511 && b2 <= 511 {
+		return byte(0xE0 + 2), byte(b2 >> 1), byte(g2 >> 1), byte(r2 >> 1)
+	} else if r2 <= 1023 && g2 <= 1023 && b2 <= 1023 {
+		return byte(0xE0 + 4), byte((b2 + 2) >> 2), byte((g2 + 2) >> 2), byte((r2 + 2) >> 2)
 	} else {
 		// In this case we need to use a ramp of 255-1 even for lower colors.
-		return byte(0xE0 + 31), byte(b2 / 31), byte((g2 + 0) / 31), byte((r2 + 0) / 31)
+		return byte(0xE0 + 31), byte((b2 + 15) / 31), byte((g2 + 15) / 31), byte((r2 + 15) / 31)
 	}
 }
 
@@ -355,11 +108,12 @@ func (d *DotStar) Write(pixels []color.NRGBA) error {
 	l := 4*(numLights+1) + numLights/2/8 + 1
 	if len(d.buf) != l {
 		d.buf = make([]byte, l)
+		// It is not necessary to set the end frames to 0xFFFFFFFF.
 		// Set end frames right away.
-		s := d.buf[4+4*numLights:]
-		for i := range s {
-			s[i] = 0xFF
-		}
+		//s := d.buf[4+4*numLights:]
+		//for i := range s {
+		//	s[i] = 0xFF
+		//}
 	}
 	// Start frame is all zeros. Just skip it.
 	s := d.buf[4 : 4+4*numLights]

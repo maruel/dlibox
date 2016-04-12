@@ -13,6 +13,23 @@ import (
 	"github.com/maruel/ut"
 )
 
+func TestProcessRamp(t *testing.T) {
+	data := []struct {
+		input    uint32
+		expected uint32
+	}{
+		{0, 0},
+		{1 * 256, 1},
+		{2 * 256, 2},
+		{3 * 256, 3},
+		{0xFFFF, 0x1EE1},
+		{0xFFFF, 0x1EE1},
+	}
+	for i, line := range data {
+		ut.AssertEqualIndex(t, i, line.expected, processRamp(line.input))
+	}
+}
+
 func TestColorToAPA102(t *testing.T) {
 	type col struct {
 		b, B, G, R byte
@@ -30,7 +47,7 @@ func TestColorToAPA102(t *testing.T) {
 	}
 	for i, line := range data {
 		var actual col
-		actual.b, actual.B, actual.G, actual.R = colorToAPA102(line.c)
+		actual.b, actual.B, actual.G, actual.R = ColorToAPA102(line.c)
 		ut.AssertEqualIndex(t, i, line.expected, actual)
 	}
 }
@@ -47,7 +64,7 @@ func TestDotStarEmpty(t *testing.T) {
 		w:          nopCloser{b},
 	}
 	ut.AssertEqual(t, nil, d.Write([]color.NRGBA{}))
-	ut.AssertEqual(t, []byte{0x0, 0x0, 0x0, 0x0, 0xff}, b.Bytes())
+	ut.AssertEqual(t, []byte{0x0, 0x0, 0x0, 0x0, 0x0}, b.Bytes())
 }
 
 func TestDotStar(t *testing.T) {

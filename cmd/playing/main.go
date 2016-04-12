@@ -9,9 +9,14 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"math"
 	"os"
 	"time"
 
+	"github.com/gonum/plot"
+	"github.com/gonum/plot/plotter"
+	"github.com/gonum/plot/plotutil"
+	"github.com/gonum/plot/vg"
 	"github.com/maruel/dotstar"
 	"github.com/stianeikeland/go-rpio"
 )
@@ -134,10 +139,76 @@ func writeColorsRaw() error {
 	*/
 	_, err = w.Write(buf)
 	return err
+}
 
+const maxIn = float64(0xFFFF)
+const maxOut = float64(0x1EE1)
+const lowCut = 30 * 255
+const lowCutf = float64(lowCut)
+const kin = lowCutf / maxIn
+const kout = lowCutf / 255. / maxOut
+
+func processRampCubeRoot(l uint32) uint32 {
+	return uint32(math.Pow(float64(l)/maxIn, 3)*maxOut + 0.4)
+}
+
+func processRampFullRanges(l uint32) uint32 {
+	// Linear [0->0] to [30*255->30].
+	if l < lowCut {
+		return uint32(float64(l)/255. + 0.4)
+	}
+	// Make sure the line cuts at lowCut starting with y==lowCut equals fY/255.
+	// Put l1 on adapted linear basis [0, 1].
+	l1 := (float64(l)/maxIn - kin) / (1. - kin)
+	y := math.Pow(l1, 3)
+	y2 := (y/(1+kout) + kout) * maxOut
+	return uint32(y2 + 0.4)
+}
+
+func processRamp(l uint32) uint32 {
+	// Linear [0->0] to [30*255->30].
+	if l < lowCut {
+		return uint32(float64(l)/255. + 0.4)
+	}
+	// Range [lowCut/maxIn, 1]
+	y := math.Pow(float64(l)/maxIn, 3)
+	// Range [(lowCut/maxIn)^3, 1]. We need to realign to [lowCut/255, 1]
+	klow := math.Pow(lowCut/maxIn, 3) + (lowCutf/255.+10.)/maxIn
+	y2 := ((y + klow) / (1 + klow)) * maxOut
+	return uint32(y2 + 0.4)
+}
+
+func doPlot() error {
+	p, err := plot.New()
+	if err != nil {
+		return err
+	}
+
+	p.Title.Text = "Plotutil example"
+	p.X.Label.Text = "Input range"
+	p.Y.Label.Text = "Effective PWM"
+	pts := make(plotter.XYs, 70*256)
+	for i := range pts {
+
+		pts[i].X = float64(i)
+		pts[i].Y = float64(processRamp(uint32(i)))
+	}
+	/*
+		pts := make(plotter.XYs, 0xffff+1)
+		for i := range pts {
+			pts[i].X = float64(i)
+			pts[i].Y = float64(processRamp(uint32(i)))
+		}
+	*/
+	if err = plotutil.AddLinePoints(p, "PWM on 0x1EE1 cycle", pts); err != nil {
+		return err
+	}
+
+	return p.Save(32*vg.Inch, 32*vg.Inch, "points.png")
 }
 
 func mainImpl() error {
+	return doPlot()
 	//return doGPIO()
 	return writeColorsRaw()
 }
