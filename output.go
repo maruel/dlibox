@@ -38,6 +38,9 @@ func (d *DotStar) Close() error {
 const maxIn = float64(0xFFFF)
 const maxOut = float64(0x1EE1)
 const lowCut = 30 * 255
+
+// TODO(maruel): The +10 is completely random and needs to be properly
+// calculated.
 const rampOffset = (float64(lowCut)/255. + 10.) / maxIn
 const lowCutf = float64(lowCut) / maxIn
 const klow = lowCutf*lowCutf*lowCutf + rampOffset

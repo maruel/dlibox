@@ -177,7 +177,7 @@ func (r *Rainbow) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 
 	// TODO(maruel): Still too much red not enough pink.
 	delta := end - start
-	scale := math.Log(2.)
+	scale := math.Log(2)
 	step := 1. / float64(len(pixels))
 	for i := range pixels {
 		j := math.Log1p(float64(len(pixels)-i-1)*step) / scale
@@ -190,31 +190,31 @@ func (r *Rainbow) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 // This code was inspired by public domain code on the internet.
 func waveLength2RGB(w float64) (c color.NRGBA) {
 	switch {
-	case 380 <= w && w < 440:
-		c.R = byte(255. * (440 - w) / (440 - 380))
+	case 380. <= w && w < 440.:
+		c.R = floatToUint8(255. * (440. - w) / (440. - 380.))
 		c.B = 255
-	case 440 <= w && w < 490:
-		c.G = byte(255. * (w - 440) / (490 - 440))
+	case 440. <= w && w < 490.:
+		c.G = floatToUint8(255. * (w - 440.) / (490. - 440.))
 		c.B = 255
-	case 490 <= w && w < 510:
+	case 490. <= w && w < 510.:
 		c.G = 255
-		c.B = byte(255. * (510 - w) / (510 - 490))
-	case 510 <= w && w < 580:
-		c.R = byte(255. * (w - 510) / (580 - 510))
+		c.B = floatToUint8(255. * (510. - w) / (510. - 490.))
+	case 510. <= w && w < 580.:
+		c.R = floatToUint8(255. * (w - 510.) / (580. - 510.))
 		c.G = 255
-	case 580 <= w && w < 645:
+	case 580. <= w && w < 645.:
 		c.R = 255
-		c.G = byte(255. * (645 - w) / (645 - 580))
-	case 645 <= w && w < 781:
+		c.G = floatToUint8(255. * (645. - w) / (645. - 580.))
+	case 645. <= w && w < 781.:
 		c.R = 255
 	}
 	switch {
-	case 380 <= w && w < 420:
-		c.A = byte(255. * (0.1 + 0.9*(w-380)/(420-380)))
-	case 420 <= w && w < 701:
+	case 380. <= w && w < 420.:
+		c.A = floatToUint8(255. * (0.1 + 0.9*(w-380.)/(420.-380.)))
+	case 420. <= w && w < 701.:
 		c.A = 255
-	case 701 <= w && w < 781:
-		c.A = byte(255.*0.1 + 0.9*(780-w)/(780-700))
+	case 701. <= w && w < 781.:
+		c.A = floatToUint8(255. * (0.1 + 0.9*(780.-w)/(780.-700.)))
 	}
 	return
 }

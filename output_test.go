@@ -14,6 +14,7 @@ import (
 )
 
 func TestProcessRamp(t *testing.T) {
+	// Tests a few known values.
 	data := []struct {
 		input    uint32
 		expected uint32
@@ -27,6 +28,21 @@ func TestProcessRamp(t *testing.T) {
 	}
 	for i, line := range data {
 		ut.AssertEqualIndex(t, i, line.expected, processRamp(line.input))
+	}
+}
+
+func TestProcessRampMonotonic(t *testing.T) {
+	// Ensures the ramp is 100% monotonically increasing.
+	last := uint32(0)
+	for in := uint32(0); in <= uint32(maxIn); in++ {
+		out := processRamp(in)
+		if out < last {
+			t.Fatalf("f(%d) = %d; f(%d) = %d", in-1, last, in, out)
+		}
+		if out > uint32(maxOut) {
+			t.Fatalf("f(%d) = %d", in, out)
+		}
+		last = out
 	}
 }
 
