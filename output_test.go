@@ -32,15 +32,18 @@ func TestProcessRamp(t *testing.T) {
 }
 
 func TestProcessRampMonotonic(t *testing.T) {
-	// Ensures the ramp is 100% monotonically increasing.
+	// Ensures the ramp is 100% monotonically increasing and without bumps.
 	last := uint32(0)
 	for in := uint32(0); in <= uint32(maxIn); in++ {
 		out := processRamp(in)
 		if out < last {
-			t.Fatalf("f(%d) = %d; f(%d) = %d", in-1, last, in, out)
+			t.Errorf("f(%d) = %d; f(%d) = %d", in-1, last, in, out)
 		}
 		if out > uint32(maxOut) {
-			t.Fatalf("f(%d) = %d", in, out)
+			t.Errorf("f(%d) = %d", in, out)
+		}
+		if out-last > 1 {
+			t.Errorf("Unexpected delta f(%d)=%d  f(%d)=%d  f(%d)=%d", in-2, processRamp(in-2), in-1, processRamp(in-1), in, processRamp(in))
 		}
 		last = out
 	}
