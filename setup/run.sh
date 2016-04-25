@@ -6,8 +6,7 @@
 # This script is useful to run the tool continuously without installing it as a
 # systemd service.
 
-# If you run the following, you do not need to use setcap, you can bind to port
-# 8080 and iptables will redirect incoming TCP on port 80 to port 8080:
+# Use iptables to redirect incoming TCP on port 80 to port 8080:
 #
 #   sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 8080
 #   sudo iptables -t nat -A OUTPUT -o lo -p tcp --dport 80 -j REDIRECT --to-port 8080
@@ -23,8 +22,6 @@ function ctrl_c() {
 }
 
 while true; do
-  echo "$(date --rfc-3339=seconds): ./dotstar -verbose -port 8080"
-  # TODO(maruel): Figure out a way to use capability enabled stub process in a
-  # way that we can rewrite easily via SSH. In the meantime, iptables works.
-  ./dotstar -verbose -port 8080
+  echo "$(date --rfc-3339=seconds): $GOPATH/bin/dotstar -verbose -port 8080"
+  $GOPATH/bin/dotstar -verbose -port 8080
 done

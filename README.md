@@ -33,15 +33,16 @@ to control it.
 
 ## References
 
-- The company that makes the LEDs is APA http://www.neon-world.com/. They have
-  patents on the chip; http://www.neon-world.com//patent_en.html
-- Pololu has great information about the APA-102C
-  https://www.pololu.com/product/2554
-- [Tim](https://github.com/cpldcpu) made two excellent posts about the APA-102C:
-  https://cpldcpu.wordpress.com/2014/08/27/apa102/ and
-  https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/.
-- Original datasheets by APA: http://www.neon-world.com//pdf/led.pdf
+- The company that makes the LEDs is
+  [APA](http://www.neon-world.com/patent_en.html).
+  - [One pager 'datasheet' by APA](http://www.neon-world.com/pdf/led.pdf)
   - https://cpldcpu.files.wordpress.com/2014/08/apa-102-super-led-specifications-2013-en.pdf
   - https://cpldcpu.files.wordpress.com/2014/08/apa-102c-super-led-specifications-2014-en.pdf
-- Adafruits hosts a repackaged (duh) PDF of the datasheet: https://www.adafruit.com/datasheets/APA102.pdf.
+  - Adafruit hosts a repackaged (duh) [PDF of the
+    datasheet](https://www.adafruit.com/datasheets/APA102.pdf).
+- [Pololu](http://www.neon-world.com/patent_en.html) has great information about
+  the APA-102C.
+- [Tim](https://github.com/cpldcpu) made two excellent posts about the APA-102C:
+  [#1](https://cpldcpu.wordpress.com/2014/08/27/apa102/) and
+  [#2](https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/).
 - Right-sizing power cables; http://www.powerstream.com/Wire_Size.htm

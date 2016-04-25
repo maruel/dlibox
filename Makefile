@@ -23,8 +23,8 @@ dotstar: *.go cmd/dotstar/*.go
 # When an executable is running, it must be scp'ed aside then moved over.
 # dotstar will exit safely when it detects its binary changed.
 push: dotstar
-	scp -q dotstar $(remote_host):dotstar2
-	ssh $(remote_host) "mv dotstar2 dotstar"
+	scp -q dotstar $(remote_host):bin/dotstar2
+	ssh $(remote_host) "mv bin/dotstar2 bin/dotstar"
 
 
 # Runs it locally as a fake display with the web server running on port 8010.
