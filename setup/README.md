@@ -2,10 +2,11 @@
 
 ## Software
 
-  - [Raspbian Jessie Lite](https://www.raspberrypi.org/downloads/raspbian/).
-  - Enable the SPI port on the Raspberry Pi via `raspi-config`.
-  - Replace the URL below with the [latest version](https://golang.org/dl/). Run
-    the following commands:
+- [Raspbian Jessie Lite](https://www.raspberrypi.org/downloads/raspbian/).
+- Enable the SPI port on the Raspberry Pi via `raspi-config`.
+- Run the following commands:
+
+Note: Replace the URL below with the [latest version](https://golang.org/dl/).
 
     sudo apt-get install libcap2-bin ntpdate
     curl https://storage.googleapis.com/golang/go1.6.2.linux-armv6l.tar.gz | tar xz
