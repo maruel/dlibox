@@ -8,12 +8,12 @@
   the latest version.
 - Run a few commands:
 
-      sudo apt-get install libcap2-bin ntpdate
-      export GOPATH=$HOME
-      export PATH="$GOPATH:$PATH"
-      echo 'export GOPATH=$HOME' >> $HOME/.bash_aliases
-      echo 'export PATH="$GOPATH:$PATH"' >> $HOME/.bash_aliases
-      go get github.com/maruel/dotstar/cmd/dotstar
+        sudo apt-get install libcap2-bin ntpdate
+        export GOPATH=$HOME
+        export PATH="$GOPATH:$PATH"
+        echo 'export GOPATH=$HOME' >> $HOME/.bash_aliases
+        echo 'export PATH="$GOPATH:$PATH"' >> $HOME/.bash_aliases
+        go get github.com/maruel/dotstar/cmd/dotstar
 
 
 ## Auto-start on boot and auto-restart on scp
