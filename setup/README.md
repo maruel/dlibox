@@ -4,16 +4,16 @@
 
   - [Raspbian Jessie Lite](https://www.raspberrypi.org/downloads/raspbian/).
   - Enable the SPI port on the Raspberry Pi via `raspi-config`.
-  - Download and install [go1.6.2.linux-armv6l.tar.gz](https://golang.org/dl/) or the latest version.
-  - Run a few commands
+  - Replace the URL below with the [latest version](https://golang.org/dl/). Run
+    the following commands:
 
-
-        sudo apt-get install libcap2-bin ntpdate
-        export GOPATH=$HOME
-        export PATH="$GOPATH:$PATH"
-        echo 'export GOPATH=$HOME' >> $HOME/.bash_aliases
-        echo 'export PATH="$GOPATH:$PATH"' >> $HOME/.bash_aliases
-        go get github.com/maruel/dotstar/cmd/dotstar
+    sudo apt-get install libcap2-bin ntpdate
+    curl https://storage.googleapis.com/golang/go1.6.2.linux-armv6l.tar.gz | tar xz
+    echo 'export GOPATH=$HOME' >> $HOME/.bash_aliases
+    echo 'export GOROOT=$HOME/go' >> $HOME/.bash_aliases
+    echo 'export PATH="$GOPATH/bin:$GOROOT/bin:$PATH"' >> $HOME/.bash_aliases
+    source $HOME/.bash_aliases
+    go get github.com/maruel/dotstar/cmd/dotstar
 
 
 ## Auto-start on boot and auto-restart on scp
