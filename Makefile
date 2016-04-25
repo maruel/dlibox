@@ -21,14 +21,7 @@ dotstar: *.go cmd/dotstar/*.go
 	GOOS=linux GOARCH=arm go build ./cmd/dotstar
 
 # When an executable is running, it must be scp'ed aside then moved over.
-# dotstar will exit safely when it detects its binary changed so simple script
-# like this works:
-#
-#     #!/bin/sh
-#     set -e
-#     while true; do
-#       ./dotstar -port 8010
-#     done
+# dotstar will exit safely when it detects its binary changed.
 push: dotstar
 	scp -q dotstar $(remote_host):dotstar2
 	ssh $(remote_host) "mv dotstar2 dotstar"

@@ -3,6 +3,9 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
+# This script is useful to run the tool continuously without installing it as a
+# systemd service.
+
 # If you run the following, you do not need to use setcap, you can bind to port
 # 8080 and iptables will redirect incoming TCP on port 80 to port 8080:
 #

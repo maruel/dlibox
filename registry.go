@@ -10,6 +10,7 @@ import (
 	"image/color"
 	"image/color/palette"
 	"image/gif"
+	"sync"
 	"time"
 )
 
@@ -21,6 +22,7 @@ type PatternRegistry struct {
 	ThumbnailHz      int               // Must be set before calling Thumbnail().
 	ThumbnailSeconds int               // Must be set before calling Thumbnail().
 	cache            map[string][]byte // Thumbnail as GIF.
+	lock             sync.Mutex
 }
 
 func isPixelsEqual(a, b []color.NRGBA) bool {
@@ -36,10 +38,13 @@ func isPixelsEqual(a, b []color.NRGBA) bool {
 }
 
 func (p *PatternRegistry) Thumbnail(name string) []byte {
+	p.lock.Lock()
 	if p.cache == nil {
 		p.cache = make(map[string][]byte)
 	}
-	if img, ok := p.cache[name]; ok {
+	img, ok := p.cache[name]
+	p.lock.Unlock()
+	if ok {
 		return img
 	}
 
@@ -88,6 +93,8 @@ func (p *PatternRegistry) Thumbnail(name string) []byte {
 	if err := gif.EncodeAll(b, g); err != nil {
 		panic(err)
 	}
+	p.lock.Lock()
 	p.cache[name] = b.Bytes()
+	p.lock.Unlock()
 	return p.cache[name]
 }

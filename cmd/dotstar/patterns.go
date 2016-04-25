@@ -10,9 +10,10 @@ import (
 	"github.com/maruel/dotstar"
 )
 
+var red = color.NRGBA{255, 0, 0, 255}
+var white = color.NRGBA{255, 255, 255, 255}
+
 func getRegistry() *dotstar.PatternRegistry {
-	red := color.NRGBA{255, 0, 0, 255}
-	white := color.NRGBA{255, 255, 255, 255}
 	return &dotstar.PatternRegistry{
 		Patterns: map[string]dotstar.Pattern{
 			"Canne de Noël":        &dotstar.Repeated{[]color.NRGBA{red, red, red, red, white, white, white, white}, 6},

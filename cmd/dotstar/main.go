@@ -12,6 +12,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"image/color"
 	"io/ioutil"
 	"log"
 	"os"
@@ -88,6 +89,83 @@ func listenToPin(pinNumber int, p *dotstar.Painter, r *dotstar.PatternRegistry) 
 		case <-time.After(time.Millisecond):
 		}
 	}
+}
+
+type Weekday int
+
+func (w Weekday) IsEnabledFor(d time.Weekday) bool {
+	return false
+}
+
+const (
+	Sunday Weekday = 1 << iota
+	Monday
+	Tuesday
+	Wednesday
+	Thursday
+	Friday
+	Saturday
+)
+
+type Alarm struct {
+	Enabled bool
+	Hour    int
+	Minute  int
+	Days    Weekday
+	Pattern dotstar.Pattern
+}
+
+func (a *Alarm) Next(now time.Time) time.Duration {
+	if a.Enabled && a.Days != 0 {
+		// TODO(maruel): Figure out next day it will happen.
+		//w := now.Weekday()
+		//return time.Date(now.Year).Sub(now)
+	}
+	return 0
+}
+
+func (a *Alarm) SetupTimer(now time.Time, p *dotstar.Painter) *time.Timer {
+	if next := a.Next(now); next != 0 {
+		return time.AfterFunc(next, func() {
+			p.SetPattern(a.Pattern)
+			// Rearm on the next event.
+		})
+	}
+	return nil
+}
+
+type Config struct {
+	Alarms []Alarm
+}
+
+func (c *Config) alarmLoop(p *dotstar.Painter) {
+	now := time.Now()
+	var timers []*time.Timer
+	for _, a := range c.Alarms {
+		if t := a.SetupTimer(now, p); t != nil {
+			timers = append(timers, t)
+		}
+	}
+	for _, t := range timers {
+		t.Stop()
+	}
+}
+
+// TODO(maruel): Save this in a file and make it configurable via the web UI.
+var config = Config{
+	Alarms: []Alarm{
+		{
+			Enabled: true,
+			Hour:    6,
+			Minute:  30,
+			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
+			Pattern: &dotstar.EaseOut{
+				In:       &dotstar.StaticColor{},
+				Out:      &dotstar.Repeated{[]color.NRGBA{red, red, red, red, white, white, white, white}, 6},
+				Duration: 20 * time.Minute,
+			},
+		},
+	},
 }
 
 func mainImpl() error {
