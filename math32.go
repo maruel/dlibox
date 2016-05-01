@@ -15,7 +15,7 @@ func ceil(x float32) float32 {
 }
 
 func floatToUint8(x float32) uint8 {
-	if x >= 255. {
+	if x >= 254.4 {
 		return 255
 	}
 	if x <= 0. {
