@@ -20,6 +20,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/hashicorp/mdns"
 	"github.com/kardianos/osext"
 	"github.com/maruel/dotstar"
 	"github.com/maruel/interrupt"
@@ -221,13 +222,35 @@ func mainImpl() error {
 	registry := getRegistry()
 	startWebServer(*port, p, registry)
 
-	/*
-		host, _ := os.Hostname()
-		info := []string{"My awesome service"}
-		service, _ := NewMDNSService(host, "_foobar._tcp", "", "", 8000, nil, info)
-		server, _ := mdns.NewServer(&mdns.Config{Zone: service})
-		defer server.Shutdown()
-	*/
+	hostName, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+	// "_http._tcp."
+	// http://www.dns-sd.org/servicetypes.html
+	// http://www.iana.org/form/ports-services
+	service, err := mdns.NewMDNSService(hostName, "dlibox", "", "", 3611, nil, []string{"dlibox"})
+	if err != nil {
+		return err
+	}
+	server, err := mdns.NewServer(&mdns.Config{Zone: service})
+	if err != nil {
+		return err
+	}
+	defer server.Shutdown()
+	entries := make(chan *mdns.ServiceEntry)
+	go func() {
+		// TODO(maruel): When another device polls for services, immediately
+		// register the device too.
+		for _ = range entries {
+			//fmt.Printf("%s\n", c)
+		}
+	}()
+	if err = mdns.Lookup("dlibox", entries); err != nil {
+		close(entries)
+		return err
+	}
+	close(entries)
 
 	if *demoMode {
 		go func() {

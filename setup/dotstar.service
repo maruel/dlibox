@@ -9,6 +9,9 @@
 #   systemctl daemon-reload
 #   systemctl enable dotstar.service
 #   systemctl start dotstar.service
+#
+# To view logs:
+#   journalctl dotstar.service
 
 # All the flags in the following help pages apply:
 # - https://www.freedesktop.org/software/systemd/man/systemd.exec.html
@@ -23,7 +26,7 @@ After=auditd.service
 Restart=always
 
 # 1) One way is to run it as user and use capabilities to let it bind to port
-# 80. This means access to spi (and optionally pi-blaster) still need to be
+# 80. This means access to SPI (and optionally Pi-blaster) still need to be
 # configured accordingly.
 ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/pi/bin/dotstar
 ExecStart=/bin/su - pi -c "/home/pi/bin/dotstar -port 80"
