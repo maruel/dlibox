@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"image/color"
 	"image/png"
-	"math"
 	"math/rand"
 	"time"
 )
@@ -27,22 +26,22 @@ func (s *StaticColor) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) 
 // Glow alternates betweens colors over time using linear interpolation.
 type Glow struct {
 	Colors []color.NRGBA // Colors to cycle through. Use at least 2 colors.
-	Hz     float64       // Color change rate per second. Should be below 0.1 for smooth change. It's not the cycle for a full loop across .Colors but the rate for individual color switch.
+	Hz     float32       // Color change rate per second. Should be below 0.1 for smooth change. It's not the cycle for a full loop across .Colors but the rate for individual color switch.
 }
 
 func (g *Glow) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
-	cycles := sinceStart.Seconds() * g.Hz
+	cycles := float32(sinceStart.Seconds()) * g.Hz
 	baseIndex := int(cycles)
 	// TODO(maruel): Add ease-in-out interpolation instead of linear?
 	// [0, 1]
-	intensity := 1. - (cycles - float64(baseIndex))
+	intensity := 1. - (cycles - float32(baseIndex))
 	a := g.Colors[baseIndex%len(g.Colors)]
 	b := g.Colors[(baseIndex+1)%len(g.Colors)]
 	c := color.NRGBA{
-		uint8((float64(a.R)*intensity + float64(b.R)*(1-intensity))),
-		uint8((float64(a.G)*intensity + float64(b.G)*(1-intensity))),
-		uint8((float64(a.B)*intensity + float64(b.B)*(1-intensity))),
-		uint8((float64(a.A)*intensity + float64(b.A)*(1-intensity))),
+		uint8((float32(a.R)*intensity + float32(b.R)*(1-intensity))),
+		uint8((float32(a.G)*intensity + float32(b.G)*(1-intensity))),
+		uint8((float32(a.B)*intensity + float32(b.B)*(1-intensity))),
+		uint8((float32(a.A)*intensity + float32(b.A)*(1-intensity))),
 	}
 	for i := range pixels {
 		pixels[i] = c
@@ -67,7 +66,7 @@ var RainbowColors = []color.NRGBA{
 type PingPong struct {
 	Trail       []color.NRGBA // [0] is the front pixel.
 	Background  color.NRGBA
-	MovesPerSec float64 // Expressed in number of light jumps per second.
+	MovesPerSec float32 // Expressed in number of light jumps per second.
 }
 
 // K2000 can be used with PingPong to look like Knight Rider.
@@ -99,7 +98,7 @@ func (p *PingPong) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	// points are lit twice during a full cycle. This means the full cycle is
 	// 2*(len(pixels)-1). For a 3 pixels line, the cycle is: x00, 0x0, 00x, 0x0.
 	cycle := 2 * (len(pixels) - 1)
-	moves := int(sinceStart.Seconds() * p.MovesPerSec)
+	moves := int(float32(sinceStart.Seconds()) * p.MovesPerSec)
 	if moves < len(pixels) {
 		// On the first cycle, the trail has not bounced yet.
 		pos := moves % cycle
@@ -165,22 +164,22 @@ type Rainbow struct {
 }
 
 func (r *Rainbow) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
-	start := 380.
-	end := 781.
+	start := float32(380.)
+	end := float32(781.)
 	/*
-		step := (end - start) / float64(len(pixels)-1)
+		step := (end - start) / float32(len(pixels)-1)
 			for i := range pixels {
 				// TODO(maruel): Use log scale.
-				pixels[i] = waveLength2RGB(start + step*float64(i))
+				pixels[i] = waveLength2RGB(start + step*float32(i))
 			}
 	*/
 
 	// TODO(maruel): Still too much red not enough pink.
 	delta := end - start
-	scale := math.Log(2)
-	step := 1. / float64(len(pixels))
+	scale := logn(2)
+	step := 1. / float32(len(pixels))
 	for i := range pixels {
-		j := math.Log1p(float64(len(pixels)-i-1)*step) / scale
+		j := log1p(float32(len(pixels)-i-1)*step) / scale
 		pixels[i] = waveLength2RGB(start + delta*(1-j))
 	}
 }
@@ -188,7 +187,7 @@ func (r *Rainbow) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 // waveLengthToRGB returns a color over a rainbow, including alpha.
 //
 // This code was inspired by public domain code on the internet.
-func waveLength2RGB(w float64) (c color.NRGBA) {
+func waveLength2RGB(w float32) (c color.NRGBA) {
 	switch {
 	case 380. <= w && w < 440.:
 		c.R = floatToUint8(255. * (440. - w) / (440. - 380.))
@@ -224,11 +223,11 @@ func waveLength2RGB(w float64) (c color.NRGBA) {
 // Use negative to go left. Can be used for 'candy bar'.
 type Repeated struct {
 	Points      []color.NRGBA
-	MovesPerSec float64 // Expressed in number of light jumps per second.
+	MovesPerSec float32 // Expressed in number of light jumps per second.
 }
 
 func (r *Repeated) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
-	offset := len(r.Points) - int(sinceStart.Seconds()*r.MovesPerSec)%len(r.Points)
+	offset := len(r.Points) - int(float32(sinceStart.Seconds())*r.MovesPerSec)%len(r.Points)
 	for i := range pixels {
 		pixels[i] = r.Points[(i+offset)%len(r.Points)]
 	}
@@ -249,7 +248,7 @@ type point struct {
 //    - Station Internationale?
 type CielÉtoilé struct {
 	Stars     []Animation
-	Frequency float64 // Number of explosions by second.
+	Frequency float32 // Number of explosions by second.
 	points    []point
 }
 
@@ -263,7 +262,7 @@ func (c *CielÉtoilé) NextFrame(pixels []color.NRGBA, sinceStart time.Duration)
 // sans repeat.
 type LevéDeSoleil struct {
 	Intensity int     // Between 0 and 255.
-	Duration  float64 // Duration in seconds.
+	Duration  float32 // Duration in seconds.
 }
 
 func (l *LevéDeSoleil) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
@@ -278,11 +277,11 @@ type Aurore struct {
 
 func (a *Aurore) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	// TODO(maruel): Redo.
-	y := sinceStart.Seconds() * 10.
+	y := float32(sinceStart.Seconds()) * 10.
 	for i := range pixels {
-		x := float64(i)
-		//a := 32 + 31*math.Sin(x/(37.+15*math.Cos(y/74)))*math.Cos(y/(31+11*math.Sin(x/57)))
-		b := (32 + 31*(math.Sin(math.Hypot(200-y, 320-x)/16))) * (0.5 + 0.5*math.Sin(y*0.1))
+		x := float32(i)
+		//a := 32 + 31*sin(x/(37.+15*cos(y/74)))*cos(y/(31+11*sin(x/57)))
+		b := (32 + 31*(sin(hypot(200-y, 320-x)/16))) * (0.5 + 0.5*sin(y*0.1))
 		pixels[i].R = 0
 		//pixels[i].G = uint8(a + b)
 		pixels[i].G = 255
@@ -311,7 +310,7 @@ func (e *ÉtoilesCintillantes) NextFrame(pixels []color.NRGBA, sinceStart time.D
 		for i := 0; i < len(pixels); {
 			// Add a star. Decide it's relative position, intensity and type.
 			// ExpFloat64() ?
-			f := math.Abs(3 * e.r.NormFloat64())
+			f := abs(3 * float32(e.r.NormFloat64()))
 			if f < 1 {
 				continue
 			}
@@ -320,7 +319,7 @@ func (e *ÉtoilesCintillantes) NextFrame(pixels []color.NRGBA, sinceStart time.D
 				break
 			}
 			// e.r.Intn(255)
-			intensity := math.Abs(e.r.NormFloat64())
+			intensity := abs(float32(e.r.NormFloat64()))
 			if intensity > 255 {
 				intensity = 0
 			}
@@ -331,7 +330,7 @@ func (e *ÉtoilesCintillantes) NextFrame(pixels []color.NRGBA, sinceStart time.D
 		if j := e.Étoiles[i].Intensity; j != 0 {
 			// TODO(maruel): Type, oscillation.
 			if j != 0 {
-				f := floatToUint8(e.r.NormFloat64()*4 + float64(j))
+				f := floatToUint8(float32(e.r.NormFloat64())*4 + float32(j))
 				pixels[i] = color.NRGBA{255, 255, 255, f}
 			}
 		}
@@ -347,8 +346,8 @@ type ÉtoileFilante struct {
 	Seed         int // Change it to create a different pseudo-random animation.
 	r            *rand.Rand
 	last         time.Duration
-	length       float64
-	intensity    float64
+	length       float32
+	intensity    float32
 }
 
 func (e *ÉtoileFilante) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
@@ -368,12 +367,12 @@ type Dégradé struct {
 
 func (d *Dégradé) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	for i := range pixels {
-		intensity := float64(i) / float64(len(pixels)-1)
+		intensity := float32(i) / float32(len(pixels)-1)
 		pixels[i] = color.NRGBA{
-			uint8((float64(d.A.R)*intensity + float64(d.B.R)*(1-intensity))),
-			uint8((float64(d.A.G)*intensity + float64(d.B.G)*(1-intensity))),
-			uint8((float64(d.A.B)*intensity + float64(d.B.B)*(1-intensity))),
-			uint8((float64(d.A.A)*intensity + float64(d.B.A)*(1-intensity))),
+			uint8((float32(d.A.R)*intensity + float32(d.B.R)*(1-intensity))),
+			uint8((float32(d.A.G)*intensity + float32(d.B.G)*(1-intensity))),
+			uint8((float32(d.A.B)*intensity + float32(d.B.B)*(1-intensity))),
+			uint8((float32(d.A.A)*intensity + float32(d.B.A)*(1-intensity))),
 		}
 	}
 }

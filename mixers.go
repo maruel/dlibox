@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"math"
 	"time"
 
 	"github.com/nfnt/resize"
@@ -36,16 +35,16 @@ func (e *EaseOut) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 		}
 	}
 
-	x := float64(sinceStart) / float64(e.Duration)
+	x := float32(sinceStart) / float32(e.Duration)
 	e.Out.NextFrame(e.buf, sinceStart+e.Offset)
 	t := cubicBezier(0, 0, 0.58, 1, x)
 	for i := range pixels {
 		c := e.buf[i]
 		t2 := 1 - t
-		pixels[i].R = floatToUint8(float64(pixels[i].R)*t + float64(c.R)*t2)
-		pixels[i].G = floatToUint8(float64(pixels[i].G)*t + float64(c.G)*t2)
-		pixels[i].B = floatToUint8(float64(pixels[i].B)*t + float64(c.B)*t2)
-		pixels[i].A = floatToUint8(float64(pixels[i].A)*t + float64(c.A)*t2)
+		pixels[i].R = floatToUint8(float32(pixels[i].R)*t + float32(c.R)*t2)
+		pixels[i].G = floatToUint8(float32(pixels[i].G)*t + float32(c.G)*t2)
+		pixels[i].B = floatToUint8(float32(pixels[i].B)*t + float32(c.B)*t2)
+		pixels[i].A = floatToUint8(float32(pixels[i].A)*t + float32(c.A)*t2)
 	}
 }
 
@@ -63,7 +62,7 @@ func (s *Subset) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 // Mixer is a generic mixer that merges the output from multiple patterns.
 type Mixer struct {
 	Patterns []Pattern
-	Weights  []float64 // In theory Sum(Weights) should be 1 but it doesn't need to. For example, mixing a night sky will likely have all of the Weights set to 1.
+	Weights  []float32 // In theory Sum(Weights) should be 1 but it doesn't need to. For example, mixing a night sky will likely have all of the Weights set to 1.
 	bufs     [][]color.NRGBA
 }
 
@@ -91,14 +90,14 @@ func (m *Mixer) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 
 	// Merge patterns.
 	for i := range pixels {
-		var r, g, b, a float64
+		var r, g, b, a float32
 		for j := range m.bufs {
 			c := m.bufs[j][i]
 			w := m.Weights[j]
-			r += float64(c.R) * w
-			g += float64(c.G) * w
-			b += float64(c.B) * w
-			a += float64(c.A) * w
+			r += float32(c.R) * w
+			g += float32(c.G) * w
+			b += float32(c.B) * w
+			a += float32(c.A) * w
 		}
 		pixels[i].R = floatToUint8(r)
 		pixels[i].G = floatToUint8(g)
@@ -113,13 +112,13 @@ func (m *Mixer) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 // example. It always use Lanczos3.
 type Interpolate struct {
 	Child Pattern
-	X     float64
+	X     float32
 	buf   []color.NRGBA
 	img   image.NRGBA
 }
 
 func (i *Interpolate) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
-	l := int(math.Ceil(i.X * float64(len(pixels))))
+	l := int(ceil(i.X * float32(len(pixels))))
 	if l == 0 {
 		return
 	}
@@ -167,23 +166,4 @@ func (s *Skip) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	for j := range pixels {
 		pixels[j] = s.buf[j*s.X]
 	}
-}
-
-//
-
-func roundF(x float64) float64 {
-	if x < 0 {
-		return math.Ceil(x - 0.5)
-	}
-	return math.Floor(x + 0.5)
-}
-
-func floatToUint8(x float64) uint8 {
-	if x >= 255. {
-		return 255
-	}
-	if x <= 0. {
-		return 0
-	}
-	return uint8(roundF(x))
 }

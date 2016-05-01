@@ -221,6 +221,14 @@ func mainImpl() error {
 	registry := getRegistry()
 	startWebServer(*port, p, registry)
 
+	/*
+		host, _ := os.Hostname()
+		info := []string{"My awesome service"}
+		service, _ := NewMDNSService(host, "_foobar._tcp", "", "", 8000, nil, info)
+		server, _ := mdns.NewServer(&mdns.Config{Zone: service})
+		defer server.Shutdown()
+	*/
+
 	if *demoMode {
 		go func() {
 			patterns := []struct {

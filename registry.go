@@ -68,7 +68,7 @@ func (p *PatternRegistry) Thumbnail(name string) []byte {
 		Config:          image.Config{pal, p.NumberLEDs, 1},
 		BackgroundIndex: 1,
 	}
-	frameDuration := int(roundF(100. / float64(p.ThumbnailHz)))
+	frameDuration := int(roundF(100. / float32(p.ThumbnailHz)))
 	for frame := 0; frame < nbImg; frame++ {
 		since := (time.Second*time.Duration(frame) + time.Duration(p.ThumbnailHz) - 1) / time.Duration(p.ThumbnailHz)
 		pat.NextFrame(pixels[frame&1], since)

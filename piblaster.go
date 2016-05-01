@@ -50,7 +50,7 @@ func Close() error {
 //
 // See https://github.com/sarfata/pi-blaster for more details. It relies on
 // pi-blaster being installed and enabled.
-func SetPinPWM(pin Pin, duty float64) error {
+func SetPinPWM(pin Pin, duty float32) error {
 	if duty < 0 || duty > 1 {
 		return fmt.Errorf("duty %f is invalid for blaster", duty)
 	}

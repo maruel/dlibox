@@ -22,9 +22,9 @@ import (
 )
 
 func set(c color.NRGBA) {
-	dotstar.SetPinPWM(dotstar.GPIO4, float64(c.R)/255.)
-	dotstar.SetPinPWM(dotstar.GPIO22, float64(c.G)/255.)
-	dotstar.SetPinPWM(dotstar.GPIO18, float64(c.B)/255.)
+	dotstar.SetPinPWM(dotstar.GPIO4, float32(c.R)/255.)
+	dotstar.SetPinPWM(dotstar.GPIO22, float32(c.G)/255.)
+	dotstar.SetPinPWM(dotstar.GPIO18, float32(c.B)/255.)
 }
 
 func doGPIO() error {
@@ -57,7 +57,7 @@ func doGPIO() error {
 			}
 		}
 		time.Sleep(time.Millisecond)
-		dotstar.SetPinPWM(dotstar.GPIO17, float64(j)/255.)
+		dotstar.SetPinPWM(dotstar.GPIO17, float32(j)/255.)
 		j = (j + 1) % 256
 	}
 	return nil
@@ -74,12 +74,12 @@ func writeColors() error {
 	a := color.NRGBA{0, 0, 0, 255}
 	b := color.NRGBA{255, 0, 0, 255}
 	for i := range pixels {
-		intensity := 1. - float64(i)/float64(len(pixels)-1)
+		intensity := 1. - float32(i)/float32(len(pixels)-1)
 		pixels[i] = color.NRGBA{
-			uint8((float64(a.R)*intensity + float64(b.R)*(1-intensity))),
-			uint8((float64(a.G)*intensity + float64(b.G)*(1-intensity))),
-			uint8((float64(a.B)*intensity + float64(b.B)*(1-intensity))),
-			uint8((float64(a.A)*intensity + float64(b.A)*(1-intensity))),
+			uint8((float32(a.R)*intensity + float32(b.R)*(1-intensity))),
+			uint8((float32(a.G)*intensity + float32(b.G)*(1-intensity))),
+			uint8((float32(a.B)*intensity + float32(b.B)*(1-intensity))),
+			uint8((float32(a.A)*intensity + float32(b.A)*(1-intensity))),
 		}
 	}
 	return d.Write(pixels)
@@ -141,26 +141,26 @@ func writeColorsRaw() error {
 	return err
 }
 
-const maxIn = float64(0xFFFF)
-const maxOut = float64(0x1EE1)
+const maxIn = float32(0xFFFF)
+const maxOut = float32(0x1EE1)
 const lowCut = 30 * 255
-const lowCutf = float64(lowCut)
+const lowCutf = float32(lowCut)
 const kin = lowCutf / maxIn
 const kout = lowCutf / 255. / maxOut
 
 func processRampCubeRoot(l uint32) uint32 {
-	return uint32(math.Pow(float64(l)/maxIn, 3)*maxOut + 0.4)
+	return uint32(float32(math.Pow(float64(float32(l)/maxIn), 3))*maxOut + 0.4)
 }
 
 func processRampFullRanges(l uint32) uint32 {
 	// Linear [0->0] to [30*255->30].
 	if l < lowCut {
-		return uint32(float64(l)/255. + 0.4)
+		return uint32(float32(l)/255. + 0.4)
 	}
 	// Make sure the line cuts at lowCut starting with y==lowCut equals fY/255.
 	// Put l1 on adapted linear basis [0, 1].
-	l1 := (float64(l)/maxIn - kin) / (1. - kin)
-	y := math.Pow(l1, 3)
+	l1 := (float32(l)/maxIn - kin) / (1. - kin)
+	y := float32(math.Pow(float64(l1), 3))
 	y2 := (y/(1+kout) + kout) * maxOut
 	return uint32(y2 + 0.4)
 }
@@ -168,12 +168,12 @@ func processRampFullRanges(l uint32) uint32 {
 func processRamp(l uint32) uint32 {
 	// Linear [0->0] to [30*255->30].
 	if l < lowCut {
-		return uint32(float64(l)/255. + 0.4)
+		return uint32(float32(l)/255. + 0.4)
 	}
 	// Range [lowCut/maxIn, 1]
-	y := math.Pow(float64(l)/maxIn, 3)
+	y := float32(math.Pow(float64(float32(l)/maxIn), 3))
 	// Range [(lowCut/maxIn)^3, 1]. We need to realign to [lowCut/255, 1]
-	klow := math.Pow(lowCut/maxIn, 3) + (lowCutf/255.+10.)/maxIn
+	klow := float32(math.Pow(float64(lowCut/maxIn), 3)) + (lowCutf/255.+10.)/maxIn
 	y2 := ((y + klow) / (1 + klow)) * maxOut
 	return uint32(y2 + 0.4)
 }
@@ -189,7 +189,6 @@ func doPlot() error {
 	p.Y.Label.Text = "Effective PWM"
 	pts := make(plotter.XYs, 70*256)
 	for i := range pts {
-
 		pts[i].X = float64(i)
 		pts[i].Y = float64(processRamp(uint32(i)))
 	}

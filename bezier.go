@@ -11,7 +11,7 @@ package dotstar
 // cubicBezier returns [0, 1] for input `t` based on the cubic bezier curve
 // (x0,y0), (x1, y1).
 // Extracted from https://github.com/golang/mobile/blob/master/exp/sprite/clock/tween.go
-func cubicBezier(x0, y0, x1, y1, x float64) float64 {
+func cubicBezier(x0, y0, x1, y1, x float32) float32 {
 	t := x
 	for i := 0; i < 5; i++ {
 		t2 := t * t

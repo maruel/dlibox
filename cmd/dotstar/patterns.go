@@ -28,7 +28,7 @@ func getRegistry() *dotstar.PatternRegistry {
 					&dotstar.ÉtoilesCintillantes{},
 					&dotstar.ÉtoileFilante{},
 				},
-				Weights: []float64{1, 1, 1},
+				Weights: []float32{1, 1, 1},
 			},
 			"Dégradé":       &dotstar.Dégradé{color.NRGBA{0, 0, 0, 255}, color.NRGBA{255, 255, 255, 255}},
 			"Dégradé rouge": &dotstar.Dégradé{color.NRGBA{0, 0, 0, 255}, color.NRGBA{255, 0, 0, 255}},

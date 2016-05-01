@@ -16,14 +16,14 @@ import (
 
 type DotStar struct {
 	// Gamma correction then power limiter.
-	RedGamma   float64
-	RedMax     float64
-	GreenGamma float64
-	GreenMax   float64
-	BlueGamma  float64
-	BlueMax    float64
-	AmpPerLED  float64
-	AmpBudget  float64
+	RedGamma   float32
+	RedMax     float32
+	GreenGamma float32
+	GreenMax   float32
+	BlueGamma  float32
+	BlueMax    float32
+	AmpPerLED  float32
+	AmpBudget  float32
 
 	w   io.WriteCloser
 	buf []byte
@@ -35,14 +35,14 @@ func (d *DotStar) Close() error {
 	return w.Close()
 }
 
-const maxIn = float64(0xFFFF)
-const maxOut = float64(0x1EE1)
+const maxIn = float32(0xFFFF)
+const maxOut = float32(0x1EE1)
 const lowCut = 30 * 255
 
 // TODO(maruel): The +10 is completely random and needs to be properly
 // calculated.
-const rampOffset = (float64(lowCut)/255. + 10.) / maxIn
-const lowCutf = float64(lowCut) / maxIn
+const rampOffset = (float32(lowCut)/255. + 10.) / maxIn
+const lowCutf = float32(lowCut) / maxIn
 const klow = lowCutf*lowCutf*lowCutf + rampOffset
 
 // Converts input from [0, 0xFFFF] as intensity to lightness on a scale of
@@ -52,10 +52,10 @@ const klow = lowCutf*lowCutf*lowCutf + rampOffset
 func processRamp(l uint32) uint32 {
 	// Linear [0->0] to [30*255->30].
 	if l < lowCut {
-		return uint32(float64(l)/255. + 0.4)
+		return uint32(float32(l)/255. + 0.4)
 	}
 	// Range [lowCut/maxIn, 1]
-	y := float64(l) / maxIn
+	y := float32(l) / maxIn
 	y = y * y * y
 	// Range [(lowCut/maxIn)^3, 1]. We need to realign to [lowCut/255, 1] then
 	// scale to maxOut.
@@ -127,12 +127,12 @@ func (d *DotStar) Write(pixels []color.NRGBA) error {
 		//power += p
 	}
 	if d.AmpBudget != 0 {
-		powerF := float64(power) * d.AmpPerLED / 255.
+		powerF := float32(power) * d.AmpPerLED / 255.
 		if powerF > d.AmpBudget {
 			ratio := d.AmpBudget / powerF
 			for i := range s {
 				if i%4 != 0 {
-					s[i] = floatToUint8(float64(s[i]) * ratio)
+					s[i] = floatToUint8(float32(s[i]) * ratio)
 				}
 			}
 		}
@@ -264,8 +264,8 @@ func (i *intensityLimiter) NextFrame(pixels []color.NRGBA, sinceStart time.Durat
 // TODO(maruel): This shoudl only be done after gamma correction (?)
 type powerLimiter struct {
 	Child     Pattern
-	AmpPerLED float64
-	AmpBudget    float64
+	AmpPerLED float32
+	AmpBudget    float32
 }
 
 func (p *powerLimiter) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
@@ -273,13 +273,13 @@ func (p *powerLimiter) NextFrame(pixels []color.NRGBA, sinceStart time.Duration)
 	power := 0.
 	for _, c := range pixels {
 		cR, cG, cB, _ := c.RGBA()
-		power += float64(cR>>8+cG>>8+cB>>8) * p.AmpPerLED
+		power += float32(cR>>8+cG>>8+cB>>8) * p.AmpPerLED
 	}
 	if power > p.AmpBudget {
 		// We only need to scale down the alpha as long as we treat each channel as
 		// having the same power budget.
 		for i := range pixels {
-			pixels[i].A = floatToUint8(float64(pixels[i].A) * power / p.AmpBudget)
+			pixels[i].A = floatToUint8(float32(pixels[i].A) * power / p.AmpBudget)
 		}
 	}
 }
@@ -299,20 +299,20 @@ func (p *powerLimiter) NextFrame(pixels []color.NRGBA, sinceStart time.Duration)
 // strips.
 type gammaCorrection struct {
 	Child      Pattern
-	RedGamma   float64
-	RedMax     float64
-	GreenGamma float64
-	GreenMax   float64
-	BlueGamma  float64
-	BlueMax    float64
+	RedGamma   float32
+	RedMax     float32
+	GreenGamma float32
+	GreenMax   float32
+	BlueGamma  float32
+	BlueMax    float32
 }
 
 func (g *gammaCorrection) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	g.Child.NextFrame(pixels, sinceStart)
 	for i := range pixels {
-		pixels[i].R = floatToUint8(255. * math.Pow(float64(pixels[i].R)/255.*g.RedMax, 1/g.RedGamma))
-		pixels[i].G = floatToUint8(255. * math.Pow(float64(pixels[i].G)/255.*g.GreenMax, 1/g.GreenGamma))
-		pixels[i].B = floatToUint8(255. * math.Pow(float64(pixels[i].B)/255.*g.BlueMax, 1/g.BlueGamma))
+		pixels[i].R = floatToUint8(255. * math.Pow(float32(pixels[i].R)/255.*g.RedMax, 1/g.RedGamma))
+		pixels[i].G = floatToUint8(255. * math.Pow(float32(pixels[i].G)/255.*g.GreenMax, 1/g.GreenGamma))
+		pixels[i].B = floatToUint8(255. * math.Pow(float32(pixels[i].B)/255.*g.BlueMax, 1/g.BlueGamma))
 	}
 }
 */
