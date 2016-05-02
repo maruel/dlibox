@@ -20,7 +20,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/hashicorp/mdns"
 	"github.com/kardianos/osext"
 	"github.com/maruel/dotstar"
 	"github.com/maruel/interrupt"
@@ -197,6 +196,7 @@ func mainImpl() error {
 	interrupt.HandleCtrlC()
 	defer interrupt.Set()
 
+	var properties []string
 	if *cpuprofile != "" {
 		// Run with cpuprofile, then use 'go tool pprof' to analyze it. See
 		// http://blog.golang.org/profiling-go-programs for more details.
@@ -206,51 +206,24 @@ func mainImpl() error {
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
+		properties = append(properties, "profiled")
 	}
 
 	var s dotstar.Strip
 	if *fake {
 		s = dotstar.MakeScreen()
+		properties = append(properties, "fake")
 	} else {
 		s, err = dotstar.MakeDotStar()
 		if err != nil {
 			return err
 		}
+		properties = append(properties, "APA102")
 	}
 	p := dotstar.MakePainter(s, *numLights)
 
 	registry := getRegistry()
 	startWebServer(*port, p, registry)
-
-	hostName, err := os.Hostname()
-	if err != nil {
-		return err
-	}
-	// "_http._tcp."
-	// http://www.dns-sd.org/servicetypes.html
-	// http://www.iana.org/form/ports-services
-	service, err := mdns.NewMDNSService(hostName, "dlibox", "", "", 3611, nil, []string{"dlibox"})
-	if err != nil {
-		return err
-	}
-	server, err := mdns.NewServer(&mdns.Config{Zone: service})
-	if err != nil {
-		return err
-	}
-	defer server.Shutdown()
-	entries := make(chan *mdns.ServiceEntry)
-	go func() {
-		// TODO(maruel): When another device polls for services, immediately
-		// register the device too.
-		for _ = range entries {
-			//fmt.Printf("%s\n", c)
-		}
-	}()
-	if err = mdns.Lookup("dlibox", entries); err != nil {
-		close(entries)
-		return err
-	}
-	close(entries)
 
 	if *demoMode {
 		go func() {
@@ -281,7 +254,16 @@ func mainImpl() error {
 				}
 			}
 		}()
+		properties = append(properties, "demo")
 	}
+
+	/* TODO(maruel): Make this work.
+	service, err := initmDNS(properties)
+	if err != nil {
+		return err
+	}
+	defer service.Close()
+	*/
 
 	if *pinNumber != 0 {
 		// Open and map memory to access gpio, check for errors
