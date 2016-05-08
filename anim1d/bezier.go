@@ -6,7 +6,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package dotstar
+package anim1d
 
 // cubicBezier returns [0, 1] for input `t` based on the cubic bezier curve
 // (x0,y0), (x1, y1).

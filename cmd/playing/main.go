@@ -17,14 +17,15 @@ import (
 	"github.com/gonum/plot/plotter"
 	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
-	"github.com/maruel/dotstar"
+	"github.com/maruel/dotstar/apa102"
+	"github.com/maruel/dotstar/rpi"
 	"github.com/stianeikeland/go-rpio"
 )
 
 func set(c color.NRGBA) {
-	dotstar.SetPinPWM(dotstar.GPIO4, float32(c.R)/255.)
-	dotstar.SetPinPWM(dotstar.GPIO22, float32(c.G)/255.)
-	dotstar.SetPinPWM(dotstar.GPIO18, float32(c.B)/255.)
+	rpi.SetPinPWM(rpi.GPIO4, float32(c.R)/255.)
+	rpi.SetPinPWM(rpi.GPIO22, float32(c.G)/255.)
+	rpi.SetPinPWM(rpi.GPIO18, float32(c.B)/255.)
 }
 
 func doGPIO() error {
@@ -57,14 +58,14 @@ func doGPIO() error {
 			}
 		}
 		time.Sleep(time.Millisecond)
-		dotstar.SetPinPWM(dotstar.GPIO17, float32(j)/255.)
+		rpi.SetPinPWM(rpi.GPIO17, float32(j)/255.)
 		j = (j + 1) % 256
 	}
 	return nil
 }
 
 func writeColors() error {
-	d, err := dotstar.MakeDotStar()
+	d, err := apa102.MakeDotStar()
 	if err != nil {
 		return err
 	}
@@ -87,7 +88,7 @@ func writeColors() error {
 
 func writeColorsRaw() error {
 	// Uses the raw SPI protocol.
-	w, err := dotstar.MakeSPI("", 10000000)
+	w, err := rpi.MakeSPI("", 10000000)
 	if err != nil {
 		return err
 	}
@@ -109,7 +110,7 @@ func writeColorsRaw() error {
 				}
 			r := byte(i)
 		*/
-		s[4*i+0], s[4*i+1], s[4*i+2], s[4*i+3] = dotstar.ColorToAPA102(color.NRGBA{r, 0, 0, 255})
+		s[4*i+0], s[4*i+1], s[4*i+2], s[4*i+3] = apa102.ColorToAPA102(color.NRGBA{r, 0, 0, 255})
 	}
 	/*
 		i := 0

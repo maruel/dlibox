@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package dotstar
+package anim1d
 
 import (
 	"bytes"
@@ -190,30 +190,30 @@ func (r *Rainbow) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 func waveLength2RGB(w float32) (c color.NRGBA) {
 	switch {
 	case 380. <= w && w < 440.:
-		c.R = floatToUint8(255. * (440. - w) / (440. - 380.))
+		c.R = FloatToUint8(255. * (440. - w) / (440. - 380.))
 		c.B = 255
 	case 440. <= w && w < 490.:
-		c.G = floatToUint8(255. * (w - 440.) / (490. - 440.))
+		c.G = FloatToUint8(255. * (w - 440.) / (490. - 440.))
 		c.B = 255
 	case 490. <= w && w < 510.:
 		c.G = 255
-		c.B = floatToUint8(255. * (510. - w) / (510. - 490.))
+		c.B = FloatToUint8(255. * (510. - w) / (510. - 490.))
 	case 510. <= w && w < 580.:
-		c.R = floatToUint8(255. * (w - 510.) / (580. - 510.))
+		c.R = FloatToUint8(255. * (w - 510.) / (580. - 510.))
 		c.G = 255
 	case 580. <= w && w < 645.:
 		c.R = 255
-		c.G = floatToUint8(255. * (645. - w) / (645. - 580.))
+		c.G = FloatToUint8(255. * (645. - w) / (645. - 580.))
 	case 645. <= w && w < 781.:
 		c.R = 255
 	}
 	switch {
 	case 380. <= w && w < 420.:
-		c.A = floatToUint8(255. * (0.1 + 0.9*(w-380.)/(420.-380.)))
+		c.A = FloatToUint8(255. * (0.1 + 0.9*(w-380.)/(420.-380.)))
 	case 420. <= w && w < 701.:
 		c.A = 255
 	case 701. <= w && w < 781.:
-		c.A = floatToUint8(255. * (0.1 + 0.9*(780.-w)/(780.-700.)))
+		c.A = FloatToUint8(255. * (0.1 + 0.9*(780.-w)/(780.-700.)))
 	}
 	return
 }
@@ -323,14 +323,14 @@ func (e *ÉtoilesCintillantes) NextFrame(pixels []color.NRGBA, sinceStart time.D
 			if intensity > 255 {
 				intensity = 0
 			}
-			e.Étoiles[i].Intensity = floatToUint8(intensity)
+			e.Étoiles[i].Intensity = FloatToUint8(intensity)
 		}
 	}
 	for i := range e.Étoiles {
 		if j := e.Étoiles[i].Intensity; j != 0 {
 			// TODO(maruel): Type, oscillation.
 			if j != 0 {
-				f := floatToUint8(float32(e.r.NormFloat64())*4 + float32(j))
+				f := FloatToUint8(float32(e.r.NormFloat64())*4 + float32(j))
 				pixels[i] = color.NRGBA{255, 255, 255, f}
 			}
 		}

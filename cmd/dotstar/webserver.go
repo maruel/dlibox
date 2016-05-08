@@ -15,15 +15,15 @@ import (
 	"path"
 	"sort"
 
-	"github.com/maruel/dotstar"
+	"github.com/maruel/dotstar/anim1d"
 )
 
 type webServer struct {
-	painter  *dotstar.Painter
-	registry *dotstar.PatternRegistry
+	painter  *anim1d.Painter
+	registry *anim1d.PatternRegistry
 }
 
-func startWebServer(port int, painter *dotstar.Painter, registry *dotstar.PatternRegistry) *webServer {
+func startWebServer(port int, painter *anim1d.Painter, registry *anim1d.PatternRegistry) *webServer {
 	ws := &webServer{painter: painter, registry: registry}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", ws.rootHandler)
@@ -77,7 +77,7 @@ func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 			// TODO(maruel): return an error.
 			return
 		}
-		s.painter.SetPattern(&dotstar.StaticColor{color.NRGBA{b[0], b[1], b[2], 255}})
+		s.painter.SetPattern(&anim1d.StaticColor{color.NRGBA{b[0], b[1], b[2], 255}})
 		return
 	}
 

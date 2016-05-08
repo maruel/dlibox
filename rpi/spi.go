@@ -5,7 +5,7 @@
 // Feel free to copy-paste this file along the license when you need a quick
 // and dirty SPI client.
 
-package dotstar
+package rpi
 
 import (
 	"fmt"

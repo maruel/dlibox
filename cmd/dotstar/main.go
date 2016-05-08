@@ -21,7 +21,8 @@ import (
 	"time"
 
 	"github.com/kardianos/osext"
-	"github.com/maruel/dotstar"
+	"github.com/maruel/dotstar/anim1d"
+	"github.com/maruel/dotstar/apa102"
 	"github.com/maruel/interrupt"
 	"github.com/stianeikeland/go-rpio"
 	"golang.org/x/exp/inotify"
@@ -54,7 +55,7 @@ func watchFile(fileName string) error {
 	}
 }
 
-func listenToPin(pinNumber int, p *dotstar.Painter, r *dotstar.PatternRegistry) {
+func listenToPin(pinNumber int, p *anim1d.Painter, r *anim1d.PatternRegistry) {
 	pin := rpio.Pin(pinNumber)
 	pin.Input()
 	pin.PullUp()
@@ -103,9 +104,9 @@ var config = Config{
 			Hour:    6,
 			Minute:  30,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Pattern: &dotstar.EaseOut{
-				In:       &dotstar.StaticColor{},
-				Out:      &dotstar.Repeated{[]color.NRGBA{red, red, red, red, white, white, white, white}, 6},
+			Pattern: &anim1d.EaseOut{
+				In:       &anim1d.StaticColor{},
+				Out:      &anim1d.Repeated{[]color.NRGBA{red, red, red, red, white, white, white, white}, 6},
 				Duration: 20 * time.Minute,
 			},
 		},
@@ -153,18 +154,18 @@ func mainImpl() error {
 		properties = append(properties, "profiled")
 	}
 
-	var s dotstar.Strip
+	var s anim1d.Strip
 	if *fake {
-		s = dotstar.MakeScreen()
+		s = apa102.MakeScreen()
 		properties = append(properties, "fake")
 	} else {
-		s, err = dotstar.MakeDotStar()
+		s, err = apa102.MakeDotStar()
 		if err != nil {
 			return err
 		}
 		properties = append(properties, "APA102")
 	}
-	p := dotstar.MakePainter(s, *numLights)
+	p := anim1d.MakePainter(s, *numLights)
 
 	registry := getRegistry()
 	startWebServer(*port, p, registry)
@@ -173,7 +174,7 @@ func mainImpl() error {
 		go func() {
 			patterns := []struct {
 				d int
-				p dotstar.Pattern
+				p anim1d.Pattern
 			}{
 				{3, registry.Patterns["Rainbow static"]},
 				{10, registry.Patterns["Glow rainbow"]},

@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package dotstar
+package anim1d
 
 import "math"
 
@@ -14,7 +14,7 @@ func ceil(x float32) float32 {
 	return float32(math.Ceil(float64(x)))
 }
 
-func floatToUint8(x float32) uint8 {
+func FloatToUint8(x float32) uint8 {
 	if x >= 254.4 {
 		return 255
 	}

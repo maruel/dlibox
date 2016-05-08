@@ -2,16 +2,15 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package dotstar
+package apa102
 
 import (
-	"bytes"
 	"image/color"
 	"io"
 	"time"
 
-	"github.com/maruel/ansi256"
-	"github.com/mattn/go-colorable"
+	"github.com/maruel/dotstar/anim1d"
+	"github.com/maruel/dotstar/rpi"
 )
 
 type DotStar struct {
@@ -132,7 +131,7 @@ func (d *DotStar) Write(pixels []color.NRGBA) error {
 			ratio := d.AmpBudget / powerF
 			for i := range s {
 				if i%4 != 0 {
-					s[i] = floatToUint8(float32(s[i]) * ratio)
+					s[i] = anim1d.FloatToUint8(float32(s[i]) * ratio)
 				}
 			}
 		}
@@ -155,7 +154,7 @@ func MakeDotStar() (*DotStar, error) {
 	// The speed must be high, as there's 32 bits sent per LED, creating a
 	// staggered effect. See
 	// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
-	w, err := MakeSPI("", 10000000)
+	w, err := rpi.MakeSPI("", 10000000)
 	if err != nil {
 		return nil, err
 	}
@@ -171,68 +170,6 @@ func MakeDotStar() (*DotStar, error) {
 		w:          w,
 	}, err
 }
-
-//
-
-type screenStrip struct {
-	w   io.Writer
-	buf bytes.Buffer
-}
-
-func (s *screenStrip) Close() error {
-	return nil
-}
-
-func (s *screenStrip) Write(pixels []color.NRGBA) error {
-	// This code is designed to minimize the amount of memory allocated per call.
-	s.buf.Reset()
-	_, _ = s.buf.WriteString("\r\033[0m")
-	for _, c := range pixels {
-		_, _ = io.WriteString(&s.buf, ansi256.Default.Block(c))
-	}
-	_, _ = s.buf.WriteString("\033[0m ")
-	_, err := s.buf.WriteTo(s.w)
-	return err
-}
-
-func (s *screenStrip) MinDelay() time.Duration {
-	// Limit to 30hz, especially for ssh connections.
-	return time.Second / 30
-}
-
-// MakeScreen returns a strip that displays at the console.
-//
-// This is generally what you want while waiting for the LED strip to be
-// shipped and you are excited to try it out.
-func MakeScreen() Strip {
-	return &screenStrip{w: colorable.NewColorableStdout()}
-}
-
-/*
-type piBlasterStrip struct {
-}
-
-func (p *piBlasterStrip) Close() error {
-	return nil
-}
-
-func (p *piBlasterStrip) Write(pixels []color.NRGBA) error {
-	return nil
-}
-
-func (p *piBlasterStrip) MinDelay() time.Duration {
-	return time.Second / 100
-}
-
-// MakePiBlaster returns a strip that control a LED through PiBlaster.
-//
-// This is very specific, assuming you have a 3 colors LED connected manually.
-//
-// This requires https://github.com/sarfata/pi-blaster to be installed.
-func MakePiBlaster() Strip {
-	return &piBlasterStrip{}
-}
-*/
 
 //
 
@@ -279,7 +216,7 @@ func (p *powerLimiter) NextFrame(pixels []color.NRGBA, sinceStart time.Duration)
 		// We only need to scale down the alpha as long as we treat each channel as
 		// having the same power budget.
 		for i := range pixels {
-			pixels[i].A = floatToUint8(float32(pixels[i].A) * power / p.AmpBudget)
+			pixels[i].A = FloatToUint8(float32(pixels[i].A) * power / p.AmpBudget)
 		}
 	}
 }
@@ -310,9 +247,9 @@ type gammaCorrection struct {
 func (g *gammaCorrection) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	g.Child.NextFrame(pixels, sinceStart)
 	for i := range pixels {
-		pixels[i].R = floatToUint8(255. * math.Pow(float32(pixels[i].R)/255.*g.RedMax, 1/g.RedGamma))
-		pixels[i].G = floatToUint8(255. * math.Pow(float32(pixels[i].G)/255.*g.GreenMax, 1/g.GreenGamma))
-		pixels[i].B = floatToUint8(255. * math.Pow(float32(pixels[i].B)/255.*g.BlueMax, 1/g.BlueGamma))
+		pixels[i].R = FloatToUint8(255. * math.Pow(float32(pixels[i].R)/255.*g.RedMax, 1/g.RedGamma))
+		pixels[i].G = FloatToUint8(255. * math.Pow(float32(pixels[i].G)/255.*g.GreenMax, 1/g.GreenGamma))
+		pixels[i].B = FloatToUint8(255. * math.Pow(float32(pixels[i].B)/255.*g.BlueMax, 1/g.BlueGamma))
 	}
 }
 */

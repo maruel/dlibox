@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package dotstar
+package anim1d
 
 import (
 	"image/color"
@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maruel/dotstar/rpi"
 	"github.com/maruel/interrupt"
 )
 
@@ -76,7 +77,7 @@ const d30Hz = 33333333 * time.Nanosecond
 func getDelay(s Strip) time.Duration {
 	delay := s.MinDelay()
 	defaultHz := d60Hz
-	if getPiVersion() == 1 {
+	if rpi.Version() == 1 {
 		// Use 30Hz on a rPi1 because it is too slow.
 		defaultHz = d30Hz
 	}

@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package dotstar
+package rpi
 
 import (
 	"io/ioutil"
@@ -32,11 +32,11 @@ func loadCPUInfo() map[string]string {
 	return values
 }
 
-// getPiVersion returns the Raspberry Pi version 1, 2 or 3.
+// Version returns the Raspberry Pi version 1, 2 or 3.
 //
 // This function is not futureproof, it will return 0 on a Raspberry Pi 4
 // whenever it comes out.
-func getPiVersion() int {
+func Version() int {
 	i, err := strconv.Atoi(loadCPUInfo()["Revision"])
 	if err != nil {
 		return 0

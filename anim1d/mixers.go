@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package dotstar
+package anim1d
 
 import (
 	"fmt"
@@ -41,10 +41,10 @@ func (e *EaseOut) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	for i := range pixels {
 		c := e.buf[i]
 		t2 := 1 - t
-		pixels[i].R = floatToUint8(float32(pixels[i].R)*t + float32(c.R)*t2)
-		pixels[i].G = floatToUint8(float32(pixels[i].G)*t + float32(c.G)*t2)
-		pixels[i].B = floatToUint8(float32(pixels[i].B)*t + float32(c.B)*t2)
-		pixels[i].A = floatToUint8(float32(pixels[i].A)*t + float32(c.A)*t2)
+		pixels[i].R = FloatToUint8(float32(pixels[i].R)*t + float32(c.R)*t2)
+		pixels[i].G = FloatToUint8(float32(pixels[i].G)*t + float32(c.G)*t2)
+		pixels[i].B = FloatToUint8(float32(pixels[i].B)*t + float32(c.B)*t2)
+		pixels[i].A = FloatToUint8(float32(pixels[i].A)*t + float32(c.A)*t2)
 	}
 }
 
@@ -99,10 +99,10 @@ func (m *Mixer) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 			b += float32(c.B) * w
 			a += float32(c.A) * w
 		}
-		pixels[i].R = floatToUint8(r)
-		pixels[i].G = floatToUint8(g)
-		pixels[i].B = floatToUint8(b)
-		pixels[i].A = floatToUint8(a)
+		pixels[i].R = FloatToUint8(r)
+		pixels[i].G = FloatToUint8(g)
+		pixels[i].B = FloatToUint8(b)
+		pixels[i].A = FloatToUint8(a)
 	}
 }
 

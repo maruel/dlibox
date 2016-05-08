@@ -7,7 +7,7 @@ package main
 import (
 	"time"
 
-	"github.com/maruel/dotstar"
+	"github.com/maruel/dotstar/anim1d"
 )
 
 type WeekdayBit int
@@ -31,7 +31,7 @@ type Alarm struct {
 	Hour    int
 	Minute  int
 	Days    WeekdayBit
-	Pattern dotstar.Pattern
+	Pattern anim1d.Pattern
 }
 
 // Next returns when the next trigger should be according to the alarm
@@ -57,7 +57,7 @@ func (a *Alarm) Next(now time.Time) time.Time {
 	return time.Time{}
 }
 
-func (a *Alarm) SetupTimer(now time.Time, p *dotstar.Painter) *time.Timer {
+func (a *Alarm) SetupTimer(now time.Time, p *anim1d.Painter) *time.Timer {
 	if next := a.Next(now); next.IsZero() {
 		var t *time.Timer
 		t = time.AfterFunc(next.Sub(now), func() {
@@ -75,7 +75,7 @@ func (a *Alarm) SetupTimer(now time.Time, p *dotstar.Painter) *time.Timer {
 
 type Alarms []Alarm
 
-func (a Alarms) AlarmLoop(p *dotstar.Painter) {
+func (a Alarms) AlarmLoop(p *anim1d.Painter) {
 	now := time.Now()
 	var timers []*time.Timer
 	for _, a := range a {
