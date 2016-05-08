@@ -91,69 +91,13 @@ func listenToPin(pinNumber int, p *dotstar.Painter, r *dotstar.PatternRegistry) 
 	}
 }
 
-type Weekday int
-
-func (w Weekday) IsEnabledFor(d time.Weekday) bool {
-	return false
-}
-
-const (
-	Sunday Weekday = 1 << iota
-	Monday
-	Tuesday
-	Wednesday
-	Thursday
-	Friday
-	Saturday
-)
-
-type Alarm struct {
-	Enabled bool
-	Hour    int
-	Minute  int
-	Days    Weekday
-	Pattern dotstar.Pattern
-}
-
-func (a *Alarm) Next(now time.Time) time.Duration {
-	if a.Enabled && a.Days != 0 {
-		// TODO(maruel): Figure out next day it will happen.
-		//w := now.Weekday()
-		//return time.Date(now.Year).Sub(now)
-	}
-	return 0
-}
-
-func (a *Alarm) SetupTimer(now time.Time, p *dotstar.Painter) *time.Timer {
-	if next := a.Next(now); next != 0 {
-		return time.AfterFunc(next, func() {
-			p.SetPattern(a.Pattern)
-			// Rearm on the next event.
-		})
-	}
-	return nil
-}
-
 type Config struct {
-	Alarms []Alarm
-}
-
-func (c *Config) alarmLoop(p *dotstar.Painter) {
-	now := time.Now()
-	var timers []*time.Timer
-	for _, a := range c.Alarms {
-		if t := a.SetupTimer(now, p); t != nil {
-			timers = append(timers, t)
-		}
-	}
-	for _, t := range timers {
-		t.Stop()
-	}
+	Alarms
 }
 
 // TODO(maruel): Save this in a file and make it configurable via the web UI.
 var config = Config{
-	Alarms: []Alarm{
+	Alarms: Alarms{
 		{
 			Enabled: true,
 			Hour:    6,
