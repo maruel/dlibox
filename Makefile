@@ -7,17 +7,22 @@
 HOST ?= raspberrypi1
 
 
+.PHONY: push run setup log
+
+
 # Regenerate the embedded files as needed.
 cmd/dotstar/static_files_gen.go: cmd/dotstar/web/static/* cmd/dotstar/images/*
 	go generate ./...
 
+
+gofiles := $(wildcard **/*.go)
 
 # Use a trick to preinstall all imported packages. 'go build' doesn't permit
 # installing packages, only 'go install' or 'go test -i' can do. But 'go
 # install' would install an ARM binary, which is not what we want.
 #
 # Luckily, 'go test -i' is super fast on second execution.
-dotstar: *.go cmd/dotstar/*.go
+dotstar: $(gofiles)
 	GOOS=linux GOARCH=arm go test -i ./cmd/dotstar
 	GOOS=linux GOARCH=arm go build ./cmd/dotstar
 
@@ -29,7 +34,7 @@ push: dotstar
 
 
 # Runs it locally as a fake display with the web server running on port 8010.
-run: *.go cmd/dotstar/*.go cmd/dotstar/web/static/* cmd/dotstar/images/*
+run: $(gofiles) cmd/dotstar/static_files_gen.go
 	go install ./cmd/dotstar
 	dotstar -fake -n 80 -port 8010
 
