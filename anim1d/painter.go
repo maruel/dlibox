@@ -24,6 +24,11 @@ type Pattern interface {
 	//
 	// First call is guaranteed to be called with sinceStart == 0.
 	NextFrame(pixels []color.NRGBA, sinceStart time.Duration)
+
+	// TODO(maruel): Will have to think about it.
+	// NativeDuration returns the looping duration, if any. It is used for
+	// animated GIF generation.
+	//NativeDuration(pixels int) time.Duration
 }
 
 // Strip is an 1D output device.
@@ -87,15 +92,19 @@ func getDelay(s Strip) time.Duration {
 	return delay
 }
 
+var black = &StaticColor{color.NRGBA{}}
+
 func (p *Painter) runPattern(cGen, cWrite chan []color.NRGBA) {
 	defer p.wg.Done()
 	defer func() {
+		// Tell runWrite() to quit.
 		cWrite <- nil
 	}()
-	ease := EaseOut{
-		In:       &StaticColor{color.NRGBA{}},
-		Out:      &StaticColor{color.NRGBA{}},
-		Duration: 500 * time.Millisecond,
+	ease := Transition{
+		Out:        black,
+		In:         black,
+		Duration:   500 * time.Millisecond,
+		Transition: TransitionEaseOut,
 	}
 	var since time.Duration
 	delay := getDelay(p.s)
@@ -111,7 +120,6 @@ func (p *Painter) runPattern(cGen, cWrite chan []color.NRGBA) {
 			ease.Out = ease.In
 			ease.In = newPat
 			ease.Offset = since
-			since = 0
 
 		case pixels := <-cGen:
 			for i := range pixels {

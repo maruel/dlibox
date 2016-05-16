@@ -18,6 +18,7 @@ func TestStaticColor(t *testing.T) {
 	frames(t, p, e)
 }
 
+/*
 func TestGlow1(t *testing.T) {
 	p := &Glow{[]color.NRGBA{{255, 255, 255, 255}, {0, 0, 0, 255}}, 1}
 	e := []expectation{
@@ -41,6 +42,7 @@ func TestGlow2(t *testing.T) {
 	}
 	frames(t, p, e)
 }
+*/
 
 func TestPingPong(t *testing.T) {
 	a := color.NRGBA{10, 10, 10, 10}

@@ -17,6 +17,7 @@ import (
 // PatternRegistry handles predefined patterns and their thumbnails.
 type PatternRegistry struct {
 	// Patterns is a map of nice predefined patterns.
+	// TODO(maruel): Data race.
 	Patterns         map[string]Pattern
 	NumberLEDs       int               // Must be set before calling Thumbnail().
 	ThumbnailHz      int               // Must be set before calling Thumbnail().

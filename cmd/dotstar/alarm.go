@@ -27,11 +27,13 @@ func (w WeekdayBit) IsEnabledFor(d time.Weekday) bool {
 }
 
 type Alarm struct {
-	Enabled bool
-	Hour    int
-	Minute  int
-	Days    WeekdayBit
-	Pattern anim1d.Pattern
+	Enabled     bool
+	Hour        int
+	Minute      int
+	Days        WeekdayBit
+	PatternName string
+	//PatternData string
+	timer *time.Timer
 }
 
 // Next returns when the next trigger should be according to the alarm
@@ -57,33 +59,26 @@ func (a *Alarm) Next(now time.Time) time.Time {
 	return time.Time{}
 }
 
-func (a *Alarm) SetupTimer(now time.Time, p *anim1d.Painter) *time.Timer {
-	if next := a.Next(now); next.IsZero() {
-		var t *time.Timer
-		t = time.AfterFunc(next.Sub(now), func() {
-			p.SetPattern(a.Pattern)
-			// Rearm on the next event.
-			now = time.Now()
-			if next = a.Next(now); next.IsZero() {
-				t.Reset(next.Sub(now))
-			}
-		})
-		return t
+func (a *Alarm) Reset(p *anim1d.Painter, r *anim1d.PatternRegistry) {
+	if a.timer != nil {
+		a.timer.Stop()
+		a.timer = nil
 	}
-	return nil
+	now := time.Now()
+	if next := a.Next(now); !next.IsZero() {
+		a.timer = time.AfterFunc(next.Sub(now), func() {
+			//p.SetPattern(anim1d.ParsePattern(a.PatternName, a.PatternData))
+			// TODO(maruel): Data race on r.Patterns.
+			p.SetPattern(r.Patterns[a.PatternName])
+			a.Reset(p, r)
+		})
+	}
 }
 
 type Alarms []Alarm
 
-func (a Alarms) AlarmLoop(p *anim1d.Painter) {
-	now := time.Now()
-	var timers []*time.Timer
+func (a Alarms) Reset(p *anim1d.Painter, r *anim1d.PatternRegistry) {
 	for _, a := range a {
-		if t := a.SetupTimer(now, p); t != nil {
-			timers = append(timers, t)
-		}
-	}
-	for _, t := range timers {
-		t.Stop()
+		a.Reset(p, r)
 	}
 }
