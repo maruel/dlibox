@@ -11,6 +11,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -92,6 +93,19 @@ var config = Config{
 	NumberLights: 150,
 }
 
+// getHome returns the home directory even when cross compiled.
+//
+// When cross compiling, user.Current() fails.
+func getHome() (string, error) {
+	if u, err := user.Current(); err == nil {
+		return u.HomeDir, nil
+	}
+	if s := os.Getenv("HOME"); len(s) != 0 {
+		return s, nil
+	}
+	return "", errors.New("can't find HOME")
+}
+
 func mainImpl() error {
 	thisFile, err := osext.Executable()
 	if err != nil {
@@ -144,11 +158,11 @@ func mainImpl() error {
 	}
 	p := anim1d.MakePainter(s, *numLights)
 
-	u, err := user.Current()
+	home, err := getHome()
 	if err != nil {
 		return err
 	}
-	configPath := filepath.Join(u.HomeDir, "dotstar.json")
+	configPath := filepath.Join(home, "dotstar.json")
 	config.Load(configPath)
 	defer config.Save(configPath)
 	registry := getRegistry()

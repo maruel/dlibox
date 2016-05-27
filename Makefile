@@ -10,12 +10,14 @@ HOST ?= raspberrypi1
 .PHONY: push run setup log
 
 
-# Regenerate the embedded files as needed.
-cmd/dotstar/static_files_gen.go: cmd/dotstar/web/static/* cmd/dotstar/images/*
-	go generate ./...
-
-
 gofiles := $(wildcard **/*.go)
+imgfiles := $(wildcard cmd/dotstar/images/*)
+webfiles := $(wildcard cmd/dotstar/web/static/*)
+
+
+# Regenerate the embedded files as needed.
+cmd/dotstar/static_files_gen.go: $(imgfiles) $(webfiles)
+	go generate ./...
 
 # Use a trick to preinstall all imported packages. 'go build' doesn't permit
 # installing packages, only 'go install' or 'go test -i' can do. But 'go
