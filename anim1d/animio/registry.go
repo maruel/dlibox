@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package anim1d
+package animio
 
 import (
 	"bytes"
@@ -10,15 +10,18 @@ import (
 	"image/color"
 	"image/color/palette"
 	"image/gif"
+	"math"
 	"sync"
 	"time"
+
+	"github.com/maruel/dotstar/anim1d"
 )
 
 // PatternRegistry handles predefined patterns and their thumbnails.
 type PatternRegistry struct {
 	// Patterns is a map of nice predefined patterns.
 	// TODO(maruel): Data race.
-	Patterns         map[string]Pattern
+	Patterns         map[string]anim1d.Pattern
 	NumberLEDs       int               // Must be set before calling Thumbnail().
 	ThumbnailHz      int               // Must be set before calling Thumbnail().
 	ThumbnailSeconds int               // Must be set before calling Thumbnail().
@@ -69,7 +72,7 @@ func (p *PatternRegistry) Thumbnail(name string) []byte {
 		Config:          image.Config{pal, p.NumberLEDs, 1},
 		BackgroundIndex: 1,
 	}
-	frameDuration := int(roundF(100. / float32(p.ThumbnailHz)))
+	frameDuration := int(math.Floor(100./float64(p.ThumbnailHz) + 0.5))
 	for frame := 0; frame < nbImg; frame++ {
 		since := (time.Second*time.Duration(frame) + time.Duration(p.ThumbnailHz) - 1) / time.Duration(p.ThumbnailHz)
 		pat.NextFrame(pixels[frame&1], since)

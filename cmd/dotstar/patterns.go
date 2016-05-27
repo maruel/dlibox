@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/maruel/dotstar/anim1d"
+	"github.com/maruel/dotstar/anim1d/animio"
 )
 
 var red = color.NRGBA{255, 0, 0, 255}
@@ -23,8 +24,8 @@ func init() {
 	}
 }
 
-func getRegistry() *anim1d.PatternRegistry {
-	return &anim1d.PatternRegistry{
+func getRegistry() *animio.PatternRegistry {
+	return &animio.PatternRegistry{
 		Patterns: map[string]anim1d.Pattern{
 			"Canne de Noël": &anim1d.Repeated{
 				[]color.NRGBA{red, red, red, red, red, white, white, white, white, white},

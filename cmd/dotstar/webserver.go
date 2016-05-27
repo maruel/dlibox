@@ -16,14 +16,15 @@ import (
 	"sort"
 
 	"github.com/maruel/dotstar/anim1d"
+	"github.com/maruel/dotstar/anim1d/animio"
 )
 
 type webServer struct {
 	painter  *anim1d.Painter
-	registry *anim1d.PatternRegistry
+	registry *animio.PatternRegistry
 }
 
-func startWebServer(port int, painter *anim1d.Painter, registry *anim1d.PatternRegistry) *webServer {
+func startWebServer(port int, painter *anim1d.Painter, registry *animio.PatternRegistry) *webServer {
 	ws := &webServer{painter: painter, registry: registry}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", ws.rootHandler)

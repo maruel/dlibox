@@ -7,7 +7,7 @@ package main
 // github.com/stianeikeland/go-rpio
 
 /*
-func listenToPin(pinNumber int, p *anim1d.Painter, r *anim1d.PatternRegistry) {
+func listenToPin(pinNumber int, p *anim1d.Painter, r *animio.PatternRegistry) {
 	pin := rpio.Pin(pinNumber)
 	pin.Input()
 	pin.PullUp()

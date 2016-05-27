@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/maruel/dotstar/anim1d"
+	"github.com/maruel/dotstar/anim1d/animio"
 )
 
 type WeekdayBit int
@@ -59,7 +60,7 @@ func (a *Alarm) Next(now time.Time) time.Time {
 	return time.Time{}
 }
 
-func (a *Alarm) Reset(p *anim1d.Painter, r *anim1d.PatternRegistry) {
+func (a *Alarm) Reset(p *anim1d.Painter, r *animio.PatternRegistry) {
 	if a.timer != nil {
 		a.timer.Stop()
 		a.timer = nil
@@ -77,7 +78,7 @@ func (a *Alarm) Reset(p *anim1d.Painter, r *anim1d.PatternRegistry) {
 
 type Alarms []Alarm
 
-func (a Alarms) Reset(p *anim1d.Painter, r *anim1d.PatternRegistry) {
+func (a Alarms) Reset(p *anim1d.Painter, r *animio.PatternRegistry) {
 	for _, a := range a {
 		a.Reset(p, r)
 	}
