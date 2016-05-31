@@ -15,12 +15,13 @@ import (
 var red = color.NRGBA{255, 0, 0, 255}
 var white = color.NRGBA{255, 255, 255, 255}
 
-var rainbowColors []anim1d.Pattern
+var rainbowColors []anim1d.SPattern
 
 func init() {
-	rainbowColors = make([]anim1d.Pattern, len(anim1d.RainbowColors))
+	rainbowColors = make([]anim1d.SPattern, len(anim1d.RainbowColors))
 	for i, c := range anim1d.RainbowColors {
-		rainbowColors[i] = &anim1d.StaticColor{c}
+		cc := anim1d.Color(c)
+		rainbowColors[i].Pattern = &cc
 	}
 }
 
@@ -45,39 +46,43 @@ func getRegistry() *animio.PatternRegistry {
 			"Rainbow static":       &anim1d.Rainbow{},
 			"Étoiles cintillantes": &anim1d.NightStars{},
 			"Ciel étoilé": &anim1d.Mixer{
-				Patterns: []anim1d.Pattern{
-					&anim1d.Aurore{},
-					&anim1d.NightStars{},
-					&anim1d.WishingStar{},
+				Patterns: []anim1d.SPattern{
+					{&anim1d.Aurore{}},
+					{&anim1d.NightStars{}},
+					{&anim1d.WishingStar{}},
 				},
 				Weights: []float32{1, 1, 1},
 			},
 			"Aurores": &anim1d.Aurore{},
 			// Transition from black to orange to white then to black.
 			"Morning alarm": &anim1d.Transition{
-				Out: &anim1d.Transition{
-					Out: &anim1d.Transition{
-						Out:        &anim1d.StaticColor{},
-						In:         &anim1d.StaticColor{color.NRGBA{255, 127, 0, 255}},
+				Out: anim1d.SPattern{
+					&anim1d.Transition{
+						Out: anim1d.SPattern{
+							&anim1d.Transition{
+								Out:        anim1d.SPattern{&anim1d.Color{}},
+								In:         anim1d.SPattern{&anim1d.Color{255, 127, 0, 255}},
+								Duration:   10 * time.Minute,
+								Transition: anim1d.TransitionLinear,
+							},
+						},
+						In:         anim1d.SPattern{&anim1d.Color{255, 255, 255, 255}},
+						Offset:     10 * time.Minute,
 						Duration:   10 * time.Minute,
 						Transition: anim1d.TransitionLinear,
 					},
-					In:         &anim1d.StaticColor{color.NRGBA{255, 255, 255, 255}},
-					Offset:     10 * time.Minute,
-					Duration:   10 * time.Minute,
-					Transition: anim1d.TransitionLinear,
 				},
-				In:         &anim1d.StaticColor{},
+				In:         anim1d.SPattern{&anim1d.Color{}},
 				Offset:     30 * time.Minute,
 				Duration:   10 * time.Minute,
 				Transition: anim1d.TransitionLinear,
 			},
 			// Test de couleurs:
 			"Cycle RGB": &anim1d.Loop{
-				Patterns: []anim1d.Pattern{
-					&anim1d.StaticColor{color.NRGBA{255, 0, 0, 255}},
-					&anim1d.StaticColor{color.NRGBA{0, 255, 0, 255}},
-					&anim1d.StaticColor{color.NRGBA{0, 0, 255, 255}},
+				Patterns: []anim1d.SPattern{
+					{&anim1d.Color{255, 0, 0, 255}},
+					{&anim1d.Color{0, 255, 0, 255}},
+					{&anim1d.Color{0, 0, 255, 255}},
 				},
 				DurationShow:       1000 * time.Millisecond,
 				DurationTransition: 1000 * time.Millisecond,

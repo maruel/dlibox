@@ -44,8 +44,8 @@ const (
 //
 // In gets sinceStart that is subtracted by Offset.
 type Transition struct {
-	Out        Pattern        // Old pattern that is disappearing
-	In         Pattern        // New pattern to show
+	Out        SPattern       // Old pattern that is disappearing
+	In         SPattern       // New pattern to show
 	Offset     time.Duration  // Offset at which the transiton from Out->In starts
 	Duration   time.Duration  // Duration of the transition while both are rendered
 	Transition TransitionType // Type of transition, defaults to EaseOut if not set
@@ -55,10 +55,14 @@ type Transition struct {
 func (t *Transition) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	if sinceStart <= t.Offset {
 		// Before transition.
-		t.Out.NextFrame(pixels, sinceStart)
+		if t.Out.Pattern != nil {
+			t.Out.NextFrame(pixels, sinceStart)
+		}
 		return
 	}
-	t.In.NextFrame(pixels, sinceStart-t.Offset)
+	if t.In.Pattern != nil {
+		t.In.NextFrame(pixels, sinceStart-t.Offset)
+	}
 	if sinceStart >= t.Offset+t.Duration {
 		// After transition.
 		t.buf = nil
@@ -67,7 +71,9 @@ func (t *Transition) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	t.buf.reset(len(pixels))
 
 	// TODO(maruel): Add lateral animation and others.
-	t.Out.NextFrame(t.buf, sinceStart)
+	if t.Out.Pattern != nil {
+		t.Out.NextFrame(t.buf, sinceStart)
+	}
 	intensity := t.Transition.scale(float32(sinceStart-t.Offset) / float32(t.Duration))
 	mix(intensity, pixels, t.buf)
 }
@@ -78,7 +84,7 @@ func (t *Transition) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 // sinceStart is not modified so it's like as all animations continued
 // animating behind.
 type Loop struct {
-	Patterns           []Pattern
+	Patterns           []SPattern
 	DurationShow       time.Duration  // Duration for each pattern to be shown as pure
 	DurationTransition time.Duration  // Duration of the transition between two patterns
 	Transition         TransitionType // Type of transition, defaults to EaseOut if not set
@@ -93,6 +99,9 @@ func (l *Loop) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	cycles := float32(sinceStart.Seconds()) / cycleDuration
 	baseIndex := int(cycles)
 	lp := len(l.Patterns)
+	if lp == 0 {
+		return
+	}
 	a := l.Patterns[baseIndex%lp]
 	a.NextFrame(pixels, sinceStart)
 	// [0, 1[
@@ -111,20 +120,22 @@ func (l *Loop) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 
 // Crop draws a subset of a strip, not touching the rest.
 type Crop struct {
-	Child  Pattern
+	Child  SPattern
 	Start  int // Starting pixels to skip
 	Length int // Length of the pixels to affect
 }
 
 func (s *Crop) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
-	s.Child.NextFrame(pixels[s.Start:s.Length], sinceStart)
+	if s.Child.Pattern != nil {
+		s.Child.NextFrame(pixels[s.Start:s.Length], sinceStart)
+	}
 }
 
 // Mixer is a generic mixer that merges the output from multiple patterns.
 //
 // It doesn't animate.
 type Mixer struct {
-	Patterns []Pattern
+	Patterns []SPattern
 	Weights  []float32 // In theory Sum(Weights) should be 1 but it doesn't need to. For example, mixing a night sky will likely have all of the Weights set to 1.
 	bufs     []buffer
 }
@@ -169,7 +180,7 @@ func (m *Mixer) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 //
 // This is useful to create smoother animations or scale down images.
 type Scale struct {
-	Child  Pattern
+	Child  SPattern
 	Scale  ScalingType // Defaults to ScalingLanczos3
 	Length int         // A buffer of this length will be provided to Child and will be scaled to the actual pixels length
 	Ratio  float32     // The scaling ratio to use, <1 means smaller, >1 means larger. Only one of Length or Ratio can be used
@@ -178,6 +189,9 @@ type Scale struct {
 }
 
 func (s *Scale) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+	if s.Child.Pattern == nil {
+		return
+	}
 	l := s.Length
 	r := s.Ratio
 	if l == 0 {

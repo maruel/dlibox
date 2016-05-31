@@ -13,7 +13,7 @@ import (
 )
 
 func TestStaticColor(t *testing.T) {
-	p := &StaticColor{color.NRGBA{255, 255, 255, 255}}
+	p := &Color{255, 255, 255, 255}
 	e := []expectation{{3 * time.Second, []color.NRGBA{{255, 255, 255, 255}}}}
 	frames(t, p, e)
 }

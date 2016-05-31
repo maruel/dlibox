@@ -22,6 +22,9 @@ type Pattern interface {
 	// The image should be derived from the duration since this pattern was
 	// started.
 	//
+	// Calling NextFrame() with a nil pattern is valid. Patterns should be
+	// callable without crashing with an object initialized with default values.
+	//
 	// First call is guaranteed to be called with sinceStart == 0.
 	NextFrame(pixels []color.NRGBA, sinceStart time.Duration)
 
@@ -92,7 +95,7 @@ func getDelay(s Strip) time.Duration {
 	return delay
 }
 
-var black = &StaticColor{color.NRGBA{}}
+var black = &Color{}
 
 func (p *Painter) runPattern(cGen, cWrite chan []color.NRGBA) {
 	defer p.wg.Done()
@@ -101,8 +104,8 @@ func (p *Painter) runPattern(cGen, cWrite chan []color.NRGBA) {
 		cWrite <- nil
 	}()
 	ease := Transition{
-		Out:        black,
-		In:         black,
+		Out:        SPattern{black},
+		In:         SPattern{black},
 		Duration:   500 * time.Millisecond,
 		Transition: TransitionEaseOut,
 	}
@@ -118,7 +121,7 @@ func (p *Painter) runPattern(cGen, cWrite chan []color.NRGBA) {
 
 			// New pattern.
 			ease.Out = ease.In
-			ease.In = newPat
+			ease.In.Pattern = newPat
 			ease.Offset = since
 
 		case pixels := <-cGen:

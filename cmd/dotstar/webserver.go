@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"image/color"
 	"log"
 	"mime"
 	"net/http"
@@ -78,7 +77,7 @@ func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 			// TODO(maruel): return an error.
 			return
 		}
-		s.painter.SetPattern(&anim1d.StaticColor{color.NRGBA{b[0], b[1], b[2], 255}})
+		s.painter.SetPattern(&anim1d.Color{b[0], b[1], b[2], 255})
 		return
 	}
 

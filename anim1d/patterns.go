@@ -44,18 +44,17 @@ var K2000Colors = []color.NRGBA{
 	{0x11, 0, 0, 255},
 }
 
-// StaticColor shows a single color on all lights.
-type StaticColor struct {
-	C color.NRGBA
-}
+// Color shows a single color on all lights.
+type Color color.NRGBA
 
-func (s *StaticColor) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+func (c *Color) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+	cc := color.NRGBA(*c)
 	for i := range pixels {
-		pixels[i] = s.C
+		pixels[i] = cc
 	}
 }
 
-func (s *StaticColor) NativeDuration(pixels int) time.Duration {
+func (c *Color) NativeDuration(pixels int) time.Duration {
 	return 0
 }
 
@@ -72,6 +71,10 @@ type PingPong struct {
 func (p *PingPong) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 	for i := range pixels {
 		pixels[i] = p.Background
+	}
+	if len(pixels) < 2 || len(p.Trail) == 0 {
+		// Not worth special casing for len(pixels)==1.
+		return
 	}
 	// The last point of each extremity is only lit on one tick but every other
 	// points are lit twice during a full cycle. This means the full cycle is
@@ -141,6 +144,9 @@ func LoadAnimate(content []byte, frameDuration time.Duration, vertical bool) *An
 }
 
 func (a *Animation) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+	if len(pixels) == 0 || len(a.Frames) == 0 {
+		return
+	}
 	copy(pixels, a.Frames[int(sinceStart/a.FrameDuration)%len(a.Frames)])
 }
 
@@ -215,7 +221,7 @@ func waveLength2RGB(w float32) (c color.NRGBA) {
 //
 // Use negative to go left. Can be used for 'candy bar'.
 //
-// Using one point results in the same as StaticColor{}.
+// Using one point results in the same as Color{}.
 //
 // TODO(maruel): Refactor MovesPerSec to a new mixer 'Markee'.
 type Repeated struct {
@@ -224,6 +230,9 @@ type Repeated struct {
 }
 
 func (r *Repeated) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+	if len(pixels) == 0 || len(r.Points) == 0 {
+		return
+	}
 	offset := len(r.Points) - int(float32(sinceStart.Seconds())*r.MovesPerSec)%len(r.Points)
 	for i := range pixels {
 		pixels[i] = r.Points[(i+offset)%len(r.Points)]
