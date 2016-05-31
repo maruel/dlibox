@@ -2,10 +2,11 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package animio
+package anim1d
 
 import (
 	"bytes"
+	"encoding/json"
 	"image"
 	"image/color"
 	"image/color/palette"
@@ -13,23 +14,18 @@ import (
 	"math"
 	"sync"
 	"time"
-
-	"github.com/maruel/dotstar/anim1d"
 )
 
-// PatternRegistry handles predefined patterns and their thumbnails.
-type PatternRegistry struct {
-	// Patterns is a map of nice predefined patterns.
-	// TODO(maruel): Data race.
-	Patterns         map[string]anim1d.Pattern
+// ThumbnailsCache is a cache of animated GIF thumbnails for each pattern.
+type ThumbnailsCache struct {
 	NumberLEDs       int               // Must be set before calling Thumbnail().
 	ThumbnailHz      int               // Must be set before calling Thumbnail().
 	ThumbnailSeconds int               // Must be set before calling Thumbnail().
-	cache            map[string][]byte // Thumbnail as GIF.
+	cache            map[string][]byte // Thumbnail as GIF. The key is the JSON serialized form encoded as a string.
 	lock             sync.Mutex
 }
 
-func isPixelsEqual(a, b []color.NRGBA) bool {
+func isPixelsEqual(a, b []Color) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -41,23 +37,27 @@ func isPixelsEqual(a, b []color.NRGBA) bool {
 	return true
 }
 
-func (p *PatternRegistry) Thumbnail(name string) []byte {
-	p.lock.Lock()
-	if p.cache == nil {
-		p.cache = make(map[string][]byte)
-	}
-	img, ok := p.cache[name]
-	p.lock.Unlock()
-	if ok {
-		return img
-	}
+// GIF returns a serialized animated GIF for a JSON serialized pattern.
+func (t *ThumbnailsCache) GIF(serialized []byte) ([]byte, error) {
+	k := string(serialized)
 
-	pat, ok := p.Patterns[name]
-	if !ok {
-		return nil
+	t.lock.Lock()
+	if t.cache == nil {
+		t.cache = make(map[string][]byte)
 	}
-	pixels := [][]color.NRGBA{make([]color.NRGBA, p.NumberLEDs), make([]color.NRGBA, p.NumberLEDs)}
-	nbImg := p.ThumbnailSeconds * p.ThumbnailHz
+	img, ok := t.cache[k]
+	t.lock.Unlock()
+
+	if ok {
+		return img, nil
+	}
+	// Unmarshal the string to recreate the Pattern object.
+	var pat SPattern
+	if err := json.Unmarshal(serialized, &pat); err != nil {
+		return nil, err
+	}
+	pixels := [][]Color{make([]Color, t.NumberLEDs), make([]Color, t.NumberLEDs)}
+	nbImg := t.ThumbnailSeconds * t.ThumbnailHz
 	// Change dark blue (color index #1) to background, so it can be used to save
 	// more on GIF size. It's better than losing black, which is the default. To
 	// not confused the Index() function, set both to the same color, so index 1
@@ -69,12 +69,12 @@ func (p *PatternRegistry) Thumbnail(name string) []byte {
 		Image:           make([]*image.Paletted, 0, nbImg),
 		Delay:           make([]int, 0, nbImg),
 		Disposal:        make([]byte, 0, nbImg),
-		Config:          image.Config{pal, p.NumberLEDs, 1},
+		Config:          image.Config{pal, t.NumberLEDs, 1},
 		BackgroundIndex: 1,
 	}
-	frameDuration := int(math.Floor(100./float64(p.ThumbnailHz) + 0.5))
+	frameDuration := int(math.Floor(100./float64(t.ThumbnailHz) + 0.5))
 	for frame := 0; frame < nbImg; frame++ {
-		since := (time.Second*time.Duration(frame) + time.Duration(p.ThumbnailHz) - 1) / time.Duration(p.ThumbnailHz)
+		since := (time.Second*time.Duration(frame) + time.Duration(t.ThumbnailHz) - 1) / time.Duration(t.ThumbnailHz)
 		pat.NextFrame(pixels[frame&1], since)
 		if frame > 0 && isPixelsEqual(pixels[0], pixels[1]) {
 			// Skip a frame completely if its pixels didn't change at all from the
@@ -84,21 +84,24 @@ func (p *PatternRegistry) Thumbnail(name string) []byte {
 		}
 		g.Delay = append(g.Delay, frameDuration)
 		g.Disposal = append(g.Disposal, gif.DisposalPrevious)
-		g.Image = append(g.Image, image.NewPaletted(image.Rect(0, 0, p.NumberLEDs, 1), pal))
+		g.Image = append(g.Image, image.NewPaletted(image.Rect(0, 0, t.NumberLEDs, 1), pal))
 		img := g.Image[len(g.Image)-1]
 		// Compare with previous image.
-		for j, p := range pixels[frame&1] {
+		for j, pixel := range pixels[frame&1] {
 			// TODO(maruel): draw.FloydSteinberg assuming we use 5x5 boxes instead of
 			// 1x1. For now, just use the closest color.
-			img.Pix[j] = uint8(pal.Index(p))
+			img.Pix[j] = uint8(pal.Index(color.NRGBA(pixel)))
 		}
 	}
 	b := &bytes.Buffer{}
 	if err := gif.EncodeAll(b, g); err != nil {
 		panic(err)
 	}
-	p.lock.Lock()
-	p.cache[name] = b.Bytes()
-	p.lock.Unlock()
-	return p.cache[name]
+	out := b.Bytes()
+
+	t.lock.Lock()
+	t.cache[k] = out
+	t.lock.Unlock()
+
+	return out, nil
 }

@@ -24,12 +24,12 @@ func (s *screenStrip) Close() error {
 	return nil
 }
 
-func (s *screenStrip) Write(pixels []color.NRGBA) error {
+func (s *screenStrip) Write(pixels []anim1d.Color) error {
 	// This code is designed to minimize the amount of memory allocated per call.
 	s.buf.Reset()
 	_, _ = s.buf.WriteString("\r\033[0m")
 	for _, c := range pixels {
-		_, _ = io.WriteString(&s.buf, ansi256.Default.Block(c))
+		_, _ = io.WriteString(&s.buf, ansi256.Default.Block(color.NRGBA(c)))
 	}
 	_, _ = s.buf.WriteString("\033[0m ")
 	_, err := s.buf.WriteTo(s.w)

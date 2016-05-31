@@ -5,30 +5,33 @@
 package main
 
 import (
-	"encoding/hex"
-	"encoding/json"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"mime"
 	"net/http"
 	"path"
-	"sort"
 
 	"github.com/maruel/dotstar/anim1d"
-	"github.com/maruel/dotstar/anim1d/animio"
 )
 
 type webServer struct {
-	painter  *anim1d.Painter
-	registry *animio.PatternRegistry
+	painter *anim1d.Painter
+	cache   anim1d.ThumbnailsCache
 }
 
-func startWebServer(port int, painter *anim1d.Painter, registry *animio.PatternRegistry) *webServer {
-	ws := &webServer{painter: painter, registry: registry}
+func startWebServer(port int, painter *anim1d.Painter) *webServer {
+	ws := &webServer{
+		painter: painter,
+		cache: anim1d.ThumbnailsCache{
+			NumberLEDs:       100,
+			ThumbnailHz:      10,
+			ThumbnailSeconds: 10,
+		},
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", ws.rootHandler)
 	mux.HandleFunc("/favicon.ico", ws.faviconHandler)
-	mux.HandleFunc("/patterns", ws.patternsHandler)
 	mux.HandleFunc("/static/", ws.staticHandler)
 	mux.HandleFunc("/switch", ws.switchHandler)
 	mux.HandleFunc("/thumbnail/", ws.thumbnailHandler)
@@ -56,32 +59,21 @@ func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
 		return
 	}
-	if n := r.PostFormValue("mode"); len(n) != 0 {
-		log.Printf("mode = %s", n)
-		if p := s.registry.Patterns[n]; p != nil {
-			s.painter.SetPattern(p)
-			return
-		}
-		// TODO(maruel): return an error.
+	b := r.PostFormValue("pattern")
+	if len(b) == 0 {
+		http.Error(w, "pattern is required", http.StatusBadRequest)
 		return
 	}
-
-	if n := r.PostFormValue("color"); len(n) != 0 {
-		log.Printf("color = %s", n)
-		if len(n) != 7 || n[0] != '#' {
-			// TODO(maruel): return an error.
-			return
-		}
-		b, err := hex.DecodeString(n[1:])
-		if err != nil {
-			// TODO(maruel): return an error.
-			return
-		}
-		s.painter.SetPattern(&anim1d.Color{b[0], b[1], b[2], 255})
+	p, err := base64.URLEncoding.DecodeString(b)
+	if err != nil {
+		http.Error(w, "pattern is not base64", http.StatusBadRequest)
 		return
 	}
-
-	// TODO(maruel): return an error.
+	p2 := string(p)
+	log.Printf("pattern = %q", p2)
+	if err := s.painter.SetPattern(p2); err != nil {
+		http.Error(w, "invalid JSON pattern", http.StatusBadRequest)
+	}
 }
 
 func (s *webServer) faviconHandler(w http.ResponseWriter, r *http.Request) {
@@ -92,25 +84,6 @@ func (s *webServer) faviconHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
 	//w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
 	w.Write(mustRead("favicon.ico"))
-}
-
-func (s *webServer) patternsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
-		return
-	}
-	out := make([]string, 0, len(s.registry.Patterns))
-	for name := range s.registry.Patterns {
-		out = append(out, name)
-	}
-	sort.Strings(out)
-	bytes, err := json.Marshal(out)
-	if err != nil {
-		http.Error(w, "Ugh", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(bytes)
 }
 
 func (s *webServer) staticHandler(w http.ResponseWriter, r *http.Request) {
@@ -133,11 +106,18 @@ func (s *webServer) thumbnailHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
 		return
 	}
-	if data := s.registry.Thumbnail(r.URL.Path[len("/thumbnail/"):]); len(data) != 0 {
-		_, _ = w.Write(data)
-	} else {
-		http.Error(w, "Not Found", http.StatusNotFound)
+	b := r.URL.Path[len("/thumbnail/"):]
+	p, err := base64.URLEncoding.DecodeString(b)
+	if err != nil {
+		http.Error(w, "pattern is not base64", http.StatusBadRequest)
+		return
 	}
+	data, err := s.cache.GIF(p)
+	if err != nil {
+		http.Error(w, "invalid JSON pattern", http.StatusBadRequest)
+		return
+	}
+	_, _ = w.Write(data)
 }
 
 // Private details.

@@ -7,8 +7,8 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"image/color"
 	"math"
 	"os"
 	"time"
@@ -17,12 +17,99 @@ import (
 	"github.com/gonum/plot/plotter"
 	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
+	"github.com/maruel/dotstar/anim1d"
 	"github.com/maruel/dotstar/apa102"
 	"github.com/maruel/dotstar/rpi"
 	"github.com/stianeikeland/go-rpio"
 )
 
-func set(c color.NRGBA) {
+func getPatterns() error {
+	var red = anim1d.Color{255, 0, 0, 255}
+	var white = anim1d.Color{255, 255, 255, 255}
+	rainbowColors := make([]anim1d.SPattern, len(anim1d.RainbowColors))
+	for i, c := range anim1d.RainbowColors {
+		rainbowColors[i].Pattern = &c
+	}
+	patterns := map[string]anim1d.Pattern{
+		"Canne de Noël": &anim1d.Repeated{
+			[]anim1d.Color{red, red, red, red, red, white, white, white, white, white},
+			6,
+		},
+		"K2000": &anim1d.PingPong{anim1d.K2000Colors, anim1d.Color{0, 0, 0, 255}, 30},
+		"Noir":  &anim1d.Color{},
+		"Ping pong": &anim1d.PingPong{
+			Trail:       []anim1d.Color{{255, 255, 255, 255}},
+			MovesPerSec: 30,
+		},
+		"Rainbow cycle": &anim1d.Loop{
+			Patterns:           rainbowColors,
+			DurationShow:       1 * time.Second,
+			DurationTransition: 10 * time.Second,
+			Transition:         anim1d.TransitionEaseInOut,
+		},
+		"Rainbow static":       &anim1d.Rainbow{},
+		"Étoiles cintillantes": &anim1d.NightStars{},
+		"Ciel étoilé": &anim1d.Mixer{
+			Patterns: []anim1d.SPattern{
+				{&anim1d.Aurore{}},
+				{&anim1d.NightStars{}},
+				{&anim1d.WishingStar{}},
+			},
+			Weights: []float32{1, 1, 1},
+		},
+		"Aurores": &anim1d.Aurore{},
+		// Transition from black to orange to white then to black.
+		"Morning alarm": &anim1d.Transition{
+			Out: anim1d.SPattern{
+				&anim1d.Transition{
+					Out: anim1d.SPattern{
+						&anim1d.Transition{
+							Out:        anim1d.SPattern{&anim1d.Color{}},
+							In:         anim1d.SPattern{&anim1d.Color{255, 127, 0, 255}},
+							Duration:   10 * time.Minute,
+							Transition: anim1d.TransitionLinear,
+						},
+					},
+					In:         anim1d.SPattern{&anim1d.Color{255, 255, 255, 255}},
+					Offset:     10 * time.Minute,
+					Duration:   10 * time.Minute,
+					Transition: anim1d.TransitionLinear,
+				},
+			},
+			In:         anim1d.SPattern{&anim1d.Color{}},
+			Offset:     30 * time.Minute,
+			Duration:   10 * time.Minute,
+			Transition: anim1d.TransitionLinear,
+		},
+		// Test de couleurs:
+		"Cycle RGB": &anim1d.Loop{
+			Patterns: []anim1d.SPattern{
+				{&anim1d.Color{255, 0, 0, 255}},
+				{&anim1d.Color{0, 255, 0, 255}},
+				{&anim1d.Color{0, 0, 255, 255}},
+			},
+			DurationShow:       1000 * time.Millisecond,
+			DurationTransition: 1000 * time.Millisecond,
+			Transition:         anim1d.TransitionEaseInOut,
+		},
+		"Dégradé":       &anim1d.Gradient{anim1d.Color{0, 0, 0, 255}, anim1d.Color{255, 255, 255, 255}},
+		"Dégradé rouge": &anim1d.Gradient{anim1d.Color{0, 0, 0, 255}, anim1d.Color{255, 0, 0, 255}},
+		"Dégradé vert":  &anim1d.Gradient{anim1d.Color{0, 0, 0, 255}, anim1d.Color{0, 255, 0, 255}},
+		"Dégradé bleu":  &anim1d.Gradient{anim1d.Color{0, 0, 0, 255}, anim1d.Color{0, 0, 255, 255}},
+	}
+
+	for k, v := range patterns {
+		p := anim1d.SPattern{v}
+		b, err := json.Marshal(&p)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%q: %q\n", k, string(b))
+	}
+	return nil
+}
+
+func set(c anim1d.Color) {
 	rpi.SetPinPWM(rpi.GPIO4, float32(c.R)/255.)
 	rpi.SetPinPWM(rpi.GPIO22, float32(c.G)/255.)
 	rpi.SetPinPWM(rpi.GPIO18, float32(c.B)/255.)
@@ -39,7 +126,7 @@ func doGPIO() error {
 	pin.Input()
 	pin.PullUp()
 	last := rpio.High
-	c := []color.NRGBA{
+	c := []anim1d.Color{
 		{255, 0, 0, 255},
 		{0, 255, 0, 255},
 		{0, 0, 255, 255},
@@ -71,12 +158,12 @@ func writeColors() error {
 	}
 	defer d.Close()
 
-	pixels := make([]color.NRGBA, 150)
-	a := color.NRGBA{0, 0, 0, 255}
-	b := color.NRGBA{255, 0, 0, 255}
+	pixels := make([]anim1d.Color, 150)
+	a := anim1d.Color{0, 0, 0, 255}
+	b := anim1d.Color{255, 0, 0, 255}
 	for i := range pixels {
 		intensity := 1. - float32(i)/float32(len(pixels)-1)
-		pixels[i] = color.NRGBA{
+		pixels[i] = anim1d.Color{
 			uint8((float32(a.R)*intensity + float32(b.R)*(1-intensity))),
 			uint8((float32(a.G)*intensity + float32(b.G)*(1-intensity))),
 			uint8((float32(a.B)*intensity + float32(b.B)*(1-intensity))),
@@ -110,7 +197,7 @@ func writeColorsRaw() error {
 				}
 			r := byte(i)
 		*/
-		s[4*i+0], s[4*i+1], s[4*i+2], s[4*i+3] = apa102.ColorToAPA102(color.NRGBA{r, 0, 0, 255})
+		s[4*i+0], s[4*i+1], s[4*i+2], s[4*i+3] = apa102.ColorToAPA102(anim1d.Color{r, 0, 0, 255})
 	}
 	/*
 		i := 0
@@ -208,6 +295,8 @@ func doPlot() error {
 }
 
 func mainImpl() error {
+	fmt.Printf("Yo\n")
+	return getPatterns()
 	return doPlot()
 	//return doGPIO()
 	return writeColorsRaw()

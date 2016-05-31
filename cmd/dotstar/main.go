@@ -83,11 +83,11 @@ func (c *Config) Save(n string) {
 var config = Config{
 	Alarms: Alarms{
 		{
-			Enabled:     true,
-			Hour:        6,
-			Minute:      30,
-			Days:        Monday | Tuesday | Wednesday | Thursday | Friday,
-			PatternName: "Morning alarm",
+			Enabled: true,
+			Hour:    6,
+			Minute:  30,
+			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
+			Pattern: "#FFFFFFFF",
 		},
 	},
 	NumberLights: 150,
@@ -165,9 +165,8 @@ func mainImpl() error {
 	configPath := filepath.Join(home, "dotstar.json")
 	config.Load(configPath)
 	defer config.Save(configPath)
-	registry := getRegistry()
-	config.Alarms.Reset(p, registry)
-	startWebServer(*port, p, registry)
+	config.Alarms.Reset(p)
+	startWebServer(*port, p)
 
 	/* TODO(maruel): Make this work.
 	service, err := initmDNS(properties)

@@ -5,10 +5,10 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"github.com/maruel/dotstar/anim1d"
-	"github.com/maruel/dotstar/anim1d/animio"
 )
 
 type WeekdayBit int
@@ -28,13 +28,12 @@ func (w WeekdayBit) IsEnabledFor(d time.Weekday) bool {
 }
 
 type Alarm struct {
-	Enabled     bool
-	Hour        int
-	Minute      int
-	Days        WeekdayBit
-	PatternName string
-	//PatternData string
-	timer *time.Timer
+	Enabled bool
+	Hour    int
+	Minute  int
+	Days    WeekdayBit
+	Pattern string // JSON serialized pattern.
+	timer   *time.Timer
 }
 
 // Next returns when the next trigger should be according to the alarm
@@ -60,7 +59,7 @@ func (a *Alarm) Next(now time.Time) time.Time {
 	return time.Time{}
 }
 
-func (a *Alarm) Reset(p *anim1d.Painter, r *animio.PatternRegistry) {
+func (a *Alarm) Reset(p *anim1d.Painter) {
 	if a.timer != nil {
 		a.timer.Stop()
 		a.timer = nil
@@ -68,18 +67,18 @@ func (a *Alarm) Reset(p *anim1d.Painter, r *animio.PatternRegistry) {
 	now := time.Now()
 	if next := a.Next(now); !next.IsZero() {
 		a.timer = time.AfterFunc(next.Sub(now), func() {
-			//p.SetPattern(anim1d.ParsePattern(a.PatternName, a.PatternData))
-			// TODO(maruel): Data race on r.Patterns.
-			p.SetPattern(r.Patterns[a.PatternName])
-			a.Reset(p, r)
+			if err := p.SetPattern(a.Pattern); err != nil {
+				log.Printf("failed to unmarshal pattern %q", a.Pattern)
+			}
+			a.Reset(p)
 		})
 	}
 }
 
 type Alarms []Alarm
 
-func (a Alarms) Reset(p *anim1d.Painter, r *animio.PatternRegistry) {
+func (a Alarms) Reset(p *anim1d.Painter) {
 	for _, a := range a {
-		a.Reset(p, r)
+		a.Reset(p)
 	}
 }

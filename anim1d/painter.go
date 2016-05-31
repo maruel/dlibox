@@ -5,7 +5,7 @@
 package anim1d
 
 import (
-	"image/color"
+	"encoding/json"
 	"io"
 	"log"
 	"sync"
@@ -26,7 +26,7 @@ type Pattern interface {
 	// callable without crashing with an object initialized with default values.
 	//
 	// First call is guaranteed to be called with sinceStart == 0.
-	NextFrame(pixels []color.NRGBA, sinceStart time.Duration)
+	NextFrame(pixels []Color, sinceStart time.Duration)
 
 	// TODO(maruel): Will have to think about it.
 	// NativeDuration returns the looping duration, if any. It is used for
@@ -38,7 +38,7 @@ type Pattern interface {
 type Strip interface {
 	io.Closer
 	// Write writes a new frame.
-	Write(pixels []color.NRGBA) error
+	Write(pixels []Color) error
 	// MinDelay returns the minimum delay between each draw refresh.
 	MinDelay() time.Duration
 }
@@ -50,8 +50,18 @@ type Painter struct {
 	wg sync.WaitGroup
 }
 
-func (p *Painter) SetPattern(pat Pattern) {
+// SetPattern changes the current pattern to a new one.
+//
+// The pattern is in JSON encoded format. The function will return an error if
+// the encoding is bad. The function is synchronous, it returns only after the
+// pattern was effectively set.
+func (p *Painter) SetPattern(s string) error {
+	var pat SPattern
+	if err := json.Unmarshal([]byte(s), &pat); err != nil {
+		return err
+	}
 	p.c <- pat
+	return nil
 }
 
 func (p *Painter) Close() error {
@@ -65,10 +75,10 @@ func (p *Painter) Close() error {
 func MakePainter(s Strip, numLights int) *Painter {
 	p := &Painter{s: s, c: make(chan Pattern)}
 	// Tripple buffering.
-	cGen := make(chan []color.NRGBA, 3)
-	cWrite := make(chan []color.NRGBA, cap(cGen))
+	cGen := make(chan []Color, 3)
+	cWrite := make(chan []Color, cap(cGen))
 	for i := 0; i < cap(cGen); i++ {
-		cGen <- make([]color.NRGBA, numLights)
+		cGen <- make([]Color, numLights)
 	}
 	p.wg.Add(2)
 	go p.runPattern(cGen, cWrite)
@@ -97,7 +107,7 @@ func getDelay(s Strip) time.Duration {
 
 var black = &Color{}
 
-func (p *Painter) runPattern(cGen, cWrite chan []color.NRGBA) {
+func (p *Painter) runPattern(cGen, cWrite chan []Color) {
 	defer p.wg.Done()
 	defer func() {
 		// Tell runWrite() to quit.
@@ -126,7 +136,7 @@ func (p *Painter) runPattern(cGen, cWrite chan []color.NRGBA) {
 
 		case pixels := <-cGen:
 			for i := range pixels {
-				pixels[i] = color.NRGBA{}
+				pixels[i] = Color{}
 			}
 			ease.NextFrame(pixels, since)
 			since += delay
@@ -138,7 +148,7 @@ func (p *Painter) runPattern(cGen, cWrite chan []color.NRGBA) {
 	}
 }
 
-func (p *Painter) runWrite(cGen, cWrite chan []color.NRGBA) {
+func (p *Painter) runWrite(cGen, cWrite chan []Color) {
 	defer p.wg.Done()
 	delay := getDelay(p.s)
 	tick := time.NewTicker(delay)

@@ -82,9 +82,9 @@ func processRamp(l uint32) uint32 {
 // Each channel duty cycle ramps from 100% to 1/(31*255) == 1/7905.
 //
 // Return brighness, blue, green, red.
-func ColorToAPA102(c color.NRGBA) (byte, byte, byte, byte) {
+func ColorToAPA102(c anim1d.Color) (byte, byte, byte, byte) {
 	// Evaluate alpha.
-	r, g, b, _ := c.RGBA()
+	r, g, b, _ := color.NRGBA(c).RGBA()
 
 	r2 := processRamp(r)
 	g2 := processRamp(g)
@@ -101,7 +101,7 @@ func ColorToAPA102(c color.NRGBA) (byte, byte, byte, byte) {
 	}
 }
 
-func (d *DotStar) Write(pixels []color.NRGBA) error {
+func (d *DotStar) Write(pixels []anim1d.Color) error {
 	// https://cpldcpu.files.wordpress.com/2014/08/apa-102c-super-led-specifications-2014-en.pdf
 	numLights := len(pixels)
 	// End frames are needed to be able to push enough SPI clock signals due to
@@ -181,7 +181,7 @@ type intensityLimiter struct {
 	Max   int // Maximum value between 0 (off) to 255 (full intensity).
 }
 
-func (i *intensityLimiter) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+func (i *intensityLimiter) NextFrame(pixels []anim1d.Color, sinceStart time.Duration) {
 	i.Child.NextFrame(pixels, sinceStart)
 	for j := range pixels {
 		pixels[j].A = uint8((int(pixels[j].A) + i.Max - 1) * 255 / i.Max)
@@ -205,7 +205,7 @@ type powerLimiter struct {
 	AmpBudget    float32
 }
 
-func (p *powerLimiter) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+func (p *powerLimiter) NextFrame(pixels []anim1d.Color, sinceStart time.Duration) {
 	p.Child.NextFrame(pixels, sinceStart)
 	power := 0.
 	for _, c := range pixels {
@@ -244,7 +244,7 @@ type gammaCorrection struct {
 	BlueMax    float32
 }
 
-func (g *gammaCorrection) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+func (g *gammaCorrection) NextFrame(pixels []anim1d.Color, sinceStart time.Duration) {
 	g.Child.NextFrame(pixels, sinceStart)
 	for i := range pixels {
 		pixels[i].R = FloatToUint8(255. * math.Pow(float32(pixels[i].R)/255.*g.RedMax, 1/g.RedGamma))

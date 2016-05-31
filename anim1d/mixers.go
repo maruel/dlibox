@@ -52,7 +52,7 @@ type Transition struct {
 	buf        buffer
 }
 
-func (t *Transition) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+func (t *Transition) NextFrame(pixels []Color, sinceStart time.Duration) {
 	if sinceStart <= t.Offset {
 		// Before transition.
 		if t.Out.Pattern != nil {
@@ -91,7 +91,7 @@ type Loop struct {
 	buf                buffer
 }
 
-func (l *Loop) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+func (l *Loop) NextFrame(pixels []Color, sinceStart time.Duration) {
 	l.buf.reset(len(pixels))
 	ds := float32(l.DurationShow.Seconds())
 	dt := float32(l.DurationTransition.Seconds())
@@ -125,7 +125,7 @@ type Crop struct {
 	Length int // Length of the pixels to affect
 }
 
-func (s *Crop) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+func (s *Crop) NextFrame(pixels []Color, sinceStart time.Duration) {
 	if s.Child.Pattern != nil {
 		s.Child.NextFrame(pixels[s.Start:s.Length], sinceStart)
 	}
@@ -140,7 +140,7 @@ type Mixer struct {
 	bufs     []buffer
 }
 
-func (m *Mixer) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+func (m *Mixer) NextFrame(pixels []Color, sinceStart time.Duration) {
 	if len(m.Patterns) != len(m.Weights) {
 		panic(fmt.Errorf("len(Patterns) (%d) != len(Weights) (%d)", len(m.Patterns), len(m.Weights)))
 	}
@@ -188,7 +188,7 @@ type Scale struct {
 	img    image.NRGBA
 }
 
-func (s *Scale) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
+func (s *Scale) NextFrame(pixels []Color, sinceStart time.Duration) {
 	if s.Child.Pattern == nil {
 		return
 	}
@@ -212,7 +212,7 @@ func (s *Scale) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 			s.img = *image.NewNRGBA(image.Rect(0, 0, l, 1))
 		}
 		for i := range s.buf {
-			s.img.SetNRGBA(i, 0, s.buf[i])
+			s.img.SetNRGBA(i, 0, color.NRGBA(s.buf[i]))
 		}
 		// TODO(maruel): Switch to code that doesn't allocate memory and doesn't
 		// split the image to do concurrent processing. It's probably 10x slower
@@ -223,14 +223,14 @@ func (s *Scale) NextFrame(pixels []color.NRGBA, sinceStart time.Duration) {
 		}
 		n := resize.Resize(uint(len(pixels)), 1, &s.img, scale).(*image.NRGBA)
 		for i := range pixels {
-			pixels[i] = n.NRGBAAt(i, 0)
+			pixels[i] = Color(n.NRGBAAt(i, 0))
 		}
 	}
 }
 
 // Private
 
-func mix(intensity float32, a, b []color.NRGBA) {
+func mix(intensity float32, a, b []Color) {
 	for i := range a {
 		c := b[i]
 		t2 := 1 - intensity
@@ -242,15 +242,15 @@ func mix(intensity float32, a, b []color.NRGBA) {
 	}
 }
 
-type buffer []color.NRGBA
+type buffer []Color
 
 func (b *buffer) reset(l int) {
 	if len(*b) != l {
-		*b = make([]color.NRGBA, l)
+		*b = make([]Color, l)
 	} else {
 		s := *b
 		for i := range s {
-			s[i] = color.NRGBA{}
+			s[i] = Color{}
 		}
 	}
 }
