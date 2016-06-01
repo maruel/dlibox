@@ -22,6 +22,7 @@ var serializerLookup map[string]reflect.Type
 var knownPatterns = []Pattern{
 	// Patterns
 	&Color{},
+	&Frame{},
 	&PingPong{},
 	&Animation{},
 	&Rainbow{},
@@ -65,12 +66,17 @@ func jsonUnmarshal(b []byte) (map[string]interface{}, error) {
 }
 
 // UnmarshalJSON decodes the string "#RRGGBB" to the color.
+//
+// If unmarshalling fails, 'c' is not touched.
 func (c *Color) UnmarshalJSON(d []byte) error {
 	var s string
 	if err := json.Unmarshal(d, &s); err != nil {
 		return err
 	}
-	c2, err := StringToColor(s)
+	if len(s) == 0 || s[0] != '#' {
+		return errors.New("invalid color string")
+	}
+	c2, err := stringToColor(s[1:])
 	if err == nil {
 		*c = c2
 	}
@@ -82,14 +88,61 @@ func (c *Color) MarshalJSON() ([]byte, error) {
 	return json.Marshal(fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B))
 }
 
-func (p *SPattern) UnmarshalJSON(b []byte) error {
-	if len(b) != 0 && b[0] == '"' {
-		// Special case check for Color which is encoded as "#RRGGBB" instead of
-		// a json dict.
-		c := &Color{}
-		if err := json.Unmarshal(b, c); err == nil {
-			p.Pattern = c
+// UnmarshalJSON decodes the string "LRRGGBB..." to the colors.
+//
+// If unmarshalling fails, 'f' is not touched.
+func (f *Frame) UnmarshalJSON(d []byte) error {
+	var s string
+	if err := json.Unmarshal(d, &s); err != nil {
+		return err
+	}
+	if len(s) == 0 || (len(s)-1)%6 != 0 || s[0] != 'L' {
+		return errors.New("invalid frame string")
+	}
+	l := (len(s) - 1) / 6
+	f2 := make(Frame, l)
+	for i := 0; i < l; i++ {
+		var err error
+		if f2[i], err = stringToColor(s[1+i*6 : 1+(i+1)*6]); err != nil {
 			return err
+		}
+	}
+	*f = f2
+	return nil
+}
+
+// MarshalJSON encodes the frame as a string "LRRGGBB...".
+func (f *Frame) MarshalJSON() ([]byte, error) {
+	out := bytes.Buffer{}
+	out.Grow(1 + 6*len(*f))
+	out.WriteByte('L')
+	for _, c := range *f {
+		fmt.Fprintf(&out, "%02x%02x%02x", c.R, c.G, c.B)
+	}
+	return json.Marshal(out.String())
+}
+
+// UnmarshalJSON decodes a Pattern.
+//
+// It knows how to decode Color, Frame or other arbitrary Pattern.
+//
+// If unmarshalling fails, 'f' is not touched.
+func (p *SPattern) UnmarshalJSON(b []byte) error {
+	if len(b) > 2 && b[0] == '"' {
+		// Special case check for Color which is encoded as "#RRGGBB" and Frame
+		// which is encoded as "|LRRGGBB..." instead of a json dict.
+		if b[1] == '#' {
+			c := &Color{}
+			if err := json.Unmarshal(b, c); err == nil {
+				p.Pattern = c
+				return err
+			}
+		} else if b[1] == 'L' {
+			var f Frame
+			if err := json.Unmarshal(b, &f); err == nil {
+				p.Pattern = f
+				return err
+			}
 		}
 	}
 	tmp, err := jsonUnmarshal(b)
@@ -110,7 +163,10 @@ func (p *SPattern) UnmarshalJSON(b []byte) error {
 		return errors.New("bad json data")
 	}
 	// _type will be ignored.
-	p.Pattern, err = Parse(name, b)
+	p2, err := Parse(name, b)
+	if err == nil {
+		p.Pattern = p2
+	}
 	return err
 }
 
@@ -156,26 +212,23 @@ func Marshal(p Pattern) []byte {
 	return b
 }
 
-// StringToColor converts a #RRGGBB encoded string to a Color.
-func StringToColor(s string) (Color, error) {
+// stringToColor converts a "RRGGBB" encoded string to a Color.
+func stringToColor(s string) (Color, error) {
 	// Do the parsing manually instead of using a regexp so the code is more
 	// portable to C on an ESP8266.
 	var c Color
-	if len(s) != 7 {
+	if len(s) != 6 {
 		return c, errors.New("invalid color string")
 	}
-	if s[0] != '#' {
-		return c, errors.New("invalid color string")
-	}
-	r, err := strconv.ParseUint(s[1:3], 16, 8)
+	r, err := strconv.ParseUint(s[0:2], 16, 8)
 	if err != nil {
 		return c, err
 	}
-	g, err := strconv.ParseUint(s[3:5], 16, 8)
+	g, err := strconv.ParseUint(s[2:4], 16, 8)
 	if err != nil {
 		return c, err
 	}
-	b, err := strconv.ParseUint(s[5:7], 16, 8)
+	b, err := strconv.ParseUint(s[4:6], 16, 8)
 	if err != nil {
 		return c, err
 	}

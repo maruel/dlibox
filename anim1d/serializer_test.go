@@ -29,12 +29,20 @@ func serialize(t *testing.T, p Pattern, expected string) {
 	ut.AssertEqual(t, nil, json.Unmarshal(b, p2))
 }
 
+func isColorOrFrame(p Pattern) bool {
+	if _, ok := p.(*Color); ok {
+		return ok
+	}
+	_, ok := p.(*Frame)
+	return ok
+}
+
 func TestJSON(t *testing.T) {
 	for _, p := range knownPatterns {
 		p2 := &SPattern{p}
 		b, err := json.Marshal(p2)
 		ut.AssertEqual(t, nil, err)
-		if _, ok := p.(*Color); ok {
+		if isColorOrFrame(p) {
 			ut.AssertEqual(t, uint8('"'), b[0])
 		} else {
 			ut.AssertEqual(t, uint8('{'), b[0])
@@ -43,7 +51,9 @@ func TestJSON(t *testing.T) {
 		ut.AssertEqual(t, nil, json.Unmarshal(b, p2))
 	}
 	serialize(t, &Color{1, 2, 3}, `"#010203"`)
-	serialize(t, &PingPong{}, `{"Background":"#000000","MovesPerSec":0,"Trail":null,"_type":"PingPong"}`)
+	serialize(t, &Frame{}, `"L"`)
+	serialize(t, &Frame{{1, 2, 3}, {4, 5, 6}}, `"L010203040506"`)
+	serialize(t, &PingPong{}, `{"Background":"#000000","MovesPerSec":0,"Trail":"L","_type":"PingPong"}`)
 	serialize(t, &Animation{}, `{"FrameDuration":0,"Frames":null,"_type":"Animation"}`)
 
 	// Create one more complex. Assert that int64 is not mangled.
