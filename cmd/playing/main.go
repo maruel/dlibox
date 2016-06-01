@@ -7,7 +7,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -98,14 +97,11 @@ func getPatterns() error {
 		"Dégradé bleu":  &anim1d.Gradient{anim1d.Color{0, 0, 0, 255}, anim1d.Color{0, 0, 255, 255}},
 	}
 
+	fmt.Printf("{\n")
 	for k, v := range patterns {
-		p := anim1d.SPattern{v}
-		b, err := json.Marshal(&p)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("%q: %q\n", k, string(b))
+		fmt.Printf("  %q: %q,\n", k, string(anim1d.Marshal(v)))
 	}
+	fmt.Printf("}\n")
 	return nil
 }
 
@@ -295,7 +291,6 @@ func doPlot() error {
 }
 
 func mainImpl() error {
-	fmt.Printf("Yo\n")
 	return getPatterns()
 	return doPlot()
 	//return doGPIO()

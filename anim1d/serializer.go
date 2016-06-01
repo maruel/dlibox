@@ -147,6 +147,15 @@ func Parse(name string, data []byte) (Pattern, error) {
 	return v.(Pattern), nil
 }
 
+// Marshal is a shorthand to JSON encode a pattern.
+func Marshal(p Pattern) []byte {
+	b, err := json.Marshal(&SPattern{p})
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 // StringToColor converts a #RRGGBBAA encoded string to a Color.
 func StringToColor(s string) (Color, error) {
 	// Do the parsing manually instead of using a regexp so the code is more
