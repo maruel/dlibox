@@ -9,38 +9,6 @@ import (
 	"time"
 )
 
-// RainbowColors are approximate rainbow colors without alpha.
-var RainbowColors = Frame{
-	{255, 0, 0},
-	{255, 127, 0},
-	{255, 255, 0},
-	{0, 255, 0},
-	{0, 0, 255},
-	{75, 0, 130},
-	{139, 0, 255},
-}
-
-// K2000Colors can be used with PingPong to look like Knight Rider.
-// https://en.wikipedia.org/wiki/Knight_Rider_(1982_TV_series)
-var K2000Colors = Frame{
-	{0xff, 0, 0},
-	{0xff, 0, 0},
-	{0xee, 0, 0},
-	{0xdd, 0, 0},
-	{0xcc, 0, 0},
-	{0xbb, 0, 0},
-	{0xaa, 0, 0},
-	{0x99, 0, 0},
-	{0x88, 0, 0},
-	{0x77, 0, 0},
-	{0x66, 0, 0},
-	{0x55, 0, 0},
-	{0x44, 0, 0},
-	{0x33, 0, 0},
-	{0x22, 0, 0},
-	{0x11, 0, 0},
-}
-
 // Color shows a single color on all lights. It knows how to renders itself
 // into a frame.
 type Color struct {
@@ -89,6 +57,7 @@ func (f Frame) NativeDuration(pixels int) time.Duration {
 	return 0
 }
 
+// reset() always resets the buffer to black.
 func (f *Frame) reset(l int) {
 	if len(*f) != l {
 		*f = make(Frame, l)
@@ -104,46 +73,67 @@ func (f *Frame) reset(l int) {
 // the other.
 //
 // Can be used for a ball, a water wave or K2000 (Knight Rider) style light.
+// The trail can be a Frame or a dynamic pattern.
+//
+// To get smoothed movement, use Scale{} with a 5x factor or so.
+// TODO(maruel): That's a bit inefficient, enable ScalingType here.
 type PingPong struct {
-	Trail       Frame // [0] is the front pixel.
-	Background  Color
-	MovesPerSec float32 // Expressed in number of light jumps per second.
+	Trail       SPattern // [0] is the front pixel so the pixels are effectively drawn in reverse order.
+	MovesPerSec float32  // Expressed in number of light jumps per second.
+	buf         Frame
 }
 
 func (p *PingPong) NextFrame(pixels Frame, sinceStart time.Duration) {
-	for i := range pixels {
-		pixels[i] = p.Background
-	}
-	if len(pixels) < 2 || len(p.Trail) == 0 {
-		// Not worth special casing for len(pixels)==1.
+	if len(pixels) == 0 || p.Trail.Pattern == nil {
 		return
 	}
+	p.buf.reset(len(pixels)*2 - 1)
+	p.Trail.NextFrame(p.buf, sinceStart)
 	// The last point of each extremity is only lit on one tick but every other
 	// points are lit twice during a full cycle. This means the full cycle is
 	// 2*(len(pixels)-1). For a 3 pixels line, the cycle is: x00, 0x0, 00x, 0x0.
+	//
+	// For Trail being "01234567":
+	//   move == 0  -> "01234567"
+	//   move == 2  -> "21056789"
+	//   move == 5  -> "543210ab"
+	//   move == 7  -> "76543210"
+	//   move == 9  -> "98765012"
+	//   move == 11 -> "ba901234"
+	//   move == 13 -> "d0123456"
+	//   move 14 -> move 0; "2*(8-1)"
 	cycle := 2 * (len(pixels) - 1)
-	moves := int(float32(sinceStart.Seconds()) * p.MovesPerSec)
-	if moves < len(pixels) {
-		// On the first cycle, the trail has not bounced yet.
-		pos := moves % cycle
-		for i := 0; i < len(p.Trail) && pos-i >= 0; i++ {
-			pixels[pos-i] = p.Trail[i]
+	pos := int(float32(sinceStart.Seconds())*p.MovesPerSec) % cycle
+
+	// It has to be copied manually because the ordering is not linear.
+	// Once it works the following code looks trivial but everytime it takes me
+	// an absurd amount of time to rewrite it.
+	if pos >= len(pixels)-1 {
+		// Runs left.
+		pos = cycle - pos
+		k := 2 * len(pixels)
+		for i := range pixels {
+			if i < pos {
+				pixels[i] = p.buf[k-pos-i]
+			} else {
+				pixels[i] = p.buf[i-pos]
+			}
 		}
 	} else {
-		for i := len(p.Trail) - 1; i >= 0; i-- {
-			r := (moves - i) % cycle
-			if r >= len(pixels) {
-				r = cycle - r
+		// Runs right.
+		for i := range pixels {
+			if i <= pos {
+				pixels[i] = p.buf[pos-i]
+			} else {
+				pixels[i] = p.buf[pos+i]
 			}
-			pixels[r] = p.Trail[i]
 		}
 	}
 }
 
 func (p *PingPong) NativeDuration(pixels int) time.Duration {
-	// TODO(maruel): Rounding.
-	pixels += 2
-	return time.Duration(p.MovesPerSec*float32(pixels)) * time.Second
+	cycle := 2 * (pixels - 1)
+	return time.Duration(p.MovesPerSec*float32(cycle)) * time.Second
 }
 
 // Animation represents an animatable looping frame.
