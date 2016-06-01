@@ -197,9 +197,9 @@ func LoadAnimate(content []byte, frameDuration time.Duration, vertical bool) *An
 		// Invert axes.
 		maxY, maxX = maxX, maxY
 	}
-	buf := make([][]Color, maxY)
+	buf := make([]Frame, maxY)
 	for y := 0; y < maxY; y++ {
-		buf[y] = make([]Color, maxX)
+		buf[y] = make(Frame, maxX)
 		for x := 0; x < maxX; x++ {
 			if vertical {
 				buf[y][x] = Color(color.NRGBAModel.Convert(img.At(y, x)).(color.NRGBA))

@@ -11,7 +11,7 @@ import (
 )
 
 // RainbowColors are approximate rainbow colors without alpha.
-var RainbowColors = []Color{
+var RainbowColors = Frame{
 	{255, 0, 0, 255},
 	{255, 127, 0, 255},
 	{255, 255, 0, 255},
@@ -23,7 +23,7 @@ var RainbowColors = []Color{
 
 // K2000Colors can be used with PingPong to look like Knight Rider.
 // https://en.wikipedia.org/wiki/Knight_Rider_(1982_TV_series)
-var K2000Colors = []Color{
+var K2000Colors = Frame{
 	{0xff, 0, 0, 255},
 	{0xff, 0, 0, 255},
 	{0xee, 0, 0, 255},
@@ -42,7 +42,8 @@ var K2000Colors = []Color{
 	{0x11, 0, 0, 255},
 }
 
-// Color shows a single color on all lights.
+// Color shows a single color on all lights. It knows how to renders itself
+// into a frame.
 type Color color.NRGBA
 
 // Add adds two color together with saturation, mixing according to the alpha
@@ -79,7 +80,7 @@ func (c *Color) Add(d Color) {
 	c.A = uint8(a)
 }
 
-func (c *Color) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (c *Color) NextFrame(pixels Frame, sinceStart time.Duration) {
 	for i := range pixels {
 		pixels[i] = *c
 	}
@@ -89,17 +90,40 @@ func (c *Color) NativeDuration(pixels int) time.Duration {
 	return 0
 }
 
+// Frame is a strip of colors. It knows how to renders itself into a frame
+// (which is recursive).
+type Frame []Color
+
+func (f Frame) NextFrame(pixels Frame, sinceStart time.Duration) {
+	copy(pixels, f)
+}
+
+func (f Frame) NativeDuration(pixels int) time.Duration {
+	return 0
+}
+
+func (f *Frame) reset(l int) {
+	if len(*f) != l {
+		*f = make(Frame, l)
+	} else {
+		s := *f
+		for i := range s {
+			s[i] = Color{}
+		}
+	}
+}
+
 // PingPong shows a 'ball' with a trail that bounces from one side to
 // the other.
 //
 // Can be used for a ball, a water wave or K2000 (Knight Rider) style light.
 type PingPong struct {
-	Trail       []Color // [0] is the front pixel.
+	Trail       Frame // [0] is the front pixel.
 	Background  Color
 	MovesPerSec float32 // Expressed in number of light jumps per second.
 }
 
-func (p *PingPong) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (p *PingPong) NextFrame(pixels Frame, sinceStart time.Duration) {
 	for i := range pixels {
 		pixels[i] = p.Background
 	}
@@ -140,11 +164,11 @@ func (p *PingPong) NativeDuration(pixels int) time.Duration {
 // If the image is smaller than the strip, doesn't touch the rest of the
 // pixels. Otherwise, the excess is ignored. Use Scale{} if desired.
 type Animation struct {
-	Frames        [][]Color
+	Frames        []Frame
 	FrameDuration time.Duration
 }
 
-func (a *Animation) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (a *Animation) NextFrame(pixels Frame, sinceStart time.Duration) {
 	if len(pixels) == 0 || len(a.Frames) == 0 {
 		return
 	}
@@ -159,7 +183,7 @@ func (a *Animation) NativeDuration(pixels int) time.Duration {
 type Rainbow struct {
 }
 
-func (r *Rainbow) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (r *Rainbow) NextFrame(pixels Frame, sinceStart time.Duration) {
 	start := float32(380.)
 	end := float32(781.)
 	/*
@@ -226,11 +250,11 @@ func waveLength2RGB(w float32) (c Color) {
 //
 // TODO(maruel): Refactor MovesPerSec to a new mixer 'Markee'.
 type Repeated struct {
-	Points      []Color
+	Points      Frame
 	MovesPerSec float32 // Expressed in number of light jumps per second.
 }
 
-func (r *Repeated) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (r *Repeated) NextFrame(pixels Frame, sinceStart time.Duration) {
 	if len(pixels) == 0 || len(r.Points) == 0 {
 		return
 	}
@@ -263,7 +287,7 @@ type NightSky struct {
 	points    []point
 }
 
-func (c *NightSky) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (c *NightSky) NextFrame(pixels Frame, sinceStart time.Duration) {
 	// random
 	// animate.
 }
@@ -273,7 +297,7 @@ func (c *NightSky) NextFrame(pixels []Color, sinceStart time.Duration) {
 type Aurore struct {
 }
 
-func (a *Aurore) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (a *Aurore) NextFrame(pixels Frame, sinceStart time.Duration) {
 	// TODO(maruel): Redo.
 	y := float32(sinceStart.Seconds()) * 10.
 	for i := range pixels {
@@ -299,7 +323,7 @@ type NightStars struct {
 	r     *rand.Rand
 }
 
-func (e *NightStars) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (e *NightStars) NextFrame(pixels Frame, sinceStart time.Duration) {
 	if e.r == nil {
 		e.r = rand.New(rand.NewSource(int64(e.Seed)))
 	}
@@ -345,7 +369,7 @@ type WishingStar struct {
 	AverageDelay time.Duration // Average delay between each wishing star.
 }
 
-func (w *WishingStar) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (w *WishingStar) NextFrame(pixels Frame, sinceStart time.Duration) {
 	/*
 		// Create a deterministic replay by using the current number of
 		// the wishing star as the seed for the current flow. Make it independent of
@@ -371,7 +395,7 @@ type Gradient struct {
 	A, B Color
 }
 
-func (d *Gradient) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (d *Gradient) NextFrame(pixels Frame, sinceStart time.Duration) {
 	l := len(pixels) - 1
 	if l == 0 {
 		pixels[0] = d.A

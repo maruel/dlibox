@@ -57,7 +57,7 @@ const (
 	ScalingBilinear    ScalingType = "bilinear"    // Bilinear interpolation, usually overkill for 1D.
 )
 
-func (s ScalingType) scale(in, out []Color) {
+func (s ScalingType) scale(in, out Frame) {
 	// Use integer operations as much as possible for reasonable performance.
 	li := len(in)
 	lo := len(out)
@@ -98,10 +98,10 @@ type Transition struct {
 	Offset     time.Duration  // Offset at which the transiton from Out->In starts
 	Duration   time.Duration  // Duration of the transition while both are rendered
 	Transition TransitionType // Type of transition, defaults to EaseOut if not set
-	buf        buffer
+	buf        Frame
 }
 
-func (t *Transition) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (t *Transition) NextFrame(pixels Frame, sinceStart time.Duration) {
 	if sinceStart <= t.Offset {
 		// Before transition.
 		if t.Out.Pattern != nil {
@@ -137,10 +137,10 @@ type Loop struct {
 	DurationShow       time.Duration  // Duration for each pattern to be shown as pure
 	DurationTransition time.Duration  // Duration of the transition between two patterns
 	Transition         TransitionType // Type of transition, defaults to EaseOut if not set
-	buf                buffer
+	buf                Frame
 }
 
-func (l *Loop) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (l *Loop) NextFrame(pixels Frame, sinceStart time.Duration) {
 	l.buf.reset(len(pixels))
 	ds := float32(l.DurationShow.Seconds())
 	dt := float32(l.DurationTransition.Seconds())
@@ -174,7 +174,7 @@ type Crop struct {
 	Length int // Length of the pixels to affect
 }
 
-func (s *Crop) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (s *Crop) NextFrame(pixels Frame, sinceStart time.Duration) {
 	if s.Child.Pattern != nil {
 		s.Child.NextFrame(pixels[s.Start:s.Length], sinceStart)
 	}
@@ -186,15 +186,15 @@ func (s *Crop) NextFrame(pixels []Color, sinceStart time.Duration) {
 type Mixer struct {
 	Patterns []SPattern
 	Weights  []float32 // In theory Sum(Weights) should be 1 but it doesn't need to. For example, mixing a night sky will likely have all of the Weights set to 1.
-	bufs     []buffer
+	bufs     []Frame
 }
 
-func (m *Mixer) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (m *Mixer) NextFrame(pixels Frame, sinceStart time.Duration) {
 	if len(m.Patterns) != len(m.Weights) {
 		panic(fmt.Errorf("len(Patterns) (%d) != len(Weights) (%d)", len(m.Patterns), len(m.Weights)))
 	}
 	if len(m.bufs) != len(m.Patterns) {
-		m.bufs = make([]buffer, len(m.Patterns))
+		m.bufs = make([]Frame, len(m.Patterns))
 	}
 	for i := range m.bufs {
 		m.bufs[i].reset(len(pixels))
@@ -233,11 +233,11 @@ type Scale struct {
 	Scale  ScalingType // Defaults to ScalingLinear
 	Length int         // A buffer of this length will be provided to Child and will be scaled to the actual pixels length
 	Ratio  float32     // The scaling ratio to use, <1 means smaller, >1 means larger. Only one of Length or Ratio can be used
-	buf    buffer
+	buf    Frame
 	img    image.NRGBA
 }
 
-func (s *Scale) NextFrame(pixels []Color, sinceStart time.Duration) {
+func (s *Scale) NextFrame(pixels Frame, sinceStart time.Duration) {
 	if s.Child.Pattern == nil {
 		return
 	}
@@ -279,7 +279,7 @@ func (s *Scale) NextFrame(pixels []Color, sinceStart time.Duration) {
 
 // Private
 
-func mix(intensity float32, a, b []Color) {
+func mix(intensity float32, a, b Frame) {
 	for i := range a {
 		c := b[i]
 		t2 := 1 - intensity
@@ -288,18 +288,5 @@ func mix(intensity float32, a, b []Color) {
 		a[i].G = FloatToUint8(float32(a[i].G)*intensity + float32(c.G)*t2)
 		a[i].B = FloatToUint8(float32(a[i].B)*intensity + float32(c.B)*t2)
 		a[i].A = FloatToUint8(float32(a[i].A)*intensity + float32(c.A)*t2)
-	}
-}
-
-type buffer []Color
-
-func (b *buffer) reset(l int) {
-	if len(*b) != l {
-		*b = make([]Color, l)
-	} else {
-		s := *b
-		for i := range s {
-			s[i] = Color{}
-		}
 	}
 }

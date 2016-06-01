@@ -24,7 +24,7 @@ func (s *screenStrip) Close() error {
 	return nil
 }
 
-func (s *screenStrip) Write(pixels []anim1d.Color) error {
+func (s *screenStrip) Write(pixels anim1d.Frame) error {
 	// This code is designed to minimize the amount of memory allocated per call.
 	s.buf.Reset()
 	_, _ = s.buf.WriteString("\r\033[0m")

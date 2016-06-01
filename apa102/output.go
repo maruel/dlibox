@@ -101,7 +101,7 @@ func ColorToAPA102(c anim1d.Color) (byte, byte, byte, byte) {
 	}
 }
 
-func (d *DotStar) Write(pixels []anim1d.Color) error {
+func (d *DotStar) Write(pixels anim1d.Frame) error {
 	// https://cpldcpu.files.wordpress.com/2014/08/apa-102c-super-led-specifications-2014-en.pdf
 	numLights := len(pixels)
 	// End frames are needed to be able to push enough SPI clock signals due to
@@ -181,7 +181,7 @@ type intensityLimiter struct {
 	Max   int // Maximum value between 0 (off) to 255 (full intensity).
 }
 
-func (i *intensityLimiter) NextFrame(pixels []anim1d.Color, sinceStart time.Duration) {
+func (i *intensityLimiter) NextFrame(pixels anim1d.Frame, sinceStart time.Duration) {
 	i.Child.NextFrame(pixels, sinceStart)
 	for j := range pixels {
 		pixels[j].A = uint8((int(pixels[j].A) + i.Max - 1) * 255 / i.Max)
@@ -205,7 +205,7 @@ type powerLimiter struct {
 	AmpBudget    float32
 }
 
-func (p *powerLimiter) NextFrame(pixels []anim1d.Color, sinceStart time.Duration) {
+func (p *powerLimiter) NextFrame(pixels anim1d.Frame, sinceStart time.Duration) {
 	p.Child.NextFrame(pixels, sinceStart)
 	power := 0.
 	for _, c := range pixels {

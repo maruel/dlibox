@@ -26,7 +26,7 @@ type Pattern interface {
 	// callable without crashing with an object initialized with default values.
 	//
 	// First call is guaranteed to be called with sinceStart == 0.
-	NextFrame(pixels []Color, sinceStart time.Duration)
+	NextFrame(pixels Frame, sinceStart time.Duration)
 
 	// TODO(maruel): Will have to think about it.
 	// NativeDuration returns the looping duration, if any. It is used for
@@ -38,7 +38,7 @@ type Pattern interface {
 type Strip interface {
 	io.Closer
 	// Write writes a new frame.
-	Write(pixels []Color) error
+	Write(pixels Frame) error
 	// MinDelay returns the minimum delay between each draw refresh.
 	MinDelay() time.Duration
 }
@@ -75,10 +75,10 @@ func (p *Painter) Close() error {
 func MakePainter(s Strip, numLights int) *Painter {
 	p := &Painter{s: s, c: make(chan Pattern)}
 	// Tripple buffering.
-	cGen := make(chan []Color, 3)
-	cWrite := make(chan []Color, cap(cGen))
+	cGen := make(chan Frame, 3)
+	cWrite := make(chan Frame, cap(cGen))
 	for i := 0; i < cap(cGen); i++ {
-		cGen <- make([]Color, numLights)
+		cGen <- make(Frame, numLights)
 	}
 	p.wg.Add(2)
 	go p.runPattern(cGen, cWrite)
@@ -107,7 +107,7 @@ func getDelay(s Strip) time.Duration {
 
 var black = &Color{}
 
-func (p *Painter) runPattern(cGen, cWrite chan []Color) {
+func (p *Painter) runPattern(cGen, cWrite chan Frame) {
 	defer p.wg.Done()
 	defer func() {
 		// Tell runWrite() to quit.
@@ -148,7 +148,7 @@ func (p *Painter) runPattern(cGen, cWrite chan []Color) {
 	}
 }
 
-func (p *Painter) runWrite(cGen, cWrite chan []Color) {
+func (p *Painter) runWrite(cGen, cWrite chan Frame) {
 	defer p.wg.Done()
 	delay := getDelay(p.s)
 	tick := time.NewTicker(delay)

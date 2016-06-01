@@ -520,8 +520,10 @@ func TestWaveLength2RGB(t *testing.T) {
 func TestGradient(t *testing.T) {
 	a := Color{10, 10, 10, 10}
 	b := Color{20, 20, 20, 20}
-	testFrame(t, &Gradient{a, b}, expectation{0, []Color{a}})
-	testFrame(t, &Gradient{a, b}, expectation{0, []Color{{10, 10, 10, 255}, {20, 20, 20, 255}}})
+	// TODO(maruel): Fix.
+	testFrame(t, &Gradient{a, b}, expectation{0, []Color{{1, 1, 1, 30}}})
+	testFrame(t, &Gradient{a, b}, expectation{0, []Color{{20, 20, 20, 20}, {10, 10, 10, 10}}})
+	testFrame(t, &Gradient{a, b}, expectation{0, []Color{{20, 20, 20, 20}, {15, 15, 15, 15}, {10, 10, 10, 10}}})
 }
 
 //
