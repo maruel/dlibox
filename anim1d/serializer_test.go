@@ -30,7 +30,7 @@ func serialize(t *testing.T, p Pattern, expected string) {
 }
 
 func TestJSON(t *testing.T) {
-	for n, p := range knownPatterns {
+	for _, p := range knownPatterns {
 		p2 := &SPattern{p}
 		b, err := json.Marshal(p2)
 		ut.AssertEqual(t, nil, err)
@@ -40,9 +40,6 @@ func TestJSON(t *testing.T) {
 			ut.AssertEqual(t, uint8('{'), b[0])
 		}
 		p2.Pattern = nil
-		println(n)
-		println(p)
-		println(string(b))
 		ut.AssertEqual(t, nil, json.Unmarshal(b, p2))
 	}
 	serialize(t, &Color{1, 2, 3, 4}, `"#01020304"`)

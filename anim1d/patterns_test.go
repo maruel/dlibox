@@ -14,7 +14,7 @@ import (
 func TestStaticColor(t *testing.T) {
 	p := &Color{255, 255, 255, 255}
 	e := []expectation{{3 * time.Second, []Color{{255, 255, 255, 255}}}}
-	frames(t, p, e)
+	testFrames(t, p, e)
 }
 
 /*
@@ -27,7 +27,7 @@ func TestGlow1(t *testing.T) {
 		{750 * time.Millisecond, []Color{{0x3F, 0x3F, 0x3F, 0xFF}}},
 		{1000 * time.Millisecond, []Color{{0x00, 0x00, 0x00, 0xFF}}},
 	}
-	frames(t, p, e)
+	testFrames(t, p, e)
 }
 
 func TestGlow2(t *testing.T) {
@@ -39,7 +39,7 @@ func TestGlow2(t *testing.T) {
 		{7500 * time.Millisecond, []Color{{0x3F, 0x3F, 0x3F, 0xFF}}},
 		{10000 * time.Millisecond, []Color{{0x00, 0x00, 0x00, 0xFF}}},
 	}
-	frames(t, p, e)
+	testFrames(t, p, e)
 }
 */
 
@@ -57,7 +57,7 @@ func TestPingPong(t *testing.T) {
 		{5 * time.Millisecond, []Color{b, a, {}}},
 		{6 * time.Millisecond, []Color{{}, b, a}},
 	}
-	frames(t, p, e)
+	testFrames(t, p, e)
 }
 
 func TestRepeated(t *testing.T) {
@@ -75,7 +75,7 @@ func TestRepeated(t *testing.T) {
 		{5 * time.Millisecond, []Color{b, c, a, b, c}},
 		{6 * time.Millisecond, []Color{a, b, c, a, b}},
 	}
-	frames(t, p, e)
+	testFrames(t, p, e)
 }
 
 func TestRepeatedRev(t *testing.T) {
@@ -94,7 +94,7 @@ func TestRepeatedRev(t *testing.T) {
 		{5 * time.Millisecond, []Color{c, a, b, c, a}},
 		{6 * time.Millisecond, []Color{a, b, c, a, b}},
 	}
-	frames(t, p, e)
+	testFrames(t, p, e)
 }
 
 func TestWaveLength2RGB(t *testing.T) {
@@ -517,6 +517,13 @@ func TestWaveLength2RGB(t *testing.T) {
 	}
 }
 
+func TestGradient(t *testing.T) {
+	a := Color{10, 10, 10, 10}
+	b := Color{20, 20, 20, 20}
+	testFrame(t, &Gradient{a, b}, expectation{0, []Color{a}})
+	testFrame(t, &Gradient{a, b}, expectation{0, []Color{{10, 10, 10, 255}, {20, 20, 20, 255}}})
+}
+
 //
 
 type expectation struct {
@@ -524,7 +531,7 @@ type expectation struct {
 	colors []Color
 }
 
-func frames(t *testing.T, p Pattern, expectations []expectation) {
+func testFrames(t *testing.T, p Pattern, expectations []expectation) {
 	pixels := make([]Color, len(expectations[0].colors))
 	for frame, e := range expectations {
 		p.NextFrame(pixels, e.offset)
@@ -538,6 +545,22 @@ func frames(t *testing.T, p Pattern, expectations []expectation) {
 			if dR > 1 || dR < -1 || dG > 1 || dG < -1 || dB > 1 || dB < -1 || dA > 1 || dA < -1 {
 				t.Fatalf("frame=%d; pixel=%d; %v != %v", frame, j, a, b)
 			}
+		}
+	}
+}
+
+func testFrame(t *testing.T, p Pattern, e expectation) {
+	pixels := make([]Color, len(e.colors))
+	p.NextFrame(pixels, e.offset)
+	for j := range e.colors {
+		a := e.colors[j]
+		b := pixels[j]
+		dR := int(a.R) - int(b.R)
+		dG := int(a.G) - int(b.G)
+		dB := int(a.B) - int(b.B)
+		dA := int(a.A) - int(b.A)
+		if dR > 1 || dR < -1 || dG > 1 || dG < -1 || dB > 1 || dB < -1 || dA > 1 || dA < -1 {
+			t.Fatalf("pixel=%d; %v != %v", j, a, b)
 		}
 	}
 }

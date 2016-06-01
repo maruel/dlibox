@@ -45,6 +45,40 @@ var K2000Colors = []Color{
 // Color shows a single color on all lights.
 type Color color.NRGBA
 
+// Add adds two color together with saturation, mixing according to the alpha
+// channel.
+func (c *Color) Add(d Color) {
+	if d.A == 0 {
+		return
+	}
+	if c.A == 0 {
+		*c = d
+		return
+	}
+	// TODO(maruel): Mix according to alpha on each.
+	r, g, b, a := color.NRGBA(*c).RGBA()
+	r2, g2, b2, a2 := color.NRGBA(d).RGBA()
+	if r = (r + r2) >> 8; r > 255 {
+		r = 255
+	}
+	c.R = uint8(r)
+
+	if g = (g + g2) >> 8; g > 255 {
+		g = 255
+	}
+	c.G = uint8(g)
+
+	if b = (b + b2) >> 8; b > 255 {
+		b = 255
+	}
+	c.B = uint8(b)
+
+	if a = (a + a2) >> 8; a > 255 {
+		a = 255
+	}
+	c.A = uint8(a)
+}
+
 func (c *Color) NextFrame(pixels []Color, sinceStart time.Duration) {
 	for i := range pixels {
 		pixels[i] = *c
@@ -121,7 +155,7 @@ func (a *Animation) NativeDuration(pixels int) time.Duration {
 	return a.FrameDuration * time.Duration(len(a.Frames))
 }
 
-// MakeRainbow returns rainbow colors including alpha.
+// MakeRainbow renders rainbow colors including alpha.
 type Rainbow struct {
 }
 
@@ -338,9 +372,26 @@ type Gradient struct {
 }
 
 func (d *Gradient) NextFrame(pixels []Color, sinceStart time.Duration) {
+	l := len(pixels) - 1
+	if l == 0 {
+		pixels[0] = d.A
+		pixels[0].Add(d.B)
+		return
+	}
 	for i := range pixels {
+		/*
+			// [0, 255]
+			intensity := uint8(i * 255 / l)
+			a := d.A
+			b := d.B
+			a.A = 255 - intensity
+			b.A = intensity
+			a.Add(b)
+			pixels[i] = a
+		*/
 		// [0, 1]
 		intensity := float32(i) / float32(len(pixels)-1)
+
 		pixels[i] = Color{
 			uint8((float32(d.A.R)*intensity + float32(d.B.R)*(1-intensity))),
 			uint8((float32(d.A.G)*intensity + float32(d.B.G)*(1-intensity))),

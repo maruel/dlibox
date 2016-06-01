@@ -13,32 +13,81 @@ import (
 	"github.com/nfnt/resize"
 )
 
+// TransitionType models visually pleasing transitions.
+//
+// They are modeled against CSS transitions.
+// https://www.w3.org/TR/web-animations/#scaling-using-a-cubic-bezier-curve
 type TransitionType string
 
 const (
-	// TODO(maruel): FIX!!
-	TransitionEaseInOut TransitionType = "easeinout" // Use the same Bezier curve than CSS3 transition "ease-in-out"; cubic-bezier(0, XXX, 0.58, 1).
-	TransitionEaseOut   TransitionType = "easeout"   // Use the same Bezier curve than CSS3 transition "ease-out"; cubic-bezier(0, 0, 0.58, 1). It is the default.
+	TransitionEase      TransitionType = "ease"
+	TransitionEaseIn    TransitionType = "ease-in"
+	TransitionEaseInOut TransitionType = "ease-in-out"
+	TransitionEaseOut   TransitionType = "ease-out" // Recommended and default value.
 	TransitionLinear    TransitionType = "linear"
 )
 
+// scale scales input [0, 1] to output [0, 1] using the transition requested.
 func (t TransitionType) scale(intensity float32) float32 {
-	if t == TransitionLinear {
-		return intensity
-	} else if t == TransitionEaseInOut {
-		// TODO(maruel): FIX!!
+	// TODO(maruel): Map ease-* to cubic-bezier() and add support for steps()
+	// which is pretty cool.
+	switch t {
+	case TransitionEase:
+		return cubicBezier(0.25, 0.1, 0.25, 1, intensity)
+	case TransitionEaseIn:
+		return cubicBezier(0.42, 0, 1, 1, intensity)
+	case TransitionEaseInOut:
+		return cubicBezier(0.42, 0, 0.58, 1, intensity)
+	case TransitionEaseOut, "":
+		fallthrough
+	default:
 		return cubicBezier(0, 0, 0.58, 1, intensity)
+	case TransitionLinear:
+		return intensity
 	}
-	return cubicBezier(0, 0, 0.58, 1, intensity)
 }
 
+// ScalingType specifies a way to scales a pixel strip.
 type ScalingType string
 
 const (
-	ScalingNearest  ScalingType = "nearest"
-	ScalingBilinear ScalingType = "bilinear"
-	ScalingLanczos3 ScalingType = "lanczos3"
+	ScalingNearestSkip ScalingType = "nearestskip" // Selects the nearest pixel but when upscaling, skips on missing pixels.
+	ScalingNearest     ScalingType = "nearest"     // Selects the nearest pixel, gives a blocky view.
+	ScalingLinear      ScalingType = "linear"      // Linear interpolation, recommended and default value.
+	ScalingBilinear    ScalingType = "bilinear"    // Bilinear interpolation, usually overkill for 1D.
 )
+
+func (s ScalingType) scale(in, out []Color) {
+	// Use integer operations as much as possible for reasonable performance.
+	li := len(in)
+	lo := len(out)
+	switch s {
+	case ScalingNearestSkip:
+		if li < lo {
+			// Do not touch skipped pixels.
+			for i, p := range in {
+				out[(i*lo+lo/2)/li] = p
+			}
+			return
+		}
+		fallthrough
+	case ScalingNearest, ScalingLinear, ScalingBilinear, "":
+		fallthrough
+	default:
+		for i := range out {
+			out[i] = in[(i*li+li/2)/lo]
+		}
+		/*
+			case ScalingLinear:
+				for i := range out {
+					x := (i*li + li/2) / lo
+					c := in[x]
+					c.Add(in[x+1])
+					out[i] = c
+				}
+		*/
+	}
+}
 
 // Transition changes from In to Out over time.
 //
@@ -181,7 +230,7 @@ func (m *Mixer) NextFrame(pixels []Color, sinceStart time.Duration) {
 // This is useful to create smoother animations or scale down images.
 type Scale struct {
 	Child  SPattern
-	Scale  ScalingType // Defaults to ScalingLanczos3
+	Scale  ScalingType // Defaults to ScalingLinear
 	Length int         // A buffer of this length will be provided to Child and will be scaled to the actual pixels length
 	Ratio  float32     // The scaling ratio to use, <1 means smaller, >1 means larger. Only one of Length or Ratio can be used
 	buf    buffer
