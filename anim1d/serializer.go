@@ -64,7 +64,7 @@ func jsonUnmarshal(b []byte) (map[string]interface{}, error) {
 	return tmp, err
 }
 
-// UnmarshalJSON decodes the string "#RRGGBBAA" to the color.
+// UnmarshalJSON decodes the string "#RRGGBB" to the color.
 func (c *Color) UnmarshalJSON(d []byte) error {
 	var s string
 	if err := json.Unmarshal(d, &s); err != nil {
@@ -77,14 +77,14 @@ func (c *Color) UnmarshalJSON(d []byte) error {
 	return err
 }
 
-// MarshalJSON encodes the color as a string "#RRGGBBAA".
+// MarshalJSON encodes the color as a string "#RRGGBB".
 func (c *Color) MarshalJSON() ([]byte, error) {
-	return json.Marshal(fmt.Sprintf("#%02x%02x%02x%02x", c.R, c.G, c.B, c.A))
+	return json.Marshal(fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B))
 }
 
 func (p *SPattern) UnmarshalJSON(b []byte) error {
 	if len(b) != 0 && b[0] == '"' {
-		// Special case check for Color which is encoded as "#RRGGBBAA" instead of
+		// Special case check for Color which is encoded as "#RRGGBB" instead of
 		// a json dict.
 		c := &Color{}
 		if err := json.Unmarshal(b, c); err == nil {
@@ -120,8 +120,8 @@ func (p *SPattern) MarshalJSON() ([]byte, error) {
 	}
 	b, err := json.Marshal(p.Pattern.(interface{}))
 	if err != nil || (len(b) != 0 && b[0] == '"') {
-		// Special case check for Color which is encoded as "#RRGGBBAA" instead of
-		// a json dict.
+		// Special case check for Color which is encoded as "#RRGGBB" instead of a
+		// json dict.
 		// Also error path.
 		return b, err
 	}
@@ -156,12 +156,12 @@ func Marshal(p Pattern) []byte {
 	return b
 }
 
-// StringToColor converts a #RRGGBBAA encoded string to a Color.
+// StringToColor converts a #RRGGBB encoded string to a Color.
 func StringToColor(s string) (Color, error) {
 	// Do the parsing manually instead of using a regexp so the code is more
 	// portable to C on an ESP8266.
 	var c Color
-	if len(s) != 9 {
+	if len(s) != 7 {
 		return c, errors.New("invalid color string")
 	}
 	if s[0] != '#' {
@@ -179,14 +179,9 @@ func StringToColor(s string) (Color, error) {
 	if err != nil {
 		return c, err
 	}
-	a, err := strconv.ParseUint(s[7:9], 16, 8)
-	if err != nil {
-		return c, err
-	}
 	c.R = uint8(r)
 	c.G = uint8(g)
 	c.B = uint8(b)
-	c.A = uint8(a)
 	return c, nil
 }
 
@@ -210,10 +205,12 @@ func LoadAnimate(content []byte, frameDuration time.Duration, vertical bool) *An
 	for y := 0; y < maxY; y++ {
 		buf[y] = make(Frame, maxX)
 		for x := 0; x < maxX; x++ {
+			c1 := color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
+			c := Color{c1.R, c1.G, c1.B}
 			if vertical {
-				buf[y][x] = Color(color.NRGBAModel.Convert(img.At(y, x)).(color.NRGBA))
+				buf[x][y] = c
 			} else {
-				buf[y][x] = Color(color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA))
+				buf[y][x] = c
 			}
 		}
 	}

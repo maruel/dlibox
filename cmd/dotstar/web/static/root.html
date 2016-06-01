@@ -71,18 +71,18 @@
 
     var patterns = {
       "Aurores": "{\"_type\":\"Aurore\"}",
-      "Canne de Noël": "{\"MovesPerSec\":6,\"Points\":[\"#ff0000ff\",\"#ff0000ff\",\"#ff0000ff\",\"#ff0000ff\",\"#ff0000ff\",\"#ffffffff\",\"#ffffffff\",\"#ffffffff\",\"#ffffffff\",\"#ffffffff\"],\"_type\":\"Repeated\"}",
+      "Canne de Noël": "{\"MovesPerSec\":6,\"Points\":[\"#ff0000\",\"#ff0000\",\"#ff0000\",\"#ff0000\",\"#ff0000\",\"#ffffff\",\"#ffffff\",\"#ffffff\",\"#ffffff\",\"#ffffff\"],\"_type\":\"Repeated\"}",
       "Ciel étoilé": "{\"Patterns\":[{\"_type\":\"Aurore\"},{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"Weights\":[1,1,1],\"_type\":\"Mixer\"}",
-      "Cycle RGB": "{\"DurationShow\":1000000000,\"DurationTransition\":1000000000,\"Patterns\":[\"#ff0000ff\",\"#00ff00ff\",\"#0000ffff\"],\"Transition\":\"easeinout\",\"_type\":\"Loop\"}",
-      "Dégradé bleu": "{\"A\":\"#000000ff\",\"B\":\"#0000ffff\",\"_type\":\"Gradient\"}",
-      "Dégradé rouge": "{\"A\":\"#000000ff\",\"B\":\"#ff0000ff\",\"_type\":\"Gradient\"}",
-      "Dégradé vert": "{\"A\":\"#000000ff\",\"B\":\"#00ff00ff\",\"_type\":\"Gradient\"}",
-      "Dégradé": "{\"A\":\"#000000ff\",\"B\":\"#ffffffff\",\"_type\":\"Gradient\"}",
-      "K2000": "{\"Background\":\"#000000ff\",\"MovesPerSec\":30,\"Trail\":[\"#ff0000ff\",\"#ff0000ff\",\"#ee0000ff\",\"#dd0000ff\",\"#cc0000ff\",\"#bb0000ff\",\"#aa0000ff\",\"#990000ff\",\"#880000ff\",\"#770000ff\",\"#660000ff\",\"#550000ff\",\"#440000ff\",\"#330000ff\",\"#220000ff\",\"#110000ff\"],\"_type\":\"PingPong\"}",
-      "Morning alarm": "{\"Duration\":600000000000,\"In\":\"#00000000\",\"Offset\":1800000000000,\"Out\":{\"Duration\":600000000000,\"In\":\"#ffffffff\",\"Offset\":600000000000,\"Out\":{\"Duration\":600000000000,\"In\":\"#ff7f00ff\",\"Offset\":0,\"Out\":\"#00000000\",\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"}",
-      "Noir": "\"#00000000\"",
-      "Ping pong": "{\"Background\":\"#00000000\",\"MovesPerSec\":30,\"Trail\":[\"#ffffffff\"],\"_type\":\"PingPong\"}",
-      "Rainbow cycle": "{\"DurationShow\":1000000000,\"DurationTransition\":10000000000,\"Patterns\":[\"#8b00ffff\",\"#8b00ffff\",\"#8b00ffff\",\"#8b00ffff\",\"#8b00ffff\",\"#8b00ffff\",\"#8b00ffff\"],\"Transition\":\"easeinout\",\"_type\":\"Loop\"}",
+      "Cycle RGB": "{\"DurationShow\":1000000000,\"DurationTransition\":1000000000,\"Patterns\":[\"#ff0000\",\"#00ff00\",\"#0000ff\"],\"Transition\":\"easeinout\",\"_type\":\"Loop\"}",
+      "Dégradé bleu": "{\"A\":\"#000000\",\"B\":\"#0000ff\",\"_type\":\"Gradient\"}",
+      "Dégradé rouge": "{\"A\":\"#000000\",\"B\":\"#ff0000\",\"_type\":\"Gradient\"}",
+      "Dégradé vert": "{\"A\":\"#000000\",\"B\":\"#00ff00\",\"_type\":\"Gradient\"}",
+      "Dégradé": "{\"A\":\"#000000\",\"B\":\"#ffffff\",\"_type\":\"Gradient\"}",
+      "K2000": "{\"Background\":\"#000000\",\"MovesPerSec\":30,\"Trail\":[\"#ff0000\",\"#ff0000\",\"#ee0000\",\"#dd0000\",\"#cc0000\",\"#bb0000\",\"#aa0000\",\"#990000\",\"#880000\",\"#770000\",\"#660000\",\"#550000\",\"#440000\",\"#330000\",\"#220000\",\"#110000\"],\"_type\":\"PingPong\"}",
+      "Morning alarm": "{\"Duration\":600000000000,\"In\":\"#000000\",\"Offset\":1800000000000,\"Out\":{\"Duration\":600000000000,\"In\":\"#ffffff\",\"Offset\":600000000000,\"Out\":{\"Duration\":600000000000,\"In\":\"#ff7f00\",\"Offset\":0,\"Out\":\"#000000\",\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"}",
+      "Noir": "\"#000000\"",
+      "Ping pong": "{\"Background\":\"#000000\",\"MovesPerSec\":30,\"Trail\":[\"#ffffff\"],\"_type\":\"PingPong\"}",
+      "Rainbow cycle": "{\"DurationShow\":1000000000,\"DurationTransition\":10000000000,\"Patterns\":[\"#8b00ff\",\"#8b00ff\",\"#8b00ff\",\"#8b00ff\",\"#8b00ff\",\"#8b00ff\",\"#8b00ff\"],\"Transition\":\"easeinout\",\"_type\":\"Loop\"}",
       "Rainbow static": "{\"_type\":\"Rainbow\"}",
       "Étoiles cintillantes": "{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"}",
     };
@@ -123,7 +123,7 @@
             document.getElementById('rgb_r').value = rgb.r;
             document.getElementById('rgb_g').value = rgb.g;
             document.getElementById('rgb_b').value = rgb.b;
-            update("pattern=" + btoa('"' + hex + 'FF"'));
+            update("pattern=" + btoa('"' + hex + '"'));
           });
     }
 

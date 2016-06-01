@@ -5,7 +5,6 @@
 package apa102
 
 import (
-	"image/color"
 	"io"
 	"time"
 
@@ -34,31 +33,47 @@ func (d *DotStar) Close() error {
 	return w.Close()
 }
 
-const maxIn = float32(0xFFFF)
-const maxOut = float32(0x1EE1)
-const lowCut = 30 * 255
+// maxOut is the maximum intensity of each channel on a APA102 LED.
+const maxOut = 0x1EE1
 
-// TODO(maruel): The +10 is completely random and needs to be properly
-// calculated.
-const rampOffset = (float32(lowCut)/255. + 10.) / maxIn
-const lowCutf = float32(lowCut) / maxIn
-const klow = lowCutf*lowCutf*lowCutf + rampOffset
-
-// Converts input from [0, 0xFFFF] as intensity to lightness on a scale of
-// [0, 0x1EE1].
+// Ramp converts input from [0, 0xFF] as intensity to lightness on a scale of
+// [0, 0x1EE1] or other desired range [0, max].
+//
+// It tries to use the same curve independent of the scale used. max can be
+// changed to change the color temperature or to limit power dissipation.
 //
 // It's the reverse of lightness; https://en.wikipedia.org/wiki/Lightness
-func processRamp(l uint32) uint32 {
-	// Linear [0->0] to [30*255->30].
-	if l < lowCut {
-		return uint32(float32(l)/255. + 0.4)
+func Ramp(l uint8, max uint32) uint32 {
+	if l == 0 {
+		// Make sure black is black.
+		return 0
 	}
-	// Range [lowCut/maxIn, 1]
-	y := float32(l) / maxIn
-	y = y * y * y
-	// Range [(lowCut/maxIn)^3, 1]. We need to realign to [lowCut/255, 1] then
-	// scale to maxOut.
-	return uint32((y+klow)/(1+klow)*maxOut + 0.4)
+	if max == 0 || max > maxOut {
+		// If 'max' is not specified or is above maxOut, reset the maximum value.
+		max = maxOut
+	} else if max < 255 {
+		max = 255
+	}
+	// linearCutOff defines the linear section of the curve. Inputs between
+	// [0, linearCutOff] are mapped linearly to the output. It is 1% of maximum
+	// output.
+	linearCutOff := (max + 50) / 100
+	l32 := uint32(l)
+	if l32 < linearCutOff {
+		return l32
+	}
+
+	// Maps [linearCutOff, 255] to use [linearCutOff*max/255, max] using a x^3
+	// ramp.
+	// Realign input to [0, 255-linearCutOff]. It now maps to
+	// [0, max-linearCutOff*max/255].
+	//const inRange = 255
+	l32 -= linearCutOff
+	inRange := 255 - linearCutOff
+	outRange := max - linearCutOff
+	offset := inRange >> 1
+	y := (l32*l32*l32 + offset) / inRange
+	return (y*outRange+(offset*offset))/inRange/inRange + linearCutOff
 }
 
 // ColorToAPA102 converts a color into the 4 bytes needed to control an APA-102
@@ -83,21 +98,18 @@ func processRamp(l uint32) uint32 {
 //
 // Return brighness, blue, green, red.
 func ColorToAPA102(c anim1d.Color) (byte, byte, byte, byte) {
-	// Evaluate alpha.
-	r, g, b, _ := color.NRGBA(c).RGBA()
-
-	r2 := processRamp(r)
-	g2 := processRamp(g)
-	b2 := processRamp(b)
-	if r2 <= 255 && g2 <= 255 && b2 <= 255 {
-		return byte(0xE0 + 1), byte(b2), byte(g2), byte(r2)
-	} else if r2 <= 511 && g2 <= 511 && b2 <= 511 {
-		return byte(0xE0 + 2), byte(b2 >> 1), byte(g2 >> 1), byte(r2 >> 1)
-	} else if r2 <= 1023 && g2 <= 1023 && b2 <= 1023 {
-		return byte(0xE0 + 4), byte((b2 + 2) >> 2), byte((g2 + 2) >> 2), byte((r2 + 2) >> 2)
+	r := Ramp(c.R, 0)
+	g := Ramp(c.G, 0)
+	b := Ramp(c.B, 0)
+	if r <= 255 && g <= 255 && b <= 255 {
+		return byte(0xE0 + 1), byte(b), byte(g), byte(r)
+	} else if r <= 511 && g <= 511 && b <= 511 {
+		return byte(0xE0 + 2), byte(b >> 1), byte(g >> 1), byte(r >> 1)
+	} else if r <= 1023 && g <= 1023 && b <= 1023 {
+		return byte(0xE0 + 4), byte((b + 2) >> 2), byte((g + 2) >> 2), byte((r + 2) >> 2)
 	} else {
 		// In this case we need to use a ramp of 255-1 even for lower colors.
-		return byte(0xE0 + 31), byte((b2 + 15) / 31), byte((g2 + 15) / 31), byte((r2 + 15) / 31)
+		return byte(0xE0 + 31), byte((b + 15) / 31), byte((g + 15) / 31), byte((r + 15) / 31)
 	}
 }
 

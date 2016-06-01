@@ -90,7 +90,8 @@ func (t *ThumbnailsCache) GIF(serialized []byte) ([]byte, error) {
 		for j, pixel := range pixels[frame&1] {
 			// TODO(maruel): draw.FloydSteinberg assuming we use 5x5 boxes instead of
 			// 1x1. For now, just use the closest color.
-			img.Pix[j] = uint8(pal.Index(color.NRGBA(pixel)))
+			c := color.NRGBA{pixel.R, pixel.G, pixel.B, 255}
+			img.Pix[j] = uint8(pal.Index(c))
 		}
 	}
 	b := &bytes.Buffer{}

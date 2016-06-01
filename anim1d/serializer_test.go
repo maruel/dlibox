@@ -42,15 +42,15 @@ func TestJSON(t *testing.T) {
 		p2.Pattern = nil
 		ut.AssertEqual(t, nil, json.Unmarshal(b, p2))
 	}
-	serialize(t, &Color{1, 2, 3, 4}, `"#01020304"`)
-	serialize(t, &PingPong{}, `{"Background":"#00000000","MovesPerSec":0,"Trail":null,"_type":"PingPong"}`)
+	serialize(t, &Color{1, 2, 3}, `"#010203"`)
+	serialize(t, &PingPong{}, `{"Background":"#000000","MovesPerSec":0,"Trail":null,"_type":"PingPong"}`)
 	serialize(t, &Animation{}, `{"FrameDuration":0,"Frames":null,"_type":"Animation"}`)
 
 	// Create one more complex. Assert that int64 is not mangled.
 	p := &Transition{
 		Out: SPattern{
 			&Transition{
-				In:         SPattern{&Color{255, 255, 255, 255}},
+				In:         SPattern{&Color{255, 255, 255}},
 				Offset:     10 * time.Minute,
 				Duration:   10 * time.Minute,
 				Transition: TransitionLinear,
@@ -61,6 +61,6 @@ func TestJSON(t *testing.T) {
 		Duration:   10 * time.Minute,
 		Transition: TransitionLinear,
 	}
-	expected := `{"Duration":600000000000,"In":"#00000000","Offset":1800000000000,"Out":{"Duration":600000000000,"In":"#ffffffff","Offset":600000000000,"Out":{},"Transition":"linear","_type":"Transition"},"Transition":"linear","_type":"Transition"}`
+	expected := `{"Duration":600000000000,"In":"#000000","Offset":1800000000000,"Out":{"Duration":600000000000,"In":"#ffffff","Offset":600000000000,"Out":{},"Transition":"linear","_type":"Transition"},"Transition":"linear","_type":"Transition"}`
 	serialize(t, p, expected)
 }

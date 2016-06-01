@@ -5,79 +5,66 @@
 package anim1d
 
 import (
-	"image/color"
 	"math/rand"
 	"time"
 )
 
 // RainbowColors are approximate rainbow colors without alpha.
 var RainbowColors = Frame{
-	{255, 0, 0, 255},
-	{255, 127, 0, 255},
-	{255, 255, 0, 255},
-	{0, 255, 0, 255},
-	{0, 0, 255, 255},
-	{75, 0, 130, 255},
-	{139, 0, 255, 255},
+	{255, 0, 0},
+	{255, 127, 0},
+	{255, 255, 0},
+	{0, 255, 0},
+	{0, 0, 255},
+	{75, 0, 130},
+	{139, 0, 255},
 }
 
 // K2000Colors can be used with PingPong to look like Knight Rider.
 // https://en.wikipedia.org/wiki/Knight_Rider_(1982_TV_series)
 var K2000Colors = Frame{
-	{0xff, 0, 0, 255},
-	{0xff, 0, 0, 255},
-	{0xee, 0, 0, 255},
-	{0xdd, 0, 0, 255},
-	{0xcc, 0, 0, 255},
-	{0xbb, 0, 0, 255},
-	{0xaa, 0, 0, 255},
-	{0x99, 0, 0, 255},
-	{0x88, 0, 0, 255},
-	{0x77, 0, 0, 255},
-	{0x66, 0, 0, 255},
-	{0x55, 0, 0, 255},
-	{0x44, 0, 0, 255},
-	{0x33, 0, 0, 255},
-	{0x22, 0, 0, 255},
-	{0x11, 0, 0, 255},
+	{0xff, 0, 0},
+	{0xff, 0, 0},
+	{0xee, 0, 0},
+	{0xdd, 0, 0},
+	{0xcc, 0, 0},
+	{0xbb, 0, 0},
+	{0xaa, 0, 0},
+	{0x99, 0, 0},
+	{0x88, 0, 0},
+	{0x77, 0, 0},
+	{0x66, 0, 0},
+	{0x55, 0, 0},
+	{0x44, 0, 0},
+	{0x33, 0, 0},
+	{0x22, 0, 0},
+	{0x11, 0, 0},
 }
 
 // Color shows a single color on all lights. It knows how to renders itself
 // into a frame.
-type Color color.NRGBA
+type Color struct {
+	R, G, B uint8
+}
 
 // Add adds two color together with saturation, mixing according to the alpha
 // channel.
 func (c *Color) Add(d Color) {
-	if d.A == 0 {
-		return
-	}
-	if c.A == 0 {
-		*c = d
-		return
-	}
-	// TODO(maruel): Mix according to alpha on each.
-	r, g, b, a := color.NRGBA(*c).RGBA()
-	r2, g2, b2, a2 := color.NRGBA(d).RGBA()
-	if r = (r + r2) >> 8; r > 255 {
+	r := uint16(c.R) + uint16(d.R)
+	if r > 255 {
 		r = 255
 	}
 	c.R = uint8(r)
-
-	if g = (g + g2) >> 8; g > 255 {
+	g := uint16(c.G) + uint16(d.G)
+	if g > 255 {
 		g = 255
 	}
 	c.G = uint8(g)
-
-	if b = (b + b2) >> 8; b > 255 {
+	b := uint16(c.B) + uint16(d.B)
+	if b > 255 {
 		b = 255
 	}
 	c.B = uint8(b)
-
-	if a = (a + a2) >> 8; a > 255 {
-		a = 255
-	}
-	c.A = uint8(a)
 }
 
 func (c *Color) NextFrame(pixels Frame, sinceStart time.Duration) {
@@ -211,10 +198,15 @@ func (r *Rainbow) NativeDuration(pixels int) time.Duration {
 // waveLengthToRGB returns a color over a rainbow, including alpha.
 //
 // This code was inspired by public domain code on the internet.
+//
+// TODO(maruel): Convert to integer calculation.
 func waveLength2RGB(w float32) (c Color) {
 	switch {
-	case 380. <= w && w < 440.:
-		c.R = FloatToUint8(255. * (440. - w) / (440. - 380.))
+	case 380. <= w && w < 420.:
+		c.R = 128 - FloatToUint8(127.*(440.-w)/(440.-380.))
+		c.B = FloatToUint8(255. * (0.1 + 0.9*(w-380.)/(420.-380.)))
+	case 420. <= w && w < 440.:
+		c.R = FloatToUint8(127. * (440. - w) / (440. - 380.))
 		c.B = 255
 	case 440. <= w && w < 490.:
 		c.G = FloatToUint8(255. * (w - 440.) / (490. - 440.))
@@ -228,16 +220,10 @@ func waveLength2RGB(w float32) (c Color) {
 	case 580. <= w && w < 645.:
 		c.R = 255
 		c.G = FloatToUint8(255. * (645. - w) / (645. - 580.))
-	case 645. <= w && w < 781.:
+	case 645. <= w && w < 700.:
 		c.R = 255
-	}
-	switch {
-	case 380. <= w && w < 420.:
-		c.A = FloatToUint8(255. * (0.1 + 0.9*(w-380.)/(420.-380.)))
-	case 420. <= w && w < 701.:
-		c.A = 255
-	case 701. <= w && w < 781.:
-		c.A = FloatToUint8(255. * (0.1 + 0.9*(780.-w)/(780.-700.)))
+	case 700. <= w && w < 781.:
+		c.R = FloatToUint8(255. * (0.1 + 0.9*(780.-w)/(780.-700.)))
 	}
 	return
 }
@@ -306,9 +292,8 @@ func (a *Aurore) NextFrame(pixels Frame, sinceStart time.Duration) {
 		b := (32 + 31*(sin(hypot(200-y, 320-x)/16))) * (0.5 + 0.5*sin(y*0.1))
 		pixels[i].R = 0
 		//pixels[i].G = uint8(a + b)
-		pixels[i].G = 255
+		pixels[i].G = uint8(b)
 		pixels[i].B = 0
-		pixels[i].A = uint8(b)
 	}
 }
 
@@ -353,7 +338,7 @@ func (e *NightStars) NextFrame(pixels Frame, sinceStart time.Duration) {
 			// TODO(maruel): Type, oscillation.
 			if j != 0 {
 				f := FloatToUint8(float32(e.r.NormFloat64())*4 + float32(j))
-				pixels[i] = Color{255, 255, 255, f}
+				pixels[i] = Color{f, f, f}
 			}
 		}
 	}
@@ -415,12 +400,10 @@ func (d *Gradient) NextFrame(pixels Frame, sinceStart time.Duration) {
 		*/
 		// [0, 1]
 		intensity := float32(i) / float32(len(pixels)-1)
-
 		pixels[i] = Color{
 			uint8((float32(d.A.R)*intensity + float32(d.B.R)*(1-intensity))),
 			uint8((float32(d.A.G)*intensity + float32(d.B.G)*(1-intensity))),
 			uint8((float32(d.A.B)*intensity + float32(d.B.B)*(1-intensity))),
-			uint8((float32(d.A.A)*intensity + float32(d.B.A)*(1-intensity))),
 		}
 	}
 }

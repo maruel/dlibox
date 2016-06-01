@@ -29,7 +29,7 @@ func (s *screenStrip) Write(pixels anim1d.Frame) error {
 	s.buf.Reset()
 	_, _ = s.buf.WriteString("\r\033[0m")
 	for _, c := range pixels {
-		_, _ = io.WriteString(&s.buf, ansi256.Default.Block(color.NRGBA(c)))
+		_, _ = io.WriteString(&s.buf, ansi256.Default.Block(color.NRGBA{c.R, c.G, c.B, 255}))
 	}
 	_, _ = s.buf.WriteString("\033[0m ")
 	_, err := s.buf.WriteTo(s.w)

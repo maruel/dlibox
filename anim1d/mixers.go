@@ -207,21 +207,18 @@ func (m *Mixer) NextFrame(pixels Frame, sinceStart time.Duration) {
 
 	// Merge patterns.
 	for i := range pixels {
-		// TODO(maruel): Averaging colors in RGB space looks like hell.
-		var r, g, b, a float32
+		// TODO(maruel): Use uint32 calculation.
+		var r, g, b float32
 		for j := range m.bufs {
 			c := m.bufs[j][i]
 			w := m.Weights[j]
-			// TODO(maruel): Pre-multiply alpha.
 			r += float32(c.R) * w
 			g += float32(c.G) * w
 			b += float32(c.B) * w
-			a += float32(c.A) * w
 		}
 		pixels[i].R = FloatToUint8(r)
 		pixels[i].G = FloatToUint8(g)
 		pixels[i].B = FloatToUint8(b)
-		pixels[i].A = FloatToUint8(a)
 	}
 }
 
@@ -259,6 +256,5 @@ func mix(intensity float32, a, b Frame) {
 		a[i].R = FloatToUint8(float32(a[i].R)*intensity + float32(c.R)*t2)
 		a[i].G = FloatToUint8(float32(a[i].G)*intensity + float32(c.G)*t2)
 		a[i].B = FloatToUint8(float32(a[i].B)*intensity + float32(c.B)*t2)
-		a[i].A = FloatToUint8(float32(a[i].A)*intensity + float32(c.A)*t2)
 	}
 }

@@ -43,8 +43,8 @@ func TestScalingType(t *testing.T) {
 	}
 
 	// TODO(maruel): Add actual tests.
-	red := Color{0xFF, 0x00, 0x00, 0xFF}
-	blue := Color{0x00, 0x00, 0xFF, 0xFF}
+	red := Color{0xFF, 0x00, 0x00}
+	blue := Color{0x00, 0x00, 0xFF}
 	data := []struct {
 		s        ScalingType
 		i        Frame
