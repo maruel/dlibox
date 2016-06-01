@@ -6,11 +6,7 @@ package anim1d
 
 import (
 	"fmt"
-	"image"
-	"image/color"
 	"time"
-
-	"github.com/nfnt/resize"
 )
 
 // TransitionType models visually pleasing transitions.
@@ -29,8 +25,9 @@ const (
 
 // scale scales input [0, 1] to output [0, 1] using the transition requested.
 func (t TransitionType) scale(intensity float32) float32 {
-	// TODO(maruel): Map ease-* to cubic-bezier() and add support for steps()
-	// which is pretty cool.
+	// TODO(maruel): Add support for arbitrary cubic-bezier().
+	// TODO(maruel): Map ease-* to cubic-bezier().
+	// TODO(maruel): Add support for steps() which is pretty cool.
 	switch t {
 	case TransitionEase:
 		return cubicBezier(0.25, 0.1, 0.25, 1, intensity)
@@ -61,6 +58,9 @@ func (s ScalingType) scale(in, out Frame) {
 	// Use integer operations as much as possible for reasonable performance.
 	li := len(in)
 	lo := len(out)
+	if li == 0 || lo == 0 {
+		return
+	}
 	switch s {
 	case ScalingNearestSkip:
 		if li < lo {
@@ -232,9 +232,8 @@ type Scale struct {
 	Child  SPattern
 	Scale  ScalingType // Defaults to ScalingLinear
 	Length int         // A buffer of this length will be provided to Child and will be scaled to the actual pixels length
-	Ratio  float32     // The scaling ratio to use, <1 means smaller, >1 means larger. Only one of Length or Ratio can be used
+	Ratio  float32     // Scaling ratio to use, <1 means smaller, >1 means larger. Only one of Length or Ratio can be used
 	buf    Frame
-	img    image.NRGBA
 }
 
 func (s *Scale) NextFrame(pixels Frame, sinceStart time.Duration) {
@@ -242,39 +241,12 @@ func (s *Scale) NextFrame(pixels Frame, sinceStart time.Duration) {
 		return
 	}
 	l := s.Length
-	r := s.Ratio
 	if l == 0 {
 		l = int(ceil(s.Ratio * float32(len(pixels))))
-	} else {
-		r = float32(l) / float32(len(pixels))
 	}
 	s.buf.reset(l)
 	s.Child.NextFrame(s.buf, sinceStart)
-	if s.Scale == ScalingNearest {
-		for i := range pixels {
-			pixels[i] = s.buf[int(roundF(float32(i)*r))]
-		}
-	} else {
-		// TODO(maruel): Find a way to not have to double-buffer, e.g. alias s.buf
-		// and s.img.Pix.
-		if len(s.img.Pix) != 4*l {
-			s.img = *image.NewNRGBA(image.Rect(0, 0, l, 1))
-		}
-		for i := range s.buf {
-			s.img.SetNRGBA(i, 0, color.NRGBA(s.buf[i]))
-		}
-		// TODO(maruel): Switch to code that doesn't allocate memory and doesn't
-		// split the image to do concurrent processing. It's probably 10x slower
-		// than it needs to be, and this is a concern on a rPi1.
-		scale := resize.Lanczos3
-		if s.Scale == ScalingBilinear {
-			scale = resize.Bilinear
-		}
-		n := resize.Resize(uint(len(pixels)), 1, &s.img, scale).(*image.NRGBA)
-		for i := range pixels {
-			pixels[i] = Color(n.NRGBAAt(i, 0))
-		}
-	}
+	s.Scale.scale(s.buf, pixels)
 }
 
 // Private

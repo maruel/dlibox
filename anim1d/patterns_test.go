@@ -11,7 +11,7 @@ import (
 	"github.com/maruel/ut"
 )
 
-func TestStaticColor(t *testing.T) {
+func TestColor(t *testing.T) {
 	p := &Color{255, 255, 255, 255}
 	e := []expectation{{3 * time.Second, []Color{{255, 255, 255, 255}}}}
 	testFrames(t, p, e)
