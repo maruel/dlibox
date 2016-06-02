@@ -69,94 +69,7 @@ func (f *Frame) reset(l int) {
 	}
 }
 
-// PingPong shows a 'ball' with a trail that bounces from one side to
-// the other.
-//
-// Can be used for a ball, a water wave or K2000 (Knight Rider) style light.
-// The trail can be a Frame or a dynamic pattern.
-//
-// To get smoothed movement, use Scale{} with a 5x factor or so.
-// TODO(maruel): That's a bit inefficient, enable ScalingType here.
-type PingPong struct {
-	Trail       SPattern // [0] is the front pixel so the pixels are effectively drawn in reverse order.
-	MovesPerSec float32  // Expressed in number of light jumps per second.
-	buf         Frame
-}
-
-func (p *PingPong) NextFrame(pixels Frame, sinceStart time.Duration) {
-	if len(pixels) == 0 || p.Trail.Pattern == nil {
-		return
-	}
-	p.buf.reset(len(pixels)*2 - 1)
-	p.Trail.NextFrame(p.buf, sinceStart)
-	// The last point of each extremity is only lit on one tick but every other
-	// points are lit twice during a full cycle. This means the full cycle is
-	// 2*(len(pixels)-1). For a 3 pixels line, the cycle is: x00, 0x0, 00x, 0x0.
-	//
-	// For Trail being "01234567":
-	//   move == 0  -> "01234567"
-	//   move == 2  -> "21056789"
-	//   move == 5  -> "543210ab"
-	//   move == 7  -> "76543210"
-	//   move == 9  -> "98765012"
-	//   move == 11 -> "ba901234"
-	//   move == 13 -> "d0123456"
-	//   move 14 -> move 0; "2*(8-1)"
-	cycle := 2 * (len(pixels) - 1)
-	pos := int(float32(sinceStart.Seconds())*p.MovesPerSec) % cycle
-
-	// It has to be copied manually because the ordering is not linear.
-	// Once it works the following code looks trivial but everytime it takes me
-	// an absurd amount of time to rewrite it.
-	if pos >= len(pixels)-1 {
-		// Runs left.
-		pos = cycle - pos
-		k := 2 * len(pixels)
-		for i := range pixels {
-			if i < pos {
-				pixels[i] = p.buf[k-pos-i]
-			} else {
-				pixels[i] = p.buf[i-pos]
-			}
-		}
-	} else {
-		// Runs right.
-		for i := range pixels {
-			if i <= pos {
-				pixels[i] = p.buf[pos-i]
-			} else {
-				pixels[i] = p.buf[pos+i]
-			}
-		}
-	}
-}
-
-func (p *PingPong) NativeDuration(pixels int) time.Duration {
-	cycle := 2 * (pixels - 1)
-	return time.Duration(p.MovesPerSec*float32(cycle)) * time.Second
-}
-
-// Animation represents an animatable looping frame.
-//
-// If the image is smaller than the strip, doesn't touch the rest of the
-// pixels. Otherwise, the excess is ignored. Use Scale{} if desired.
-type Animation struct {
-	Frames        []Frame
-	FrameDuration time.Duration
-}
-
-func (a *Animation) NextFrame(pixels Frame, sinceStart time.Duration) {
-	if len(pixels) == 0 || len(a.Frames) == 0 {
-		return
-	}
-	copy(pixels, a.Frames[int(sinceStart/a.FrameDuration)%len(a.Frames)])
-}
-
-func (a *Animation) NativeDuration(pixels int) time.Duration {
-	return a.FrameDuration * time.Duration(len(a.Frames))
-}
-
-// MakeRainbow renders rainbow colors including alpha.
+// MakeRainbow renders rainbow colors.
 type Rainbow struct {
 }
 
@@ -218,31 +131,22 @@ func waveLength2RGB(w float32) (c Color) {
 	return
 }
 
-// Repeated prints a repeated pattern that can also cycle either way.
-//
-// Use negative to go left. Can be used for 'candy bar'.
-//
-// Using one point results in the same as Color{}.
-//
-// TODO(maruel): Refactor MovesPerSec to a new mixer 'Markee'.
+// Repeated repeats a Frame to fill the pixels.
 type Repeated struct {
-	Points      Frame
-	MovesPerSec float32 // Expressed in number of light jumps per second.
+	Frame Frame
 }
 
 func (r *Repeated) NextFrame(pixels Frame, sinceStart time.Duration) {
-	if len(pixels) == 0 || len(r.Points) == 0 {
+	if len(pixels) == 0 || len(r.Frame) == 0 {
 		return
 	}
-	offset := len(r.Points) - int(float32(sinceStart.Seconds())*r.MovesPerSec)%len(r.Points)
-	for i := range pixels {
-		pixels[i] = Color(r.Points[(i+offset)%len(r.Points)])
+	for i := 0; i < len(pixels); i += len(r.Frame) {
+		copy(pixels[i:], r.Frame)
 	}
 }
 
 func (r *Repeated) NativeDuration(pixels int) time.Duration {
-	// TODO(maruel): Rounding.
-	return time.Duration(float32(len(r.Points))/r.MovesPerSec) * time.Second
+	return 0
 }
 
 type point struct {
@@ -258,7 +162,7 @@ type point struct {
 //    - Rotation de la terre?
 //    - Station Internationale?
 type NightSky struct {
-	Stars     []Animation
+	Stars     []Cycle
 	Frequency float32 // Number of explosions by second.
 	points    []point
 }
@@ -366,6 +270,7 @@ func (w *WishingStar) NextFrame(pixels Frame, sinceStart time.Duration) {
 // Gradient does a gradient between 2 colors as a static image.
 //
 // TODO(maruel): Support N colors at M positions. Only support linear gradient?
+// TODO(maruel): Blend arbitrary SPattern with different curves.
 type Gradient struct {
 	A, B Color
 }

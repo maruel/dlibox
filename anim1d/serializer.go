@@ -23,8 +23,6 @@ var knownPatterns = []Pattern{
 	// Patterns
 	&Color{},
 	&Frame{},
-	&PingPong{},
-	&Animation{},
 	&Rainbow{},
 	&Repeated{},
 	&NightSky{},
@@ -34,7 +32,10 @@ var knownPatterns = []Pattern{
 	&Gradient{},
 	// Mixers
 	&Transition{},
+	&Cycle{},
 	&Loop{},
+	&Rotate{},
+	&PingPong{},
 	&Crop{},
 	&Mixer{},
 	&Scale{},
@@ -112,11 +113,11 @@ func (f *Frame) UnmarshalJSON(d []byte) error {
 }
 
 // MarshalJSON encodes the frame as a string "LRRGGBB...".
-func (f *Frame) MarshalJSON() ([]byte, error) {
+func (f Frame) MarshalJSON() ([]byte, error) {
 	out := bytes.Buffer{}
-	out.Grow(1 + 6*len(*f))
+	out.Grow(1 + 6*len(f))
 	out.WriteByte('L')
-	for _, c := range *f {
+	for _, c := range f {
 		fmt.Fprintf(&out, "%02x%02x%02x", c.R, c.G, c.B)
 	}
 	return json.Marshal(out.String())
@@ -174,7 +175,7 @@ func (p *SPattern) MarshalJSON() ([]byte, error) {
 	if p.Pattern == nil {
 		return []byte("{}"), nil
 	}
-	b, err := json.Marshal(p.Pattern.(interface{}))
+	b, err := json.Marshal(p.Pattern)
 	if err != nil || (len(b) != 0 && b[0] == '"') {
 		// Special case check for Color which is encoded as "#RRGGBB" instead of a
 		// json dict.
@@ -238,11 +239,10 @@ func stringToColor(s string) (Color, error) {
 	return c, nil
 }
 
-// LoadAnimate loads an Animation from a PNG file.
+// LoadPNG loads a PNG file and creates a Cycle out of the lines.
 //
-// Returns nil if the file can't be found. If vertical is true, rotate the
-// image by 90°.
-func LoadAnimate(content []byte, frameDuration time.Duration, vertical bool) *Animation {
+// If vertical is true, rotate the image by 90°.
+func LoadPNG(content []byte, frameDuration time.Duration, vertical bool) *Cycle {
 	img, err := png.Decode(bytes.NewReader(content))
 	if err != nil {
 		return nil
@@ -257,6 +257,8 @@ func LoadAnimate(content []byte, frameDuration time.Duration, vertical bool) *An
 	buf := make([]Frame, maxY)
 	for y := 0; y < maxY; y++ {
 		buf[y] = make(Frame, maxX)
+	}
+	for y := 0; y < maxY; y++ {
 		for x := 0; x < maxX; x++ {
 			c1 := color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
 			c := Color{c1.R, c1.G, c1.B}
@@ -267,5 +269,9 @@ func LoadAnimate(content []byte, frameDuration time.Duration, vertical bool) *An
 			}
 		}
 	}
-	return &Animation{buf, frameDuration}
+	children := make([]SPattern, maxY)
+	for i, p := range buf {
+		children[i].Pattern = p
+	}
+	return &Cycle{children, frameDuration}
 }

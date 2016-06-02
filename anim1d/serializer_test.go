@@ -53,8 +53,8 @@ func TestJSON(t *testing.T) {
 	serialize(t, &Color{1, 2, 3}, `"#010203"`)
 	serialize(t, &Frame{}, `"L"`)
 	serialize(t, &Frame{{1, 2, 3}, {4, 5, 6}}, `"L010203040506"`)
-	serialize(t, &PingPong{}, `{"MovesPerSec":0,"Trail":{},"_type":"PingPong"}`)
-	serialize(t, &Animation{}, `{"FrameDuration":0,"Frames":null,"_type":"Animation"}`)
+	serialize(t, &PingPong{}, `{"Child":{},"MovesPerSec":0,"_type":"PingPong"}`)
+	serialize(t, &Cycle{}, `{"FrameDuration":0,"Frames":null,"_type":"Cycle"}`)
 
 	// Create one more complex. Assert that int64 is not mangled.
 	p := &Transition{

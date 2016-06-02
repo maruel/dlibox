@@ -17,60 +17,6 @@ func TestColor(t *testing.T) {
 	testFrames(t, p, e)
 }
 
-func TestPingPong(t *testing.T) {
-	a := Color{10, 10, 10}
-	b := Color{20, 20, 20}
-	p := &PingPong{Trail: SPattern{Frame{a, b}}, MovesPerSec: 1000}
-	e := []expectation{
-		{0, Frame{a, {}, {}}},
-		{500 * time.Microsecond, Frame{a, {}, {}}},
-		{1 * time.Millisecond, Frame{b, a, {}}},
-		{2 * time.Millisecond, Frame{{}, b, a}},
-		{3 * time.Millisecond, Frame{{}, a, b}},
-		{4 * time.Millisecond, Frame{a, b, {}}},
-		{5 * time.Millisecond, Frame{b, a, {}}},
-		{6 * time.Millisecond, Frame{{}, b, a}},
-	}
-	testFrames(t, p, e)
-}
-
-func TestRepeated(t *testing.T) {
-	a := Color{10, 10, 10}
-	b := Color{20, 20, 20}
-	c := Color{30, 30, 30}
-	p := &Repeated{Frame{a, b, c}, 1000}
-	e := []expectation{
-		{0, Frame{a, b, c, a, b}},
-		{500 * time.Microsecond, Frame{a, b, c, a, b}},
-		{1 * time.Millisecond, Frame{c, a, b, c, a}},
-		{2 * time.Millisecond, Frame{b, c, a, b, c}},
-		{3 * time.Millisecond, Frame{a, b, c, a, b}},
-		{4 * time.Millisecond, Frame{c, a, b, c, a}},
-		{5 * time.Millisecond, Frame{b, c, a, b, c}},
-		{6 * time.Millisecond, Frame{a, b, c, a, b}},
-	}
-	testFrames(t, p, e)
-}
-
-func TestRepeatedRev(t *testing.T) {
-	// Works in reverse too.
-	a := Color{10, 10, 10}
-	b := Color{20, 20, 20}
-	c := Color{30, 30, 30}
-	p := &Repeated{Frame{a, b, c}, -1000}
-	e := []expectation{
-		{0, Frame{a, b, c, a, b}},
-		{500 * time.Microsecond, Frame{a, b, c, a, b}},
-		{1 * time.Millisecond, Frame{b, c, a, b, c}},
-		{2 * time.Millisecond, Frame{c, a, b, c, a}},
-		{3 * time.Millisecond, Frame{a, b, c, a, b}},
-		{4 * time.Millisecond, Frame{b, c, a, b, c}},
-		{5 * time.Millisecond, Frame{c, a, b, c, a}},
-		{6 * time.Millisecond, Frame{a, b, c, a, b}},
-	}
-	testFrames(t, p, e)
-}
-
 func TestWaveLength2RGB(t *testing.T) {
 	data := []struct {
 		input    float32
@@ -492,6 +438,18 @@ func TestWaveLength2RGB(t *testing.T) {
 	}
 }
 
+func TestRepeated(t *testing.T) {
+	a := Color{10, 10, 10}
+	b := Color{20, 20, 20}
+	c := Color{30, 30, 30}
+	p := &Repeated{Frame{a, b, c}}
+	e := []expectation{
+		{0, Frame{a, b, c, a, b}},
+		{0, Frame{a}},
+	}
+	testFrames(t, p, e)
+}
+
 func TestGradient(t *testing.T) {
 	a := Color{10, 10, 10}
 	b := Color{20, 20, 20}
@@ -509,18 +467,13 @@ type expectation struct {
 }
 
 func testFrames(t *testing.T, p Pattern, expectations []expectation) {
-	pixels := make(Frame, len(expectations[0].colors))
+	var pixels Frame
 	for frame, e := range expectations {
+		pixels.reset(len(e.colors))
 		p.NextFrame(pixels, e.offset)
-		for j := range e.colors {
-			a := e.colors[j]
-			b := pixels[j]
-			dR := int(a.R) - int(b.R)
-			dG := int(a.G) - int(b.G)
-			dB := int(a.B) - int(b.B)
-			if dR > 1 || dR < -1 || dG > 1 || dG < -1 || dB > 1 || dB < -1 {
-				t.Fatalf("frame=%d; pixel=%d; %v != %v", frame, j, a, b)
-			}
+		if !frameEqual(e.colors, pixels) {
+			x := Marshal(e.colors)
+			t.Fatalf("frame=%d bad expectation:\n%s\n%s", frame, x, Marshal(pixels))
 		}
 	}
 }
@@ -528,14 +481,20 @@ func testFrames(t *testing.T, p Pattern, expectations []expectation) {
 func testFrame(t *testing.T, p Pattern, e expectation) {
 	pixels := make(Frame, len(e.colors))
 	p.NextFrame(pixels, e.offset)
-	for j := range e.colors {
-		a := e.colors[j]
-		b := pixels[j]
+	if !frameEqual(e.colors, pixels) {
+		t.Fatalf("%s != %s", Marshal(e.colors), Marshal(pixels))
+	}
+}
+
+func frameEqual(lhs, rhs Frame) bool {
+	for i, a := range lhs {
+		b := rhs[i]
 		dR := int(a.R) - int(b.R)
 		dG := int(a.G) - int(b.G)
 		dB := int(a.B) - int(b.B)
 		if dR > 1 || dR < -1 || dG > 1 || dG < -1 || dB > 1 || dB < -1 {
-			t.Fatalf("pixel=%d; %v != %v", j, a, b)
+			return false
 		}
 	}
+	return true
 }

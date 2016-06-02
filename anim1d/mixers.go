@@ -89,7 +89,7 @@ func (s ScalingType) scale(in, out Frame) {
 	}
 }
 
-// Transition changes from In to Out over time.
+// Transition changes from In to Out over time. It doesn't repeat.
 //
 // In gets sinceStart that is subtracted by Offset.
 type Transition struct {
@@ -125,6 +125,27 @@ func (t *Transition) NextFrame(pixels Frame, sinceStart time.Duration) {
 	}
 	intensity := t.Transition.scale(float32(sinceStart-t.Offset) / float32(t.Duration))
 	mix(intensity, pixels, t.buf)
+}
+
+// Cycle cycles between multiple patterns. It can be used as an animatable
+// looping frame.
+//
+// TODO(maruel): Blend between frames with TransitionType, defaults to step.
+// TODO(maruel): Merge with Loop.
+type Cycle struct {
+	Frames        []SPattern
+	FrameDuration time.Duration
+}
+
+func (c *Cycle) NextFrame(pixels Frame, sinceStart time.Duration) {
+	if len(pixels) == 0 || len(c.Frames) == 0 {
+		return
+	}
+	c.Frames[int(sinceStart/c.FrameDuration)%len(c.Frames)].NextFrame(pixels, sinceStart)
+}
+
+func (c *Cycle) NativeDuration(pixels int) time.Duration {
+	return c.FrameDuration * time.Duration(len(c.Frames))
 }
 
 // Loop rotates between all the animations.
@@ -165,6 +186,111 @@ func (l *Loop) NextFrame(pixels Frame, sinceStart time.Duration) {
 	// TODO(maruel): Add lateral animation and others.
 	b.NextFrame(l.buf, sinceStart)
 	mix(l.Transition.scale(intensity), pixels, l.buf)
+}
+
+// Rotate rotates a pattern that can also cycle either way.
+//
+// Use negative to go left. Can be used for 'candy bar'.
+//
+// It is very similar to PingPong except that it doesn't bounce.
+//
+// TODO(maruel): Smoothing with ScaleType.
+type Rotate struct {
+	Child       SPattern
+	MovesPerSec float32 // Expressed in number of light jumps per second.
+	buf         Frame
+}
+
+func (r *Rotate) NextFrame(pixels Frame, sinceStart time.Duration) {
+	l := len(pixels)
+	if l == 0 || r.Child.Pattern == nil {
+		return
+	}
+	r.buf.reset(l)
+	r.Child.NextFrame(r.buf, sinceStart)
+	offset := int(float32(sinceStart.Seconds())*r.MovesPerSec) % l
+	if offset < 0 {
+		offset = l + offset
+	}
+	copy(pixels[offset:], r.buf)
+	copy(pixels[:offset], r.buf[l-offset:])
+}
+
+func (r *Rotate) NativeDuration(pixels int) time.Duration {
+	return time.Duration(float32(pixels)/r.MovesPerSec) * time.Second
+}
+
+// PingPong shows a 'ball' with a trail that bounces from one side to
+// the other.
+//
+// Can be used for a ball, a water wave or K2000 (Knight Rider) style light.
+// The trail can be a Frame or a dynamic pattern.
+//
+// To get smoothed movement, use Scale{} with a 5x factor or so.
+// TODO(maruel): That's a bit inefficient, enable ScalingType here.
+type PingPong struct {
+	Child       SPattern // [0] is the front pixel so the pixels are effectively drawn in reverse order.
+	MovesPerSec float32  // Expressed in number of light jumps per second.
+	buf         Frame
+}
+
+func (p *PingPong) NextFrame(pixels Frame, sinceStart time.Duration) {
+	if len(pixels) == 0 || p.Child.Pattern == nil {
+		return
+	}
+	p.buf.reset(len(pixels)*2 - 1)
+	p.Child.NextFrame(p.buf, sinceStart)
+	// The last point of each extremity is only lit on one tick but every other
+	// points are lit twice during a full cycle. This means the full cycle is
+	// 2*(len(pixels)-1). For a 3 pixels line, the cycle is: x00, 0x0, 00x, 0x0.
+	//
+	// For Child being Frame "01234567":
+	//   move == 0  -> "01234567"
+	//   move == 2  -> "21056789"
+	//   move == 5  -> "543210ab"
+	//   move == 7  -> "76543210"
+	//   move == 9  -> "98765012"
+	//   move == 11 -> "ba901234"
+	//   move == 13 -> "d0123456"
+	//   move 14 -> move 0; "2*(8-1)"
+	cycle := 2 * (len(pixels) - 1)
+	// TODO(maruel): Smoothing with TransitionType, defaults to Step.
+	pos := int(float32(sinceStart.Seconds())*p.MovesPerSec) % cycle
+
+	// Once it works the following code looks trivial but everytime it takes me
+	// an absurd amount of time to rewrite it.
+	if pos >= len(pixels)-1 {
+		// Head runs left.
+		// pos2 is the position from the right.
+		pos2 := pos + 1 - len(pixels)
+		// limit is the offset at which order change.
+		limit := len(pixels) - pos2 - 1
+		for i := range pixels {
+			if i < limit {
+				// Going right.
+				pixels[i] = p.buf[len(pixels)-i+pos2-1]
+			} else {
+				// Going left.
+				pixels[i] = p.buf[i-limit]
+			}
+		}
+	} else {
+		// Head runs right.
+		for i := range pixels {
+			if i <= pos {
+				// Going right.
+				pixels[i] = p.buf[pos-i]
+			} else {
+				// Going left.
+				pixels[i] = p.buf[pos+i]
+			}
+		}
+	}
+}
+
+func (p *PingPong) NativeDuration(pixels int) time.Duration {
+	cycle := 2 * (pixels - 1)
+	return time.Duration(p.MovesPerSec*float32(cycle)) * time.Second
 }
 
 // Crop draws a subset of a strip, not touching the rest.
