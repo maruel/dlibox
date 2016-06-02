@@ -439,9 +439,9 @@ func TestWaveLength2RGB(t *testing.T) {
 }
 
 func TestRepeated(t *testing.T) {
-	a := Color{10, 10, 10}
-	b := Color{20, 20, 20}
-	c := Color{30, 30, 30}
+	a := Color{0x10, 0x10, 0x10}
+	b := Color{0x20, 0x20, 0x20}
+	c := Color{0x30, 0x30, 0x30}
 	p := &Repeated{Frame{a, b, c}}
 	e := []expectation{
 		{0, Frame{a, b, c, a, b}},
@@ -451,12 +451,11 @@ func TestRepeated(t *testing.T) {
 }
 
 func TestGradient(t *testing.T) {
-	a := Color{10, 10, 10}
-	b := Color{20, 20, 20}
-	// TODO(maruel): Fix.
-	testFrame(t, &Gradient{a, b}, expectation{0, Frame{{30, 30, 30}}})
-	testFrame(t, &Gradient{a, b}, expectation{0, Frame{{20, 20, 20}, {10, 10, 10}}})
-	testFrame(t, &Gradient{a, b}, expectation{0, Frame{{20, 20, 20}, {15, 15, 15}, {10, 10, 10}}})
+	a := Color{0x10, 0x10, 0x10}
+	b := Color{0x20, 0x20, 0x20}
+	testFrame(t, &Gradient{a, b, TransitionLinear}, expectation{0, Frame{{0x18, 0x18, 0x18}}})
+	testFrame(t, &Gradient{a, b, TransitionLinear}, expectation{0, Frame{{0x10, 0x10, 0x10}, {0x20, 0x20, 0x20}}})
+	testFrame(t, &Gradient{a, b, TransitionLinear}, expectation{0, Frame{{0x10, 0x10, 0x10}, {0x18, 0x18, 0x18}, {0x20, 0x20, 0x20}}})
 }
 
 //

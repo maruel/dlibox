@@ -35,6 +35,29 @@ func (c *Color) Add(d Color) {
 	c.B = uint8(b)
 }
 
+// Mix blends the second color with the first.
+//
+// gradient 0 means pure 'c', gradient 255 means pure 'd'.
+func (c *Color) Mix(d Color, gradient uint8) {
+	grad := uint16(gradient)
+	grad1 := 255 - grad
+	r := ((uint16(c.R)+1)*grad + (uint16(d.R)+1)*grad1) >> 8
+	if r > 255 {
+		r = 255
+	}
+	c.R = uint8(r)
+	g := ((uint16(c.G)+1)*grad + (uint16(d.G)+1)*grad1) >> 8
+	if g > 255 {
+		g = 255
+	}
+	c.G = uint8(g)
+	b := ((uint16(c.B)+1)*grad + (uint16(d.B)+1)*grad1) >> 8
+	if b > 255 {
+		b = 255
+	}
+	c.B = uint8(b)
+}
+
 func (c *Color) NextFrame(pixels Frame, sinceStart time.Duration) {
 	for i := range pixels {
 		pixels[i] = *c
@@ -269,36 +292,26 @@ func (w *WishingStar) NextFrame(pixels Frame, sinceStart time.Duration) {
 
 // Gradient does a gradient between 2 colors as a static image.
 //
-// TODO(maruel): Support N colors at M positions. Only support linear gradient?
+// TODO(maruel): Support N colors at M positions.
 // TODO(maruel): Blend arbitrary SPattern with different curves.
 type Gradient struct {
-	A, B Color
+	A, B       Color
+	Transition TransitionType
 }
 
-func (d *Gradient) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (g *Gradient) NextFrame(pixels Frame, sinceStart time.Duration) {
 	l := len(pixels) - 1
 	if l == 0 {
-		pixels[0] = d.A
-		pixels[0].Add(d.B)
+		pixels[0] = g.A
+		pixels[0].Mix(g.B, FloatToUint8(255.*g.Transition.scale(0.5)))
 		return
 	}
+	// TODO(maruel): Convert to integer calculation.
+	max := float32(len(pixels) - 1)
 	for i := range pixels {
-		/*
-			// [0, 255]
-			intensity := uint8(i * 255 / l)
-			a := d.A
-			b := d.B
-			a.A = 255 - intensity
-			b.A = intensity
-			a.Add(b)
-			pixels[i] = a
-		*/
 		// [0, 1]
-		intensity := float32(i) / float32(len(pixels)-1)
-		pixels[i] = Color{
-			uint8((float32(d.A.R)*intensity + float32(d.B.R)*(1-intensity))),
-			uint8((float32(d.A.G)*intensity + float32(d.B.G)*(1-intensity))),
-			uint8((float32(d.A.B)*intensity + float32(d.B.B)*(1-intensity))),
-		}
+		intensity := float32(i) / max
+		pixels[i] = g.A
+		pixels[i].Mix(g.B, 255.-FloatToUint8(255.*g.Transition.scale(intensity)))
 	}
 }

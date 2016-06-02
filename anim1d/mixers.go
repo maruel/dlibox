@@ -16,14 +16,21 @@ import (
 type TransitionType string
 
 const (
-	TransitionEase      TransitionType = "ease"
-	TransitionEaseIn    TransitionType = "ease-in"
-	TransitionEaseInOut TransitionType = "ease-in-out"
-	TransitionEaseOut   TransitionType = "ease-out" // Recommended and default value.
-	TransitionLinear    TransitionType = "linear"
+	TransitionEase       TransitionType = "ease"
+	TransitionEaseIn     TransitionType = "ease-in"
+	TransitionEaseInOut  TransitionType = "ease-in-out"
+	TransitionEaseOut    TransitionType = "ease-out" // Recommended and default value.
+	TransitionLinear     TransitionType = "linear"
+	TransitionStepStart  TransitionType = "steps(1,start)"
+	TransitionStepMiddle TransitionType = "steps(1,middle)"
+	TransitionStepEnd    TransitionType = "steps(1,end)"
 )
 
+const epsilon = 1e-7
+
 // scale scales input [0, 1] to output [0, 1] using the transition requested.
+//
+// TODO(maruel): Implement a version that is integer based.
 func (t TransitionType) scale(intensity float32) float32 {
 	// TODO(maruel): Add support for arbitrary cubic-bezier().
 	// TODO(maruel): Map ease-* to cubic-bezier().
@@ -41,6 +48,21 @@ func (t TransitionType) scale(intensity float32) float32 {
 		return cubicBezier(0, 0, 0.58, 1, intensity)
 	case TransitionLinear:
 		return intensity
+	case TransitionStepStart:
+		if intensity < 0.+epsilon {
+			return 0
+		}
+		return 1
+	case TransitionStepMiddle:
+		if intensity < 0.5 {
+			return 0
+		}
+		return 1
+	case TransitionStepEnd:
+		if intensity > 1.-epsilon {
+			return 1
+		}
+		return 0
 	}
 }
 
