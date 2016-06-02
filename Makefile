@@ -16,7 +16,7 @@ webfiles := $(wildcard cmd/dotstar/web/static/*)
 
 
 # Regenerate the embedded files as needed.
-cmd/dotstar/static_files_gen.go: $(imgfiles) $(webfiles)
+cmd/dotstar/static_files_gen.go: $(imgfiles) $(webfiles) cmd/package/main.go
 	go generate ./...
 
 # Use a trick to preinstall all imported packages. 'go build' doesn't permit

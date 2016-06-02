@@ -47,7 +47,15 @@ type context struct {
 }
 
 func (c *context) walk(path string, info os.FileInfo, err error) error {
-	if info.Name()[0] == '.' {
+	if err != nil {
+		return err
+	}
+	name := info.Name()
+	if name[0] == '.' {
+		return nil
+	}
+	if name[0] >= 'A' && name[0] <= 'Z' {
+		// Ignore uppercase filename.
 		return nil
 	}
 	if info.IsDir() {
