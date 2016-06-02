@@ -17,6 +17,43 @@ func TestColor(t *testing.T) {
 	testFrames(t, p, e)
 }
 
+func TestColorMix(t *testing.T) {
+	w := Color{255, 255, 255}
+	b := Color{0, 0, 0}
+	c := w
+	c.Mix(b, 0)
+	ut.AssertEqual(t, c, w)
+	c = w
+	c.Mix(b, 255)
+	ut.AssertEqual(t, c, b)
+
+	// Not sure where this difference comes from.
+	c = w
+	c.Mix(b, 128)
+	ut.AssertEqual(t, c, Color{127, 127, 127})
+	c = b
+	c.Mix(w, 128)
+	ut.AssertEqual(t, c, Color{128, 128, 128})
+
+	// Test for overflow.
+	c = w
+	c.Mix(w, 0)
+	ut.AssertEqual(t, c, w)
+	c.Mix(w, 128)
+	ut.AssertEqual(t, c, w)
+	c.Mix(w, 255)
+	ut.AssertEqual(t, c, w)
+
+	// Verify channels.
+	a := Color{0x10, 0x20, 0x30}
+	c = a
+	c.Mix(b, 0)
+	ut.AssertEqual(t, c, a)
+	c = b
+	c.Mix(a, 255)
+	ut.AssertEqual(t, c, a)
+}
+
 func TestWaveLength2RGB(t *testing.T) {
 	data := []struct {
 		input    float32

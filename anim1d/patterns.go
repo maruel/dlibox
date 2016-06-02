@@ -41,21 +41,10 @@ func (c *Color) Add(d Color) {
 func (c *Color) Mix(d Color, gradient uint8) {
 	grad := uint16(gradient)
 	grad1 := 255 - grad
-	r := ((uint16(c.R)+1)*grad + (uint16(d.R)+1)*grad1) >> 8
-	if r > 255 {
-		r = 255
-	}
-	c.R = uint8(r)
-	g := ((uint16(c.G)+1)*grad + (uint16(d.G)+1)*grad1) >> 8
-	if g > 255 {
-		g = 255
-	}
-	c.G = uint8(g)
-	b := ((uint16(c.B)+1)*grad + (uint16(d.B)+1)*grad1) >> 8
-	if b > 255 {
-		b = 255
-	}
-	c.B = uint8(b)
+	// unit test confirms the values cannot overflow.
+	c.R = uint8(((uint16(c.R)+1)*grad1 + (uint16(d.R)+1)*grad) >> 8)
+	c.G = uint8(((uint16(c.G)+1)*grad1 + (uint16(d.G)+1)*grad) >> 8)
+	c.B = uint8(((uint16(c.B)+1)*grad1 + (uint16(d.B)+1)*grad) >> 8)
 }
 
 func (c *Color) NextFrame(pixels Frame, sinceStart time.Duration) {
@@ -312,6 +301,6 @@ func (g *Gradient) NextFrame(pixels Frame, sinceStart time.Duration) {
 		// [0, 1]
 		intensity := float32(i) / max
 		pixels[i] = g.A
-		pixels[i].Mix(g.B, 255.-FloatToUint8(255.*g.Transition.scale(intensity)))
+		pixels[i].Mix(g.B, FloatToUint8(255.*g.Transition.scale(intensity)))
 	}
 }
