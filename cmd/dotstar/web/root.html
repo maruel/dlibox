@@ -113,7 +113,7 @@
             document.getElementById('rgb_r').value = rgb.r;
             document.getElementById('rgb_g').value = rgb.g;
             document.getElementById('rgb_b').value = rgb.b;
-            update("pattern=" + btoa('"' + hex + '"'));
+            updatePattern('"' + hex + '"');
           });
     }
 
@@ -131,10 +131,10 @@
         var v = patterns[k];
         node.id = 'button-' + k;
         node.className = 'btn btn-lg ' + styles[j];
-        node.attributes['data-mode'] = btoa(v);
+        node.attributes['data-mode'] = v;
         node.innerHTML = '<img height=5px src="/thumbnail/' + encodeURI(btoa(v)) + '" /> ' + k;
         node.addEventListener('click', function (event) {
-          update("pattern=" + encodeURI(this.attributes['data-mode']));
+          updatePattern(this.attributes['data-mode']);
         });
         dst.appendChild(node);
         dst.appendChild(document.createElement('br'));
@@ -142,11 +142,24 @@
       }
     }
 
-    function update(data) {
+    function updatePattern(data) {
+      document.getElementById("pattern").value = data;
+      setPattern();
+    }
+
+    function setPattern() {
       var oReq = new XMLHttpRequest();
       oReq.open('post', '/switch', true);
       oReq.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-      oReq.send(data);
+      oReq.send("pattern=" + btoa(document.getElementById("pattern").value));
+      return false;
+    }
+
+    function patternKeyDown() {
+      if (event.keyCode == 13) {
+        setPattern();
+      }
+      return false;
     }
   </script>
 </head>
@@ -169,6 +182,13 @@
   -->
   <div class="page-header"><h2>Choix d'animations</h2></div>
   <div id="boutons"></div>
+
+
+  <div class="page-header"><h2>Custom</h2></div>
+  <input type=text id="pattern" name="pattern" style="width:100%"
+    onkeydown="patternKeyDown()" />
+  <input type=button value="Set" onclick="setPattern()" />
+
   <div class="page-header"><h2>Couleur manuelle</h2></div>
 
   <!--
