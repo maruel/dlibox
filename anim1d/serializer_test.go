@@ -13,10 +13,12 @@ import (
 )
 
 func TestNilObject(t *testing.T) {
-	c := []Color{{}}
+	c := Frame{}
+	d := Frame{{}}
 	for _, p := range knownPatterns {
 		p.NextFrame(nil, 0)
 		p.NextFrame(c, 0)
+		p.NextFrame(d, 0)
 	}
 }
 

@@ -92,6 +92,18 @@ func (f *Frame) reset(l int) {
 	}
 }
 
+func (f Frame) isEqual(rhs Frame) bool {
+	if len(f) != len(rhs) {
+		return false
+	}
+	for j, p := range f {
+		if p != rhs[j] {
+			return false
+		}
+	}
+	return true
+}
+
 // MakeRainbow renders rainbow colors.
 type Rainbow struct {
 }

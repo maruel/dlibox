@@ -25,20 +25,11 @@ type ThumbnailsCache struct {
 	lock             sync.Mutex
 }
 
-func isPixelsEqual(a, b []Color) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for j, p := range a {
-		if b[j] != p {
-			return false
-		}
-	}
-	return true
-}
-
 // GIF returns a serialized animated GIF for a JSON serialized pattern.
 func (t *ThumbnailsCache) GIF(serialized []byte) ([]byte, error) {
+	// TODO(maruel): Store it on disk? Some animations are CPU intensive and a
+	// lot of thumbnails are created at once on startup.
+
 	k := string(serialized)
 
 	t.lock.Lock()
@@ -56,7 +47,7 @@ func (t *ThumbnailsCache) GIF(serialized []byte) ([]byte, error) {
 	if err := json.Unmarshal(serialized, &pat); err != nil {
 		return nil, err
 	}
-	pixels := [][]Color{make([]Color, t.NumberLEDs), make([]Color, t.NumberLEDs)}
+	pixels := []Frame{make(Frame, t.NumberLEDs), make(Frame, t.NumberLEDs)}
 	nbImg := t.ThumbnailSeconds * t.ThumbnailHz
 	// Change dark blue (color index #1) to background, so it can be used to save
 	// more on GIF size. It's better than losing black, which is the default. To
@@ -76,7 +67,7 @@ func (t *ThumbnailsCache) GIF(serialized []byte) ([]byte, error) {
 	for frame := 0; frame < nbImg; frame++ {
 		since := (time.Second*time.Duration(frame) + time.Duration(t.ThumbnailHz) - 1) / time.Duration(t.ThumbnailHz)
 		pat.NextFrame(pixels[frame&1], since)
-		if frame > 0 && isPixelsEqual(pixels[0], pixels[1]) {
+		if frame > 0 && pixels[0].isEqual(pixels[1]) {
 			// Skip a frame completely if its pixels didn't change at all from the
 			// previous frame.
 			g.Delay[len(g.Delay)-1] += frameDuration
