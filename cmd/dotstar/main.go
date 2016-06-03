@@ -55,12 +55,16 @@ func watchFile(fileName string) error {
 	}
 }
 
+// Config stores the configuration for this specific host.
 type Config struct {
 	// Alarm clock.
 	Alarms
-	// Number of lights to display. If lower than the actual number of lights,
-	// the remaining lights will flash oddly.
+	// Number of lights controlled by this device. If lower than the actual
+	// number of lights, the remaining lights will flash oddly.
 	NumberLights int
+	// List of recent patterns, this list is sent back to the web page to
+	// recreate the thumbnails.
+	Patterns []string
 }
 
 func (c *Config) Load(n string) {
@@ -85,16 +89,9 @@ var config = Config{
 		{
 			Enabled: true,
 			Hour:    6,
-			Minute:  30,
+			Minute:  55,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
 			Pattern: "#FFFFFFFF",
-			/*
-				Pattern: anim1d.Marshal(&anim1d.EaseOut{
-					After:       &anim1d.Color{},
-					Before:      &anim1d.Repeated{[]color.NRGBA{red, red, red, red, white, white, white, white}, 6},
-					Duration: 20 * time.Minute,
-				}),
-			*/
 		},
 		//"{\"Duration\":600000000000,\"After\":\"#00000000\",\"Offset\":1800000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ffffffff\",\"Offset\":600000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ff7f00ff\",\"Offset\":0,\"Before\":\"#00000000\",\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"}",
 	},
@@ -174,7 +171,7 @@ func mainImpl() error {
 	config.Load(configPath)
 	defer config.Save(configPath)
 	config.Alarms.Reset(p)
-	startWebServer(*port, p)
+	startWebServer(*port, p, &config)
 
 	/* TODO(maruel): Make this work.
 	service, err := initmDNS(properties)
