@@ -144,13 +144,13 @@ func (g *Gradient) NextFrame(pixels Frame, sinceStart time.Duration) {
 	}
 }
 
-// Transition changes from In to Out over time. It doesn't repeat.
+// Transition changes from Before to After over time. It doesn't repeat.
 //
 // In gets sinceStart that is subtracted by Offset.
 type Transition struct {
-	Out        SPattern       // Old pattern that is disappearing
-	In         SPattern       // New pattern to show
-	Offset     time.Duration  // Offset at which the transiton from Out->In starts
+	Before     SPattern       // Old pattern that is disappearing
+	After      SPattern       // New pattern to show
+	Offset     time.Duration  // Offset at which the transiton from Before->In starts
 	Duration   time.Duration  // Duration of the transition while both are rendered
 	Transition TransitionType // Type of transition, defaults to EaseOut if not set
 	buf        Frame
@@ -159,13 +159,13 @@ type Transition struct {
 func (t *Transition) NextFrame(pixels Frame, sinceStart time.Duration) {
 	if sinceStart <= t.Offset {
 		// Before transition.
-		if t.Out.Pattern != nil {
-			t.Out.NextFrame(pixels, sinceStart)
+		if t.Before.Pattern != nil {
+			t.Before.NextFrame(pixels, sinceStart)
 		}
 		return
 	}
-	if t.In.Pattern != nil {
-		t.In.NextFrame(pixels, sinceStart-t.Offset)
+	if t.After.Pattern != nil {
+		t.After.NextFrame(pixels, sinceStart-t.Offset)
 	}
 	if sinceStart >= t.Offset+t.Duration {
 		// After transition.
@@ -175,10 +175,10 @@ func (t *Transition) NextFrame(pixels Frame, sinceStart time.Duration) {
 	t.buf.reset(len(pixels))
 
 	// TODO(maruel): Add lateral animation and others.
-	if t.Out.Pattern != nil {
-		t.Out.NextFrame(t.buf, sinceStart)
+	if t.Before.Pattern != nil {
+		t.Before.NextFrame(t.buf, sinceStart)
 	}
-	pixels.Mix(t.buf, FloatToUint8(255.*t.Transition.scale(float32(sinceStart-t.Offset)/float32(t.Duration))))
+	pixels.Mix(t.buf, 255.-FloatToUint8(255.*t.Transition.scale(float32(sinceStart-t.Offset)/float32(t.Duration))))
 }
 
 // Cycle cycles between multiple patterns. It can be used as an animatable

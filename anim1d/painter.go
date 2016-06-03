@@ -114,8 +114,8 @@ func (p *Painter) runPattern(cGen, cWrite chan Frame) {
 		cWrite <- nil
 	}()
 	ease := Transition{
-		Out:        SPattern{black},
-		In:         SPattern{black},
+		Before:     SPattern{black},
+		After:      SPattern{black},
 		Duration:   500 * time.Millisecond,
 		Transition: TransitionEaseOut,
 	}
@@ -130,8 +130,8 @@ func (p *Painter) runPattern(cGen, cWrite chan Frame) {
 			}
 
 			// New pattern.
-			ease.Out = ease.In
-			ease.In.Pattern = newPat
+			ease.Before = ease.After
+			ease.After.Pattern = newPat
 			ease.Offset = since
 
 		case pixels := <-cGen:

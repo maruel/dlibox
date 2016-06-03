@@ -58,19 +58,19 @@ func TestJSON(t *testing.T) {
 
 	// Create one more complex. Assert that int64 is not mangled.
 	p := &Transition{
-		Out: SPattern{
+		Before: SPattern{
 			&Transition{
-				In:         SPattern{&Color{255, 255, 255}},
+				After:      SPattern{&Color{255, 255, 255}},
 				Offset:     10 * time.Minute,
 				Duration:   10 * time.Minute,
 				Transition: TransitionLinear,
 			},
 		},
-		In:         SPattern{&Color{}},
+		After:      SPattern{&Color{}},
 		Offset:     30 * time.Minute,
 		Duration:   10 * time.Minute,
 		Transition: TransitionLinear,
 	}
-	expected := `{"Duration":600000000000,"In":"#000000","Offset":1800000000000,"Out":{"Duration":600000000000,"In":"#ffffff","Offset":600000000000,"Out":{},"Transition":"linear","_type":"Transition"},"Transition":"linear","_type":"Transition"}`
+	expected := `{"Duration":600000000000,"In":"#000000","Offset":1800000000000,"Before":{"Duration":600000000000,"In":"#ffffff","Offset":600000000000,"Before":{},"Transition":"linear","_type":"Transition"},"Transition":"linear","_type":"Transition"}`
 	serialize(t, p, expected)
 }
