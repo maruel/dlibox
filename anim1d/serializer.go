@@ -19,6 +19,8 @@ import (
 // List all known patterns and mixers that can be instantiated.
 var serializerLookup map[string]reflect.Type
 
+const rainbowKey = "Rainbow"
+
 var knownPatterns = []Pattern{
 	// Patterns
 	&Color{},
@@ -56,9 +58,9 @@ type SPattern struct {
 	Pattern
 }
 
-// jsonUnmarshal unmarshals data into a map of interface{} without mangling
+// jsonUnmarshalDict unmarshals data into a map of interface{} without mangling
 // int64.
-func jsonUnmarshal(b []byte) (map[string]interface{}, error) {
+func jsonUnmarshalDict(b []byte) (map[string]interface{}, error) {
 	var tmp map[string]interface{}
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.UseNumber()
@@ -66,12 +68,18 @@ func jsonUnmarshal(b []byte) (map[string]interface{}, error) {
 	return tmp, err
 }
 
+func jsonUnmarshalString(b []byte) (string, error) {
+	var s string
+	err := json.Unmarshal(b, &s)
+	return s, err
+}
+
 // UnmarshalJSON decodes the string "#RRGGBB" to the color.
 //
 // If unmarshalling fails, 'c' is not touched.
-func (c *Color) UnmarshalJSON(d []byte) error {
-	var s string
-	if err := json.Unmarshal(d, &s); err != nil {
+func (c *Color) UnmarshalJSON(b []byte) error {
+	s, err := jsonUnmarshalString(b)
+	if err != nil {
 		return err
 	}
 	if len(s) == 0 || s[0] != '#' {
@@ -92,9 +100,9 @@ func (c *Color) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON decodes the string "LRRGGBB..." to the colors.
 //
 // If unmarshalling fails, 'f' is not touched.
-func (f *Frame) UnmarshalJSON(d []byte) error {
-	var s string
-	if err := json.Unmarshal(d, &s); err != nil {
+func (f *Frame) UnmarshalJSON(b []byte) error {
+	s, err := jsonUnmarshalString(b)
+	if err != nil {
 		return err
 	}
 	if len(s) == 0 || (len(s)-1)%6 != 0 || s[0] != 'L' {
@@ -123,48 +131,57 @@ func (f Frame) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out.String())
 }
 
+// UnmarshalJSON decodes the string "Rainbow" to the rainbow.
+func (r *Rainbow) UnmarshalJSON(b []byte) error {
+	s, err := jsonUnmarshalString(b)
+	if err != nil {
+		return err
+	}
+	if s != rainbowKey {
+		return errors.New("invalid color string")
+	}
+	return err
+}
+
+// MarshalJSON encodes the rainbow as a string "Rainbow".
+func (r *Rainbow) MarshalJSON() ([]byte, error) {
+	return json.Marshal(rainbowKey)
+}
+
 // UnmarshalJSON decodes a Pattern.
 //
 // It knows how to decode Color, Frame or other arbitrary Pattern.
 //
 // If unmarshalling fails, 'f' is not touched.
 func (p *SPattern) UnmarshalJSON(b []byte) error {
-	if len(b) > 2 && b[0] == '"' {
-		// Special case check for Color which is encoded as "#RRGGBB" and Frame
-		// which is encoded as "|LRRGGBB..." instead of a json dict.
-		if b[1] == '#' {
-			c := &Color{}
-			if err := json.Unmarshal(b, c); err == nil {
-				p.Pattern = c
-				return err
-			}
-		} else if b[1] == 'L' {
-			var f Frame
-			if err := json.Unmarshal(b, &f); err == nil {
-				p.Pattern = f
-				return err
-			}
-		}
+	// Try to decode first as a string, then as a dict. Not super efficient but
+	// it works.
+	if p2, err := parseString(b); err == nil {
+		p.Pattern = p2
+		return nil
 	}
-	tmp, err := jsonUnmarshal(b)
+	tmp, err := jsonUnmarshalDict(b)
 	if err != nil {
+		// Technically, parseString() error may be more relevant but it's hard to
+		// say here.
 		return err
 	}
 	if len(tmp) == 0 {
-		// No error but nothing was present.
+		// No error but nothing was present. Treat "{}" as equivalent encoding for
+		// null, which creates a nil Pattern.
 		p.Pattern = nil
-		return err
+		return nil
 	}
 	n, ok := tmp["_type"]
 	if !ok {
-		return errors.New("bad json data")
+		return errors.New("missing pattern type")
 	}
 	name, ok := n.(string)
 	if !ok {
-		return errors.New("bad json data")
+		return errors.New("invalid pattern type")
 	}
 	// _type will be ignored.
-	p2, err := Parse(name, b)
+	p2, err := parseDict(name, b)
 	if err == nil {
 		p.Pattern = p2
 	}
@@ -182,7 +199,7 @@ func (p *SPattern) MarshalJSON() ([]byte, error) {
 		// Also error path.
 		return b, err
 	}
-	tmp, err := jsonUnmarshal(b)
+	tmp, err := jsonUnmarshalDict(b)
 	if err != nil {
 		return nil, err
 	}
@@ -190,15 +207,43 @@ func (p *SPattern) MarshalJSON() ([]byte, error) {
 	return json.Marshal(tmp)
 }
 
-// Parse returns a Pattern object out of the serialized format.
-func Parse(name string, data []byte) (Pattern, error) {
+// parseString returns a Pattern object out of the serialized JSON string.
+func parseString(b []byte) (Pattern, error) {
+	s, err := jsonUnmarshalString(b)
+	if err != nil {
+		return nil, err
+	}
+	if len(s) != 0 {
+		switch s[0] {
+		case '#':
+			// "#RRGGBB"
+			c := &Color{}
+			err := json.Unmarshal(b, c)
+			return c, err
+		case 'L':
+			// "LRRGGBBRRGGBB..."
+			var f Frame
+			err := json.Unmarshal(b, &f)
+			return f, err
+		case rainbowKey[0]:
+			// "Rainbow"
+			r := &Rainbow{}
+			err := json.Unmarshal(b, r)
+			return r, err
+		}
+	}
+	return nil, errors.New("unrecognized pattern string")
+}
+
+// parseDict returns a Pattern object out of the serialized JSON dict.
+func parseDict(name string, b []byte) (Pattern, error) {
 	t, ok := serializerLookup[name]
 	if !ok {
-		return nil, errors.New("pattern not found")
+		return nil, errors.New("pattern type not found")
 	}
 
 	v := reflect.New(t).Interface()
-	if err := json.Unmarshal(data, v); err != nil {
+	if err := json.Unmarshal(b, v); err != nil {
 		return nil, err
 	}
 	return v.(Pattern), nil

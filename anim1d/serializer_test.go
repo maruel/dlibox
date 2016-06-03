@@ -31,11 +31,14 @@ func serialize(t *testing.T, p Pattern, expected string) {
 	ut.AssertEqual(t, nil, json.Unmarshal(b, p2))
 }
 
-func isColorOrFrame(p Pattern) bool {
+func isColorOrFrameOrRainbow(p Pattern) bool {
 	if _, ok := p.(*Color); ok {
 		return ok
 	}
-	_, ok := p.(*Frame)
+	if _, ok := p.(*Frame); ok {
+		return ok
+	}
+	_, ok := p.(*Rainbow)
 	return ok
 }
 
@@ -44,17 +47,18 @@ func TestJSON(t *testing.T) {
 		p2 := &SPattern{p}
 		b, err := json.Marshal(p2)
 		ut.AssertEqual(t, nil, err)
-		if isColorOrFrame(p) {
+		if isColorOrFrameOrRainbow(p) {
 			ut.AssertEqual(t, uint8('"'), b[0])
 		} else {
 			ut.AssertEqual(t, uint8('{'), b[0])
 		}
 		p2.Pattern = nil
-		ut.AssertEqual(t, nil, json.Unmarshal(b, p2))
+		ut.AssertEqualf(t, nil, json.Unmarshal(b, p2), "%s", b)
 	}
 	serialize(t, &Color{1, 2, 3}, `"#010203"`)
 	serialize(t, &Frame{}, `"L"`)
 	serialize(t, &Frame{{1, 2, 3}, {4, 5, 6}}, `"L010203040506"`)
+	serialize(t, &Rainbow{}, `"Rainbow"`)
 	serialize(t, &PingPong{}, `{"Child":{},"MovesPerSec":0,"_type":"PingPong"}`)
 	serialize(t, &Cycle{}, `{"FrameDuration":0,"Frames":null,"_type":"Cycle"}`)
 
