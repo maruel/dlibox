@@ -11,6 +11,8 @@ import (
 
 // Color shows a single color on all lights. It knows how to renders itself
 // into a frame.
+//
+// If you want a single dot, use a Frame of length one.
 type Color struct {
 	R, G, B uint8
 }
@@ -86,8 +88,8 @@ type Rainbow struct {
 }
 
 func (r *Rainbow) NextFrame(pixels Frame, sinceStart time.Duration) {
-	start := float32(380.)
-	end := float32(781.)
+	start := 380
+	end := 781
 	/*
 		step := (end - start) / float32(len(pixels)-1)
 			for i := range pixels {
@@ -102,7 +104,7 @@ func (r *Rainbow) NextFrame(pixels Frame, sinceStart time.Duration) {
 	step := 1. / float32(len(pixels))
 	for i := range pixels {
 		j := log1p(float32(len(pixels)-i-1)*step) / scale
-		pixels[i] = waveLength2RGB(start + delta*(1-j))
+		pixels[i] = waveLength2RGB(int(float32(start) + float32(delta)*(1-j)))
 	}
 }
 
@@ -110,35 +112,36 @@ func (r *Rainbow) NativeDuration(pixels int) time.Duration {
 	return 0
 }
 
-// waveLengthToRGB returns a color over a rainbow, including alpha.
+// waveLengthToRGB returns a color over a rainbow.
 //
 // This code was inspired by public domain code on the internet.
-//
-// TODO(maruel): Convert to integer calculation.
-func waveLength2RGB(w float32) (c Color) {
+func waveLength2RGB(w int) (c Color) {
 	switch {
-	case 380. <= w && w < 420.:
-		c.R = 128 - FloatToUint8(127.*(440.-w)/(440.-380.))
-		c.B = FloatToUint8(255. * (0.1 + 0.9*(w-380.)/(420.-380.)))
-	case 420. <= w && w < 440.:
-		c.R = FloatToUint8(127. * (440. - w) / (440. - 380.))
+	case w < 380:
+	case w < 420:
+		// Red peaks at 1/3 at 420.
+		c.R = uint8(196 - (170*(440-w))/(440-380))
+		c.B = uint8(26 + (229*(w-380))/(420-380))
+	case w < 440:
+		c.R = uint8((0x89 * (440 - w)) / (440 - 420))
 		c.B = 255
-	case 440. <= w && w < 490.:
-		c.G = FloatToUint8(255. * (w - 440.) / (490. - 440.))
+	case w < 490:
+		c.G = uint8((255 * (w - 440)) / (490 - 440))
 		c.B = 255
-	case 490. <= w && w < 510.:
+	case w < 510:
 		c.G = 255
-		c.B = FloatToUint8(255. * (510. - w) / (510. - 490.))
-	case 510. <= w && w < 580.:
-		c.R = FloatToUint8(255. * (w - 510.) / (580. - 510.))
+		c.B = uint8((255 * (510 - w)) / (510 - 490))
+	case w < 580:
+		c.R = uint8((255 * (w - 510)) / (580 - 510))
 		c.G = 255
-	case 580. <= w && w < 645.:
+	case w < 645:
 		c.R = 255
-		c.G = FloatToUint8(255. * (645. - w) / (645. - 580.))
-	case 645. <= w && w < 700.:
+		c.G = uint8((255 * (645 - w)) / (645 - 580))
+	case w < 700:
 		c.R = 255
-	case 700. <= w && w < 781.:
-		c.R = FloatToUint8(255. * (0.1 + 0.9*(780.-w)/(780.-700.)))
+	case w < 781:
+		c.R = uint8(26 + (229*(780-w))/(780-700))
+	default:
 	}
 	return
 }

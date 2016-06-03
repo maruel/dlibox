@@ -5,7 +5,7 @@
 package anim1d
 
 import (
-	"fmt"
+	"log"
 	"time"
 )
 
@@ -160,7 +160,7 @@ type Cycle struct {
 }
 
 func (c *Cycle) NextFrame(pixels Frame, sinceStart time.Duration) {
-	if len(pixels) == 0 || len(c.Frames) == 0 {
+	if len(c.Frames) == 0 {
 		return
 	}
 	c.Frames[int(sinceStart/c.FrameDuration)%len(c.Frames)].NextFrame(pixels, sinceStart)
@@ -214,9 +214,9 @@ func (l *Loop) NextFrame(pixels Frame, sinceStart time.Duration) {
 //
 // Use negative to go left. Can be used for 'candy bar'.
 //
-// It is very similar to PingPong except that it doesn't bounce.
+// Similar to PingPong{} except that it doesn't bounce.
 //
-// TODO(maruel): Smoothing with ScaleType.
+// Use 5x oversampling with Scale{} to create smoother animation.
 type Rotate struct {
 	Child       SPattern
 	MovesPerSec float32 // Expressed in number of light jumps per second.
@@ -339,7 +339,8 @@ type Mixer struct {
 
 func (m *Mixer) NextFrame(pixels Frame, sinceStart time.Duration) {
 	if len(m.Patterns) != len(m.Weights) {
-		panic(fmt.Errorf("len(Patterns) (%d) != len(Weights) (%d)", len(m.Patterns), len(m.Weights)))
+		log.Printf("len(Patterns) (%d) != len(Weights) (%d)", len(m.Patterns), len(m.Weights))
+		return
 	}
 	if len(m.bufs) != len(m.Patterns) {
 		m.bufs = make([]Frame, len(m.Patterns))
