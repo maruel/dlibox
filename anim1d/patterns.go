@@ -71,6 +71,15 @@ func (f Frame) NativeDuration(pixels int) time.Duration {
 	return 0
 }
 
+// Mix blends the second frame with the first.
+//
+// gradient 0 means pure 'f', gradient 255 means pure 'b'.
+func (f Frame) Mix(b Frame, gradient uint8) {
+	for i := range f {
+		f[i].Mix(b[i], gradient)
+	}
+}
+
 // reset() always resets the buffer to black.
 func (f *Frame) reset(l int) {
 	if len(*f) != l {

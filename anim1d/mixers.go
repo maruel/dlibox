@@ -145,8 +145,7 @@ func (t *Transition) NextFrame(pixels Frame, sinceStart time.Duration) {
 	if t.Out.Pattern != nil {
 		t.Out.NextFrame(t.buf, sinceStart)
 	}
-	intensity := t.Transition.scale(float32(sinceStart-t.Offset) / float32(t.Duration))
-	mix(intensity, pixels, t.buf)
+	pixels.Mix(t.buf, FloatToUint8(255.*t.Transition.scale(float32(sinceStart-t.Offset)/float32(t.Duration))))
 }
 
 // Cycle cycles between multiple patterns. It can be used as an animatable
@@ -207,7 +206,7 @@ func (l *Loop) NextFrame(pixels Frame, sinceStart time.Duration) {
 	intensity := 1. - (offset-ds)/dt
 	// TODO(maruel): Add lateral animation and others.
 	b.NextFrame(l.buf, sinceStart)
-	mix(l.Transition.scale(intensity), pixels, l.buf)
+	pixels.Mix(l.buf, FloatToUint8(255.*l.Transition.scale(intensity)))
 }
 
 // Rotate rotates a pattern that can also cycle either way.
@@ -393,17 +392,4 @@ func (s *Scale) NextFrame(pixels Frame, sinceStart time.Duration) {
 	s.buf.reset(l)
 	s.Child.NextFrame(s.buf, sinceStart)
 	s.Scale.scale(s.buf, pixels)
-}
-
-// Private
-
-func mix(intensity float32, a, b Frame) {
-	for i := range a {
-		c := b[i]
-		t2 := 1 - intensity
-		// TODO(maruel): Averaging colors in RGB space looks like hell.
-		a[i].R = FloatToUint8(float32(a[i].R)*intensity + float32(c.R)*t2)
-		a[i].G = FloatToUint8(float32(a[i].G)*intensity + float32(c.G)*t2)
-		a[i].B = FloatToUint8(float32(a[i].B)*intensity + float32(c.B)*t2)
-	}
 }
