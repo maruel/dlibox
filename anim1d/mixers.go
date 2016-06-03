@@ -111,6 +111,39 @@ func (s ScalingType) scale(in, out Frame) {
 	}
 }
 
+// Gradient does a gradient between 2 patterns.
+//
+// A good example is using two colors but it can also be animations.
+//
+// TODO(maruel): Support N colors at M positions.
+type Gradient struct {
+	Left       SPattern
+	Right      SPattern
+	Transition TransitionType
+	buf        Frame
+}
+
+func (g *Gradient) NextFrame(pixels Frame, sinceStart time.Duration) {
+	if g.Left.Pattern == nil || g.Right.Pattern == nil {
+		return
+	}
+	l := len(pixels) - 1
+	g.buf.reset(len(pixels))
+	g.Left.NextFrame(pixels, sinceStart)
+	g.Right.NextFrame(g.buf, sinceStart)
+	if l == 0 {
+		pixels.Mix(g.buf, FloatToUint8(255.*g.Transition.scale(0.5)))
+	} else {
+		// TODO(maruel): Convert to integer calculation.
+		max := float32(len(pixels) - 1)
+		for i := range pixels {
+			// [0, 1]
+			intensity := float32(i) / max
+			pixels[i].Mix(g.buf[i], FloatToUint8(255.*g.Transition.scale(intensity)))
+		}
+	}
+}
+
 // Transition changes from In to Out over time. It doesn't repeat.
 //
 // In gets sinceStart that is subtracted by Offset.

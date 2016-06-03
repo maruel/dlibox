@@ -65,6 +65,14 @@ func TestScalingType(t *testing.T) {
 	}
 }
 
+func TestGradient(t *testing.T) {
+	a := &Color{0x10, 0x10, 0x10}
+	b := &Color{0x20, 0x20, 0x20}
+	testFrame(t, &Gradient{Left: SPattern{a}, Right: SPattern{b}, Transition: TransitionLinear}, expectation{0, Frame{{0x18, 0x18, 0x18}}})
+	testFrame(t, &Gradient{Left: SPattern{a}, Right: SPattern{b}, Transition: TransitionLinear}, expectation{0, Frame{{0x10, 0x10, 0x10}, {0x20, 0x20, 0x20}}})
+	testFrame(t, &Gradient{Left: SPattern{a}, Right: SPattern{b}, Transition: TransitionLinear}, expectation{0, Frame{{0x10, 0x10, 0x10}, {0x18, 0x18, 0x18}, {0x20, 0x20, 0x20}}})
+}
+
 func TestTransition(t *testing.T) {
 	// TODO(maruel): Add.
 }

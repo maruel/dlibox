@@ -12,7 +12,7 @@ HOST ?= raspberrypi1
 
 gofiles := $(wildcard **/*.go)
 imgfiles := $(wildcard cmd/dotstar/images/*)
-webfiles := $(wildcard cmd/dotstar/web/static/*)
+webfiles := $(wildcard cmd/dotstar/web/*)
 
 
 # Regenerate the embedded files as needed.

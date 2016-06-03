@@ -290,29 +290,3 @@ func (w *WishingStar) NextFrame(pixels Frame, sinceStart time.Duration) {
 		// - Observed speed based on orientation
 	*/
 }
-
-// Gradient does a gradient between 2 colors as a static image.
-//
-// TODO(maruel): Support N colors at M positions.
-// TODO(maruel): Blend arbitrary SPattern with different curves.
-type Gradient struct {
-	A, B       Color
-	Transition TransitionType
-}
-
-func (g *Gradient) NextFrame(pixels Frame, sinceStart time.Duration) {
-	l := len(pixels) - 1
-	if l == 0 {
-		pixels[0] = g.A
-		pixels[0].Mix(g.B, FloatToUint8(255.*g.Transition.scale(0.5)))
-		return
-	}
-	// TODO(maruel): Convert to integer calculation.
-	max := float32(len(pixels) - 1)
-	for i := range pixels {
-		// [0, 1]
-		intensity := float32(i) / max
-		pixels[i] = g.A
-		pixels[i].Mix(g.B, FloatToUint8(255.*g.Transition.scale(intensity)))
-	}
-}

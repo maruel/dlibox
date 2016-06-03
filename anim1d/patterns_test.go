@@ -488,14 +488,6 @@ func TestRepeated(t *testing.T) {
 	testFrames(t, p, e)
 }
 
-func TestGradient(t *testing.T) {
-	a := Color{0x10, 0x10, 0x10}
-	b := Color{0x20, 0x20, 0x20}
-	testFrame(t, &Gradient{a, b, TransitionLinear}, expectation{0, Frame{{0x18, 0x18, 0x18}}})
-	testFrame(t, &Gradient{a, b, TransitionLinear}, expectation{0, Frame{{0x10, 0x10, 0x10}, {0x20, 0x20, 0x20}}})
-	testFrame(t, &Gradient{a, b, TransitionLinear}, expectation{0, Frame{{0x10, 0x10, 0x10}, {0x18, 0x18, 0x18}, {0x20, 0x20, 0x20}}})
-}
-
 //
 
 type expectation struct {

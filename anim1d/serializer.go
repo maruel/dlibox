@@ -29,8 +29,8 @@ var knownPatterns = []Pattern{
 	&Aurore{},
 	&NightStars{},
 	&WishingStar{},
-	&Gradient{},
 	// Mixers
+	&Gradient{},
 	&Transition{},
 	&Cycle{},
 	&Loop{},
