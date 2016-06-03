@@ -97,23 +97,14 @@ type Rainbow struct {
 }
 
 func (r *Rainbow) NextFrame(pixels Frame, sinceStart time.Duration) {
-	start := 380
-	end := 781
-	/*
-		step := (end - start) / float32(len(pixels)-1)
-			for i := range pixels {
-				// TODO(maruel): Use log scale.
-				pixels[i] = waveLength2RGB(start + step*float32(i))
-			}
-	*/
-
-	// TODO(maruel): Still too much red not enough pink.
-	delta := end - start
+	const start = 380
+	const end = 781
+	const delta = end - start
 	scale := logn(2)
 	step := 1. / float32(len(pixels))
 	for i := range pixels {
 		j := log1p(float32(len(pixels)-i-1)*step) / scale
-		pixels[i] = waveLength2RGB(int(float32(start) + float32(delta)*(1-j)))
+		pixels[i] = waveLength2RGB(int(start + delta*(1-j)))
 	}
 }
 

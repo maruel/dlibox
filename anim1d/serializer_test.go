@@ -71,6 +71,6 @@ func TestJSON(t *testing.T) {
 		Duration:   10 * time.Minute,
 		Transition: TransitionLinear,
 	}
-	expected := `{"Duration":600000000000,"In":"#000000","Offset":1800000000000,"Before":{"Duration":600000000000,"In":"#ffffff","Offset":600000000000,"Before":{},"Transition":"linear","_type":"Transition"},"Transition":"linear","_type":"Transition"}`
+	expected := `{"After":"#000000","Before":{"After":"#ffffff","Before":{},"Duration":600000000000,"Offset":600000000000,"Transition":"linear","_type":"Transition"},"Duration":600000000000,"Offset":1800000000000,"Transition":"linear","_type":"Transition"}`
 	serialize(t, p, expected)
 }
