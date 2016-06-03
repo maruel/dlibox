@@ -106,18 +106,23 @@ func (f Frame) isEqual(rhs Frame) bool {
 
 // MakeRainbow renders rainbow colors.
 type Rainbow struct {
+	buf Frame
 }
 
 func (r *Rainbow) NextFrame(pixels Frame, sinceStart time.Duration) {
-	const start = 380
-	const end = 781
-	const delta = end - start
-	scale := logn(2)
-	step := 1. / float32(len(pixels))
-	for i := range pixels {
-		j := log1p(float32(len(pixels)-i-1)*step) / scale
-		pixels[i] = waveLength2RGB(int(start + delta*(1-j)))
+	if len(r.buf) != len(pixels) {
+		r.buf.reset(len(pixels))
+		const start = 380
+		const end = 781
+		const delta = end - start
+		scale := logn(2)
+		step := 1. / float32(len(pixels))
+		for i := range pixels {
+			j := log1p(float32(len(pixels)-i-1)*step) / scale
+			r.buf[i] = waveLength2RGB(int(start + delta*(1-j)))
+		}
 	}
+	copy(pixels, r.buf)
 }
 
 func (r *Rainbow) NativeDuration(pixels int) time.Duration {
