@@ -149,10 +149,12 @@
     }
 
     function setPattern() {
+      document.getElementById("pattern").value = JSON.stringify(
+          JSON.parse(document.getElementById("pattern").value), null, 2);
       var oReq = new XMLHttpRequest();
       oReq.open('post', '/switch', true);
       oReq.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-      oReq.send("pattern=" + btoa(document.getElementById("pattern").value));
+      oReq.send("pattern=" + btoa(JSON.stringify(JSON.parse(document.getElementById("pattern").value))));
       return false;
     }
 
@@ -186,8 +188,7 @@
 
 
   <div class="page-header"><h2>Custom</h2></div>
-  <input type=text id="pattern" name="pattern" style="width:100%"
-    onkeydown="patternKeyDown()" />
+  <textarea id="pattern" name="pattern" cols=80 rows=10>"#000000"</textarea>
   <input type=button value="Set" onclick="setPattern()" />
 
   <div class="page-header"><h2>Couleur manuelle</h2></div>
