@@ -9,9 +9,19 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/kr/pretty"
+	"github.com/maruel/dlibox-go/anim1d"
+	"github.com/maruel/dlibox-go/apa102"
 )
 
 func mainImpl() error {
+	pixels := make(anim1d.Frame, 150)
+	var p anim1d.Rainbow
+	p.NextFrame(pixels, 0)
+	var d []byte
+	apa102.Raster(pixels, &d)
+	pretty.Print(d)
 	return nil
 }
 

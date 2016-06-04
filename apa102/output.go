@@ -113,41 +113,48 @@ func ColorToAPA102(c anim1d.Color) (byte, byte, byte, byte) {
 	}
 }
 
-func (d *DotStar) Write(pixels anim1d.Frame) error {
+// Serializes converts a buffer of colors to the APA102 SPI format.
+func Raster(pixels anim1d.Frame, buf *[]byte) {
 	// https://cpldcpu.files.wordpress.com/2014/08/apa-102c-super-led-specifications-2014-en.pdf
 	numLights := len(pixels)
 	// End frames are needed to be able to push enough SPI clock signals due to
 	// internal half-delay of data signal from each individual LED. See
 	// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
 	l := 4*(numLights+1) + numLights/2/8 + 1
-	if len(d.buf) != l {
-		d.buf = make([]byte, l)
+	if len(*buf) != l {
+		*buf = make([]byte, l)
 		// It is not necessary to set the end frames to 0xFFFFFFFF.
 		// Set end frames right away.
-		//s := d.buf[4+4*numLights:]
+		//s := (*buf)[4+4*numLights:]
 		//for i := range s {
 		//	s[i] = 0xFF
 		//}
 	}
 	// Start frame is all zeros. Just skip it.
-	s := d.buf[4 : 4+4*numLights]
-	// TODO(maruel): Calculate power in duty cycle of each channel.
-	power := 0
+	s := (*buf)[4 : 4+4*numLights]
 	for i := range pixels {
 		s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = ColorToAPA102(pixels[i])
-		//power += p
 	}
-	if d.AmpBudget != 0 {
-		powerF := float32(power) * d.AmpPerLED / 255.
-		if powerF > d.AmpBudget {
-			ratio := d.AmpBudget / powerF
-			for i := range s {
-				if i%4 != 0 {
-					s[i] = anim1d.FloatToUint8(float32(s[i]) * ratio)
+}
+
+func (d *DotStar) Write(pixels anim1d.Frame) error {
+	// TODO(maruel): Calculate power in duty cycle of each channel.
+	Raster(pixels, &d.buf)
+	/*
+		power := 0
+		//power += p
+		if d.AmpBudget != 0 {
+			powerF := float32(power) * d.AmpPerLED / 255.
+			if powerF > d.AmpBudget {
+				ratio := d.AmpBudget / powerF
+				for i := range s {
+					if i%4 != 0 {
+						s[i] = anim1d.FloatToUint8(float32(s[i]) * ratio)
+					}
 				}
 			}
 		}
-	}
+	*/
 	_, err := d.w.Write(d.buf)
 	return err
 }
