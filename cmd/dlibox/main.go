@@ -5,7 +5,7 @@
 // Packages the static files in a .go file.
 //go:generate go run ../package/main.go -out static_files_gen.go images web
 
-// dotstar drives the dotstar LED strip on a Raspberry Pi. It runs a web server
+// dlibox drives the dlibox LED strip on a Raspberry Pi. It runs a web server
 // for remote control.
 package main
 
@@ -22,8 +22,8 @@ import (
 	"runtime/pprof"
 
 	"github.com/kardianos/osext"
-	"github.com/maruel/dotstar/anim1d"
-	"github.com/maruel/dotstar/apa102"
+	"github.com/maruel/dlibox-go/anim1d"
+	"github.com/maruel/dlibox-go/apa102"
 	"github.com/maruel/interrupt"
 	"golang.org/x/exp/inotify"
 )
@@ -167,7 +167,7 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	configPath := filepath.Join(home, "dotstar.json")
+	configPath := filepath.Join(home, "dlibox.json")
 	config.Load(configPath)
 	defer config.Save(configPath)
 	config.Alarms.Reset(p)
@@ -187,7 +187,7 @@ func mainImpl() error {
 
 func main() {
 	if err := mainImpl(); err != nil {
-		fmt.Fprintf(os.Stderr, "\ndotstar: %s.\n", err)
+		fmt.Fprintf(os.Stderr, "\ndlibox: %s.\n", err)
 		os.Exit(1)
 	}
 }

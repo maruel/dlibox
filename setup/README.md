@@ -11,7 +11,7 @@
 
 ### Automated
 
-Configure your Raspberry Pi with everything necessary and start dotstar:
+Configure your Raspberry Pi with everything necessary and start dlibox:
 
     make HOST=mypi setup
 
@@ -24,7 +24,7 @@ Push a new version:
 
 ### Manual
 
-This enables building dotstar from the rPi itself. It's a bit slow on a rPi 1
+This enables building dlibox from the rPi itself. It's a bit slow on a rPi 1
 but it's totally acceptable on a rPi 2 or rPi 3.
 
 _Note:_ Replace the URL below with the [latest version](https://golang.org/dl/).
@@ -35,22 +35,22 @@ _Note:_ Replace the URL below with the [latest version](https://golang.org/dl/).
     echo 'export GOROOT=$HOME/go' >> $HOME/.bash_aliases
     echo 'export PATH="$GOPATH/bin:$GOROOT/bin:$PATH"' >> $HOME/.bash_aliases
     source $HOME/.bash_aliases
-    go get github.com/maruel/dotstar/cmd/dotstar
+    go get github.com/maruel/dlibox-go/cmd/dlibox
     # If you plan to do edit-compile, you can precompile all dependencies:
-    go test -i github.com/maruel/dotstar/cmd/dotstar
+    go test -i github.com/maruel/dlibox-go/cmd/dlibox
 
 Set it up to auto-start on boot and auto-restart on scp:
 
-    sudo cp $GOPATH/src/github.com/maruel/dotstart/setup/dotstar.service /etc/systemd/system
+    sudo cp $GOPATH/src/github.com/maruel/dliboxt/setup/dlibox.service /etc/systemd/system
     # Edit the file with the right user and path
-    sudo vi $GOPATH/src/github.com/maruel/dotstart/setup/dotstar.service
-    sudo systemctl enable dotstar
-    sudo service dotstar start
+    sudo vi $GOPATH/src/github.com/maruel/dliboxt/setup/dlibox.service
+    sudo systemctl enable dlibox
+    sudo service dlibox start
 
-Anytime you `go install github.com/maruel/dotstar/cmd/dotstar`, systemd will
-restart dotstar automatically.
+Anytime you `go install github.com/maruel/dlibox-go/cmd/dlibox`, systemd will
+restart dlibox automatically.
 
 
 ## Logs
 
-    sudo journalctl -u dotstar
+    sudo journalctl -u dlibox

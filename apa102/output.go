@@ -8,8 +8,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/maruel/dotstar/anim1d"
-	"github.com/maruel/dotstar/rpi"
+	"github.com/maruel/dlibox-go/anim1d"
+	"github.com/maruel/dlibox-go/rpi"
 )
 
 type DotStar struct {

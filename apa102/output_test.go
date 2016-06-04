@@ -10,7 +10,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/maruel/dotstar/anim1d"
+	"github.com/maruel/dlibox-go/anim1d"
 	"github.com/maruel/ut"
 )
 

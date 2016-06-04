@@ -22,6 +22,6 @@ function ctrl_c() {
 }
 
 while true; do
-  echo "$(date --rfc-3339=seconds): $GOPATH/bin/dotstar -verbose -port 8080"
-  $GOPATH/bin/dotstar -verbose -port 8080
+  echo "$(date --rfc-3339=seconds): $GOPATH/bin/dlibox -verbose -port 8080"
+  $GOPATH/bin/dlibox -verbose -port 8080
 done

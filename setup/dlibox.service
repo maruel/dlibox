@@ -2,16 +2,16 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
-# Enables running dotstar upon boot.
+# Enables running dlibox upon boot.
 #
-# Copy to /etc/systemd/system/dotstar.service
+# Copy to /etc/systemd/system/dlibox.service
 # Then run:
 #   systemctl daemon-reload
-#   systemctl enable dotstar.service
-#   systemctl start dotstar.service
+#   systemctl enable dlibox.service
+#   systemctl start dlibox.service
 #
 # To view logs:
-#   journalctl dotstar.service
+#   journalctl dlibox.service
 
 # All the flags in the following help pages apply:
 # - https://www.freedesktop.org/software/systemd/man/systemd.exec.html
@@ -19,7 +19,7 @@
 # - https://www.freedesktop.org/software/systemd/man/systemd.unit.html
 
 [Unit]
-Description=Runs dotstar
+Description=Runs dlibox
 After=auditd.service
 
 [Service]
@@ -28,16 +28,16 @@ Restart=always
 # 1) One way is to run it as user and use capabilities to let it bind to port
 # 80. This means access to SPI (and optionally Pi-blaster) still need to be
 # configured accordingly.
-ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/pi/bin/dotstar
-ExecStart=/bin/su - pi -c "/home/pi/bin/dotstar -port 80"
+ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/pi/bin/dlibox
+ExecStart=/bin/su - pi -c "/home/pi/bin/dlibox -port 80"
 
 # 2) You may just run as root, which is sad but not a big deal if you don't
 # anything personal on it.
-#ExecStart=/home/pi/bin/dotstar -port 80
+#ExecStart=/home/pi/bin/dlibox -port 80
 
 # 3) Another way is to run as user but use iptables instead of setcap.
 #ExecStartPre=iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 8080 && iptables -t nat -A OUTPUT -o lo -p tcp --dport 80 -j REDIRECT --to-port 8080
-#ExecStart=/bin/su - pi -c "/home/pi/bin/dotstar -port 80"
+#ExecStart=/bin/su - pi -c "/home/pi/bin/dlibox -port 80"
 
 [Install]
 WantedBy=multi-user.target

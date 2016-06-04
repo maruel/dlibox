@@ -3,7 +3,7 @@
 // that can be found in the LICENSE file.
 
 // package is an internal tool to build the statically embedded files in
-// dotstar.
+// dlibox.
 package main
 
 import (

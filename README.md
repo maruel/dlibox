@@ -1,5 +1,4 @@
-dotsar
-======
+# dlibox
 
 Drives an APA-102 / Dotstar LED strip via a Raspberry Pi and expose a web server
 to control it.

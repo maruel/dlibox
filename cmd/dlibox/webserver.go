@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/maruel/dotstar/anim1d"
+	"github.com/maruel/dlibox-go/anim1d"
 )
 
 type webServer struct {

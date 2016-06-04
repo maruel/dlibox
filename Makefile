@@ -11,12 +11,12 @@ HOST ?= raspberrypi1
 
 
 gofiles := $(wildcard **/*.go)
-imgfiles := $(wildcard cmd/dotstar/images/*)
-webfiles := $(wildcard cmd/dotstar/web/*)
+imgfiles := $(wildcard cmd/dlibox/images/*)
+webfiles := $(wildcard cmd/dlibox/web/*)
 
 
 # Regenerate the embedded files as needed.
-cmd/dotstar/static_files_gen.go: $(imgfiles) $(webfiles) cmd/package/main.go
+cmd/dlibox/static_files_gen.go: $(imgfiles) $(webfiles) cmd/package/main.go
 	go generate ./...
 
 # Use a trick to preinstall all imported packages. 'go build' doesn't permit
@@ -24,32 +24,32 @@ cmd/dotstar/static_files_gen.go: $(imgfiles) $(webfiles) cmd/package/main.go
 # install' would install an ARM binary, which is not what we want.
 #
 # Luckily, 'go test -i' is super fast on second execution.
-dotstar: $(gofiles)
-	GOOS=linux GOARCH=arm go test -i ./cmd/dotstar
-	GOOS=linux GOARCH=arm go build ./cmd/dotstar
+dlibox: $(gofiles)
+	GOOS=linux GOARCH=arm go test -i ./cmd/dlibox
+	GOOS=linux GOARCH=arm go build ./cmd/dlibox
 
 # When an executable is running, it must be scp'ed aside then moved over.
-# dotstar will exit safely when it detects its binary changed.
-push: dotstar
-	scp -q dotstar $(HOST):bin/dotstar2
-	ssh $(HOST) "mv bin/dotstar2 bin/dotstar"
+# dlibox will exit safely when it detects its binary changed.
+push: dlibox
+	scp -q dlibox $(HOST):bin/dlibox2
+	ssh $(HOST) "mv bin/dlibox2 bin/dlibox"
 
 
 # Runs it locally as a fake display with the web server running on port 8010.
-run: $(gofiles) cmd/dotstar/static_files_gen.go
-	go install ./cmd/dotstar
-	dotstar -fake -n 80 -port 8010
+run: $(gofiles) cmd/dlibox/static_files_gen.go
+	go install ./cmd/dlibox
+	dlibox -fake -n 80 -port 8010
 
 
 # Sets up a new raspberry pi.
 setup: push
-	scp setup/dotstar.service $(HOST):.
-	ssh $(HOST) 'sed -i -e "s/pi/$$USER/g" dotstar.service && sudo -S cp dotstar.service /etc/systemd/system/dotstar.service && sudo systemctl daemon-reload && sudo systemctl enable dotstar.service && sudo systemctl start dotstar.service && rm dotstar.service'
+	scp setup/dlibox.service $(HOST):.
+	ssh $(HOST) 'sed -i -e "s/pi/$$USER/g" dlibox.service && sudo -S cp dlibox.service /etc/systemd/system/dlibox.service && sudo systemctl daemon-reload && sudo systemctl enable dlibox.service && sudo systemctl start dlibox.service && rm dlibox.service'
 
 
 log:
-	ssh $(HOST) 'sudo -S journalctl -u dotstar'
+	ssh $(HOST) 'sudo -S journalctl -u dlibox'
 
 
 # Defaults to cross building to ARM.
-all: dotstar
+all: dlibox

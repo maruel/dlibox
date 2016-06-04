@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/maruel/ansi256"
-	"github.com/maruel/dotstar/anim1d"
+	"github.com/maruel/dlibox-go/anim1d"
 	"github.com/mattn/go-colorable"
 )
 
