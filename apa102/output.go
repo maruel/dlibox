@@ -43,7 +43,7 @@ const maxOut = 0x1EE1
 // changed to change the color temperature or to limit power dissipation.
 //
 // It's the reverse of lightness; https://en.wikipedia.org/wiki/Lightness
-func Ramp(l uint8, max uint32) uint32 {
+func Ramp(l uint8, max uint16) uint16 {
 	if l == 0 {
 		// Make sure black is black.
 		return 0
@@ -57,10 +57,10 @@ func Ramp(l uint8, max uint32) uint32 {
 	// linearCutOff defines the linear section of the curve. Inputs between
 	// [0, linearCutOff] are mapped linearly to the output. It is 1% of maximum
 	// output.
-	linearCutOff := (max + 50) / 100
+	linearCutOff := uint32((max + 50) / 100)
 	l32 := uint32(l)
 	if l32 < linearCutOff {
-		return l32
+		return uint16(l32)
 	}
 
 	// Maps [linearCutOff, 255] to use [linearCutOff*max/255, max] using a x^3
@@ -70,10 +70,10 @@ func Ramp(l uint8, max uint32) uint32 {
 	//const inRange = 255
 	l32 -= linearCutOff
 	inRange := 255 - linearCutOff
-	outRange := max - linearCutOff
+	outRange := uint32(max) - linearCutOff
 	offset := inRange >> 1
 	y := (l32*l32*l32 + offset) / inRange
-	return (y*outRange+(offset*offset))/inRange/inRange + linearCutOff
+	return uint16((y*outRange+(offset*offset))/inRange/inRange + linearCutOff)
 }
 
 // ColorToAPA102 converts a color into the 4 bytes needed to control an APA-102

@@ -18,7 +18,7 @@ func TestRamp(t *testing.T) {
 	// Tests a few known values.
 	data := []struct {
 		input    uint8
-		expected uint32
+		expected uint16
 	}{
 		{0x00, 0x0000},
 		{0x01, 0x0001},
@@ -286,15 +286,15 @@ func TestRamp(t *testing.T) {
 		ut.AssertEqual(t, i, int(line.input))
 		ut.AssertEqualIndex(t, i, line.expected, Ramp(line.input, 0))
 	}
-	ut.AssertEqual(t, uint32(0x00), Ramp(0x00, 0xFF))
-	ut.AssertEqual(t, uint32(0x21), Ramp(0x7F, 0xFF))
-	ut.AssertEqual(t, uint32(0xFF), Ramp(0xFF, 0xFF))
+	ut.AssertEqual(t, uint16(0x00), Ramp(0x00, 0xFF))
+	ut.AssertEqual(t, uint16(0x21), Ramp(0x7F, 0xFF))
+	ut.AssertEqual(t, uint16(0xFF), Ramp(0xFF, 0xFF))
 }
 
 func TestRampMonotonic(t *testing.T) {
 	// Ensures the ramp is 100% monotonically increasing and without bumps.
-	lastValue := uint32(0)
-	lastDelta := uint32(0)
+	lastValue := uint16(0)
+	lastDelta := uint16(0)
 	for in := uint32(0); in <= 255; in++ {
 		out := Ramp(uint8(in), 0)
 		if out < lastValue {
