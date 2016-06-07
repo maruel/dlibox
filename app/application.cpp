@@ -3,6 +3,7 @@
 // that can be found in the LICENSE file.
 
 #include "user_config.h"
+#include "ota.h"
 #include <SmingCore/SmingCore.h>
 #include <SPI.h>
 
@@ -93,11 +94,19 @@ void blink() {
   } else {
     Raster(Gray, t);
   }
+  // TODO(maruel): Use an asynchronous version.
+  // TODO(maruel): Use a writeBytes() that doesn't overwrite the buffer.
+  // TODO(maruel): Start rendering the next buffer; use double-buffering.
   SPI.transfer(t, sizeof(t));
 }
 
 void init() {
   pinMode(LED_PIN, OUTPUT);
-  procTimer.initializeMs(1000, blink).start();
+  spiffs_mount();
+  initSerialCommand();
+  WifiAccessPoint.enable(false);
   SPI.begin();
+
+  // Run at ~60Hz to see how far we can push it.
+  procTimer.initializeMs(33, blink).start();
 }
