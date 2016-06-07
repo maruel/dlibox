@@ -10,6 +10,8 @@ extern "C" {
 #endif
 
   // UART config
+  // Running at high speed seems to make the connection flaky.
+  //#define SERIAL_BAUD_RATE 921600
   #define SERIAL_BAUD_RATE 115200
 
   // ESP SDK config

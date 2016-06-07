@@ -6,8 +6,6 @@
 #include "config.h"
 #include <SmingCore/SmingCore.h>
 
-// TODO(maruel): check out https://github.com/nanopb/nanopb
-
 namespace config {
 
 const char *const CONFIG_FILE = "config";
