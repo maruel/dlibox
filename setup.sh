@@ -19,8 +19,9 @@ set -eu
 echo "Please make sure prerequisites are installed:"
 echo "sudo apt-get install \\"
 echo "    autoconf automake bash bc bison flex g++ gawk gcc git gperf \\"
-echo "    help2man libexpat1-dev libncurses5-dev libtool make python \\"
-echo "    python-serial sed srecord texinfo unrar unzip"
+echo "    help2man libexpat1-dev libncurses5-dev libtool make \\"
+echo "    protobuf-compiler python python-serial sed srecord texinfo unrar \\"
+echo "    unzip"
 echo ""
 
 
@@ -42,9 +43,17 @@ echo ""
 
 echo "- Installing esptool"
 echo ""
-# Remove --user to install system wide.
+# Remove --user to install system wide but then you need to run it as root.
 pip install --user --upgrade esptool
 echo ""
+
+
+# TODO(maruel): Soon.
+#echo "- Install protobuf"
+#echo ""
+## Remove --user to install system wide but then you need to run it as root.
+#pip install --user --upgrade protobuf
+#echo ""
 
 
 echo "- Checking out and build esptool2"
