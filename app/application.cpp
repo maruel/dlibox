@@ -102,6 +102,8 @@ void blink() {
 
 void init() {
   pinMode(LED_PIN, OUTPUT);
+  //system_update_cpu_freq(SYS_CPU_160MHZ);
+  //wifi_set_sleep_type(NONE_SLEEP_T);
   spiffs_mount();
   initSerialCommand();
   WifiAccessPoint.enable(false);

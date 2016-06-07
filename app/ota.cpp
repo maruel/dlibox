@@ -3,6 +3,7 @@
 // that can be found in the LICENSE file.
 
 #include "user_config.h"
+#include "config.h"
 #include "ota.h"
 #include <SmingCore/SmingCore.h>
 
@@ -50,24 +51,22 @@ void serialCallBack(Stream& stream, char arrivedChar, unsigned short availableCh
         Serial.println("Empty spiffs!");
       }
     } else if (!strcmp(str, "connect")) {
-      // TODO(maruel): Get from config.
-      const char * const WIFI_SSID = "XXX";
-      const char * const WIFI_PWD = "YYY";
-      WifiStation.config(WIFI_SSID, WIFI_PWD);
+      WifiStation.config(config::getValue("ssid"), config::getValue("pwd"));
       WifiStation.enable(true);
     } else if (!strcmp(str, "help")) {
       Serial.println();
       Serial.println("available commands:");
       Serial.println("  cat     - show first file in spiffs");
       // config - display current config.
-      // set <key> <value> - set a value in the config.
       Serial.println("  connect - connect to wifi");
+      // get <key> - get config value.
       Serial.println("  help    - display this message");
       Serial.println("  info    - show esp8266 info");
       Serial.println("  ip      - show current ip address");
       Serial.println("  ls      - list files in spiffs");
       Serial.println("  ota     - perform ota update, switch rom and reboot");
       Serial.println("  restart - restart the esp8266");
+      // set <key> <value> - set a value in the config.
       Serial.println("  switch  - switch to the other rom and reboot");
       Serial.println();
     } else if (!strcmp(str, "info")) {
