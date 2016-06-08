@@ -23,18 +23,23 @@ void init() {
 // setValue sets a new value to one key.
 void setValue(const char *key, const char *value) {
   // TODO(maruel): Slow as hell.
+  /*
   DynamicJsonBuffer jsonBuffer;
   JsonObject& root = jsonBuffer.parseObject(config);
   root[key] = value;
   root.printTo(config);
   fileSetContent(CONFIG_FILE, config);
+  */
 }
 
 const char * getValue(const char *key) {
   // TODO(maruel): Slow as hell.
+  /*
   DynamicJsonBuffer jsonBuffer;
   JsonObject& root = jsonBuffer.parseObject(config);
   return (const char*)root[key];
+  */
+  return NULL;
 }
 
 }  // namespace config

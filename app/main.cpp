@@ -9,6 +9,7 @@
 
 #include "anim1d.h"
 #include "apa102.h"
+#include "ssd1306.h"
 
 #define LED_PIN 2 // GPIO2
 
@@ -89,6 +90,7 @@ uint8_t t[4*(numLights+1) + numLights/2/8 + 1];
 void blink() {
   digitalWrite(LED_PIN, state);
   state = !state;
+  int start = millis();
   if (state) {
     Raster(Rainbow, t);
   } else {
@@ -98,17 +100,29 @@ void blink() {
   // TODO(maruel): Use a writeBytes() that doesn't overwrite the buffer.
   // TODO(maruel): Start rendering the next buffer; use double-buffering.
   SPI.transfer(t, sizeof(t));
+  int end = millis();
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.printf("%d", end-start);
+  display.display();
 }
 
 void init() {
   pinMode(LED_PIN, OUTPUT);
   //system_update_cpu_freq(SYS_CPU_160MHZ);
   //wifi_set_sleep_type(NONE_SLEEP_T);
+  ssd1306::init();
   spiffs_mount();
   initSerialCommand();
   WifiAccessPoint.enable(false);
   SPI.begin();
 
-  // Run at ~60Hz to see how far we can push it.
-  procTimer.initializeMs(33, blink).start();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+  display.println("Hello");
+  display.display();
+
+  // Run at ~15Hz to see how far we can push it.
+  procTimer.initializeMs(66, blink).start();
 }
