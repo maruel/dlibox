@@ -110,13 +110,14 @@ void blink() {
 }
 
 void init() {
+  system_set_os_print(0);
   pinMode(LED_PIN, OUTPUT);
   initConfig();
+  initSerialCommand();
   if (config.highSpeed) {
     system_update_cpu_freq(SYS_CPU_160MHZ);
     wifi_set_sleep_type(NONE_SLEEP_T);
   }
-  initSerialCommand();
   // TODO(maruel): Move to initWifi();
   WifiAccessPoint.enable(false);
   // TODO(maruel): Move to initAPA102();
