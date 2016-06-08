@@ -3,7 +3,9 @@
 // that can be found in the LICENSE file.
 
 #include "user_config.h"
+#include "conf.h"
 #include "ota.h"
+#include "serialcmd.h"
 #include <SmingCore/SmingCore.h>
 #include <SPI.h>
 
@@ -109,14 +111,18 @@ void blink() {
 
 void init() {
   pinMode(LED_PIN, OUTPUT);
-  //system_update_cpu_freq(SYS_CPU_160MHZ);
-  //wifi_set_sleep_type(NONE_SLEEP_T);
-  ssd1306::init();
-  spiffs_mount();
+  initConfig();
+  if (config.highSpeed) {
+    system_update_cpu_freq(SYS_CPU_160MHZ);
+    wifi_set_sleep_type(NONE_SLEEP_T);
+  }
   initSerialCommand();
+  // TODO(maruel): Move to initWifi();
   WifiAccessPoint.enable(false);
+  // TODO(maruel): Move to initAPA102();
   SPI.begin();
 
+  ssd1306::init();
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0,0);

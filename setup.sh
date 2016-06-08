@@ -16,6 +16,9 @@
 set -eu
 
 
+SRC_BASE="$(dirname $ESP_HOME)"
+
+
 echo "Please make sure prerequisites are installed:"
 echo "sudo apt-get install \\"
 echo "    autoconf automake bash bc bison flex g++ gawk gcc git gperf \\"
@@ -48,31 +51,29 @@ pip install --user --upgrade esptool
 echo ""
 
 
-# TODO(maruel): Soon.
-#echo "- Install protobuf"
-#echo ""
-## Remove --user to install system wide but then you need to run it as root.
-#pip install --user --upgrade protobuf
-#echo ""
+echo "- Install protobuf"
+echo ""
+# Remove --user to install system wide but then you need to run it as root.
+pip install --user --upgrade protobuf
+echo ""
 
 
 echo "- Checking out and build esptool2"
 # Commit: ec0e2c72952f4fa8242eedd307c58a479d845abe
-if [ -d "$ESP_HOME" ]; then
+if [ -d "$SRC_BASE/esptool2" ]; then
   echo "  Pulling"
-  cd "$ESP_HOME/../esptool2"
+  cd "$SRC_BASE/esptool2"
   git pull
 else
   echo "  Checking out"
-  git clone https://github.com/raburton/esptool2 "$ESP_HOME/../esptool2"
-  cd "$ESP_HOME/../esptool2"
+  git clone https://github.com/raburton/esptool2 "$SRC_BASE/esptool2"
+  cd "$SRC_BASE/esptool2"
 fi
 make
 echo ""
 
 
 echo "- Checking out and building Sming"
-echo ""
 if [ -d "$SMING_HOME/.." ]; then
   echo "  Pulling"
   cd "$SMING_HOME/.."
