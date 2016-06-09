@@ -18,9 +18,19 @@ Frame buf{colors: new Color[numLights], len: numLights};
 
 int start;
 
-PColor gray(Color{0x7F, 0x7F, 0x7F});
+// TODO(maruel): Make sure of as much const memory as possible? Since it's
+// Harvard, it's probably a waste of time.
+// TODO(maruel): Lots of static initialized in there, need to fix this.
+Color red{0xFF, 0, 0};
+Color white{0xFF, 0xFF, 0xFF};
+PColor gray({0x7F, 0x7F, 0x7F});
 Rainbow rainbow;
-IPattern *p = &rainbow;
+Color candyChunk[] = {white, white, white, white, white, red, red, red, red, red};
+Repeated candyPartR(Frame(candyChunk, sizeof(candyChunk)));
+Rotate candyBar(&candyPartR, 60);
+IPattern *frames[] = {&rainbow, &gray, &candyBar};
+Cycle cycle(frames, sizeof(frames), 1000);
+IPattern *p = &cycle;
 IPattern *pNew = NULL;
 
 void painterLoop() {
