@@ -16,8 +16,15 @@ SPI_SIZE := 4M
 #SPI_SPEED = 80
 
 
+
 # TODO(maruel): Rewrite the following, I'm not really good at Makefiles and it's
 # not working well.
+
+
+# TODO(maruel): Doesn't get triggered automatically;
+app/%.cpp: rsc/%.html
+	python ./rsc/file2c.py $(basename $<) < $< > $(basename %).cpp
+
 
 NANOPB_DIR := nanopb
 NANOPB_PROTO_DIR := $(NANOPB_DIR)/generator/proto
@@ -41,6 +48,6 @@ NANO_LIB := $(NANOPB_PROTO_DIR)/nanopb_pb2.py $(NANOPB_PROTO_DIR)/plugin_pb2.py
 #	cd nanopb/generator/proto; make all
 
 # nanopb outputs.
-# TODO(maruel): Right now it has to be called manually (!?!)
+# TODO(maruel): Doesn't get triggered automatically;
 app/%.pb.c app/%.pb.h: app/%.proto
 	$(PROTOC) $(PROTOC_OPTS) --nanopb_out=--no-timestamp:app --proto_path=app $<
