@@ -5,7 +5,7 @@
 #ifndef __CONF_H__
 #define __CONF_H__
 
-#include "config.pb.h"
+#include "config_msg.pb.h"
 
 // init initializes SPIFFS and the config variable.
 // It should be called first in the setup() function.

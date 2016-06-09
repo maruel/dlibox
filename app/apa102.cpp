@@ -8,8 +8,15 @@
 
 #include "anim1d.h"
 
+namespace {
+
 // maxOut is the maximum intensity of each channel on a APA102 LED.
 const uint16_t maxOut = 0x1EE1;
+
+uint8_t *rawAPA102buffer = NULL;
+uint16_t rawAPA102bufferLen = 0;
+
+}  // namespace
 
 // Ramp converts input from [0, 0xFF] as intensity to lightness on a scale of
 // [0, 0x1EE1] or other desired range [0, max].
@@ -125,15 +132,27 @@ void Raster(const Frame& pixels, uint8_t *buf) {
   // Start frame is all zeros. Just skip it.
   uint8_t *s = &buf[4];
   for (int i = 0; i < numLights; i++) {
-    ColorToAPA102(pixels.c[i], &s[4*i]);
+    ColorToAPA102(pixels.pixels[i], &s[4*i]);
   }
   for (int i = 4+4*numLights; i < l; i++) {
     buf[i] = 0;
   }
 }
 
+
+void Write(const Frame& pixels) {
+  uint16_t expected = 4*(pixels.len+1) + pixels.len/2/8 + 1;
+  if (rawAPA102bufferLen != expected) {
+    delete rawAPA102buffer;
+    rawAPA102buffer = new uint8_t[expected];
+    rawAPA102bufferLen = expected;
+  }
+  Raster(pixels, rawAPA102buffer);
+  // TODO(maruel): Use an asynchronous version.
+  // TODO(maruel): Use a writeBytes() that doesn't overwrite the buffer.
+  SPI.transfer(rawAPA102buffer, rawAPA102bufferLen);
+}
+
 void initAPA102() {
   SPI.begin();
-  // Run at ~15Hz to see how far we can push it.
-  //procTimer.initializeMs(66, blink).start();
 }

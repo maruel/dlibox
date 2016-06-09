@@ -16,12 +16,15 @@ Adafruit_SSD1306 display(OLED_RESET);
 #error("Height incorrect, please fix Adafruit_SSD1306.h!");
 #endif
 
+// Font size:
+// - 1: 10 characters wide; 6 lines
+// - 2: 5 characters wide; 3 lines
 void initSSD1306() {
   // Set for the wemos i²c pins.
   Wire.pins(5, 4);
   display.begin();
   display.clearDisplay();
-  display.setTextSize(2);
+  display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0,0);
   display.println("dlibox");

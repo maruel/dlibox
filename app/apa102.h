@@ -12,5 +12,6 @@ void initAPA102();
 uint16_t Ramp(uint8_t l, uint16_t max);
 void ColorToAPA102(const Color &c, uint8_t* dst);
 void Raster(const Frame& pixels, uint8_t *buf);
+void Write(const Frame& pixels);
 
 #endif

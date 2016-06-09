@@ -52,3 +52,5 @@ NANO_LIB := $(NANOPB_PROTO_DIR)/nanopb_pb2.py $(NANOPB_PROTO_DIR)/plugin_pb2.py
 # TODO(maruel): Doesn't get triggered automatically;
 app/%.pb.c app/%.pb.h: app/%.proto
 	$(PROTOC) $(PROTOC_OPTS) --nanopb_out=--no-timestamp:app --proto_path=app $<
+
+vpath %.proto $(wildcard app/*.proto)
