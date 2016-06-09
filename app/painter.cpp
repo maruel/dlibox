@@ -8,6 +8,7 @@
 
 #include "apa102.h"
 #include "anim1d.h"
+#include "ssd1306.h"
 
 namespace {
 
@@ -25,11 +26,19 @@ Color red{0xFF, 0, 0};
 Color white{0xFF, 0xFF, 0xFF};
 PColor gray({0x7F, 0x7F, 0x7F});
 Rainbow rainbow;
+Rotate rainbowRotated(&rainbow, 60);
 Color candyChunk[] = {white, white, white, white, white, red, red, red, red, red};
-Repeated candyPartR(Frame(candyChunk, sizeof(candyChunk)));
-Rotate candyBar(&candyPartR, 60);
-IPattern *frames[] = {&rainbow, &gray, &candyBar};
-Cycle cycle(frames, sizeof(frames), 1000);
+Frame candyBar(candyChunk, sizeof(candyChunk)/sizeof(*candyChunk));
+Repeated candyBarRepeated(candyBar);
+Rotate candyBarRotated(&candyBarRepeated, 60);
+IPattern *frames[] = {
+  &rainbow,
+  &rainbowRotated,
+  &gray,
+  &candyBarRepeated,
+  &candyBarRotated,
+};
+Cycle cycle(frames, sizeof(frames)/sizeof(*frames), 3000);
 IPattern *p = &cycle;
 IPattern *pNew = NULL;
 
@@ -41,8 +50,16 @@ void painterLoop() {
     p = pNew;
     pNew = NULL;
   }
-  p->NextFrame(buf, now-start);
+  // It is not guaranteed that the IPattern draws on every pixel. Make sure that
+  // pixels not drawn on are black.
+  memset(buf.pixels, 0, sizeof(Color) * buf.len);
+  String name = p->NextFrame(buf, now-start);
   Write(buf);
+  display.setCursor(0, 0);
+  display.clearDisplay();
+  display.println("dlibox");
+  display.println(name);
+  display.display();
 }
 
 }  // namespace

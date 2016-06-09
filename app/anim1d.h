@@ -11,7 +11,8 @@ struct Frame;
 
 struct IPattern {
   virtual ~IPattern() {}
-  virtual void NextFrame(Frame& f, int timeMS) = 0;
+  // 49.71 days is enough for everyone! After, it will reset to 0.
+  virtual String  NextFrame(Frame& f, uint32_t timeMS) = 0;
 };
 
 // For compactness, differentiate bettwen the Pattern Color and a pixel color.
@@ -33,17 +34,15 @@ struct Frame : public IPattern {
 
   Frame() : pixels(NULL), len(0) {
   }
-
   Frame(Color* c, uint16_t l) : pixels(c), len(l) {
   }
-
   virtual ~Frame() {
     // TODO(maruel): Can't, this object is often copied.
     //delete pixels;
   }
-
-  virtual void NextFrame(Frame& f, int timeMS) {
-    memcpy(f.pixels, pixels, sizeof(Color)*f.len);
+  virtual String NextFrame(Frame& f, uint32_t timeMS) {
+    memcpy(f.pixels, pixels, sizeof(Color)*min(f.len, len));
+    return "Frame";
   }
 
   void from(const MFrame& m) {
@@ -71,10 +70,11 @@ struct PColor : public IPattern {
 
   PColor(const Color& c) : c(c) {};
   virtual ~PColor() {}
-  virtual void NextFrame(Frame& f, int timeMS) {
+  virtual String NextFrame(Frame& f, uint32_t timeMS) {
     for (int i = 0; i < f.len; i++) {
       f.pixels[i] = c;
     }
+    return "Color";
   }
 
   void from(const MColor& m) {
@@ -86,7 +86,7 @@ struct Rainbow : public IPattern {
   // TODO(maruel): Keep a local buffer for performance.
 
   virtual ~Rainbow() {}
-  virtual void NextFrame(Frame& f, int timeMS);
+  virtual String NextFrame(Frame& f, uint32_t timeMS);
 };
 
 struct Repeated : public IPattern {
@@ -95,14 +95,11 @@ struct Repeated : public IPattern {
   // TODO(maruel): The pixels are aliased.
   Repeated(const Frame& f) : frame(f) {}
   virtual ~Repeated() {}
-  virtual void NextFrame(Frame& f, int timeMS) {
+  virtual String NextFrame(Frame& f, uint32_t timeMS) {
     for (uint16_t i = 0; i < f.len; i += frame.len) {
-      uint16_t l = frame.len;
-      if (f.len - i < frame.len) {
-        l = f.len - i;
-      }
-      memcpy(f.pixels+i, frame.pixels, sizeof(Color)*l);
+      memcpy(f.pixels+i, frame.pixels, sizeof(Color)*min(f.len-i, frame.len));
     }
+    return "Repeated";
   }
 };
 
@@ -125,10 +122,12 @@ struct Cycle : public IPattern {
     }
     delete children;
   }
-  virtual void NextFrame(Frame& f, int timeMS) {
+  virtual String NextFrame(Frame& f, uint32_t timeMS) {
     if (nb_children != 0) {
-      children[(uint32_t(timeMS)/durationMS)%nb_children]->NextFrame(f, timeMS);
+      uint32_t x = timeMS/uint32_t(durationMS);
+      return children[x%nb_children]->NextFrame(f, timeMS);
     }
+    return "Cycle";
   }
 };
 
@@ -150,18 +149,24 @@ struct Rotate : public IPattern {
   virtual ~Rotate() {
     delete child;
   }
-  virtual void NextFrame(Frame& f, int timeMS) {
+  virtual const char * Name() {
+    return "Rotate";
+  }
+  virtual String NextFrame(Frame& f, uint32_t timeMS) {
     if (f.len == 0 || child == NULL) {
-      return;
+      return "Rotate{}";
     }
     buf.reset(f.len);
-    child->NextFrame(buf, timeMS);
-    int offset = (uint32_t(timeMS)/moveMS) % f.len;
+    String name("Rotate{");
+    name += child->NextFrame(buf, timeMS);
+    int offset = (timeMS/uint32_t(moveMS)) % f.len;
     if (offset < 0) {
       offset = f.len + offset;
     }
     memmove(&f.pixels[offset], buf.pixels, sizeof(Color)*(f.len-offset));
     memmove(f.pixels, &buf.pixels[f.len-offset], sizeof(Color)*offset);
+    name += "}";
+    return name;
   }
 };
 
