@@ -14,11 +14,7 @@
 #include "ssd1306.h"
 
 #define OLED_RESET 0  // GPIO0
-Adafruit_SSD1306 display(OLED_RESET);
-
-#if (SSD1306_LCDHEIGHT != 48)
-#error("Height incorrect, please fix Adafruit_SSD1306.h!");
-#endif
+Adafruit_SSD1306 display(64, 48, OLED_RESET);
 
 namespace {
 
