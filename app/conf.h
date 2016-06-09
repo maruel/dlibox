@@ -14,6 +14,8 @@ void initConfig();
 // save saves the config to SPIFFS. Call it after modifying config.
 void saveConfig();
 
+extern char chipID[9];
+extern char hostName[7+sizeof(chipID)];
 extern Config config;
 
 #endif

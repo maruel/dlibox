@@ -3,15 +3,16 @@
 // that can be found in the LICENSE file.
 
 #include "user_config.h"
-#include "conf.h"
-#include "ota.h"
-#include "serialcmd.h"
 #include <SmingCore/SmingCore.h>
 #include <SPI.h>
 
 #include "anim1d.h"
 #include "apa102.h"
+#include "conf.h"
+#include "ota.h"
+#include "serialcmd.h"
 #include "ssd1306.h"
+#include "wifi.h"
 
 #define LED_PIN 2 // GPIO2
 
@@ -113,23 +114,15 @@ void init() {
   system_set_os_print(0);
   pinMode(LED_PIN, OUTPUT);
   initConfig();
-  initSerialCommand();
   if (config.highSpeed) {
+    // System.setCpuFrequency(eCF_160MHz); ?
     system_update_cpu_freq(SYS_CPU_160MHZ);
-    wifi_set_sleep_type(NONE_SLEEP_T);
   }
-  // TODO(maruel): Move to initWifi();
-  WifiAccessPoint.enable(false);
-  // TODO(maruel): Move to initAPA102();
-  SPI.begin();
+  initSSD1306();
+  initSerialCommand();
+  resetWifi();
+  initAPA102();
 
-  ssd1306::init();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0,0);
-  display.println("Hello");
-  display.display();
-
-  // Run at ~15Hz to see how far we can push it.
+  // TODO(maruel): Move to apa102.cpp.
   procTimer.initializeMs(66, blink).start();
 }

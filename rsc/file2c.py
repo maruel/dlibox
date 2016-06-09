@@ -5,7 +5,7 @@
 
 import sys
 
-sys.stdout.write('const unsigned char %s[] = {' % sys.argv[1])
+sys.stdout.write('const char %s[] = {' % sys.argv[1])
 i = 0
 while True:
   c = sys.stdin.read(1)

@@ -131,3 +131,9 @@ void Raster(const Frame& pixels, uint8_t *buf) {
     buf[i] = 0;
   }
 }
+
+void initAPA102() {
+  SPI.begin();
+  // Run at ~15Hz to see how far we can push it.
+  //procTimer.initializeMs(66, blink).start();
+}

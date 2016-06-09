@@ -3,10 +3,11 @@
 // that can be found in the LICENSE file.
 
 #include "user_config.h"
-#include "conf.h"
 #include <SmingCore/SmingCore.h>
 #include <pb_encode.h>
 #include <pb_decode.h>
+
+#include "conf.h"
 
 namespace {
 
@@ -14,10 +15,14 @@ const char *const CONFIG_FILE = "config";
 
 }  // namespace
 
+char chipID[9];
+char hostName[7+sizeof(chipID)];
 Config config;
 
 void initConfig() {
   spiffs_mount();
+  sprintf(chipID, "%08x", system_get_chip_id());
+  sprintf(hostName, "dlibox-%s", chipID);
 
   if (fileExist(CONFIG_FILE)) {
     // TODO(maruel): It'd be nice to stream from spiffs to nanopb.
@@ -28,6 +33,14 @@ void initConfig() {
     if (!pb_decode(&stream, Config_fields, &config)) {
       memset(&config, 0, sizeof(config));
     }
+  } else {
+    /*
+    strcpy(config.wifiClient.ssid, "AA");
+    strcpy(config.wifiClient.password, "BB");
+    config.wifiClient.has_ssid = true;
+    config.wifiClient.has_password = true;
+    config.has_wifiClient = true;
+    */
   }
 }
 

@@ -23,8 +23,9 @@ SPI_SIZE := 4M
 
 # TODO(maruel): Doesn't get triggered automatically;
 app/%.cpp: rsc/%.html
-	python ./rsc/file2c.py $(basename $<) < $< > $(basename %).cpp
+	python ./rsc/file2c.py $(notdir $(basename $<)) < $< > $(addprefix app/,$(basename $(notdir $<)).cpp)
 
+vpath %.html $(wildcard rsc/*.html)
 
 NANOPB_DIR := nanopb
 NANOPB_PROTO_DIR := $(NANOPB_DIR)/generator/proto

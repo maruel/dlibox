@@ -17,6 +17,7 @@ message Wifi {
 
 message Config {
     optional Wifi wifiClient   = 1;
+    // Set if the user want to run in permanent AP mode.
     optional Wifi wifiAP       = 2;
     // TODO(maruel): Make it work with dynamically allocated memory.
     // Should look like: "http://host:8010/rom0.bin"

@@ -3,9 +3,10 @@
 // that can be found in the LICENSE file.
 
 #include "user_config.h"
+#include <SmingCore/SmingCore.h>
+
 #include "conf.h"
 #include "ota.h"
-#include <SmingCore/SmingCore.h>
 
 namespace {
 
