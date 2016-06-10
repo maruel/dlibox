@@ -91,7 +91,7 @@ var config = Config{
 			Hour:    6,
 			Minute:  55,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Pattern: "#FFFFFFFF",
+			Pattern: "\"#FFFFFFFF\"",
 		},
 		//"{\"Duration\":600000000000,\"After\":\"#00000000\",\"Offset\":1800000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ffffffff\",\"Offset\":600000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ff7f00ff\",\"Offset\":0,\"Before\":\"#00000000\",\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"}",
 	},
