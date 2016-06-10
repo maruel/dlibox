@@ -24,7 +24,7 @@ cmd/dlibox/static_files_gen.go: $(imgfiles) $(webfiles) cmd/package/main.go
 # install' would install an ARM binary, which is not what we want.
 #
 # Luckily, 'go test -i' is super fast on second execution.
-dlibox: $(gofiles)
+dlibox: $(gofiles) cmd/dlibox/static_files_gen.go
 	GOOS=linux GOARCH=arm go test -i ./cmd/dlibox
 	GOOS=linux GOARCH=arm go build ./cmd/dlibox
 
