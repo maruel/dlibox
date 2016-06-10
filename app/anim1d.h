@@ -71,7 +71,7 @@ struct PColor : public IPattern {
   PColor(const Color& c) : c(c) {};
   virtual ~PColor() {}
   virtual String NextFrame(Frame& f, uint32_t timeMS) {
-    for (int i = 0; i < f.len; i++) {
+    for (uint16_t i = 0; i < f.len; i++) {
       f.pixels[i] = c;
     }
     return "Color";
@@ -117,7 +117,7 @@ struct Cycle : public IPattern {
   Cycle(IPattern **c, uint16_t n, uint16_t d) : children(c), nb_children(n), durationMS(d) {
   }
   virtual ~Cycle() {
-    for (int i = 0; i < nb_children; i++) {
+    for (uint16_t i = 0; i < nb_children; i++) {
       delete children[i];
     }
     delete children;
@@ -159,12 +159,12 @@ struct Rotate : public IPattern {
     buf.reset(f.len);
     String name("Rotate{");
     name += child->NextFrame(buf, timeMS);
-    int offset = (timeMS/uint32_t(moveMS)) % f.len;
+    uint16_t offset = (timeMS/uint32_t(moveMS)) % f.len;
     if (offset < 0) {
       offset = f.len + offset;
     }
-    memmove(&f.pixels[offset], buf.pixels, sizeof(Color)*(f.len-offset));
-    memmove(f.pixels, &buf.pixels[f.len-offset], sizeof(Color)*offset);
+    memcpy(&f.pixels[offset], buf.pixels, sizeof(Color)*(f.len-offset));
+    memcpy(f.pixels, &buf.pixels[f.len-offset], sizeof(Color)*offset);
     name += "}";
     return name;
   }

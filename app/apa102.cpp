@@ -6,53 +6,61 @@
 #include <SmingCore/SmingCore.h>
 #include <SPI.h>
 
-#include "anim1d.h"
+#include "apa102.h"
 
 namespace {
-
-// maxOut is the maximum intensity of each channel on a APA102 LED.
-const uint16_t maxOut = 0x1EE1;
 
 uint8_t *rawAPA102buffer = NULL;
 uint16_t rawAPA102bufferLen = 0;
 
+uint16_t bufLength(uint16_t numLights) {
+  // 4000 lights requires a buffer of 16255, which is likely much longer than
+  // what can be done in practice.
+  //
+  // End frames are needed to be able to push enough SPI clock signals due to
+  // internal half-delay of data signal from each individual LED. See
+  // https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
+  return 4*(numLights+1) + numLights/2/8 + 1;
+}
+
 }  // namespace
 
 // Ramp converts input from [0, 0xFF] as intensity to lightness on a scale of
-// [0, 0x1EE1] or other desired range [0, max].
+// [0, 0x1EE1] or other desired range [0, maxIntensity].
 //
-// It tries to use the same curve independent of the scale used. max can be
-// changed to change the color temperature or to limit power dissipation.
+// It tries to use the same curve independent of the scale used. maxIntensity
+// can be changed to change the color temperature or to limit power dissipation.
 //
 // It's the reverse of lightness; https://en.wikipedia.org/wiki/Lightness
-uint16_t Ramp(uint8_t l, uint16_t max) {
+uint16_t Ramp(uint8_t l, uint16_t maxIntensity) {
   if (l == 0) {
     // Make sure black is black.
     return 0;
   }
-  if (max == 0 || max > maxOut) {
-    // If 'max' is not specified or is above maxOut, reset the maximum value.
-    max = maxOut;
-  } else if (max < 255) {
-    max = 255;
+  if (maxIntensity == 0 || maxIntensity > maxAPA102Out) {
+    // If 'maxIntensity' is not specified or is above maxAPA102Out reset the
+    // maximum value.
+    maxIntensity = maxAPA102Out;
+  } else if (maxIntensity < 255) {
+    maxIntensity = 255;
   }
   // linearCutOff defines the linear section of the curve. Inputs between
   // [0, linearCutOff] are mapped linearly to the output. It is 1% of maximum
   // output.
-  uint32_t linearCutOff = uint32_t((max + 50) / 100);
+  uint32_t linearCutOff = uint32_t((maxIntensity + 50) / 100);
   uint32_t l32 = uint32(l);
   if (l32 < linearCutOff) {
     return uint16_t(l32);
   }
 
-  // Maps [linearCutOff, 255] to use [linearCutOff*max/255, max] using a x^3
-  // ramp.
+  // Maps [linearCutOff, 255] to use
+  // [linearCutOff*maxIntensity/255, maxIntensity] using a x³ ramp.
   // Realign input to [0, 255-linearCutOff]. It now maps to
-  // [0, max-linearCutOff*max/255].
+  // [0, maxIntensity-linearCutOff*maxIntensity/255].
   //const inRange = 255
   l32 -= linearCutOff;
   uint32_t inRange = 255 - linearCutOff;
-  uint32_t outRange = max - linearCutOff;
+  uint32_t outRange = maxIntensity - linearCutOff;
   uint32_t offset = inRange >> 1;
   uint32_t y = (l32*l32*l32 + offset) / inRange;
   return uint16_t((y*outRange+(offset*offset))/inRange/inRange + linearCutOff);
@@ -79,10 +87,10 @@ uint16_t Ramp(uint8_t l, uint16_t max) {
 // Each channel duty cycle ramps from 100% to 1/(31*255) == 1/7905.
 //
 // Return brighness, blue, green, red.
-void ColorToAPA102(const Color &c, uint8_t* dst)  {
-  uint16_t r = Ramp(c.R, 0);
-  uint16_t g = Ramp(c.G, 0);
-  uint16_t b = Ramp(c.B, 0);
+void ColorToAPA102(const Color &c, uint8_t* dst, uint16_t maxIntensity)  {
+  uint16_t r = Ramp(c.R, maxIntensity);
+  uint16_t g = Ramp(c.G, maxIntensity);
+  uint16_t b = Ramp(c.B, maxIntensity);
   if (r <= 255 && g <= 255 && b <= 255) {
     dst[0] = 0xE0 + 1;
     dst[1] = b;
@@ -108,46 +116,25 @@ void ColorToAPA102(const Color &c, uint8_t* dst)  {
 }
 
 // Serializes converts a buffer of colors to the APA102 SPI format.
-void Raster(const Frame& pixels, uint8_t *buf) {
+void Raster(const Frame& pixels, uint8_t *buf, uint16_t maxIntensity) {
   // https://cpldcpu.files.wordpress.com/2014/08/apa-102c-super-led-specifications-2014-en.pdf
-  int numLights = pixels.len;
-  // End frames are needed to be able to push enough SPI clock signals due to
-  // internal half-delay of data signal from each individual LED. See
-  // https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
-  int l = 4*(numLights+1) + numLights/2/8 + 1;
-  /*
-  if (len(*buf) != l) {
-    *buf = make([]byte, l)
-    // It is not necessary to set the end frames to 0xFFFFFFFF.
-    // Set end frames right away.
-    //s := (*buf)[4+4*numLights:]
-    //for i := range s {
-    //	s[i] = 0xFF
-    //}
-  }
-  */
-  for (int i = 0; i < 4; i++) {
-    buf[i] = 0;
-  }
-  // Start frame is all zeros. Just skip it.
+  uint16_t numLights = pixels.len;
+  (*(uint32_t*)buf) = 0;
   uint8_t *s = &buf[4];
-  for (int i = 0; i < numLights; i++) {
-    ColorToAPA102(pixels.pixels[i], &s[4*i]);
+  for (uint16_t i = 0; i < numLights; i++) {
+    ColorToAPA102(pixels.pixels[i], &s[4*i], maxIntensity);
   }
-  for (int i = 4+4*numLights; i < l; i++) {
-    buf[i] = 0;
-  }
+  memset(&buf[4+4*numLights], 0xFF, bufLength(numLights) - 4+4*numLights);
 }
 
-
-void Write(const Frame& pixels) {
-  uint16_t expected = 4*(pixels.len+1) + pixels.len/2/8 + 1;
-  if (rawAPA102bufferLen != expected) {
+void Write(const Frame& pixels, uint16_t maxIntensity) {
+  uint16_t l = bufLength(pixels.len);
+  if (rawAPA102bufferLen != l) {
     delete rawAPA102buffer;
-    rawAPA102buffer = new uint8_t[expected];
-    rawAPA102bufferLen = expected;
+    rawAPA102buffer = new uint8_t[l];
+    rawAPA102bufferLen = l;
   }
-  Raster(pixels, rawAPA102buffer);
+  Raster(pixels, rawAPA102buffer, maxIntensity);
   // TODO(maruel): Use an asynchronous version.
   // TODO(maruel): Use a writeBytes() that doesn't overwrite the buffer.
   SPI.transfer(rawAPA102buffer, rawAPA102bufferLen);

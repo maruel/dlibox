@@ -9,4 +9,6 @@
 
 void initPainter();
 
+uint16_t frameRate();
+
 #endif

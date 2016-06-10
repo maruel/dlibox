@@ -55,7 +55,7 @@ void onCommand(const char * str) {
   } else if (!strcmp(str, "ls")) {
     Vector<String> files = fileList();
     Serial.printf("filecount %d\r\n", files.count());
-    for (unsigned int i = 0; i < files.count(); i++) {
+    for (uint16_t i = 0; i < files.count(); i++) {
       Serial.println(files[i]);
     }
   } else if (!strcmp(str, "ota")) {
@@ -72,7 +72,7 @@ void onCommand(const char * str) {
 void serialCallBack(Stream& stream, char arrivedChar, unsigned short availableCharsCount) {
   if (arrivedChar == '\n') {
     char str[availableCharsCount];
-    for (int i = 0; i < availableCharsCount; i++) {
+    for (uint16_t i = 0; i < availableCharsCount; i++) {
       // TODO(maruel): Ugh.
       str[i] = stream.read();
       if (str[i] == '\r' || str[i] == '\n') {

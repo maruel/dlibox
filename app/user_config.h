@@ -46,6 +46,10 @@ extern "C" {
 
 #ifdef __cplusplus
 }
+
+template<class T, size_t N>
+size_t lengthof(T (&)[N]) { return N; }
+
 #endif
 
 #endif
