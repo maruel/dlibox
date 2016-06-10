@@ -59,7 +59,7 @@ struct Frame : public IPattern {
     delete pixels;
     pixels = NULL;
     if (l != 0) {
-      pixels = new Color[l];
+      pixels = new Color[l]();
     }
     len = l;
   }

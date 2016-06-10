@@ -17,7 +17,8 @@ const char *const CONFIG_FILE = "config";
 
 char chipID[9];
 char hostName[7+sizeof(chipID)];
-Config config;
+// Initialize to defaults.
+Config config = Config_init_default;
 
 void initConfig() {
   spiffs_mount();
@@ -34,7 +35,7 @@ void initConfig() {
       memset(&config, 0, sizeof(config));
     }
   } else {
-    /*
+    /* Quick hack when having issues.
     strcpy(config.wifiClient.ssid, "AA");
     strcpy(config.wifiClient.password, "BB");
     config.wifiClient.has_ssid = true;

@@ -9,6 +9,7 @@
 #include "conf.h"
 #include "ota.h"
 #include "painter.h"
+#include "perf.h"
 #include "serialcmd.h"
 #include "ssd1306.h"
 #include "wifi.h"
@@ -21,12 +22,9 @@ void init() {
   system_set_os_print(0);
   pinMode(LED_PIN, OUTPUT);
   initConfig();
-  if (config.highSpeed) {
-    // System.setCpuFrequency(eCF_160MHz); ?
-    system_update_cpu_freq(SYS_CPU_160MHZ);
-  }
-  initSSD1306();
   initSerialCommand();
+  initPerf();
+  initSSD1306();
   resetWifi();
   initPainter();
 }

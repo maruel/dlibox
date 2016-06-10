@@ -7,6 +7,8 @@
 #include <SPI.h>
 
 #include "apa102.h"
+#include "conf.h"
+#include "perf.h"
 
 namespace {
 
@@ -127,19 +129,26 @@ void Raster(const Frame& pixels, uint8_t *buf, uint16_t maxIntensity) {
   memset(&buf[4+4*numLights], 0xFF, bufLength(numLights) - 4+4*numLights);
 }
 
-void Write(const Frame& pixels, uint16_t maxIntensity) {
+uint32_t Write(const Frame& pixels, uint16_t maxIntensity) {
   uint16_t l = bufLength(pixels.len);
   if (rawAPA102bufferLen != l) {
     delete rawAPA102buffer;
+    // No need to zero initialize.
     rawAPA102buffer = new uint8_t[l];
     rawAPA102bufferLen = l;
   }
   Raster(pixels, rawAPA102buffer, maxIntensity);
+  uint32_t now = millis();
   // TODO(maruel): Use an asynchronous version.
   // TODO(maruel): Use a writeBytes() that doesn't overwrite the buffer.
   SPI.transfer(rawAPA102buffer, rawAPA102bufferLen);
+  Perf[LOAD_SPI].add(millis() - now);
+  return now;
 }
 
 void initAPA102() {
+  // Use speed specified in config, defaults to 4Mhz which is also the default
+  // in the library.
+  SPI.SPIDefaultSettings = SPISettings(config.apa102.SPIspeed, MSBFIRST, SPI_MODE0);
   SPI.begin();
 }

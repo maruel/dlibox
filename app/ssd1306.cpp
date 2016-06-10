@@ -22,6 +22,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 void initSSD1306() {
   // Set for the wemos i²c pins.
   Wire.pins(5, 4);
+  // TODO(maruel): Change speed according to config.display.I2Cspeed.
   display.begin();
   display.clearDisplay();
   display.setTextSize(1);

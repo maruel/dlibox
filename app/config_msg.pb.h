@@ -15,6 +15,32 @@ extern "C" {
 #endif
 
 /* Struct definitions */
+typedef struct _APA102 {
+    bool has_frameRate;
+    uint16_t frameRate;
+    bool has_numLights;
+    uint16_t numLights;
+    bool has_SPIspeed;
+    uint32_t SPIspeed;
+/* @@protoc_insertion_point(struct:APA102) */
+} APA102;
+
+typedef struct _DisplaySettings {
+    bool has_enabled;
+    bool enabled;
+    bool has_I2Cspeed;
+    uint32_t I2Cspeed;
+/* @@protoc_insertion_point(struct:DisplaySettings) */
+} DisplaySettings;
+
+typedef struct _Host {
+    bool has_name;
+    char name[32];
+    bool has_highSpeed;
+    bool highSpeed;
+/* @@protoc_insertion_point(struct:Host) */
+} Host;
+
 typedef struct _Wifi {
     bool has_ssid;
     char ssid[33];
@@ -28,39 +54,71 @@ typedef struct _Config {
     Wifi wifiClient;
     bool has_wifiAP;
     Wifi wifiAP;
+    bool has_apa102;
+    APA102 apa102;
+    bool has_host;
+    Host host;
+    bool has_display;
+    DisplaySettings display;
     bool has_romURL;
     char romURL[128];
-    bool has_name;
-    char name[32];
-    bool has_highSpeed;
-    bool highSpeed;
 /* @@protoc_insertion_point(struct:Config) */
 } Config;
 
 /* Default values for struct fields */
+extern const char Wifi_ssid_default[33];
+extern const char Wifi_password_default[64];
+extern const uint16_t APA102_frameRate_default;
+extern const uint16_t APA102_numLights_default;
+extern const uint32_t APA102_SPIspeed_default;
+extern const bool DisplaySettings_enabled_default;
+extern const uint32_t DisplaySettings_I2Cspeed_default;
+extern const char Host_name_default[32];
+extern const bool Host_highSpeed_default;
+extern const char Config_romURL_default[128];
 
 /* Initializer values for message structs */
 #define Wifi_init_default                        {false, "", false, ""}
-#define Config_init_default                      {false, Wifi_init_default, false, Wifi_init_default, false, "", false, "", false, 0}
+#define APA102_init_default                      {false, 60u, false, 150u, false, 8000000u}
+#define DisplaySettings_init_default             {false, false, false, 4000000u}
+#define Host_init_default                        {false, "", false, false}
+#define Config_init_default                      {false, Wifi_init_default, false, Wifi_init_default, false, APA102_init_default, false, Host_init_default, false, DisplaySettings_init_default, false, ""}
 #define Wifi_init_zero                           {false, "", false, ""}
-#define Config_init_zero                         {false, Wifi_init_zero, false, Wifi_init_zero, false, "", false, "", false, 0}
+#define APA102_init_zero                         {false, 0, false, 0, false, 0}
+#define DisplaySettings_init_zero                {false, 0, false, 0}
+#define Host_init_zero                           {false, "", false, 0}
+#define Config_init_zero                         {false, Wifi_init_zero, false, Wifi_init_zero, false, APA102_init_zero, false, Host_init_zero, false, DisplaySettings_init_zero, false, ""}
 
 /* Field tags (for use in manual encoding/decoding) */
+#define APA102_frameRate_tag                     1
+#define APA102_numLights_tag                     2
+#define APA102_SPIspeed_tag                      3
+#define DisplaySettings_enabled_tag              1
+#define DisplaySettings_I2Cspeed_tag             2
+#define Host_name_tag                            1
+#define Host_highSpeed_tag                       2
 #define Wifi_ssid_tag                            1
 #define Wifi_password_tag                        2
 #define Config_wifiClient_tag                    1
 #define Config_wifiAP_tag                        2
-#define Config_romURL_tag                        3
-#define Config_name_tag                          4
-#define Config_highSpeed_tag                     5
+#define Config_apa102_tag                        3
+#define Config_host_tag                          4
+#define Config_display_tag                       5
+#define Config_romURL_tag                        6
 
 /* Struct field encoding specification for nanopb */
 extern const pb_field_t Wifi_fields[3];
-extern const pb_field_t Config_fields[6];
+extern const pb_field_t APA102_fields[4];
+extern const pb_field_t DisplaySettings_fields[3];
+extern const pb_field_t Host_fields[3];
+extern const pb_field_t Config_fields[7];
 
 /* Maximum encoded size of messages (where known) */
 #define Wifi_size                                101
-#define Config_size                              373
+#define APA102_size                              18
+#define DisplaySettings_size                     8
+#define Host_size                                36
+#define Config_size                              405
 
 /* Message IDs (where set with "msgid" option) */
 #ifdef PB_MSGID

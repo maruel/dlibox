@@ -8,62 +8,18 @@
 
 #include "apa102.h"
 #include "anim1d.h"
+#include "conf.h"
 #include "painter.h"
+#include "perf.h"
 #include "ssd1306.h"
 
 namespace {
-
-template<int N_>
-struct Samples {
-  static const uint16_t N = N_;
-  uint16_t samples[N];
-  uint16_t index;
-
-  void add(uint16_t t) {
-    samples[index] = t;
-    index = (index+1) % N;
-  }
-
-  uint32_t sum() {
-    uint32_t s = 0;
-    for (uint16_t i = 0; i < N; i++) {
-      s += uint32_t(samples[i]);
-    }
-    return s;
-  }
-
-  uint16_t avg() {
-    return uint16_t(sum() / uint32_t(N));
-  }
-
-  // Return value should be divided by N-1.
-  uint16_t sumDelta() {
-    uint16_t s = 0;
-    for (uint16_t i = 0; i < N; i++) {
-      if (i != index) {
-        uint16_t j = (i + N - 1) % N;
-        s += (samples[i] - samples[j]);
-      }
-    }
-    return s;
-  }
-
-  uint16_t avgDelta() {
-    return sumDelta() / (N-1);
-  }
-};
-
-const int FrameRate = 60;
-Samples<FrameRate> loadRender;
-Samples<FrameRate> loadSPI;
-Samples<FrameRate*2> timestamps;
 
 String lastName;
 
 Timer paintTimer;
 
-#define numLights 144
-Frame buf{colors: new Color[numLights], len: numLights};
+Frame buf;
 
 uint32_t start;
 
@@ -79,7 +35,7 @@ Color candyChunk[] = {white, white, white, white, white, red, red, red, red, red
 Frame candyBar(candyChunk, lengthof(candyChunk));
 Repeated candyBarRepeated(candyBar);
 Rotate candyBarRotated(&candyBarRepeated, 60);
-IPattern *frames[] = {
+IPattern* frames[] = {
   &rainbow,
   &rainbowRotated,
   &gray,
@@ -87,39 +43,47 @@ IPattern *frames[] = {
   &candyBarRotated,
 };
 Cycle cycle(frames, lengthof(frames), 3000);
-IPattern *p = &cycle;
-IPattern *pNew = NULL;
+IPattern* p = &cycle;
+IPattern* pNew = NULL;
 
 void painterLoop() {
   // TODO(maruel): Atomic.
+  uint32_t now = millis();
   if (pNew != NULL) {
     delete p;
     p = pNew;
     pNew = NULL;
+    start = now;
   }
-  uint32_t now = millis();
-  // It is not guaranteed that the IPattern draws on every pixel. Make sure that
-  // pixels not drawn on are black.
-  memset(buf.pixels, 0, sizeof(Color) * buf.len);
-  String name = p->NextFrame(buf, now-start);
-  int32_t render = millis();
-  Write(buf, maxAPA102Out / 4);
-  uint32_t spi = millis();
-  timestamps.add(now);
-  loadRender.add(render-now);
-  loadSPI.add(spi-render);
-  if (name != lastName) {
-    lastName = name;
-    display.setCursor(0, 0);
-    display.clearDisplay();
-    display.printf("dlibox  ms");
-    display.printf("Render%4u", loadRender.sum());
-    display.printf("SPI  %5u", loadSPI.sum());
-    display.printf("%ums/frame", timestamps.avgDelta());
-    display.println(name);
-    // This is very slow. Should probably send a separate task for this since we
-    // already monopolized for a long time!
-    display.display();
+  Perf[FRAMES].add(now);
+  if (config.apa102.numLights != buf.len) {
+    buf.reset(config.apa102.numLights);
+  } else {
+    // It is not guaranteed that the IPattern draws on every pixel. Make sure
+    // that pixels not drawn on are black.
+    memset(buf.pixels, 0, sizeof(Color) * buf.len);
+  }
+  if (config.apa102.numLights != 0) {
+    String name = p->NextFrame(buf, now-start);
+    uint32_t render = Write(buf, maxAPA102Out / 4);
+    // Time taken to render.
+    Perf[LOAD_RENDER].add(render-now);
+    if (name != lastName) {
+      lastName = name;
+      display.setCursor(0, 0);
+      display.clearDisplay();
+      display.printf("Ovrhead ms");
+      display.printf("Rndr/s%4u", min(Perf[LOAD_RENDER].sum(), 1000u));
+      display.printf("SPI/s %4u", min(Perf[LOAD_SPI].sum(), 1000u));
+      display.printf("I2C/f %4u", min(Perf[LOAD_I2C].avg(), 1000u));
+      display.printf("%ums/f\n", Perf[FRAMES].avgDelta());
+      display.println(name);
+      // This is very slow. Should probably send a separate task for this since we
+      // already monopolized for a long time!
+      now = millis();
+      display.display();
+      Perf[LOAD_I2C].add(millis() - now);
+    }
   }
 }
 
@@ -128,5 +92,5 @@ void painterLoop() {
 void initPainter() {
   initAPA102();
   start = millis();
-  paintTimer.initializeMs(1000/FrameRate, painterLoop).start();
+  paintTimer.initializeMs(1000/config.apa102.frameRate, painterLoop).start();
 }
