@@ -10,6 +10,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -93,6 +94,12 @@ func mainImpl() error {
 		return err
 	}
 	defer config.Close()
+
+	b, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return err
+	}
+	log.Printf("Config:\n%s", string(b))
 
 	// Output (screen or APA102).
 	var s anim1d.Strip

@@ -171,7 +171,7 @@ func (a *APA102) MinDelay() time.Duration {
 // MakeAPA102 returns a strip that communicates over SPI to APA102 LEDs.
 //
 // This is generally what you want once the hardware is connected.
-func MakeAPA102(speed int) (*APA102, error) {
+func MakeAPA102(speed int64) (*APA102, error) {
 	// The speed must be high, as there's 32 bits sent per LED, creating a
 	// staggered effect. See
 	// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/

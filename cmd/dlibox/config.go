@@ -16,7 +16,7 @@ import (
 
 type APA102 struct {
 	// Speed of the transfer.
-	SPIspeed int
+	SPIspeed int64
 	// Number of lights controlled by this device. If lower than the actual
 	// number of lights, the remaining lights will flash oddly.
 	NumberLights int
@@ -56,18 +56,21 @@ func (c *Config) ResetDefault() {
 			},
 		},
 		APA102: APA102{
-			SPIspeed:     20000000,
+			SPIspeed:     10000000,
 			NumberLights: 150,
 		},
 	}
 }
 
 func (c *Config) Load(n string) error {
-	if f, err := os.Open(n); err == nil {
-		defer f.Close()
-		return json.NewDecoder(f).Decode(c)
+	f, err := os.Open(n)
+	if err != nil {
+		return err
 	}
-	return nil
+	defer f.Close()
+	d := json.NewDecoder(f)
+	d.UseNumber()
+	return d.Decode(c)
 }
 
 func (c *Config) Save(n string) error {

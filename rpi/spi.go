@@ -8,6 +8,7 @@
 package rpi
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -21,12 +22,15 @@ import (
 type spi struct {
 	closed int32
 	path   string
-	speed  int
+	speed  int64
 	lock   sync.Mutex
 	f      *os.File
 }
 
-func makeSPI(path string, speed int) (*spi, error) {
+func makeSPI(path string, speed int64) (*spi, error) {
+	if speed < 1000 {
+		return nil, errors.New("invalid speed")
+	}
 	if path == "" {
 		path = "/dev/spidev0.0"
 	}
@@ -52,7 +56,10 @@ func makeSPI(path string, speed int) (*spi, error) {
 
 // MakeSPI is to be used when testing directly to the bus bypassing the DotStar
 // controller.
-func MakeSPI(path string, speed int) (io.WriteCloser, error) {
+//
+// path can be omitted. speed must be specified and should be in the high Khz
+// or low Mhz range.
+func MakeSPI(path string, speed int64) (io.WriteCloser, error) {
 	return makeSPI(path, speed)
 }
 
