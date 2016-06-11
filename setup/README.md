@@ -18,7 +18,7 @@
 
 ### To simplify your life
 
-- Make sure your .ssh/config has the proper config to push to the account on
+- Make sure your `.ssh/config` has the proper config to push to the account on
   which you want the service to run on. For example:
 
       Host dlibox
