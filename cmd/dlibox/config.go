@@ -65,6 +65,10 @@ func (c *Config) ResetDefault() {
 func (c *Config) Load(n string) error {
 	f, err := os.Open(n)
 	if err != nil {
+		if os.IsNotExist(err) {
+			// Ignore if the file is not present.
+			return nil
+		}
 		return err
 	}
 	defer f.Close()
