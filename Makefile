@@ -2,12 +2,21 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
+# To simplify your life:
+# - Make sure your .ssh/config has the proper config to push to the account on
+#   which you want the service to run on. For example:
+#     Host dlibox
+#        Hostname raspberrypi
+#        User pi
+# - Push a .ssh/authorized_keys to the device so you don't have to continuously
+#   enter the password.
+
 # Set this variable to your host to enable "make push" or use the form:
-#   make HOST=mypi push
-HOST ?= raspberrypi1
+#   make HOST=raspberrypi push
+HOST ?= dlibox
 
 
-.PHONY: push run setup log
+.PHONY: log push run setup setup_internal
 
 
 gofiles := $(wildcard **/*.go)
@@ -42,9 +51,20 @@ run: $(gofiles) cmd/dlibox/static_files_gen.go
 
 
 # Sets up a new raspberry pi.
-setup: push
+setup: setup_internal push
+
+
+setup_internal:
+	ssh $(HOST) 'mkdir -p bin'
 	scp setup/dlibox.service $(HOST):.
-	ssh $(HOST) 'sed -i -e "s/pi/$$USER/g" dlibox.service && sudo -S cp dlibox.service /etc/systemd/system/dlibox.service && sudo systemctl daemon-reload && sudo systemctl enable dlibox.service && sudo systemctl start dlibox.service && rm dlibox.service'
+	# Replace 'pi' in dlibox.server by the actual remote user. To change the
+	# default user, modify your local .ssh/config.
+	ssh $(HOST) 'sed -i -e "s/pi/$$USER/g" dlibox.service && \
+	    sudo -S cp dlibox.service /etc/systemd/system/dlibox.service && \
+	    sudo systemctl daemon-reload && \
+	    sudo systemctl enable dlibox.service && \
+	    sudo systemctl start dlibox.service && \
+	    rm dlibox.service'
 
 
 log:
