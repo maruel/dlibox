@@ -12,24 +12,26 @@ import (
 	"github.com/maruel/dlibox-go/rpi"
 )
 
-type DotStar struct {
-	// Gamma correction then power limiter.
-	RedGamma   float32
-	RedMax     float32
-	GreenGamma float32
-	GreenMax   float32
-	BlueGamma  float32
-	BlueMax    float32
-	AmpPerLED  float32
-	AmpBudget  float32
+type APA102 struct {
+	/*
+		// Gamma correction then power limiter.
+		RedGamma   float32
+		RedMax     float32
+		GreenGamma float32
+		GreenMax   float32
+		BlueGamma  float32
+		BlueMax    float32
+		AmpPerLED  float32
+		AmpBudget  float32
+	*/
 
 	w   io.WriteCloser
 	buf []byte
 }
 
-func (d *DotStar) Close() error {
-	w := d.w
-	d.w = nil
+func (a *APA102) Close() error {
+	w := a.w
+	a.w = nil
 	return w.Close()
 }
 
@@ -137,16 +139,16 @@ func Raster(pixels anim1d.Frame, buf *[]byte) {
 	}
 }
 
-func (d *DotStar) Write(pixels anim1d.Frame) error {
+func (a *APA102) Write(pixels anim1d.Frame) error {
 	// TODO(maruel): Calculate power in duty cycle of each channel.
-	Raster(pixels, &d.buf)
+	Raster(pixels, &a.buf)
 	/*
 		power := 0
 		//power += p
-		if d.AmpBudget != 0 {
-			powerF := float32(power) * d.AmpPerLED / 255.
-			if powerF > d.AmpBudget {
-				ratio := d.AmpBudget / powerF
+		if a.AmpBudget != 0 {
+			powerF := float32(power) * a.AmpPerLED / 255.
+			if powerF > a.AmpBudget {
+				ratio := a.AmpBudget / powerF
 				for i := range s {
 					if i%4 != 0 {
 						s[i] = anim1d.FloatToUint8(float32(s[i]) * ratio)
@@ -155,38 +157,40 @@ func (d *DotStar) Write(pixels anim1d.Frame) error {
 			}
 		}
 	*/
-	_, err := d.w.Write(d.buf)
+	_, err := a.w.Write(a.buf)
 	return err
 }
 
-func (d *DotStar) MinDelay() time.Duration {
+func (a *APA102) MinDelay() time.Duration {
 	// As per APA102-C spec, it's max refresh rate is 400hz.
 	// https://en.wikipedia.org/wiki/Flicker_fusion_threshold is a recommended
 	// reading.
 	return time.Second / 400
 }
 
-// MakeDotStar returns a strip that communicates over SPI to APA102 LEDs.
+// MakeAPA102 returns a strip that communicates over SPI to APA102 LEDs.
 //
 // This is generally what you want once the hardware is connected.
-func MakeDotStar() (*DotStar, error) {
+func MakeAPA102(speed int) (*APA102, error) {
 	// The speed must be high, as there's 32 bits sent per LED, creating a
 	// staggered effect. See
 	// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
-	w, err := rpi.MakeSPI("", 10000000)
+	w, err := rpi.MakeSPI("", speed)
 	if err != nil {
 		return nil, err
 	}
-	return &DotStar{
-		RedGamma:   1.,
-		RedMax:     0.5,
-		GreenGamma: 1.,
-		GreenMax:   0.5,
-		BlueGamma:  1.,
-		BlueMax:    0.5,
-		AmpPerLED:  .02,
-		AmpBudget:  9.,
-		w:          w,
+	return &APA102{
+		/*
+			RedGamma:   1.,
+			RedMax:     0.5,
+			GreenGamma: 1.,
+			GreenMax:   0.5,
+			BlueGamma:  1.,
+			BlueMax:    0.5,
+			AmpPerLED:  .02,
+			AmpBudget:  9.,
+		*/
+		w: w,
 	}, err
 }
 

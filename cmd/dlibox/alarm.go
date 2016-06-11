@@ -59,11 +59,12 @@ func (a *Alarm) Next(now time.Time) time.Time {
 	return time.Time{}
 }
 
-func (a *Alarm) Reset(p *anim1d.Painter) {
+func (a *Alarm) Reset(p *anim1d.Painter) error {
 	if a.timer != nil {
 		a.timer.Stop()
 		a.timer = nil
 	}
+	// TODO(maruel): Make sure all alarms are valid.
 	now := time.Now()
 	if next := a.Next(now); !next.IsZero() {
 		a.timer = time.AfterFunc(next.Sub(now), func() {
@@ -73,12 +74,17 @@ func (a *Alarm) Reset(p *anim1d.Painter) {
 			a.Reset(p)
 		})
 	}
+	return nil
 }
 
 type Alarms []Alarm
 
-func (a Alarms) Reset(p *anim1d.Painter) {
+func (a Alarms) Reset(p *anim1d.Painter) error {
+	var err error
 	for _, a := range a {
-		a.Reset(p)
+		if err1 := a.Reset(p); err1 != nil {
+			err = err1
+		}
 	}
+	return err
 }

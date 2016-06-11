@@ -334,31 +334,35 @@ func TestColorToAPA102(t *testing.T) {
 	}
 }
 
-func TestDotStarEmpty(t *testing.T) {
+func TestAPA102Empty(t *testing.T) {
 	b := &bytes.Buffer{}
-	d := &DotStar{
-		RedGamma:   1.,
-		RedMax:     1.,
-		GreenGamma: 1.,
-		GreenMax:   1.,
-		BlueGamma:  1.,
-		BlueMax:    1.,
-		w:          nopCloser{b},
+	d := &APA102{
+		/*
+			RedGamma:   1.,
+			RedMax:     1.,
+			GreenGamma: 1.,
+			GreenMax:   1.,
+			BlueGamma:  1.,
+			BlueMax:    1.,
+		*/
+		w: nopCloser{b},
 	}
 	ut.AssertEqual(t, nil, d.Write([]anim1d.Color{}))
 	ut.AssertEqual(t, []byte{0x0, 0x0, 0x0, 0x0, 0x0}, b.Bytes())
 }
 
-func TestDotStar(t *testing.T) {
+func TestAPA102(t *testing.T) {
 	b := &bytes.Buffer{}
-	d := &DotStar{
-		RedGamma:   1.,
-		RedMax:     1.,
-		GreenGamma: 1.,
-		GreenMax:   1.,
-		BlueGamma:  1.,
-		BlueMax:    1.,
-		w:          nopCloser{b},
+	d := &APA102{
+		/*
+			RedGamma:   1.,
+			RedMax:     1.,
+			GreenGamma: 1.,
+			GreenMax:   1.,
+			BlueGamma:  1.,
+			BlueMax:    1.,
+		*/
+		w: nopCloser{b},
 	}
 	colors := anim1d.Frame{
 		{0xFE, 0xFE, 0xFE},
@@ -387,18 +391,20 @@ func TestDotStar(t *testing.T) {
 	*/
 }
 
-func TestDotStarPowerLimited(t *testing.T) {
+func TestAPA102PowerLimited(t *testing.T) {
 	b := &bytes.Buffer{}
-	d := &DotStar{
-		RedGamma:   1.,
-		RedMax:     1.,
-		GreenGamma: 1.,
-		GreenMax:   1.,
-		BlueGamma:  1.,
-		BlueMax:    1.,
-		AmpPerLED:  .02,
-		AmpBudget:  0.1,
-		w:          nopCloser{b},
+	d := &APA102{
+		/*
+			RedGamma:   1.,
+			RedMax:     1.,
+			GreenGamma: 1.,
+			GreenMax:   1.,
+			BlueGamma:  1.,
+			BlueMax:    1.,
+			AmpPerLED:  .02,
+			AmpBudget:  0.1,
+		*/
+		w: nopCloser{b},
 	}
 	colors := anim1d.Frame{
 		{0xFE, 0xFE, 0xFE},
@@ -426,16 +432,18 @@ func TestDotStarPowerLimited(t *testing.T) {
 	*/
 }
 
-func TestDotStarLong(t *testing.T) {
+func TestAPA102Long(t *testing.T) {
 	b := &bytes.Buffer{}
-	d := &DotStar{
-		RedGamma:   1.,
-		RedMax:     1.,
-		GreenGamma: 1.,
-		GreenMax:   1.,
-		BlueGamma:  1.,
-		BlueMax:    1.,
-		w:          nopCloser{b},
+	d := &APA102{
+		/*
+			RedGamma:   1.,
+			RedMax:     1.,
+			GreenGamma: 1.,
+			GreenMax:   1.,
+			BlueGamma:  1.,
+			BlueMax:    1.,
+		*/
+		w: nopCloser{b},
 	}
 	colors := make(anim1d.Frame, 256)
 	ut.AssertEqual(t, nil, d.Write(colors))
