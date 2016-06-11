@@ -10,6 +10,7 @@
   - Select `9 Advanced Options`
   - Select `A5 SPI`
   - Choose `<Yes>`
+  - Reboot.
 - If not running as user `pi`, make sure the user is member of the group
   `spi`.
   - Run: `sudo adduser "user" spi` with the user account you are using.
@@ -20,11 +21,11 @@
 - Make sure your .ssh/config has the proper config to push to the account on
   which you want the service to run on. For example:
 
-    Host dlibox
-       Hostname raspberrypi
-       User pi
+      Host dlibox
+        Hostname raspberrypi
+        User pi
 
-- Push a .ssh/authorized_keys to the device so you don't have to continuously
+- Push a `.ssh/authorized_keys` to the device so you don't have to continuously
   enter the password.
 
 
