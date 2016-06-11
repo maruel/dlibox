@@ -2,15 +2,6 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
-# To simplify your life:
-# - Make sure your .ssh/config has the proper config to push to the account on
-#   which you want the service to run on. For example:
-#     Host dlibox
-#        Hostname raspberrypi
-#        User pi
-# - Push a .ssh/authorized_keys to the device so you don't have to continuously
-#   enter the password.
-
 # Set this variable to your host to enable "make push" or use the form:
 #   make HOST=raspberrypi push
 HOST ?= dlibox

@@ -6,7 +6,26 @@
   Lite](https://www.raspberrypi.org/downloads/raspbian/) and make sure you can
   ssh to the Raspberry Pi.
 - Enable the SPI port on the Raspberry Pi via
-  [`raspi-config`](https://www.raspberrypi.org/documentation/configuration/raspi-config.md).
+  [`raspi-config`](https://www.raspberrypi.org/documentation/configuration/raspi-config.md):
+  - Select `9 Advanced Options`
+  - Select `A5 SPI`
+  - Choose `<Yes>`
+- If not running as user `pi`, make sure the user is member of the group
+  `spi`.
+  - Run: `sudo adduser "user" spi` with the user account you are using.
+
+
+### To simplify your life
+
+- Make sure your .ssh/config has the proper config to push to the account on
+  which you want the service to run on. For example:
+
+    Host dlibox
+       Hostname raspberrypi
+       User pi
+
+- Push a .ssh/authorized_keys to the device so you don't have to continuously
+  enter the password.
 
 
 ### Automated
@@ -19,7 +38,7 @@ Push a new version:
 
     make HOST=mypi push
 
-`HOST` defaults to `raspberrypi1`.
+`HOST` defaults to `dlibox`.
 
 
 ### Manual

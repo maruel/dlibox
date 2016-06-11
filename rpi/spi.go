@@ -36,7 +36,14 @@ func makeSPI(path string, speed int64) (*spi, error) {
 	}
 	f, err := os.OpenFile(path, os.O_RDWR, os.ModeExclusive)
 	if err != nil {
-		return nil, err
+		// Try to be helpful here. There are generally two cases:
+		// - /dev/spidev0.0 doesn't exist. In this case, raspi-config has to be
+		//   run to enable SPI then the device must be rebooted.
+		// - permission denied. In this case, the user has to be added to plugdev.
+		if os.IsNotExist(err) {
+			return nil, errors.New("SPI is not configured; please follow instructions at https://github.com/maruel/dlibox-go/tree/master/setup")
+		}
+		return nil, fmt.Errorf("are you member of group 'plugdev'? please follow instructions at https://github.com/maruel/dlibox-go/tree/master/setup. %s", err)
 	}
 	s := &spi{path: path, speed: speed, f: f}
 	if err := s.setFlag(spiIOCMode, 3); err != nil {
@@ -57,8 +64,11 @@ func makeSPI(path string, speed int64) (*spi, error) {
 // MakeSPI is to be used when testing directly to the bus bypassing the DotStar
 // controller.
 //
-// path can be omitted. speed must be specified and should be in the high Khz
-// or low Mhz range.
+// `path` can be omitted and defaults to "/dev/spidev0.0". The Raspberry Pi has
+// 2 SPI port, the second can be accessed via "/dev/spidev0.1".
+// `speed` must be specified and should be in the high Khz
+// or low Mhz range, it's a good idea to start at 4000000 (4Mhz) and go upward
+// as long as the signal is good.
 func MakeSPI(path string, speed int64) (io.WriteCloser, error) {
 	return makeSPI(path, speed)
 }
