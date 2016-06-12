@@ -279,16 +279,16 @@ func TestRamp(t *testing.T) {
 	}
 	if false {
 		for i := 0; i <= 255; i++ {
-			fmt.Printf("{0x%02X, 0x%04X},\n", i, Ramp(uint8(i), 0))
+			fmt.Printf("{0x%02X, 0x%04X},\n", i, ramp(uint8(i), maxOut))
 		}
 	}
 	for i, line := range data {
 		ut.AssertEqual(t, i, int(line.input))
-		ut.AssertEqualIndex(t, i, line.expected, Ramp(line.input, 0))
+		ut.AssertEqualIndex(t, i, line.expected, ramp(line.input, maxOut))
 	}
-	ut.AssertEqual(t, uint16(0x00), Ramp(0x00, 0xFF))
-	ut.AssertEqual(t, uint16(0x21), Ramp(0x7F, 0xFF))
-	ut.AssertEqual(t, uint16(0xFF), Ramp(0xFF, 0xFF))
+	ut.AssertEqual(t, uint16(0x00), ramp(0x00, 0xFF))
+	ut.AssertEqual(t, uint16(0x21), ramp(0x7F, 0xFF))
+	ut.AssertEqual(t, uint16(0xFF), ramp(0xFF, 0xFF))
 }
 
 func TestRampMonotonic(t *testing.T) {
@@ -296,7 +296,7 @@ func TestRampMonotonic(t *testing.T) {
 	lastValue := uint16(0)
 	lastDelta := uint16(0)
 	for in := uint32(0); in <= 255; in++ {
-		out := Ramp(uint8(in), 0)
+		out := ramp(uint8(in), maxOut)
 		if out < lastValue {
 			t.Fatalf("f(%d) = %d; f(%d) = %d", in-1, lastValue, in, out)
 		}
@@ -306,7 +306,7 @@ func TestRampMonotonic(t *testing.T) {
 
 		if out-lastValue+1 < lastDelta {
 			t.Errorf("f(%d)=%d  f(%d)=%d  f(%d)=%d  Deltas: '%d+1 < %d' but should be '>='",
-				in-2, Ramp(uint8(in-2), 0), in-1, Ramp(uint8(in-1), 0), in, Ramp(uint8(in), 0), out-lastValue, lastDelta)
+				in-2, ramp(uint8(in-2), maxOut), in-1, ramp(uint8(in-1), maxOut), in, ramp(uint8(in), maxOut), out-lastValue, lastDelta)
 		}
 		lastDelta = out - lastValue
 		lastValue = out
@@ -329,7 +329,7 @@ func TestColorToAPA102(t *testing.T) {
 	}
 	for i, line := range data {
 		var actual col
-		actual.b, actual.B, actual.G, actual.R = ColorToAPA102(line.c)
+		actual.b, actual.B, actual.G, actual.R = colorToAPA102(line.c, maxOut)
 		ut.AssertEqualIndex(t, i, line.expected, actual)
 	}
 }
@@ -337,125 +337,117 @@ func TestColorToAPA102(t *testing.T) {
 func TestAPA102Empty(t *testing.T) {
 	b := &bytes.Buffer{}
 	d := &APA102{
-		/*
-			RedGamma:   1.,
-			RedMax:     1.,
-			GreenGamma: 1.,
-			GreenMax:   1.,
-			BlueGamma:  1.,
-			BlueMax:    1.,
-		*/
-		w: nopCloser{b},
+		Intensity:   255,
+		Temperature: 7000,
+		w:           nopCloser{b},
 	}
 	ut.AssertEqual(t, nil, d.Write([]anim1d.Color{}))
-	ut.AssertEqual(t, []byte{0x0, 0x0, 0x0, 0x0, 0x0}, b.Bytes())
+	ut.AssertEqual(t, []byte{0x0, 0x0, 0x0, 0x0, 0xFF}, b.Bytes())
 }
 
 func TestAPA102(t *testing.T) {
 	b := &bytes.Buffer{}
 	d := &APA102{
-		/*
-			RedGamma:   1.,
-			RedMax:     1.,
-			GreenGamma: 1.,
-			GreenMax:   1.,
-			BlueGamma:  1.,
-			BlueMax:    1.,
-		*/
-		w: nopCloser{b},
+		Intensity:   255,
+		Temperature: 7000,
+		w:           nopCloser{b},
 	}
 	colors := anim1d.Frame{
-		{0xFE, 0xFE, 0xFE},
+		{0xFF, 0xFF, 0xFF},
 		{0xFE, 0xFE, 0xFE},
 		{0xF0, 0xF0, 0xF0},
 		{0x80, 0x80, 0x80},
 		{0x80, 0x00, 0x00},
 		{0x00, 0x80, 0x00},
 		{0x00, 0x00, 0x80},
+		{0x00, 0x00, 0x10},
+		{0x00, 0x00, 0x01},
+		{0x00, 0x00, 0x00},
 	}
 	ut.AssertEqual(t, nil, d.Write(colors))
-	/*
-		// TODO(maruel): Resolution loss.
-		expected := []byte{
-			0x00, 0x00, 0x00, 0x00,
-			0xFF, 0xFF, 0xFF, 0xFF,
-			0xFF, 0x00, 0x00, 0x00,
-			0xFF, 0xF1, 0xF1, 0xF1,
-			0xFF, 0x81, 0x81, 0x81,
-			0xFF, 0x00, 0x00, 0x81,
-			0xFF, 0x00, 0x81, 0x00,
-			0xFF, 0x81, 0x00, 0x00,
-			0xFF,
-		}
-		ut.AssertEqual(t, expected, b.Bytes())
-	*/
+	expected := []byte{
+		0x00, 0x00, 0x00, 0x00,
+		0xFF, 0xFF, 0xFF, 0xFF,
+		0xFF, 0xFB, 0xFB, 0xFB,
+		0xFF, 0xC4, 0xC4, 0xC4,
+		0xE1, 0xF8, 0xF8, 0xF8,
+		0xE1, 0x00, 0x00, 0xF8,
+		0xE1, 0x00, 0xF8, 0x00,
+		0xE1, 0xF8, 0x00, 0x00,
+		0xE1, 0x10, 0x00, 0x00,
+		0xE1, 0x01, 0x00, 0x00,
+		0xE1, 0x00, 0x00, 0x00,
+		0xFF,
+	}
+	ut.AssertEqual(t, expected, b.Bytes())
 }
 
-func TestAPA102PowerLimited(t *testing.T) {
+func TestAPA102Intensity(t *testing.T) {
 	b := &bytes.Buffer{}
 	d := &APA102{
-		/*
-			RedGamma:   1.,
-			RedMax:     1.,
-			GreenGamma: 1.,
-			GreenMax:   1.,
-			BlueGamma:  1.,
-			BlueMax:    1.,
-			AmpPerLED:  .02,
-			AmpBudget:  0.1,
-		*/
-		w: nopCloser{b},
+		Intensity:   127,
+		Temperature: 7000,
+		w:           nopCloser{b},
 	}
 	colors := anim1d.Frame{
-		{0xFE, 0xFE, 0xFE},
+		{0xFF, 0xFF, 0xFF},
 		{0xFE, 0xFE, 0xFE},
 		{0xF0, 0xF0, 0xF0},
 		{0x80, 0x80, 0x80},
 		{0x80, 0x00, 0x00},
 		{0x00, 0x80, 0x00},
 		{0x00, 0x00, 0x80},
+		{0x00, 0x00, 0x10},
+		{0x00, 0x00, 0x01},
+		{0x00, 0x00, 0x00},
 	}
 	ut.AssertEqual(t, nil, d.Write(colors))
-	/*
-		expected := []byte{
-			0x00, 0x00, 0x00, 0x00,
-			0xFF, 0x90, 0x90, 0x90,
-			0xFF, 0x00, 0x00, 0x00,
-			0xFF, 0x88, 0x88, 0x88,
-			0xFF, 0x49, 0x49, 0x49,
-			0xFF, 0x00, 0x00, 0x49,
-			0xFF, 0x00, 0x49, 0x00,
-			0xFF, 0x49, 0x00, 0x00,
-			0xFF,
-		}
-		ut.AssertEqual(t, expected, b.Bytes())
-	*/
+	expected := []byte{
+		0x00, 0x00, 0x00, 0x00,
+		0xFF, 0x7F, 0x7F, 0x7F,
+		0xFF, 0x7D, 0x7D, 0x7D,
+		0xFF, 0x67, 0x67, 0x67,
+		0xE2, 0x9B, 0x9B, 0x9B,
+		0xE2, 0x00, 0x00, 0x9B,
+		0xE2, 0x00, 0x9B, 0x00,
+		0xE2, 0x9B, 0x00, 0x00,
+		0xE1, 0x10, 0x00, 0x00,
+		0xE1, 0x01, 0x00, 0x00,
+		0xE1, 0x00, 0x00, 0x00,
+		0xFF,
+	}
+	ut.AssertEqual(t, expected, b.Bytes())
 }
 
 func TestAPA102Long(t *testing.T) {
 	b := &bytes.Buffer{}
 	d := &APA102{
-		/*
-			RedGamma:   1.,
-			RedMax:     1.,
-			GreenGamma: 1.,
-			GreenMax:   1.,
-			BlueGamma:  1.,
-			BlueMax:    1.,
-		*/
-		w: nopCloser{b},
+		Intensity:   255,
+		Temperature: 7000,
+		w:           nopCloser{b},
 	}
 	colors := make(anim1d.Frame, 256)
 	ut.AssertEqual(t, nil, d.Write(colors))
 	expected := make([]byte, 4*(256+1)+17)
 	for i := 0; i < 256; i++ {
-		expected[4+4*i] = 0xFF
+		expected[4+4*i] = 0xE1
 	}
 	trailer := expected[4*257:]
 	for i := range trailer {
 		trailer[i] = 0xFF
 	}
-	//ut.AssertEqual(t, expected, b.Bytes())
+	ut.AssertEqual(t, expected, b.Bytes())
+}
+
+func BenchmarkRaster(b *testing.B) {
+	pixels := make(anim1d.Frame, 150)
+	var buf []byte
+	// Prime the buffer first.
+	raster(pixels, &buf, maxOut)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		raster(pixels, &buf, maxOut)
+	}
 }
 
 //

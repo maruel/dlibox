@@ -12,49 +12,20 @@ import (
 	"github.com/maruel/dlibox-go/rpi"
 )
 
-type APA102 struct {
-	/*
-		// Gamma correction then power limiter.
-		RedGamma   float32
-		RedMax     float32
-		GreenGamma float32
-		GreenMax   float32
-		BlueGamma  float32
-		BlueMax    float32
-		AmpPerLED  float32
-		AmpBudget  float32
-	*/
-
-	w   io.WriteCloser
-	buf []byte
-}
-
-func (a *APA102) Close() error {
-	w := a.w
-	a.w = nil
-	return w.Close()
-}
-
 // maxOut is the maximum intensity of each channel on a APA102 LED.
 const maxOut = 0x1EE1
 
-// Ramp converts input from [0, 0xFF] as intensity to lightness on a scale of
-// [0, 0x1EE1] or other desired range [0, max].
+// ramp converts input from [0, 0xFF] as intensity to lightness on a scale of
+// [0, maxOut] or other desired range [0, max].
 //
 // It tries to use the same curve independent of the scale used. max can be
 // changed to change the color temperature or to limit power dissipation.
 //
 // It's the reverse of lightness; https://en.wikipedia.org/wiki/Lightness
-func Ramp(l uint8, max uint16) uint16 {
+func ramp(l uint8, max uint16) uint16 {
 	if l == 0 {
 		// Make sure black is black.
 		return 0
-	}
-	if max == 0 || max > maxOut {
-		// If 'max' is not specified or is above maxOut, reset the maximum value.
-		max = maxOut
-	} else if max < 255 {
-		max = 255
 	}
 	// linearCutOff defines the linear section of the curve. Inputs between
 	// [0, linearCutOff] are mapped linearly to the output. It is 1% of maximum
@@ -78,7 +49,7 @@ func Ramp(l uint8, max uint16) uint16 {
 	return uint16((y*outRange+(offset*offset))/inRange/inRange + linearCutOff)
 }
 
-// ColorToAPA102 converts a color into the 4 bytes needed to control an APA-102
+// colorToAPA102 converts a color into the 4 bytes needed to control an APA-102
 // LED.
 //
 // The response as seen by the human eye is very non-linear. The APA-102
@@ -99,10 +70,10 @@ func Ramp(l uint8, max uint16) uint16 {
 // Each channel duty cycle ramps from 100% to 1/(31*255) == 1/7905.
 //
 // Return brighness, blue, green, red.
-func ColorToAPA102(c anim1d.Color) (byte, byte, byte, byte) {
-	r := Ramp(c.R, 0)
-	g := Ramp(c.G, 0)
-	b := Ramp(c.B, 0)
+func colorToAPA102(c anim1d.Color, max uint16) (byte, byte, byte, byte) {
+	r := ramp(c.R, max)
+	g := ramp(c.G, max)
+	b := ramp(c.B, max)
 	if r <= 255 && g <= 255 && b <= 255 {
 		return byte(0xE0 + 1), byte(b), byte(g), byte(r)
 	} else if r <= 511 && g <= 511 && b <= 511 {
@@ -116,7 +87,7 @@ func ColorToAPA102(c anim1d.Color) (byte, byte, byte, byte) {
 }
 
 // Serializes converts a buffer of colors to the APA102 SPI format.
-func Raster(pixels anim1d.Frame, buf *[]byte) {
+func raster(pixels anim1d.Frame, buf *[]byte, max uint16) {
 	// https://cpldcpu.files.wordpress.com/2014/08/apa-102c-super-led-specifications-2014-en.pdf
 	numLights := len(pixels)
 	// End frames are needed to be able to push enough SPI clock signals due to
@@ -127,36 +98,34 @@ func Raster(pixels anim1d.Frame, buf *[]byte) {
 		*buf = make([]byte, l)
 		// It is not necessary to set the end frames to 0xFFFFFFFF.
 		// Set end frames right away.
-		//s := (*buf)[4+4*numLights:]
-		//for i := range s {
-		//	s[i] = 0xFF
-		//}
+		s := (*buf)[4+4*numLights:]
+		for i := range s {
+			s[i] = 0xFF
+		}
 	}
 	// Start frame is all zeros. Just skip it.
 	s := (*buf)[4 : 4+4*numLights]
 	for i := range pixels {
-		s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = ColorToAPA102(pixels[i])
+		s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = colorToAPA102(pixels[i], max)
 	}
+}
+
+type APA102 struct {
+	Intensity   uint8  // Set an intensity between 0 (off) and 255 (full brightness).
+	Temperature uint16 // In Kelvin.
+	w           io.WriteCloser
+	buf         []byte
+}
+
+func (a *APA102) Close() error {
+	w := a.w
+	a.w = nil
+	return w.Close()
 }
 
 func (a *APA102) Write(pixels anim1d.Frame) error {
 	// TODO(maruel): Calculate power in duty cycle of each channel.
-	Raster(pixels, &a.buf)
-	/*
-		power := 0
-		//power += p
-		if a.AmpBudget != 0 {
-			powerF := float32(power) * a.AmpPerLED / 255.
-			if powerF > a.AmpBudget {
-				ratio := a.AmpBudget / powerF
-				for i := range s {
-					if i%4 != 0 {
-						s[i] = anim1d.FloatToUint8(float32(s[i]) * ratio)
-					}
-				}
-			}
-		}
-	*/
+	raster(pixels, &a.buf, uint16((uint32(maxOut)*uint32(a.Intensity)+127)/255))
 	_, err := a.w.Write(a.buf)
 	return err
 }
@@ -180,99 +149,8 @@ func MakeAPA102(speed int64) (*APA102, error) {
 		return nil, err
 	}
 	return &APA102{
-		/*
-			RedGamma:   1.,
-			RedMax:     0.5,
-			GreenGamma: 1.,
-			GreenMax:   0.5,
-			BlueGamma:  1.,
-			BlueMax:    0.5,
-			AmpPerLED:  .02,
-			AmpBudget:  9.,
-		*/
-		w: w,
+		Intensity:   255,
+		Temperature: 7000,
+		w:           w,
 	}, err
 }
-
-//
-
-/*
-// intensityLimiter limits the maximum intensity. Does this by scaling the
-// alpha channel.
-type intensityLimiter struct {
-	Child Pattern
-	Max   int // Maximum value between 0 (off) to 255 (full intensity).
-}
-
-func (i *intensityLimiter) NextFrame(pixels anim1d.Frame, sinceStart time.Duration) {
-	i.Child.NextFrame(pixels, sinceStart)
-	for j := range pixels {
-		pixels[j].A = uint8((int(pixels[j].A) + i.Max - 1) * 255 / i.Max)
-	}
-}
-
-// powerLimiter limits the maximum power draw (in Amp).
-//
-// It does this by scaling -each- the alpha channel but only when too much LEDs
-// are lit, which would cause too much Amperes to be drawn. This means when
-// only a subset of the strip is lit, all colors can be used but when all the
-// strip is used, the intensity is limited.
-//
-// TODO(maruel): Calculate the actual power draw per channel.
-// TODO(maruel): Check if the draw is linear to the intensity value per channel.
-// TODO(maruel): This should only be done once alpha has been evaluated.
-// TODO(maruel): This shoudl only be done after gamma correction (?)
-type powerLimiter struct {
-	Child     Pattern
-	AmpPerLED float32
-	AmpBudget    float32
-}
-
-func (p *powerLimiter) NextFrame(pixels anim1d.Frame, sinceStart time.Duration) {
-	p.Child.NextFrame(pixels, sinceStart)
-	power := 0.
-	for _, c := range pixels {
-		cR, cG, cB, _ := c.RGBA()
-		power += float32(cR>>8+cG>>8+cB>>8) * p.AmpPerLED
-	}
-	if power > p.AmpBudget {
-		// We only need to scale down the alpha as long as we treat each channel as
-		// having the same power budget.
-		for i := range pixels {
-			pixels[i].A = FloatToUint8(float32(pixels[i].A) * power / p.AmpBudget)
-		}
-	}
-}
-
-// gammaCorrection corrects the intensity of each channel and 'applies' the
-// alpha channel.
-//
-// TODO(maruel): The alpha channel should be dropped after this? As the alpha
-// correction is linear.
-//
-// For example, the green channel will likely be much brighter than red and
-// blue.
-//
-// '*Max' value are what should be considered 1.0, when it's deemed not
-// necessary to use the channel at full intensity. This is useful as this can
-// limit the amperage used by the LED strip, which is a concern for longer
-// strips.
-type gammaCorrection struct {
-	Child      Pattern
-	RedGamma   float32
-	RedMax     float32
-	GreenGamma float32
-	GreenMax   float32
-	BlueGamma  float32
-	BlueMax    float32
-}
-
-func (g *gammaCorrection) NextFrame(pixels []anim1d.Color, sinceStart time.Duration) {
-	g.Child.NextFrame(pixels, sinceStart)
-	for i := range pixels {
-		pixels[i].R = FloatToUint8(255. * math.Pow(float32(pixels[i].R)/255.*g.RedMax, 1/g.RedGamma))
-		pixels[i].G = FloatToUint8(255. * math.Pow(float32(pixels[i].G)/255.*g.GreenMax, 1/g.GreenGamma))
-		pixels[i].B = FloatToUint8(255. * math.Pow(float32(pixels[i].B)/255.*g.BlueMax, 1/g.BlueGamma))
-	}
-}
-*/
