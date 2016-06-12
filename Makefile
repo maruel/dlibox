@@ -38,7 +38,7 @@ push: dlibox
 # Runs it locally as a fake display with the web server running on port 8010.
 run: $(gofiles) cmd/dlibox/static_files_gen.go
 	go install ./cmd/dlibox
-	dlibox -fake -n 80 -port 8010
+	dlibox -fake
 
 
 # Sets up a new raspberry pi.

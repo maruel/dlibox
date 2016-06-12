@@ -8,13 +8,28 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"mime"
 	"net/http"
+	"os"
 	"path"
 
 	"github.com/maruel/dlibox-go/anim1d"
 )
+
+var (
+	hostName string
+	rootTmpl *template.Template
+)
+
+func init() {
+	var err error
+	if hostName, err = os.Hostname(); err != nil {
+		panic(err)
+	}
+	rootTmpl = template.Must(template.New("name").Parse(string(mustRead("root.html"))))
+}
 
 type webServer struct {
 	painter *anim1d.Painter
@@ -56,7 +71,12 @@ func (s *webServer) rootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/html")
 	//w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
-	if _, err := w.Write(mustRead("root.html")); err != nil {
+	keys := struct {
+		Host string
+	}{
+		hostName,
+	}
+	if err := rootTmpl.Execute(w, keys); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
