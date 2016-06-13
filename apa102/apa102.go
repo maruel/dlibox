@@ -10,6 +10,7 @@ import (
 
 	"github.com/maruel/dlibox-go/anim1d"
 	"github.com/maruel/dlibox-go/rpi"
+	"github.com/maruel/temperature"
 )
 
 // maxOut is the maximum intensity of each channel on a APA102 LED.
@@ -70,10 +71,10 @@ func ramp(l uint8, max uint16) uint16 {
 // Each channel duty cycle ramps from 100% to 1/(31*255) == 1/7905.
 //
 // Return brighness, blue, green, red.
-func colorToAPA102(c anim1d.Color, max uint16) (byte, byte, byte, byte) {
-	r := ramp(c.R, max)
-	g := ramp(c.G, max)
-	b := ramp(c.B, max)
+func colorToAPA102(c anim1d.Color, maxR, maxG, maxB uint16) (byte, byte, byte, byte) {
+	r := ramp(c.R, maxR)
+	g := ramp(c.G, maxG)
+	b := ramp(c.B, maxB)
 	if r <= 255 && g <= 255 && b <= 255 {
 		return byte(0xE0 + 1), byte(b), byte(g), byte(r)
 	} else if r <= 511 && g <= 511 && b <= 511 {
@@ -87,7 +88,7 @@ func colorToAPA102(c anim1d.Color, max uint16) (byte, byte, byte, byte) {
 }
 
 // Serializes converts a buffer of colors to the APA102 SPI format.
-func raster(pixels anim1d.Frame, buf *[]byte, max uint16) {
+func raster(pixels anim1d.Frame, buf *[]byte, maxR, maxG, maxB uint16) {
 	// https://cpldcpu.files.wordpress.com/2014/08/apa-102c-super-led-specifications-2014-en.pdf
 	numLights := len(pixels)
 	// End frames are needed to be able to push enough SPI clock signals due to
@@ -106,7 +107,7 @@ func raster(pixels anim1d.Frame, buf *[]byte, max uint16) {
 	// Start frame is all zeros. Just skip it.
 	s := (*buf)[4 : 4+4*numLights]
 	for i := range pixels {
-		s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = colorToAPA102(pixels[i], max)
+		s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = colorToAPA102(pixels[i], maxR, maxG, maxB)
 	}
 }
 
@@ -124,8 +125,11 @@ func (a *APA102) Close() error {
 }
 
 func (a *APA102) Write(pixels anim1d.Frame) error {
-	// TODO(maruel): Calculate power in duty cycle of each channel.
-	raster(pixels, &a.buf, uint16((uint32(maxOut)*uint32(a.Intensity)+127)/255))
+	tr, tg, tb := temperature.ToRGB(a.Temperature)
+	r := uint16((uint32(maxOut)*uint32(a.Intensity)*uint32(tr) + 127*127) / 65025)
+	g := uint16((uint32(maxOut)*uint32(a.Intensity)*uint32(tg) + 127*127) / 65025)
+	b := uint16((uint32(maxOut)*uint32(a.Intensity)*uint32(tb) + 127*127) / 65025)
+	raster(pixels, &a.buf, r, g, b)
 	_, err := a.w.Write(a.buf)
 	return err
 }
@@ -150,7 +154,7 @@ func MakeAPA102(speed int64) (*APA102, error) {
 	}
 	return &APA102{
 		Intensity:   255,
-		Temperature: 7000,
+		Temperature: 6500,
 		w:           w,
 	}, err
 }
