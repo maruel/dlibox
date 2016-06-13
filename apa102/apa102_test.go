@@ -313,27 +313,6 @@ func TestRampMonotonic(t *testing.T) {
 	}
 }
 
-func TestColorToAPA102(t *testing.T) {
-	type col struct {
-		b, B, G, R byte
-	}
-	data := []struct {
-		c        anim1d.Color
-		expected col
-	}{
-		{anim1d.Color{0xFF, 0xFF, 0xFF}, col{0xFF, 0xFF, 0xFF, 0xFF}},
-		{anim1d.Color{0x00, 0x00, 0x00}, col{0xE1, 0x00, 0x00, 0x00}},
-		{anim1d.Color{0xFF, 0x00, 0x00}, col{0xFF, 0x00, 0x00, 0xFF}},
-		{anim1d.Color{0x00, 0xFF, 0x00}, col{0xFF, 0x00, 0xFF, 0x00}},
-		{anim1d.Color{0x00, 0x00, 0xFF}, col{0xFF, 0xFF, 0x00, 0x00}},
-	}
-	for i, line := range data {
-		var actual col
-		actual.b, actual.B, actual.G, actual.R = colorToAPA102(line.c, maxOut, maxOut, maxOut)
-		ut.AssertEqualIndex(t, i, line.expected, actual)
-	}
-}
-
 func TestAPA102Empty(t *testing.T) {
 	b := &bytes.Buffer{}
 	d := &APA102{
@@ -402,23 +381,46 @@ func TestAPA102Intensity(t *testing.T) {
 		{0x00, 0x00, 0x00},
 	}
 	ut.AssertEqual(t, nil, d.Write(colors))
-	/*
-		expected := []byte{
-			0x00, 0x00, 0x00, 0x00,
-			0xFF, 0x7F, 0x7F, 0x7F,
-			0xFF, 0x7D, 0x7D, 0x7D,
-			0xFF, 0x67, 0x67, 0x67,
-			0xE2, 0x9B, 0x9B, 0x9B,
-			0xE2, 0x00, 0x00, 0x9B,
-			0xE2, 0x00, 0x9B, 0x00,
-			0xE2, 0x9B, 0x00, 0x00,
-			0xE1, 0x10, 0x00, 0x00,
-			0xE1, 0x01, 0x00, 0x00,
-			0xE1, 0x00, 0x00, 0x00,
-			0xFF,
-		}
-		ut.AssertEqual(t, expected, b.Bytes())
-	*/
+	expected := []byte{
+		0x00, 0x00, 0x00, 0x00,
+		0xFF, 0x7F, 0x7F, 0x7F,
+		0xFF, 0x7D, 0x7D, 0x7D,
+		0xFF, 0x67, 0x67, 0x67,
+		0xE2, 0x9B, 0x9B, 0x9B,
+		0xE2, 0x00, 0x00, 0x9B,
+		0xE2, 0x00, 0x9B, 0x00,
+		0xE2, 0x9B, 0x00, 0x00,
+		0xE1, 0x10, 0x00, 0x00,
+		0xE1, 0x01, 0x00, 0x00,
+		0xE1, 0x00, 0x00, 0x00,
+		0xFF,
+	}
+	ut.AssertEqual(t, expected, b.Bytes())
+}
+
+func TestAPA102TemperatureWarm(t *testing.T) {
+	b := &bytes.Buffer{}
+	d := &APA102{
+		Intensity:   255,
+		Temperature: 5000,
+		w:           nopCloser{b},
+	}
+	colors := anim1d.Frame{
+		{0xFF, 0xFF, 0xFF},
+		{0x80, 0x80, 0x80},
+		{0x01, 0x01, 0x01},
+		{0x00, 0x00, 0x00},
+	}
+	ut.AssertEqual(t, nil, d.Write(colors))
+	expected := []byte{
+		0x00, 0x00, 0x00, 0x00,
+		0xFF, 0xCE, 0xE5, 0xFF,
+		0xE2, 0x97, 0x8C, 0x7C,
+		0xE1, 0x01, 0x01, 0x01,
+		0xE1, 0x00, 0x00, 0x00,
+		0xFF,
+	}
+	ut.AssertEqual(t, expected, b.Bytes())
 }
 
 func TestAPA102Long(t *testing.T) {
@@ -441,7 +443,36 @@ func TestAPA102Long(t *testing.T) {
 	ut.AssertEqual(t, expected, b.Bytes())
 }
 
-func BenchmarkRaster(b *testing.B) {
+func BenchmarkRasterWhite(b *testing.B) {
+	pixels := make(anim1d.Frame, 150)
+	for i := range pixels {
+		pixels[i] = anim1d.Color{255, 255, 255}
+	}
+	var buf []byte
+	// Prime the buffer first.
+	raster(pixels, &buf, maxOut, maxOut, maxOut)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		raster(pixels, &buf, maxOut, maxOut, maxOut)
+	}
+}
+
+func BenchmarkRasterDim(b *testing.B) {
+	pixels := make(anim1d.Frame, 150)
+	for i := range pixels {
+		// This is in the linear range.
+		pixels[i] = anim1d.Color{1, 1, 1}
+	}
+	var buf []byte
+	// Prime the buffer first.
+	raster(pixels, &buf, maxOut, maxOut, maxOut)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		raster(pixels, &buf, maxOut, maxOut, maxOut)
+	}
+}
+
+func BenchmarkRasterBlack(b *testing.B) {
 	pixels := make(anim1d.Frame, 150)
 	var buf []byte
 	// Prime the buffer first.
