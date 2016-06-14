@@ -29,11 +29,6 @@ type Pattern interface {
 	// is that int64 calculation on ARM is very slow and abysmal on xtensa, which
 	// this code is transpiled to.
 	NextFrame(pixels Frame, timeMS uint32)
-
-	// TODO(maruel): Will have to think about it.
-	// NativeDuration returns the looping duration, if any. It is used for
-	// animated GIF generation.
-	//NativeDuration(pixels int) time.Duration
 }
 
 // Strip is an 1D output device.

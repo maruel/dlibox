@@ -4,8 +4,6 @@
 
 package anim1d
 
-import "time"
-
 // Color shows a single color on all lights. It knows how to renders itself
 // into a frame.
 //
@@ -52,20 +50,12 @@ func (c *Color) NextFrame(pixels Frame, timeMS uint32) {
 	}
 }
 
-func (c *Color) NativeDuration(pixels int) time.Duration {
-	return 0
-}
-
 // Frame is a strip of colors. It knows how to renders itself into a frame
 // (which is recursive).
 type Frame []Color
 
 func (f Frame) NextFrame(pixels Frame, timeMS uint32) {
 	copy(pixels, f)
-}
-
-func (f Frame) NativeDuration(pixels int) time.Duration {
-	return 0
 }
 
 // Mix blends the second frame with the first.
@@ -122,10 +112,6 @@ func (r *Rainbow) NextFrame(pixels Frame, timeMS uint32) {
 	copy(pixels, r.buf)
 }
 
-func (r *Rainbow) NativeDuration(pixels int) time.Duration {
-	return 0
-}
-
 // waveLengthToRGB returns a color over a rainbow.
 //
 // This code was inspired by public domain code on the internet.
@@ -172,8 +158,4 @@ func (r *Repeated) NextFrame(pixels Frame, timeMS uint32) {
 	for i := 0; i < len(pixels); i += len(r.Frame) {
 		copy(pixels[i:], r.Frame)
 	}
-}
-
-func (r *Repeated) NativeDuration(pixels int) time.Duration {
-	return 0
 }

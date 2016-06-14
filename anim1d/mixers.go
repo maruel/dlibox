@@ -4,11 +4,6 @@
 
 package anim1d
 
-import (
-	"log"
-	"time"
-)
-
 // TransitionType models visually pleasing transitions.
 //
 // They are modeled against CSS transitions.
@@ -198,10 +193,6 @@ func (c *Cycle) NextFrame(pixels Frame, timeMS uint32) {
 	c.Frames[int(timeMS/c.FrameDurationMS)%len(c.Frames)].NextFrame(pixels, timeMS)
 }
 
-func (c *Cycle) NativeDuration(pixels int) time.Duration {
-	return time.Duration(c.FrameDurationMS*uint32(len(c.Frames))) * time.Millisecond
-}
-
 // Loop rotates between all the animations.
 //
 // Display starts with one DurationShow for Patterns[0], then starts looping.
@@ -268,10 +259,6 @@ func (r *Rotate) NextFrame(pixels Frame, timeMS uint32) {
 	}
 	copy(pixels[offset:], r.buf)
 	copy(pixels[:offset], r.buf[l-offset:])
-}
-
-func (r *Rotate) NativeDuration(pixels int) time.Duration {
-	return time.Duration(float32(pixels)/r.MovesPerSec) * time.Second
 }
 
 // PingPong shows a 'ball' with a trail that bounces from one side to
@@ -344,11 +331,6 @@ func (p *PingPong) NextFrame(pixels Frame, timeMS uint32) {
 	}
 }
 
-func (p *PingPong) NativeDuration(pixels int) time.Duration {
-	cycle := 2 * (pixels - 1)
-	return time.Duration(p.MovesPerSec*float32(cycle)) * time.Second
-}
-
 // Crop draws a subset of a strip, not touching the rest.
 type Crop struct {
 	Child  SPattern
@@ -373,7 +355,6 @@ type Mixer struct {
 
 func (m *Mixer) NextFrame(pixels Frame, timeMS uint32) {
 	if len(m.Patterns) != len(m.Weights) {
-		log.Printf("len(Patterns) (%d) != len(Weights) (%d)", len(m.Patterns), len(m.Weights))
 		return
 	}
 	if len(m.bufs) != len(m.Patterns) {
