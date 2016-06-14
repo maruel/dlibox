@@ -7,7 +7,6 @@ package anim1d
 import (
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/maruel/ut"
 )
@@ -60,23 +59,23 @@ func TestJSON(t *testing.T) {
 	serialize(t, &Frame{{1, 2, 3}, {4, 5, 6}}, `"L010203040506"`)
 	serialize(t, &Rainbow{}, `"Rainbow"`)
 	serialize(t, &PingPong{}, `{"Child":{},"MovesPerSec":0,"_type":"PingPong"}`)
-	serialize(t, &Cycle{}, `{"FrameDuration":0,"Frames":null,"_type":"Cycle"}`)
+	serialize(t, &Cycle{}, `{"FrameDurationMS":0,"Frames":null,"_type":"Cycle"}`)
 
 	// Create one more complex. Assert that int64 is not mangled.
 	p := &Transition{
 		Before: SPattern{
 			&Transition{
 				After:      SPattern{&Color{255, 255, 255}},
-				Offset:     10 * time.Minute,
-				Duration:   10 * time.Minute,
+				OffsetMS:   600000,
+				DurationMS: 600000,
 				Transition: TransitionLinear,
 			},
 		},
 		After:      SPattern{&Color{}},
-		Offset:     30 * time.Minute,
-		Duration:   10 * time.Minute,
+		OffsetMS:   30 * 60000,
+		DurationMS: 600000,
 		Transition: TransitionLinear,
 	}
-	expected := `{"After":"#000000","Before":{"After":"#ffffff","Before":{},"Duration":600000000000,"Offset":600000000000,"Transition":"linear","_type":"Transition"},"Duration":600000000000,"Offset":1800000000000,"Transition":"linear","_type":"Transition"}`
+	expected := `{"After":"#000000","Before":{"After":"#ffffff","Before":{},"DurationMS":600000,"OffsetMS":600000,"Transition":"linear","_type":"Transition"},"DurationMS":600000,"OffsetMS":1800000,"Transition":"linear","_type":"Transition"}`
 	serialize(t, p, expected)
 }

@@ -17,16 +17,18 @@ import (
 
 // Pattern is a interface to draw an animated line.
 type Pattern interface {
-	// NextFrame fills the buffer with the next image.
+	// NextFrame fills the buffer with the image at this time frame.
 	//
-	// The image should be derived from the duration since this pattern was
-	// started.
+	// The image should be derived from timeMS, which is the time since this
+	// pattern was started.
 	//
 	// Calling NextFrame() with a nil pattern is valid. Patterns should be
 	// callable without crashing with an object initialized with default values.
 	//
-	// First call is guaranteed to be called with sinceStart == 0.
-	NextFrame(pixels Frame, sinceStart time.Duration)
+	// timeMS will cycle after 49.7 days. The reason it's not using time.Duration
+	// is that int64 calculation on ARM is very slow and abysmal on xtensa, which
+	// this code is transpiled to.
+	NextFrame(pixels Frame, timeMS uint32)
 
 	// TODO(maruel): Will have to think about it.
 	// NativeDuration returns the looping duration, if any. It is used for
@@ -116,7 +118,7 @@ func (p *Painter) runPattern(cGen, cWrite chan Frame) {
 	ease := Transition{
 		Before:     SPattern{black},
 		After:      SPattern{black},
-		Duration:   500 * time.Millisecond,
+		DurationMS: 500,
 		Transition: TransitionEaseOut,
 	}
 	var since time.Duration
@@ -132,13 +134,13 @@ func (p *Painter) runPattern(cGen, cWrite chan Frame) {
 			// New pattern.
 			ease.Before = ease.After
 			ease.After.Pattern = newPat
-			ease.Offset = since
+			ease.OffsetMS = uint32(since / time.Millisecond)
 
 		case pixels := <-cGen:
 			for i := range pixels {
 				pixels[i] = Color{}
 			}
-			ease.NextFrame(pixels, since)
+			ease.NextFrame(pixels, uint32(since/time.Millisecond))
 			since += delay
 			cWrite <- pixels
 

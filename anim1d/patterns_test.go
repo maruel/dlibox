@@ -7,14 +7,13 @@ package anim1d
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/maruel/ut"
 )
 
 func TestColor(t *testing.T) {
 	p := &Color{255, 255, 255}
-	e := []expectation{{3 * time.Second, Frame{{255, 255, 255}}}}
+	e := []expectation{{3000, Frame{{255, 255, 255}}}}
 	testFrames(t, p, e)
 }
 
@@ -491,15 +490,15 @@ func TestRepeated(t *testing.T) {
 //
 
 type expectation struct {
-	offset time.Duration
-	colors Frame
+	offsetMS uint32
+	colors   Frame
 }
 
 func testFrames(t *testing.T, p Pattern, expectations []expectation) {
 	var pixels Frame
 	for frame, e := range expectations {
 		pixels.reset(len(e.colors))
-		p.NextFrame(pixels, e.offset)
+		p.NextFrame(pixels, e.offsetMS)
 		if !frameEqual(e.colors, pixels) {
 			x := Marshal(e.colors)
 			t.Fatalf("frame=%d bad expectation:\n%s\n%s", frame, x, Marshal(pixels))
@@ -509,7 +508,7 @@ func testFrames(t *testing.T, p Pattern, expectations []expectation) {
 
 func testFrame(t *testing.T, p Pattern, e expectation) {
 	pixels := make(Frame, len(e.colors))
-	p.NextFrame(pixels, e.offset)
+	p.NextFrame(pixels, e.offsetMS)
 	if !frameEqual(e.colors, pixels) {
 		t.Fatalf("%s != %s", Marshal(e.colors), Marshal(pixels))
 	}

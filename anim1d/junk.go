@@ -29,7 +29,7 @@ type NightSky struct {
 	points    []point
 }
 
-func (c *NightSky) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (c *NightSky) NextFrame(pixels Frame, timeMS uint32) {
 	// random
 	// animate.
 }
@@ -39,9 +39,9 @@ func (c *NightSky) NextFrame(pixels Frame, sinceStart time.Duration) {
 type Aurore struct {
 }
 
-func (a *Aurore) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (a *Aurore) NextFrame(pixels Frame, timeMS uint32) {
 	// TODO(maruel): Redo.
-	y := float32(sinceStart.Seconds()) * 10.
+	y := float32(timeMS) * .01
 	for i := range pixels {
 		x := float32(i)
 		//a := 32 + 31*sin(x/(37.+15*cos(y/74)))*cos(y/(31+11*sin(x/57)))
@@ -64,7 +64,7 @@ type NightStars struct {
 	r     *rand.Rand
 }
 
-func (e *NightStars) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (e *NightStars) NextFrame(pixels Frame, timeMS uint32) {
 	if e.r == nil {
 		e.r = rand.New(rand.NewSource(int64(e.Seed)))
 	}
@@ -110,12 +110,12 @@ type WishingStar struct {
 	AverageDelay time.Duration // Average delay between each wishing star.
 }
 
-func (w *WishingStar) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (w *WishingStar) NextFrame(pixels Frame, timeMS uint32) {
 	/*
 		// Create a deterministic replay by using the current number of
 		// the wishing star as the seed for the current flow. Make it independent of
 		// any other non-deterministic source.
-		i := sinceStart / w.AverageDelay
+		i := timeMS / w.AverageDelay
 		r := rand.New(rand.NewSource(int64(i)))
 		// Always calculate things in the same order to keep the calculation
 		// deterministic.

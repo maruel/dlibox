@@ -46,7 +46,7 @@ func (c *Color) Mix(d Color, gradient uint8) {
 	c.B = uint8(((uint16(c.B)+1)*grad1 + (uint16(d.B)+1)*grad) >> 8)
 }
 
-func (c *Color) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (c *Color) NextFrame(pixels Frame, timeMS uint32) {
 	for i := range pixels {
 		pixels[i] = *c
 	}
@@ -60,7 +60,7 @@ func (c *Color) NativeDuration(pixels int) time.Duration {
 // (which is recursive).
 type Frame []Color
 
-func (f Frame) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (f Frame) NextFrame(pixels Frame, timeMS uint32) {
 	copy(pixels, f)
 }
 
@@ -106,7 +106,7 @@ type Rainbow struct {
 	buf Frame
 }
 
-func (r *Rainbow) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (r *Rainbow) NextFrame(pixels Frame, timeMS uint32) {
 	if len(r.buf) != len(pixels) {
 		r.buf.reset(len(pixels))
 		const start = 380
@@ -165,7 +165,7 @@ type Repeated struct {
 	Frame Frame
 }
 
-func (r *Repeated) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (r *Repeated) NextFrame(pixels Frame, timeMS uint32) {
 	if len(pixels) == 0 || len(r.Frame) == 0 {
 		return
 	}

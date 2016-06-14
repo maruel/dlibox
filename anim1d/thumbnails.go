@@ -13,7 +13,6 @@ import (
 	"image/gif"
 	"math"
 	"sync"
-	"time"
 )
 
 // ThumbnailsCache is a cache of animated GIF thumbnails for each pattern.
@@ -65,7 +64,7 @@ func (t *ThumbnailsCache) GIF(serialized []byte) ([]byte, error) {
 	}
 	frameDuration := int(math.Floor(100./float64(t.ThumbnailHz) + 0.5))
 	for frame := 0; frame < nbImg; frame++ {
-		since := (time.Second*time.Duration(frame) + time.Duration(t.ThumbnailHz) - 1) / time.Duration(t.ThumbnailHz)
+		since := uint32(1000 * frame / t.ThumbnailHz)
 		pat.NextFrame(pixels[frame&1], since)
 		if frame > 0 && pixels[0].isEqual(pixels[1]) {
 			// Skip a frame completely if its pixels didn't change at all from the

@@ -123,14 +123,14 @@ type Gradient struct {
 	buf        Frame
 }
 
-func (g *Gradient) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (g *Gradient) NextFrame(pixels Frame, timeMS uint32) {
 	if g.Left.Pattern == nil || g.Right.Pattern == nil {
 		return
 	}
 	l := len(pixels) - 1
 	g.buf.reset(len(pixels))
-	g.Left.NextFrame(pixels, sinceStart)
-	g.Right.NextFrame(g.buf, sinceStart)
+	g.Left.NextFrame(pixels, timeMS)
+	g.Right.NextFrame(g.buf, timeMS)
 	if l == 0 {
 		pixels.Mix(g.buf, FloatToUint8(255.*g.Transition.scale(0.5)))
 	} else {
@@ -146,28 +146,28 @@ func (g *Gradient) NextFrame(pixels Frame, sinceStart time.Duration) {
 
 // Transition changes from Before to After over time. It doesn't repeat.
 //
-// In gets sinceStart that is subtracted by Offset.
+// In gets timeMS that is subtracted by OffsetMS.
 type Transition struct {
 	Before     SPattern       // Old pattern that is disappearing
 	After      SPattern       // New pattern to show
-	Offset     time.Duration  // Offset at which the transiton from Before->In starts
-	Duration   time.Duration  // Duration of the transition while both are rendered
+	OffsetMS   uint32         // Offset at which the transiton from Before->In starts
+	DurationMS uint32         // Duration of the transition while both are rendered
 	Transition TransitionType // Type of transition, defaults to EaseOut if not set
 	buf        Frame
 }
 
-func (t *Transition) NextFrame(pixels Frame, sinceStart time.Duration) {
-	if sinceStart <= t.Offset {
+func (t *Transition) NextFrame(pixels Frame, timeMS uint32) {
+	if timeMS <= t.OffsetMS {
 		// Before transition.
 		if t.Before.Pattern != nil {
-			t.Before.NextFrame(pixels, sinceStart)
+			t.Before.NextFrame(pixels, timeMS)
 		}
 		return
 	}
 	if t.After.Pattern != nil {
-		t.After.NextFrame(pixels, sinceStart-t.Offset)
+		t.After.NextFrame(pixels, timeMS-t.OffsetMS)
 	}
-	if sinceStart >= t.Offset+t.Duration {
+	if timeMS >= t.OffsetMS+t.DurationMS {
 		// After transition.
 		t.buf = nil
 		return
@@ -176,9 +176,9 @@ func (t *Transition) NextFrame(pixels Frame, sinceStart time.Duration) {
 
 	// TODO(maruel): Add lateral animation and others.
 	if t.Before.Pattern != nil {
-		t.Before.NextFrame(t.buf, sinceStart)
+		t.Before.NextFrame(t.buf, timeMS)
 	}
-	pixels.Mix(t.buf, 255.-FloatToUint8(255.*t.Transition.scale(float32(sinceStart-t.Offset)/float32(t.Duration))))
+	pixels.Mix(t.buf, 255.-FloatToUint8(255.*t.Transition.scale(float32(timeMS-t.OffsetMS)/float32(t.DurationMS))))
 }
 
 // Cycle cycles between multiple patterns. It can be used as an animatable
@@ -187,47 +187,47 @@ func (t *Transition) NextFrame(pixels Frame, sinceStart time.Duration) {
 // TODO(maruel): Blend between frames with TransitionType, defaults to step.
 // TODO(maruel): Merge with Loop.
 type Cycle struct {
-	Frames        []SPattern
-	FrameDuration time.Duration
+	Frames          []SPattern
+	FrameDurationMS uint32
 }
 
-func (c *Cycle) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (c *Cycle) NextFrame(pixels Frame, timeMS uint32) {
 	if len(c.Frames) == 0 {
 		return
 	}
-	c.Frames[int(sinceStart/c.FrameDuration)%len(c.Frames)].NextFrame(pixels, sinceStart)
+	c.Frames[int(timeMS/c.FrameDurationMS)%len(c.Frames)].NextFrame(pixels, timeMS)
 }
 
 func (c *Cycle) NativeDuration(pixels int) time.Duration {
-	return c.FrameDuration * time.Duration(len(c.Frames))
+	return time.Duration(c.FrameDurationMS*uint32(len(c.Frames))) * time.Millisecond
 }
 
 // Loop rotates between all the animations.
 //
 // Display starts with one DurationShow for Patterns[0], then starts looping.
-// sinceStart is not modified so it's like as all animations continued
-// animating behind.
+// timeMS is not modified so it's like as all animations continued animating
+// behind.
 type Loop struct {
-	Patterns           []SPattern
-	DurationShow       time.Duration  // Duration for each pattern to be shown as pure
-	DurationTransition time.Duration  // Duration of the transition between two patterns
-	Transition         TransitionType // Type of transition, defaults to EaseOut if not set
-	buf                Frame
+	Patterns             []SPattern
+	DurationShowMS       uint32         // Duration for each pattern to be shown as pure
+	DurationTransitionMS uint32         // Duration of the transition between two patterns
+	Transition           TransitionType // Type of transition, defaults to EaseOut if not set
+	buf                  Frame
 }
 
-func (l *Loop) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
 	l.buf.reset(len(pixels))
-	ds := float32(l.DurationShow.Seconds())
-	dt := float32(l.DurationTransition.Seconds())
+	ds := float32(l.DurationShowMS)
+	dt := float32(l.DurationTransitionMS)
 	cycleDuration := ds + dt
-	cycles := float32(sinceStart.Seconds()) / cycleDuration
+	cycles := float32(timeMS) / cycleDuration
 	baseIndex := int(cycles)
 	lp := len(l.Patterns)
 	if lp == 0 {
 		return
 	}
 	a := l.Patterns[baseIndex%lp]
-	a.NextFrame(pixels, sinceStart)
+	a.NextFrame(pixels, timeMS)
 	// [0, 1[
 	delta := (cycles - float32(baseIndex))
 	offset := delta * cycleDuration
@@ -238,7 +238,7 @@ func (l *Loop) NextFrame(pixels Frame, sinceStart time.Duration) {
 	// ]0, 1[
 	intensity := 1. - (offset-ds)/dt
 	// TODO(maruel): Add lateral animation and others.
-	b.NextFrame(l.buf, sinceStart)
+	b.NextFrame(l.buf, timeMS)
 	pixels.Mix(l.buf, FloatToUint8(255.*l.Transition.scale(intensity)))
 }
 
@@ -255,14 +255,14 @@ type Rotate struct {
 	buf         Frame
 }
 
-func (r *Rotate) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (r *Rotate) NextFrame(pixels Frame, timeMS uint32) {
 	l := len(pixels)
 	if l == 0 || r.Child.Pattern == nil {
 		return
 	}
 	r.buf.reset(l)
-	r.Child.NextFrame(r.buf, sinceStart)
-	offset := int(float32(sinceStart.Seconds())*r.MovesPerSec) % l
+	r.Child.NextFrame(r.buf, timeMS)
+	offset := int(float32(timeMS)*0.001*r.MovesPerSec) % l
 	if offset < 0 {
 		offset = l + offset
 	}
@@ -283,17 +283,18 @@ func (r *Rotate) NativeDuration(pixels int) time.Duration {
 // To get smoothed movement, use Scale{} with a 5x factor or so.
 // TODO(maruel): That's a bit inefficient, enable ScalingType here.
 type PingPong struct {
-	Child       SPattern // [0] is the front pixel so the pixels are effectively drawn in reverse order.
-	MovesPerSec float32  // Expressed in number of light jumps per second.
+	Child SPattern // [0] is the front pixel so the pixels are effectively drawn in reverse order.
+	// TODO(maruel): PerMoveMS uint32
+	MovesPerSec float32 // Expressed in number of light jumps per second.
 	buf         Frame
 }
 
-func (p *PingPong) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (p *PingPong) NextFrame(pixels Frame, timeMS uint32) {
 	if len(pixels) == 0 || p.Child.Pattern == nil {
 		return
 	}
 	p.buf.reset(len(pixels)*2 - 1)
-	p.Child.NextFrame(p.buf, sinceStart)
+	p.Child.NextFrame(p.buf, timeMS)
 	// The last point of each extremity is only lit on one tick but every other
 	// points are lit twice during a full cycle. This means the full cycle is
 	// 2*(len(pixels)-1). For a 3 pixels line, the cycle is: x00, 0x0, 00x, 0x0.
@@ -309,7 +310,8 @@ func (p *PingPong) NextFrame(pixels Frame, sinceStart time.Duration) {
 	//   move 14 -> move 0; "2*(8-1)"
 	cycle := 2 * (len(pixels) - 1)
 	// TODO(maruel): Smoothing with TransitionType, defaults to Step.
-	pos := int(float32(sinceStart.Seconds())*p.MovesPerSec) % cycle
+	// TODO(maruel): Convert to uint32.
+	pos := int(float32(timeMS)*0.001*p.MovesPerSec) % cycle
 
 	// Once it works the following code looks trivial but everytime it takes me
 	// an absurd amount of time to rewrite it.
@@ -354,9 +356,9 @@ type Crop struct {
 	Length int // Length of the pixels to affect
 }
 
-func (s *Crop) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (s *Crop) NextFrame(pixels Frame, timeMS uint32) {
 	if s.Child.Pattern != nil {
-		s.Child.NextFrame(pixels[s.Start:s.Length], sinceStart)
+		s.Child.NextFrame(pixels[s.Start:s.Length], timeMS)
 	}
 }
 
@@ -369,7 +371,7 @@ type Mixer struct {
 	bufs     []Frame
 }
 
-func (m *Mixer) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (m *Mixer) NextFrame(pixels Frame, timeMS uint32) {
 	if len(m.Patterns) != len(m.Weights) {
 		log.Printf("len(Patterns) (%d) != len(Weights) (%d)", len(m.Patterns), len(m.Weights))
 		return
@@ -383,7 +385,7 @@ func (m *Mixer) NextFrame(pixels Frame, sinceStart time.Duration) {
 
 	// Draw each pattern.
 	for i := range m.Patterns {
-		m.Patterns[i].NextFrame(m.bufs[i], sinceStart)
+		m.Patterns[i].NextFrame(m.bufs[i], timeMS)
 	}
 
 	// Merge patterns.
@@ -414,7 +416,7 @@ type Scale struct {
 	buf    Frame
 }
 
-func (s *Scale) NextFrame(pixels Frame, sinceStart time.Duration) {
+func (s *Scale) NextFrame(pixels Frame, timeMS uint32) {
 	if s.Child.Pattern == nil {
 		return
 	}
@@ -423,6 +425,6 @@ func (s *Scale) NextFrame(pixels Frame, sinceStart time.Duration) {
 		l = int(ceil(s.Ratio * float32(len(pixels))))
 	}
 	s.buf.reset(l)
-	s.Child.NextFrame(s.buf, sinceStart)
+	s.Child.NextFrame(s.buf, timeMS)
 	s.Scale.scale(s.buf, pixels)
 }

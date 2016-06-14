@@ -318,5 +318,5 @@ func LoadPNG(content []byte, frameDuration time.Duration, vertical bool) *Cycle 
 	for i, p := range buf {
 		children[i].Pattern = p
 	}
-	return &Cycle{children, frameDuration}
+	return &Cycle{children, uint32(frameDuration / time.Millisecond)}
 }
