@@ -120,10 +120,11 @@ func raster(pixels anim1d.Frame, buf *[]byte, maxR, maxG, maxB uint16) {
 		r := rampR[c.R]
 		g := rampG[c.G]
 		b := rampB[c.B]
-		if r|g|b <= 1023 {
-			if r|g|b <= 255 {
+		m := r | g | b
+		if m <= 1023 {
+			if m <= 255 {
 				s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = byte(0xE0+1), byte(b), byte(g), byte(r)
-			} else if r|g|b <= 511 {
+			} else if m <= 511 {
 				s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = byte(0xE0+2), byte(b>>1), byte(g>>1), byte(r>>1)
 			} else {
 				s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = byte(0xE0+4), byte((b+2)>>2), byte((g+2)>>2), byte((r+2)>>2)
