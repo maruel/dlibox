@@ -7,6 +7,7 @@
 #include <Wire.h>
 
 #include "ada_ssd1306.h"
+#include "images.h"
 #include "ssd1306.h"
 
 #define OLED_RESET 0  // GPIO0
@@ -15,6 +16,26 @@ Adafruit_SSD1306 display(OLED_RESET);
 #if (SSD1306_LCDHEIGHT != 48)
 #error("Height incorrect, please fix Adafruit_SSD1306.h!");
 #endif
+
+namespace {
+
+const uint8_t* const images[] = {
+  coeur,
+  dragon,
+};
+
+Timer displayTimer;
+
+int index;
+
+}  // namespace
+
+void cycle() {
+  display.clearDisplay();
+  display.drawBitmap(0, 0, images[index], display.width(), display.height(), 1);
+  display.display();
+  index = (index + 1) % 2;
+}
 
 // Font size:
 // - 1: 10 characters wide; 6 lines
@@ -30,4 +51,5 @@ void initSSD1306() {
   display.setCursor(0,0);
   display.println("dlibox");
   display.display();
+  displayTimer.initializeMs(1000, cycle).start();
 }

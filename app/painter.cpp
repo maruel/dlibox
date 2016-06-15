@@ -68,6 +68,7 @@ void painterLoop() {
     uint32_t render = Write(buf, maxAPA102Out / 4);
     // Time taken to render.
     Perf[LOAD_RENDER].add(render-now);
+    /*
     if (name != lastName) {
       lastName = name;
       display.setCursor(0, 0);
@@ -84,6 +85,7 @@ void painterLoop() {
       display.display();
       Perf[LOAD_I2C].add(millis() - now);
     }
+    */
   }
 }
 
