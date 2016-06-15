@@ -7,6 +7,8 @@
 
 #include "anim1d.h"
 
+extern String lastName;
+
 void initPainter();
 
 uint16_t frameRate();

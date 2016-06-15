@@ -197,13 +197,15 @@ uint32_t Write(const Frame& pixels, uint16_t maxIntensity) {
   uint16_t g = ((uint32_t(maxAPA102Out)*uint32_t(intensity)*uint32_t(tg) + 127*127) / 65025);
   uint16_t b = ((uint32_t(maxAPA102Out)*uint32_t(intensity)*uint32_t(tb) + 127*127) / 65025);
   raster(pixels, rawAPA102buffer, r, g, b);
-  uint32_t now = millis();
+  uint32_t now = micros();
   // TODO(maruel): Use an asynchronous version.
   // TODO(maruel): Use a writeBytes() that doesn't overwrite the buffer.
   // TODO(maruel): Use separate timers for 'render' and 'write', to cut the huge
   // load chunk in two to reduce the risk of wifi failure.
   SPI.transfer(rawAPA102buffer, rawAPA102bufferLen);
-  Perf[LOAD_SPI].add(millis() - now);
+  // Max that can be calculated is 64ms.
+  Perf[LOAD_SPI].add(micros() - now);
+  frameCount++;
   return now;
 }
 

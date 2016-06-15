@@ -15,8 +15,6 @@
 
 namespace {
 
-String lastName;
-
 Timer paintTimer;
 
 Frame buf;
@@ -47,15 +45,18 @@ IPattern* p = &cycle;
 IPattern* pNew = NULL;
 
 void painterLoop() {
+  // We need both as we need 49 days roll over for NextFrame() call but we need
+  // the precision for Perf.
+  uint32_t nowMS = millis();
+  uint32_t nowUS = micros();
   // TODO(maruel): Atomic.
-  uint32_t now = millis();
   if (pNew != NULL) {
     delete p;
     p = pNew;
     pNew = NULL;
-    start = now;
+    start = nowMS;
   }
-  Perf[FRAMES].add(now);
+  Perf[FRAMES].add(nowMS);
   if (config.apa102.numLights != buf.len) {
     buf.reset(config.apa102.numLights);
   } else {
@@ -64,32 +65,18 @@ void painterLoop() {
     memset(buf.pixels, 0, sizeof(Color) * buf.len);
   }
   if (config.apa102.numLights != 0) {
-    String name = p->NextFrame(buf, now-start);
+    // TODO(maruel): Memory fragmentation.
+    lastName = p->NextFrame(buf, nowMS-start);
     uint32_t render = Write(buf, maxAPA102Out / 4);
     // Time taken to render.
-    Perf[LOAD_RENDER].add(render-now);
-    /*
-    if (name != lastName) {
-      lastName = name;
-      display.setCursor(0, 0);
-      display.clearDisplay();
-      display.printf("Ovrhead ms");
-      display.printf("Rndr/s%4u", min(Perf[LOAD_RENDER].sum(), 1000u));
-      display.printf("SPI/s %4u", min(Perf[LOAD_SPI].sum(), 1000u));
-      display.printf("I2C/f %4u", min(Perf[LOAD_I2C].avg(), 1000u));
-      display.printf("%ums/f\n", Perf[FRAMES].avgDelta());
-      display.println(name);
-      // This is very slow. Should probably send a separate task for this since we
-      // already monopolized for a long time!
-      now = millis();
-      display.display();
-      Perf[LOAD_I2C].add(millis() - now);
-    }
-    */
+    // Max that can be calculated is 64ms.
+    Perf[LOAD_RENDER].add(render-nowUS);
   }
 }
 
 }  // namespace
+
+String lastName;
 
 void initPainter() {
   initAPA102();

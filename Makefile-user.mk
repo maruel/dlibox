@@ -2,6 +2,7 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
+
 # Default: 115200
 # COM_SPEED = 921600
 # Running at 921.6kbps makes flashing flake out occasionally but it's
@@ -15,6 +16,12 @@ SPI_SIZE := 4M
 # TODO(maruel): Defaults to 40. Why not 80Mhz?
 #SPI_SPEED = 80
 
+
+# Doesn't push SPIFFS rom and doesn't start the terminal.
+push: all
+	$(vecho) "Killing Terminal to free $(COM_PORT)"
+	-$(Q) $(KILL_TERM)
+	$(ESPTOOL) -p $(COM_PORT) -b $(COM_SPEED_ESPTOOL) write_flash $(flashimageoptions) 0x00000 $(RBOOT_BIN) 0x02000 $(RBOOT_ROM_0)
 
 
 # TODO(maruel): Rewrite the following, I'm not really good at Makefiles and it's

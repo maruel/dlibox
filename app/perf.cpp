@@ -10,6 +10,8 @@
 
 Samples Perf[LAST_PERF];
 
+uint32_t frameCount;
+
 void initPerf() {
   Perf[FRAMES].init(config.apa102.frameRate*2);
   Perf[LOAD_RENDER].init(config.apa102.frameRate);

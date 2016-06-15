@@ -125,6 +125,7 @@ enum PerfMeasurement : uint8_t {
 };
 
 extern Samples Perf[LAST_PERF];
+extern uint32_t frameCount;
 
 // Must be called after initializing config and should be called on reconfig.
 void initPerf();
