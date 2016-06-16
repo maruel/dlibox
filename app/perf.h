@@ -68,7 +68,6 @@ struct Samples {
     N = n;
     index = 0;
     samples = new uint16_t[n]();
-    //memset(samples, 0, sizeof(uint16_t)*N);
   }
 
   void add(uint16_t t) {

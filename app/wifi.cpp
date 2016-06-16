@@ -12,7 +12,7 @@ namespace {
 
 void stationOnConnect() {
   Serial.println("stationOnConnect()");
-  //Serial.printf("IP: %s\n", WifiStation.getIP().toString().c_str());
+  Serial.printf("IP: %s\n", WifiStation.getIP().toString().c_str());
   // getNetworkMask
   // getNetworkGateway
   // getNetworkBroadcast
@@ -29,6 +29,8 @@ void stationOnConnectFail() {
 }  // namespace
 
 void resetWifi() {
+  // TODO(maruel): Erase the values stored by the SDK.
+
   if (config.host.highSpeed) {
     wifi_set_sleep_type(NONE_SLEEP_T);
   } else {

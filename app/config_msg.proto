@@ -17,9 +17,9 @@ message Wifi {
 
 message APA102 {
   // Frame rate to use for display.
-  optional uint32 frameRate  = 1 [(nanopb).int_size = IS_16, default = 60];
+  optional uint32 frameRate  = 1 [(nanopb).int_size = IS_16, default = 30];
   // Number of lights to send data to. Generally a multiple of 144 or 150.
-  optional uint32 numLights = 2 [(nanopb).int_size = IS_16, default = 150];
+  optional uint32 numLights = 2 [(nanopb).int_size = IS_16, default = 0];
   // SPI bus speed in Hz. Default of 8Mhz is relatively fast.
   optional uint32 SPIspeed  = 3 [default = 8000000];
 }

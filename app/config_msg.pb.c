@@ -10,8 +10,8 @@
 
 const char Wifi_ssid_default[33] = "";
 const char Wifi_password_default[64] = "";
-const uint16_t APA102_frameRate_default = 60u;
-const uint16_t APA102_numLights_default = 150u;
+const uint16_t APA102_frameRate_default = 30u;
+const uint16_t APA102_numLights_default = 0u;
 const uint32_t APA102_SPIspeed_default = 8000000u;
 const bool DisplaySettings_enabled_default = false;
 const uint32_t DisplaySettings_I2Cspeed_default = 4000000u;

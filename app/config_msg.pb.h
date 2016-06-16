@@ -79,7 +79,7 @@ extern const char Config_romURL_default[128];
 
 /* Initializer values for message structs */
 #define Wifi_init_default                        {false, "", false, ""}
-#define APA102_init_default                      {false, 60u, false, 150u, false, 8000000u}
+#define APA102_init_default                      {false, 30u, false, 0u, false, 8000000u}
 #define DisplaySettings_init_default             {false, false, false, 4000000u}
 #define Host_init_default                        {false, "", false, false}
 #define Config_init_default                      {false, Wifi_init_default, false, Wifi_init_default, false, APA102_init_default, false, Host_init_default, false, DisplaySettings_init_default, false, ""}

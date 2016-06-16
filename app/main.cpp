@@ -25,6 +25,6 @@ void init() {
   initSerialCommand();
   initPerf();
   initSSD1306();
-  resetWifi();
+  //resetWifi();
   initPainter();
 }

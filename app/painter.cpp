@@ -57,21 +57,15 @@ void painterLoop() {
     start = nowMS;
   }
   Perf[FRAMES].add(nowMS);
-  if (config.apa102.numLights != buf.len) {
-    buf.reset(config.apa102.numLights);
-  } else {
-    // It is not guaranteed that the IPattern draws on every pixel. Make sure
-    // that pixels not drawn on are black.
-    memset(buf.pixels, 0, sizeof(Color) * buf.len);
-  }
-  if (config.apa102.numLights != 0) {
-    // TODO(maruel): Memory fragmentation.
-    lastName = p->NextFrame(buf, nowMS-start);
-    uint32_t render = Write(buf, maxAPA102Out / 4);
-    // Time taken to render.
-    // Max that can be calculated is 64ms.
-    Perf[LOAD_RENDER].add(render-nowUS);
-  }
+  // It is not guaranteed that the IPattern draws on every pixel. Make sure
+  // that pixels not drawn on are black.
+  memset(buf.pixels, 0, sizeof(Color) * buf.len);
+  // TODO(maruel): Memory fragmentation.
+  lastName = p->NextFrame(buf, nowMS-start);
+  uint32_t render = Write(buf, maxAPA102Out / 4);
+  // Time taken to render.
+  // Max that can be calculated is 64ms.
+  Perf[LOAD_RENDER].add(render-nowUS);
 }
 
 }  // namespace
@@ -79,7 +73,10 @@ void painterLoop() {
 String lastName;
 
 void initPainter() {
-  initAPA102();
-  start = millis();
-  paintTimer.initializeMs(1000/config.apa102.frameRate, painterLoop).start();
+  if (config.apa102.frameRate && config.apa102.numLights) {
+    initAPA102();
+    start = millis();
+    buf.reset(config.apa102.numLights);
+    paintTimer.initializeMs(1000/config.apa102.frameRate, painterLoop).start();
+  }
 }

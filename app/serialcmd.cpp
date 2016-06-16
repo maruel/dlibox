@@ -67,11 +67,20 @@ void cmdset(char* args) {
     config.has_wifiAP = true;
     config.wifiAP.has_password = true;
     strcpy(config.wifiAP.password, value);
+  } else if (!strcmp(args, "apa102.frameRate")) {
+    config.has_apa102 = true;
+    config.apa102.has_frameRate = true;
+    config.apa102.frameRate = atoi(value);
+  } else if (!strcmp(args, "apa102.numLights")) {
+    config.has_apa102 = true;
+    config.apa102.has_numLights = true;
+    config.apa102.numLights = atoi(value);
   } else {
     Serial.printf("invalid key \"%s\"\n", args);
     return;
   }
   saveConfig();
+  Serial.println("Don't forget to restart for settings to take effect!");
 }
 
 void cmdhelp() {

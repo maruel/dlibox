@@ -7,6 +7,7 @@
 #include <Wire.h>
 
 #include "ada_ssd1306.h"
+#include "conf.h"
 #include "images.h"
 #include "painter.h"
 #include "perf.h"
@@ -71,15 +72,17 @@ void cycle() {
 // - 1: 10 characters wide; 6 lines
 // - 2: 5 characters wide; 3 lines
 void initSSD1306() {
-  // Set for the wemos i²c pins.
-  Wire.pins(5, 4);
-  // TODO(maruel): Change speed according to config.display.I2Cspeed.
-  display.begin();
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0,0);
-  display.println("dlibox");
-  display.display();
-  displayTimer.initializeMs(2000, cycle).start();
+  if (config.display.enabled) {
+    // Set for the wemos i²c pins.
+    Wire.pins(5, 4);
+    // TODO(maruel): Change speed according to config.display.I2Cspeed.
+    display.begin();
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(0,0);
+    display.println("dlibox");
+    display.display();
+    displayTimer.initializeMs(2000, cycle).start();
+  }
 }
