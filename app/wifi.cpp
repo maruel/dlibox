@@ -11,7 +11,8 @@
 namespace {
 
 void stationOnConnect() {
-  Serial.printf("IP: %s\r\n", WifiStation.getIP().toString().c_str());
+  Serial.println("stationOnConnect()");
+  //Serial.printf("IP: %s\n", WifiStation.getIP().toString().c_str());
   // getNetworkMask
   // getNetworkGateway
   // getNetworkBroadcast
@@ -28,27 +29,26 @@ void stationOnConnectFail() {
 }  // namespace
 
 void resetWifi() {
-  if (config.host.highSpeed || true) {
-    // ??
+  if (config.host.highSpeed) {
     wifi_set_sleep_type(NONE_SLEEP_T);
   } else {
     wifi_set_sleep_type(LIGHT_SLEEP_T);
   }
   if (config.has_wifiClient && config.wifiClient.has_ssid && config.wifiClient.has_password) {
-    Serial.println("wifi client");
+    Serial.printf("wifi client \"%s\"\n", config.wifiClient.ssid);
     WifiAccessPoint.enable(false);
     WifiStation.waitConnection(stationOnConnect);
     if (!WifiStation.config(config.wifiClient.ssid, config.wifiClient.password)) {
       Serial.println("failure");
     }
   } else if (config.has_wifiAP && config.wifiAP.has_ssid && config.wifiAP.has_password) {
-    Serial.println("wifi AP");
+    Serial.printf("wifi AP \"%s\"\n", config.wifiAP.ssid);
     WifiStation.enable(false);
-    if (!WifiAccessPoint.config(config.wifiClient.ssid, config.wifiClient.password, AUTH_WPA2_PSK)) {
+    if (!WifiAccessPoint.config(config.wifiAP.ssid, config.wifiAP.password, AUTH_WPA2_PSK)) {
       Serial.println("failure");
     }
   } else {
-    Serial.printf("wifi soft AP: %s / %s\r\n", config.host.name, chipID);
+    Serial.printf("wifi default AP: \"%s\"\n", config.host.name);
     // TODO(maruel): Scan networks.
     // TODO(maruel): Use WifiStation.smartConfigStart()
     WifiStation.enable(false);
@@ -59,5 +59,4 @@ void resetWifi() {
   }
   //WifiEvents.onStationDisconnect(STADisconnect);
   //WifiEvents.onStationGotIP(STAGotIP);
-
 }

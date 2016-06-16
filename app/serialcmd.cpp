@@ -78,6 +78,7 @@ void cmdhelp() {
   Serial.println();
   Serial.println("available commands:");
   Serial.println("  cat     - show a file in spiffs");
+  Serial.println("  clear   - deletes the current configuration");
   Serial.println("  config  - display current config");
   Serial.println("  connect - connect to wifi");
   Serial.println("  help    - display this message");
@@ -112,6 +113,8 @@ void cmdls(const char* args) {
 void onCommand(const char* cmd, char* args) {
   if (!strcmp(cmd, "cat")) {
     cmdcat(args);
+  } else if (!strcmp(cmd, "clear")) {
+    clearConfig();
   } else if (!strcmp(cmd, "config")) {
     cmdconfig(args);
   } else if (!strcmp(cmd, "connect")) {

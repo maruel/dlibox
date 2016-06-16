@@ -13,16 +13,7 @@ namespace {
 
 const char *const CONFIG_FILE = "config";
 
-}  // namespace
-
-char chipID[9];
-// Initialize to defaults.
-Config config = Config_init_default;
-
-void initConfig() {
-  spiffs_mount();
-  sprintf(chipID, "%08x", system_get_chip_id());
-
+void loadConfig() {
   if (fileExist(CONFIG_FILE)) {
     // TODO(maruel): It'd be nice to stream from spiffs to nanopb.
     // See nanopb/examples/network_server/common.c as an example.
@@ -34,10 +25,28 @@ void initConfig() {
     }
   }
   // Set default hostname.
-  if (!config.host.has_name) {
+  if (!config.has_host || !config.host.has_name || !config.host.name[0]) {
+    config.has_host = true;
     config.host.has_name = true;
     sprintf(config.host.name, "dlibox-%s", chipID);
   }
+}
+
+}  // namespace
+
+char chipID[9];
+// Initialize to defaults.
+Config config = Config_init_default;
+
+void initConfig() {
+  spiffs_mount();
+  sprintf(chipID, "%08x", system_get_chip_id());
+  loadConfig();
+}
+
+void clearConfig() {
+  fileDelete(CONFIG_FILE);
+  loadConfig();
 }
 
 void saveConfig() {

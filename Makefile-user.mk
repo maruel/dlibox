@@ -13,8 +13,9 @@ RBOOT_ENABLED := 1
 
 SPI_SIZE := 4M
 
-# TODO(maruel): Defaults to 40. Why not 80Mhz?
-#SPI_SPEED = 80
+# Defaults to 40. Not sure why the default is not 80Mhz. Downgrade if there is
+# stability issues.
+SPI_SPEED = 80
 
 
 # Doesn't push SPIFFS rom and doesn't start the terminal.
@@ -22,6 +23,14 @@ push: all
 	$(vecho) "Killing Terminal to free $(COM_PORT)"
 	-$(Q) $(KILL_TERM)
 	$(ESPTOOL) -p $(COM_PORT) -b $(COM_SPEED_ESPTOOL) write_flash $(flashimageoptions) 0x00000 $(RBOOT_BIN) 0x02000 $(RBOOT_ROM_0)
+
+
+# Like target 'f' but doesn't push SPIFFS rom.
+f: all
+	$(vecho) "Killing Terminal to free $(COM_PORT)"
+	-$(Q) $(KILL_TERM)
+	$(ESPTOOL) -p $(COM_PORT) -b $(COM_SPEED_ESPTOOL) write_flash $(flashimageoptions) 0x00000 $(RBOOT_BIN) 0x02000 $(RBOOT_ROM_0)
+	$(TERMINAL)
 
 
 # TODO(maruel): Rewrite the following, I'm not really good at Makefiles and it's
