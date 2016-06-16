@@ -28,7 +28,7 @@ void stationOnConnectFail() {
 }  // namespace
 
 void resetWifi() {
-  if (config.highSpeed || true) {
+  if (config.host.highSpeed || true) {
     // ??
     wifi_set_sleep_type(NONE_SLEEP_T);
   } else {
@@ -48,12 +48,12 @@ void resetWifi() {
       Serial.println("failure");
     }
   } else {
-    Serial.printf("wifi soft AP: %s / %s\r\n", hostName, chipID);
+    Serial.printf("wifi soft AP: %s / %s\r\n", config.host.name, chipID);
     // TODO(maruel): Scan networks.
     // TODO(maruel): Use WifiStation.smartConfigStart()
     WifiStation.enable(false);
-    //if (!WifiAccessPoint.config(hostName, chipID, AUTH_WPA2_PSK)) {
-    if (!WifiAccessPoint.config(hostName, "", AUTH_OPEN)) {
+    //if (!WifiAccessPoint.config(config.host.name, chipID, AUTH_WPA2_PSK)) {
+    if (!WifiAccessPoint.config(config.host.name, "", AUTH_OPEN)) {
       Serial.println("failure");
     }
   }

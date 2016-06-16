@@ -15,7 +15,6 @@ void initConfig();
 void saveConfig();
 
 extern char chipID[9];
-extern char hostName[7+sizeof(chipID)];
 extern Config config;
 
 #endif
