@@ -6,6 +6,8 @@
 #include <SmingCore/SmingCore.h>
 
 #include "conf.h"
+#include "painter.h"
+#include "perf.h"
 #include "ota.h"
 #include "serialcmd.h"
 
@@ -91,8 +93,7 @@ void cmdhelp() {
   Serial.println("  config  - display current config");
   Serial.println("  connect - connect to wifi");
   Serial.println("  help    - display this message");
-  Serial.println("  info    - show esp8266 info");
-  Serial.println("  ip      - show current ip address");
+  Serial.println("  info    - show esp8266 and connectivity info");
   Serial.println("  ls      - list files in spiffs");
   Serial.println("  ota     - perform ota update, switch rom and reboot");
   Serial.println("  restart - restart the esp8266");
@@ -103,12 +104,22 @@ void cmdhelp() {
 
 void cmdinfo() {
   Serial.println();
-  Serial.printf("SDK: v%s\n", system_get_sdk_version());
-  Serial.printf("Free Heap: %d\n", system_get_free_heap_size());
-  Serial.printf("CPU Frequency: %d MHz\n", system_get_cpu_freq());
+  Serial.printf("SDK:            v%s\n", system_get_sdk_version());
+  Serial.printf("Free Heap:      %d\n", system_get_free_heap_size());
+  Serial.printf("CPU Frequency:  %d MHz\n", system_get_cpu_freq());
   Serial.printf("System Chip ID: %x\n", system_get_chip_id());
-  Serial.printf("SPI Flash ID: %x\n", spi_flash_get_id());
+  Serial.printf("SPI Flash ID:   %x\n", spi_flash_get_id());
   Serial.printf("SPI Flash Size: %d\n", (1 << ((spi_flash_get_id() >> 16) & 0xff)));
+  Serial.println();
+  Serial.printf("Wifi client enabled: %d\n", WifiStation.isEnabled());
+  Serial.printf("Wifi client SSID:    %s\n", WifiStation.getSSID().c_str());
+  Serial.printf("Wifi client IP:      %s\n", WifiStation.getIP().toString().c_str());
+  Serial.printf("Wifi client MAC:     %s\n", WifiStation.getMAC().c_str());
+  Serial.printf("Wifi client RSSI:    %d\n", WifiStation.getRssi());
+  Serial.printf("Wifi client channel: %d\n", WifiStation.getChannel());
+  Serial.printf("AccessPoint enabled: %d\n", WifiAccessPoint.isEnabled());
+  Serial.printf("AccessPoint IP:      %s\n", WifiAccessPoint.getIP().toString().c_str());
+  Serial.printf("AccessPoint MAC:     %s\n", WifiAccessPoint.getMAC().c_str());
 }
 
 void cmdls(const char* args) {
@@ -117,6 +128,24 @@ void cmdls(const char* args) {
   for (uint16_t i = 0; i < files.count(); i++) {
     Serial.println(files[i]);
   }
+}
+
+void cmdperf() {
+  Serial.println("Ovrhead ms");
+  uint32_t s = Perf[LOAD_RENDER].sum();
+  uint32_t x = s / 1000;
+  uint8_t y = (s-x*1000)/100;
+  Serial.printf("Rnd/s%3u.%1u\n", min(x, 1000u), y);
+  s = Perf[LOAD_SPI].sum();
+  x = s / 1000;
+  y = (s-x*1000)/100;
+  Serial.printf("SPI/s%3u.%1u\n", min(x, 1000u), y);
+  s = Perf[LOAD_I2C].avg();
+  x = s / 1000;
+  y = (s-x*1000)/100;
+  Serial.printf("I2C/f%3u.%1u\n", min(x, 1000u), y);
+  Serial.printf("ms/f %5u\n", Perf[FRAMES].avgDelta());
+  Serial.println(lastRenderName);
 }
 
 void onCommand(const char* cmd, char* args) {
@@ -133,13 +162,12 @@ void onCommand(const char* cmd, char* args) {
     cmdhelp();
   } else if (!strcmp(cmd, "info")) {
     cmdinfo();
-  } else if (!strcmp(cmd, "ip")) {
-    Serial.printf("client ip: %s mac: %s\n", WifiStation.getIP().toString().c_str(), WifiStation.getMAC().c_str());
-    Serial.printf("ap     ip: %s mac: %s\n", WifiAccessPoint.getIP().toString().c_str(), WifiAccessPoint.getMAC().c_str());
   } else if (!strcmp(cmd, "ls")) {
     cmdls(args);
   } else if (!strcmp(cmd, "ota")) {
     OtaUpdate();
+  } else if (!strcmp(cmd, "perf")) {
+    cmdperf();
   } else if (!strcmp(cmd, "restart")) {
     // TODO(maruel): Hangs instead...
     System.restart();

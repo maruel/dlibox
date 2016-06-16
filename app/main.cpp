@@ -16,15 +16,26 @@
 
 #define LED_PIN 2 // GPIO2
 
-//  digitalWrite(LED_PIN, state);
+namespace {
 
-void init() {
-  system_set_os_print(0);
-  pinMode(LED_PIN, OUTPUT);
+void onReady() {
+  digitalWrite(LED_PIN, 1);
   initConfig();
   initSerialCommand();
   initPerf();
   initSSD1306();
-  //resetWifi();
   initPainter();
+  initWifi();
+  digitalWrite(LED_PIN, 0);
+}
+
+}  // namespace
+
+void init() {
+  system_set_os_print(0);
+  pinMode(LED_PIN, OUTPUT);
+  // The system is ready a few millisecond later. It is possible the system
+  // boots for rboot OTA update (?) so don't do anything stupid before being
+  // ready.
+  System.onReady(onReady);
 }

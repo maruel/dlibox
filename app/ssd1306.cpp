@@ -53,9 +53,8 @@ void cycle() {
     x = s / 1000;
     y = (s-x*1000)/100;
     display.printf("I2C/f%3u.%1u", min(x, 1000u), y);
-    ;
     display.printf("ms/f %5u", Perf[FRAMES].avgDelta());
-    display.println(lastName);
+    display.println(lastRenderName);
     // This is very slow. Should probably send a separate task for this since we
     // already monopolized for a long time!
     display.display();

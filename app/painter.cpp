@@ -61,7 +61,7 @@ void painterLoop() {
   // that pixels not drawn on are black.
   memset(buf.pixels, 0, sizeof(Color) * buf.len);
   // TODO(maruel): Memory fragmentation.
-  lastName = p->NextFrame(buf, nowMS-start);
+  lastRenderName = p->NextFrame(buf, nowMS-start);
   uint32_t render = Write(buf, maxAPA102Out / 4);
   // Time taken to render.
   // Max that can be calculated is 64ms.
@@ -70,7 +70,7 @@ void painterLoop() {
 
 }  // namespace
 
-String lastName;
+String lastRenderName;
 
 void initPainter() {
   if (config.apa102.frameRate && config.apa102.numLights) {

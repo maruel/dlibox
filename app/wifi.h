@@ -5,7 +5,7 @@
 #ifndef __WIFI_H__
 #define __WIFI_H__
 
-// resetWifi initializes/resets the wifi mode. Depends on config.
-void resetWifi();
+// initWifi initializes the wifi mode. Depends on config.
+void initWifi();
 
 #endif

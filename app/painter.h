@@ -7,7 +7,7 @@
 
 #include "anim1d.h"
 
-extern String lastName;
+extern String lastRenderName;
 
 void initPainter();
 
