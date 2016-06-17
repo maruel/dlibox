@@ -6,6 +6,7 @@ package anim1d
 
 import (
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	"github.com/maruel/ut"
@@ -21,7 +22,81 @@ func TestNilObject(t *testing.T) {
 	}
 }
 
-func serialize(t *testing.T, p Pattern, expected string) {
+func TestJSONPatterns(t *testing.T) {
+	for _, p := range knownPatterns {
+		p2 := &SPattern{p}
+		b, err := json.Marshal(p2)
+		ut.AssertEqual(t, nil, err)
+		if isColorOrFrameOrRainbow(p) {
+			ut.AssertEqual(t, uint8('"'), b[0])
+		} else {
+			ut.AssertEqual(t, uint8('{'), b[0])
+		}
+		// Must not crash on nil members and empty frame.
+		p2.NextFrame(Frame{}, 0)
+		p2.Pattern = nil
+		ut.AssertEqualf(t, nil, json.Unmarshal(b, p2), "%s", b)
+	}
+}
+
+func TestJSONPatternsSpotCheck(t *testing.T) {
+	// Increase coverage of edge cases.
+	serializePattern(t, &Color{1, 2, 3}, `"#010203"`)
+	serializePattern(t, &Frame{}, `"L"`)
+	serializePattern(t, &Frame{{1, 2, 3}, {4, 5, 6}}, `"L010203040506"`)
+	serializePattern(t, &Rainbow{}, `"Rainbow"`)
+	serializePattern(t, &PingPong{}, `{"Child":{},"MovePerHour":0,"_type":"PingPong"}`)
+	serializePattern(t, &Chronometer{}, `{"Child":{},"_type":"Chronometer"}`)
+	serializePattern(t, &Cycle{}, `{"FrameDurationMS":0,"Frames":null,"_type":"Cycle"}`)
+
+	// Create one more complex. Assert that int64 is not mangled.
+	p := &Transition{
+		Before: SPattern{
+			&Transition{
+				After:      SPattern{&Color{255, 255, 255}},
+				OffsetMS:   600000,
+				DurationMS: 600000,
+				Curve:      Direct,
+			},
+		},
+		After:      SPattern{&Color{}},
+		OffsetMS:   30 * 60000,
+		DurationMS: 600000,
+		Curve:      Direct,
+	}
+	expected := `{"After":"#000000","Before":{"After":"#ffffff","Before":{},"Curve":"direct","DurationMS":600000,"OffsetMS":600000,"_type":"Transition"},"Curve":"direct","DurationMS":600000,"OffsetMS":1800000,"_type":"Transition"}`
+	serializePattern(t, p, expected)
+}
+
+func TestJSONValues(t *testing.T) {
+	for _, v := range knownValues {
+		v2 := &SValue{v}
+		b, err := json.Marshal(v2)
+		ut.AssertEqual(t, nil, err)
+		if isConst(v) {
+			if _, err := strconv.ParseInt(string(b), 10, 32); err != nil {
+				t.Fatalf("%v", err)
+			}
+		} else if isRand(v) {
+			if b[0] != '"' {
+				t.Fatalf("%v", b)
+			}
+		} else {
+			ut.AssertEqual(t, uint8('{'), b[0])
+		}
+		v2.Value = nil
+		ut.AssertEqualf(t, nil, json.Unmarshal(b, v2), "%s", b)
+	}
+}
+
+func TestJSONValuesSpotCheck(t *testing.T) {
+	// Increase coverage of edge cases.
+	serializeValue(t, &Rand{TickMS: 43}, `{"TickMS":43,"_type":"Rand"}`)
+}
+
+//
+
+func serializePattern(t *testing.T, p Pattern, expected string) {
 	p2 := &SPattern{p}
 	b, err := json.Marshal(p2)
 	ut.AssertEqual(t, nil, err)
@@ -41,42 +116,30 @@ func isColorOrFrameOrRainbow(p Pattern) bool {
 	return ok
 }
 
-func TestJSON(t *testing.T) {
-	for _, p := range knownPatterns {
-		p2 := &SPattern{p}
-		b, err := json.Marshal(p2)
-		ut.AssertEqual(t, nil, err)
-		if isColorOrFrameOrRainbow(p) {
-			ut.AssertEqual(t, uint8('"'), b[0])
-		} else {
-			ut.AssertEqual(t, uint8('{'), b[0])
-		}
-		p2.Pattern = nil
-		ut.AssertEqualf(t, nil, json.Unmarshal(b, p2), "%s", b)
-	}
-	serialize(t, &Color{1, 2, 3}, `"#010203"`)
-	serialize(t, &Frame{}, `"L"`)
-	serialize(t, &Frame{{1, 2, 3}, {4, 5, 6}}, `"L010203040506"`)
-	serialize(t, &Rainbow{}, `"Rainbow"`)
-	serialize(t, &PingPong{}, `{"Child":{},"MovesPerHour":0,"_type":"PingPong"}`)
-	serialize(t, &Chronometer{}, `{"Child":{},"_type":"Chronometer"}`)
-	serialize(t, &Cycle{}, `{"FrameDurationMS":0,"Frames":null,"_type":"Cycle"}`)
+func serializeValue(t *testing.T, v Value, expected string) {
+	v2 := &SValue{v}
+	b, err := json.Marshal(v2)
+	ut.AssertEqual(t, nil, err)
+	ut.AssertEqual(t, expected, string(b))
+	v2.Value = nil
+	ut.AssertEqual(t, nil, json.Unmarshal(b, v2))
+}
 
-	// Create one more complex. Assert that int64 is not mangled.
-	p := &Transition{
-		Before: SPattern{
-			&Transition{
-				After:      SPattern{&Color{255, 255, 255}},
-				OffsetMS:   600000,
-				DurationMS: 600000,
-				Curve:      Direct,
-			},
-		},
-		After:      SPattern{&Color{}},
-		OffsetMS:   30 * 60000,
-		DurationMS: 600000,
-		Curve:      Direct,
+func isConst(v Value) bool {
+	_, ok := v.(*Const)
+	return ok
+}
+
+func isRand(v Value) bool {
+	_, ok := v.(*Rand)
+	return ok
+}
+
+// marshalPattern is a shorthand to JSON encode a pattern.
+func marshalPattern(p Pattern) []byte {
+	b, err := json.Marshal(&SPattern{p})
+	if err != nil {
+		panic(err)
 	}
-	expected := `{"After":"#000000","Before":{"After":"#ffffff","Before":{},"Curve":"direct","DurationMS":600000,"OffsetMS":600000,"_type":"Transition"},"Curve":"direct","DurationMS":600000,"OffsetMS":1800000,"_type":"Transition"}`
-	serialize(t, p, expected)
+	return b
 }

@@ -16,10 +16,11 @@ import (
 	"time"
 )
 
-// List all known patterns and mixers that can be instantiated.
-var serializerLookup map[string]reflect.Type
-
 const rainbowKey = "Rainbow"
+const randKey = "rand"
+
+// patternsLookup lists all known patterns that can be instantiated.
+var patternsLookup map[string]reflect.Type
 
 var knownPatterns = []Pattern{
 	// Patterns
@@ -45,13 +46,28 @@ var knownPatterns = []Pattern{
 	&Scale{},
 }
 
+// valuesLookup lists all the known values that can be instantiated.
+var valuesLookup map[string]reflect.Type
+
+var knownValues = []Value{
+	new(Const),
+	&Rand{0},
+}
+
 func init() {
-	serializerLookup = make(map[string]reflect.Type, len(knownPatterns))
+	patternsLookup = make(map[string]reflect.Type, len(knownPatterns))
 	for _, i := range knownPatterns {
 		r := reflect.TypeOf(i).Elem()
-		serializerLookup[r.Name()] = r
+		patternsLookup[r.Name()] = r
+	}
+	valuesLookup = make(map[string]reflect.Type, len(knownValues))
+	for _, i := range knownValues {
+		r := reflect.TypeOf(i).Elem()
+		valuesLookup[r.Name()] = r
 	}
 }
+
+// SPattern
 
 // SPattern is a Pattern that can be serialized.
 //
@@ -60,20 +76,35 @@ type SPattern struct {
 	Pattern
 }
 
-// jsonUnmarshalDict unmarshals data into a map of interface{} without mangling
-// int64.
-func jsonUnmarshalDict(b []byte) (map[string]interface{}, error) {
-	var tmp map[string]interface{}
-	d := json.NewDecoder(bytes.NewReader(b))
-	d.UseNumber()
-	err := d.Decode(&tmp)
-	return tmp, err
+func (s *SPattern) NextFrame(pixels Frame, timeMS uint32) {
+	if s.Pattern == nil {
+		return
+	}
+	s.Pattern.NextFrame(pixels, timeMS)
 }
 
-func jsonUnmarshalString(b []byte) (string, error) {
-	var s string
-	err := json.Unmarshal(b, &s)
-	return s, err
+// UnmarshalJSON decodes a Pattern.
+//
+// It knows how to decode Color, Frame or other arbitrary Pattern.
+//
+// If unmarshalling fails, 'p' is not touched.
+func (p *SPattern) UnmarshalJSON(b []byte) error {
+	// Try to decode first as a string, then as a dict. Not super efficient but
+	// it works.
+	if p2, err := parsePatternString(b); err == nil {
+		p.Pattern = p2
+		return nil
+	}
+	o, err := jsonUnmarshalWithType(b, patternsLookup, nil)
+	if err != nil {
+		return err
+	}
+	if o == nil {
+		p.Pattern = nil
+	} else {
+		p.Pattern = o.(Pattern)
+	}
+	return nil
 }
 
 // UnmarshalJSON decodes the string "#RRGGBB" to the color.
@@ -84,19 +115,12 @@ func (c *Color) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	if len(s) == 0 || s[0] != '#' {
-		return errors.New("invalid color string")
-	}
-	c2, err := stringToColor(s[1:])
-	if err == nil {
-		*c = c2
-	}
-	return err
+	return c.FromString(s)
 }
 
 // MarshalJSON encodes the color as a string "#RRGGBB".
 func (c *Color) MarshalJSON() ([]byte, error) {
-	return json.Marshal(fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B))
+	return json.Marshal(c.String())
 }
 
 // UnmarshalJSON decodes the string "LRRGGBB..." to the colors.
@@ -107,30 +131,12 @@ func (f *Frame) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	if len(s) == 0 || (len(s)-1)%6 != 0 || s[0] != 'L' {
-		return errors.New("invalid frame string")
-	}
-	l := (len(s) - 1) / 6
-	f2 := make(Frame, l)
-	for i := 0; i < l; i++ {
-		var err error
-		if f2[i], err = stringToColor(s[1+i*6 : 1+(i+1)*6]); err != nil {
-			return err
-		}
-	}
-	*f = f2
-	return nil
+	return f.FromString(s)
 }
 
 // MarshalJSON encodes the frame as a string "LRRGGBB...".
 func (f Frame) MarshalJSON() ([]byte, error) {
-	out := bytes.Buffer{}
-	out.Grow(1 + 6*len(f))
-	out.WriteByte('L')
-	for _, c := range f {
-		fmt.Fprintf(&out, "%02x%02x%02x", c.R, c.G, c.B)
-	}
-	return json.Marshal(out.String())
+	return json.Marshal(f.String())
 }
 
 // UnmarshalJSON decodes the string "Rainbow" to the rainbow.
@@ -150,140 +156,12 @@ func (r *Rainbow) MarshalJSON() ([]byte, error) {
 	return json.Marshal(rainbowKey)
 }
 
-// UnmarshalJSON decodes a Pattern.
-//
-// It knows how to decode Color, Frame or other arbitrary Pattern.
-//
-// If unmarshalling fails, 'f' is not touched.
-func (p *SPattern) UnmarshalJSON(b []byte) error {
-	// Try to decode first as a string, then as a dict. Not super efficient but
-	// it works.
-	if p2, err := parseString(b); err == nil {
-		p.Pattern = p2
-		return nil
-	}
-	tmp, err := jsonUnmarshalDict(b)
-	if err != nil {
-		// Technically, parseString() error may be more relevant but it's hard to
-		// say here.
-		return err
-	}
-	if len(tmp) == 0 {
-		// No error but nothing was present. Treat "{}" as equivalent encoding for
-		// null, which creates a nil Pattern.
-		p.Pattern = nil
-		return nil
-	}
-	n, ok := tmp["_type"]
-	if !ok {
-		return errors.New("missing pattern type")
-	}
-	name, ok := n.(string)
-	if !ok {
-		return errors.New("invalid pattern type")
-	}
-	// _type will be ignored.
-	p2, err := parseDict(name, b)
-	if err == nil {
-		p.Pattern = p2
-	}
-	return err
-}
-
+// MarshalJSON includes the additional key "_type" to help with unmarshalling.
 func (p *SPattern) MarshalJSON() ([]byte, error) {
 	if p.Pattern == nil {
 		return []byte("{}"), nil
 	}
-	b, err := json.Marshal(p.Pattern)
-	if err != nil || (len(b) != 0 && b[0] == '"') {
-		// Special case check for Color which is encoded as "#RRGGBB" instead of a
-		// json dict.
-		// Also error path.
-		return b, err
-	}
-	tmp, err := jsonUnmarshalDict(b)
-	if err != nil {
-		return nil, err
-	}
-	tmp["_type"] = reflect.TypeOf(p.Pattern).Elem().Name()
-	return json.Marshal(tmp)
-}
-
-// parseString returns a Pattern object out of the serialized JSON string.
-func parseString(b []byte) (Pattern, error) {
-	s, err := jsonUnmarshalString(b)
-	if err != nil {
-		return nil, err
-	}
-	if len(s) != 0 {
-		switch s[0] {
-		case '#':
-			// "#RRGGBB"
-			c := &Color{}
-			err := json.Unmarshal(b, c)
-			return c, err
-		case 'L':
-			// "LRRGGBBRRGGBB..."
-			var f Frame
-			err := json.Unmarshal(b, &f)
-			return f, err
-		case rainbowKey[0]:
-			// "Rainbow"
-			r := &Rainbow{}
-			err := json.Unmarshal(b, r)
-			return r, err
-		}
-	}
-	return nil, errors.New("unrecognized pattern string")
-}
-
-// parseDict returns a Pattern object out of the serialized JSON dict.
-func parseDict(name string, b []byte) (Pattern, error) {
-	t, ok := serializerLookup[name]
-	if !ok {
-		return nil, errors.New("pattern type not found")
-	}
-
-	v := reflect.New(t).Interface()
-	if err := json.Unmarshal(b, v); err != nil {
-		return nil, err
-	}
-	return v.(Pattern), nil
-}
-
-// Marshal is a shorthand to JSON encode a pattern.
-func Marshal(p Pattern) []byte {
-	b, err := json.Marshal(&SPattern{p})
-	if err != nil {
-		panic(err)
-	}
-	return b
-}
-
-// stringToColor converts a "RRGGBB" encoded string to a Color.
-func stringToColor(s string) (Color, error) {
-	// Do the parsing manually instead of using a regexp so the code is more
-	// portable to C on an ESP8266.
-	var c Color
-	if len(s) != 6 {
-		return c, errors.New("invalid color string")
-	}
-	r, err := strconv.ParseUint(s[0:2], 16, 8)
-	if err != nil {
-		return c, err
-	}
-	g, err := strconv.ParseUint(s[2:4], 16, 8)
-	if err != nil {
-		return c, err
-	}
-	b, err := strconv.ParseUint(s[4:6], 16, 8)
-	if err != nil {
-		return c, err
-	}
-	c.R = uint8(r)
-	c.G = uint8(g)
-	c.B = uint8(b)
-	return c, nil
+	return jsonMarshalWithType(p.Pattern)
 }
 
 // LoadPNG loads a PNG file and creates a Cycle out of the lines.
@@ -321,4 +199,242 @@ func LoadPNG(content []byte, frameDuration time.Duration, vertical bool) *Cycle 
 		children[i].Pattern = p
 	}
 	return &Cycle{children, uint32(frameDuration / time.Millisecond)}
+}
+
+//
+
+// parsePatternString returns a Pattern object out of the serialized JSON
+// string.
+func parsePatternString(b []byte) (Pattern, error) {
+	s, err := jsonUnmarshalString(b)
+	if err != nil {
+		return nil, err
+	}
+	// Could try to do one after the other? It's kind of a hack at the moment.
+	if len(s) != 0 {
+		switch s[0] {
+		case '#':
+			// "#RRGGBB"
+			c := &Color{}
+			err := json.Unmarshal(b, c)
+			return c, err
+		case 'L':
+			// "LRRGGBBRRGGBB..."
+			var f Frame
+			err := json.Unmarshal(b, &f)
+			return f, err
+		case rainbowKey[0]:
+			// "Rainbow"
+			r := &Rainbow{}
+			err := json.Unmarshal(b, r)
+			return r, err
+		}
+	}
+	return nil, errors.New("unrecognized pattern string")
+}
+
+// SValue
+
+// SValue is the serializable version of Value.
+type SValue struct {
+	Value
+}
+
+func (s *SValue) Eval(timeMS uint32) int32 {
+	if s.Value == nil {
+		return 0
+	}
+	return s.Value.Eval(timeMS)
+}
+
+// UnmarshalJSON decodes a Value.
+//
+// It knows how to decode Const or other arbitrary Value.
+//
+// If unmarshalling fails, 'f' is not touched.
+func (v *SValue) UnmarshalJSON(b []byte) error {
+	// Try to decode first as a int, then as a string, then as a dict. Not super
+	// efficient but it works.
+	if c, err := jsonUnmarshalInt32(b); err == nil {
+		v.Value = Const(c)
+		return nil
+	}
+	if _, err := jsonUnmarshalString(b); err == nil {
+		var r Rand
+		if err := r.UnmarshalJSON(b); err == nil {
+			v.Value = &r
+		}
+		return err
+	}
+	o, err := jsonUnmarshalWithType(b, valuesLookup, nil)
+	if err != nil {
+		return err
+	}
+	v.Value = o.(Value)
+	return nil
+}
+
+// MarshalJSON includes the additional key "_type" to help with unmarshalling.
+func (v *SValue) MarshalJSON() ([]byte, error) {
+	if v.Value == nil {
+		// nil value marshals to the constant 0.
+		return []byte("0"), nil
+	}
+	return jsonMarshalWithType(v.Value)
+}
+
+// UnmarshalJSON decodes the int to the const.
+//
+// If unmarshalling fails, 'c' is not touched.
+func (c *Const) UnmarshalJSON(b []byte) error {
+	s, err := jsonUnmarshalString(b)
+	if err != nil {
+		return err
+	}
+	i, err := strconv.ParseInt(s, 10, 32)
+	if err == nil {
+		*c = Const(i)
+	}
+	return err
+}
+
+// MarshalJSON encodes the const as a int.
+func (c *Const) MarshalJSON() ([]byte, error) {
+	return json.Marshal(int(*c))
+}
+
+// UnmarshalJSON decodes the string to the rand.
+//
+// If unmarshalling fails, 'r' is not touched.
+func (r *Rand) UnmarshalJSON(b []byte) error {
+	s, err := jsonUnmarshalString(b)
+	if err == nil {
+		// Shortcut.
+		if s != randKey {
+			return errors.New("invalid format")
+		}
+		r.TickMS = 0
+		return nil
+	}
+	// SValue.UnmarshalJSON would handle it but implement it here so calling
+	// UnmarshalJSON on a concrete instance still work. The issue is that we do
+	// not want to recursively call ourselves so create a temporary type.
+	type tmpRand Rand
+	var r2 tmpRand
+	if err := json.Unmarshal(b, &r2); err != nil {
+		return err
+	}
+	*r = Rand(r2)
+	return nil
+}
+
+// MarshalJSON encodes the rand as a string.
+func (r *Rand) MarshalJSON() ([]byte, error) {
+	if r.TickMS == 0 {
+		// Shortcut.
+		return json.Marshal(randKey)
+	}
+	type tmpRand Rand
+	r2 := tmpRand(*r)
+	return jsonMarshalWithTypeName(r2, "Rand")
+}
+
+// UnmarshalJSON is because MovePerHour is a superset of SValue.
+func (m *MovePerHour) UnmarshalJSON(b []byte) error {
+	var s SValue
+	if err := s.UnmarshalJSON(b); err != nil {
+		return err
+	}
+	*m = MovePerHour(s)
+	return nil
+}
+
+// MarshalJSON is because MovePerHour is a superset of SValue.
+func (m *MovePerHour) MarshalJSON() ([]byte, error) {
+	s := SValue{m.Value}
+	return s.MarshalJSON()
+}
+
+// General
+
+// jsonUnmarshalDict unmarshals data into a map of interface{} without mangling
+// int64.
+func jsonUnmarshalDict(b []byte) (map[string]interface{}, error) {
+	var tmp map[string]interface{}
+	d := json.NewDecoder(bytes.NewReader(b))
+	d.UseNumber()
+	err := d.Decode(&tmp)
+	return tmp, err
+}
+
+func jsonUnmarshalInt32(b []byte) (int32, error) {
+	var i int32
+	err := json.Unmarshal(b, &i)
+	return i, err
+}
+
+func jsonUnmarshalString(b []byte) (string, error) {
+	var s string
+	err := json.Unmarshal(b, &s)
+	return s, err
+}
+
+func jsonMarshalWithType(v interface{}) ([]byte, error) {
+	t := reflect.TypeOf(v)
+	switch t.Kind() {
+	case reflect.Array, reflect.Chan, reflect.Map, reflect.Ptr, reflect.Slice:
+		return jsonMarshalWithTypeName(v, t.Elem().Name())
+	default:
+		return jsonMarshalWithTypeName(v, t.Name())
+	}
+}
+
+func jsonMarshalWithTypeName(v interface{}, name string) ([]byte, error) {
+	b, err := json.Marshal(v)
+	if err != nil || (len(b) != 0 && b[0] != '{') {
+		// Special case check for custom marshallers that do not encode as a dict.
+		return b, err
+	}
+	// Inject "_type".
+	tmp, err := jsonUnmarshalDict(b)
+	if err != nil {
+		return nil, err
+	}
+	tmp["_type"] = name
+	return json.Marshal(tmp)
+}
+
+func jsonUnmarshalWithType(b []byte, lookup map[string]reflect.Type, null interface{}) (interface{}, error) {
+	tmp, err := jsonUnmarshalDict(b)
+	if err != nil {
+		return nil, err
+	}
+	if len(tmp) == 0 {
+		// No error but nothing was present. Treat "{}" as equivalent encoding for
+		// null.
+		return null, nil
+	}
+	n, ok := tmp["_type"]
+	if !ok {
+		return nil, errors.New("missing value type")
+	}
+	name, ok := n.(string)
+	if !ok {
+		return nil, errors.New("invalid value type")
+	}
+	// "_type" will be ignored, no need to reencode the dict to json.
+	return parseDictToType(name, b, lookup)
+}
+
+// parseDictToType decodes an object out of the serialized JSON dict.
+func parseDictToType(name string, b []byte, lookup map[string]reflect.Type) (interface{}, error) {
+	t, ok := lookup[name]
+	if !ok {
+		return nil, fmt.Errorf("type %#v not found", name)
+	}
+	v := reflect.New(t).Interface()
+	if err := json.Unmarshal(b, v); err != nil {
+		return nil, err
+	}
+	return v, nil
 }

@@ -6,7 +6,78 @@
 
 package anim1d
 
-import "github.com/maruel/fastbezier"
+import (
+	"math/rand"
+
+	"github.com/maruel/fastbezier"
+)
+
+// MinMax limits the value between a min and a max
+func MinMax(v, min, max int) int {
+	if v < min {
+		return min
+	}
+	if v > max {
+		return max
+	}
+	return v
+}
+
+// MinMax32 limits the value between a min and a max
+func MinMax32(v, min, max int32) int32 {
+	if v < min {
+		return min
+	}
+	if v > max {
+		return max
+	}
+	return v
+}
+
+// Value defines a value that may be constant or that may evolve over time.
+type Value interface {
+	Eval(timeMS uint32) int32
+}
+
+// Const is a constant value.
+type Const int32
+
+func (c Const) Eval(timeMS uint32) int32 {
+	return int32(c)
+}
+
+// Rand is a value that pseudo-randomly changes every TickMS millisecond. If
+// unspecified, changes every 60fps.
+type Rand struct {
+	TickMS int32 // The resolution at which the random value changes.
+}
+
+func (r *Rand) Eval(timeMS uint32) int32 {
+	m := uint32(r.TickMS)
+	if m == 0 {
+		m = 16
+	}
+	return int32(rand.NewSource(int64(timeMS / m)).Int63())
+}
+
+/*
+
+// Equation evaluate an equation at every call.
+type Equation struct {
+	V string
+	f func(timeMS uint32) int32
+}
+
+func (e *Equation) Eval(timeMS uint32) int32 {
+	// Compiles the equation to an actual value and precompile it.
+	if e.f == nil {
+		e.f = func(timeMS uint32) int32 {
+			return 0
+		}
+	}
+	return e.f(timeMS)
+}
+*/
 
 // Curve models visually pleasing curves.
 //
@@ -82,7 +153,6 @@ const (
 	NearestSkip Interpolation = "nearestskip" // Selects the nearest pixel but when upscaling, skips on missing pixels.
 	Nearest     Interpolation = "nearest"     // Selects the nearest pixel, gives a blocky view.
 	Linear      Interpolation = "linear"      // Linear interpolation, recommended and default value.
-	//Bilinear    Interpolation = "bilinear"    // Bilinear interpolation, usually overkill for 1D.
 )
 
 // Scale interpolates a frame into another using integers as much as possible
@@ -137,25 +207,25 @@ func (i Interpolation) Scale(in, out Frame) {
 //   - 60: one move per minute
 //   - 3600: one move per second
 //   - 216000: 60 move per second
-type MovePerHour int32
+type MovePerHour SValue
 
-func (m MovePerHour) Eval(timeMS uint32, cycle int) int {
+func (m *MovePerHour) Eval(timeMS uint32, cycle int) int {
+	s := SValue(*m)
 	// Prevent overflows.
-	if m > 3600000 {
-		m = 3600000
-	} else if m < -3600000 {
-		m = -3600000
-	}
+	v := MinMax32(s.Eval(timeMS), -3600000, 3600000)
 	// TODO(maruel): Reduce the amount of int64 code in there yet keeping it from
 	// overflowing.
 	// offset ranges [0, 3599999]
 	offset := timeMS % 3600000
 	// (1<<32)/3600000 = 1193 is too low. Temporarily upgrade to int64 to
 	// calculate the value.
-	low := int64(offset) * int64(m) / 3600000
+	low := int64(offset) * int64(v) / 3600000
 	hour := timeMS / 3600000
-	high := int64(hour) * int64(m)
-	return int((low + high) % int64(cycle))
+	high := int64(hour) * int64(v)
+	if cycle != 0 {
+		return int((low + high) % int64(cycle))
+	}
+	return int(low + high)
 }
 
 //

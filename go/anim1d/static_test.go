@@ -5,6 +5,7 @@
 package anim1d
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -17,7 +18,16 @@ func TestColor(t *testing.T) {
 	testFrames(t, p, e)
 }
 
-func TestColorMix(t *testing.T) {
+func TestColor_Add(t *testing.T) {
+	a := Color{255, 255, 255}
+	b := Color{1, 1, 1}
+	a.Add(b)
+	if a.R != 255 || a.G != 255 || a.B != 255 {
+		t.Fail()
+	}
+}
+
+func TestColor_Mix(t *testing.T) {
 	w := Color{255, 255, 255}
 	b := Color{0, 0, 0}
 	c := w
@@ -52,6 +62,100 @@ func TestColorMix(t *testing.T) {
 	c = b
 	c.Mix(a, 255)
 	ut.AssertEqual(t, c, a)
+}
+
+func TestColor_FromString(t *testing.T) {
+	c := Color{}
+	if err := c.FromString("123456"); err == nil {
+		t.Fail()
+	}
+	if err := c.FromString("#123456"); err != nil {
+		t.Fail()
+	}
+	if c.R != 0x12 || c.G != 0x34 || c.B != 0x56 {
+		t.Fail()
+	}
+}
+
+func TestColor_FromRGBString(t *testing.T) {
+	c := Color{}
+	if err := c.FromRGBString("12345"); err == nil {
+		t.Fail()
+	}
+	if err := c.FromRGBString("1g3456"); err == nil {
+		t.Fail()
+	}
+	if err := c.FromRGBString("123g56"); err == nil {
+		t.Fail()
+	}
+	if err := c.FromRGBString("12345g"); err == nil {
+		t.Fail()
+	}
+}
+
+func TestFrame_FromString(t *testing.T) {
+	f := Frame{}
+	if err := f.FromString("123456"); err == nil {
+		t.Fail()
+	}
+	if err := f.FromString("L1g3456"); err == nil {
+		t.Fail()
+	}
+	if err := f.FromString("L123456"); err != nil {
+		t.Fail()
+	}
+	if !f.isEqual(Frame{{0x12, 0x34, 0x56}}) {
+		t.Fail()
+	}
+}
+
+func TestFrame_ToRGB(t *testing.T) {
+	f := Frame{{0x12, 0x34, 0x56}}
+	b := [3]byte{}
+	f.ToRGB(b[:])
+	if !bytes.Equal(b[:], []byte{0x12, 0x34, 0x56}) {
+		t.Fail()
+	}
+}
+
+func TestFrame_isEqual(t *testing.T) {
+	f1 := Frame{{0x12, 0x34, 0x56}}
+	f2 := Frame{{0x12, 0x34, 0x56}, {}}
+	if f1.isEqual(f2) || f2.isEqual(f1) {
+		t.Fail()
+	}
+	f2 = Frame{{}}
+	if f1.isEqual(f2) || f2.isEqual(f1) {
+		t.Fail()
+	}
+}
+
+func TestRainbow(t *testing.T) {
+	f := make(Frame, 16)
+	r := Rainbow{}
+	r.NextFrame(f, 0)
+	var expected Frame
+	if err := expected.UnmarshalJSON([]byte("\"L4d00818300ed1b00ff0056ff00c1ff00ff7f2bff0083ff00deff00ffc000ff5600ff0000ff0000dc00007e0000000000\"")); err != nil {
+		t.Fatal(err)
+	}
+	if !f.isEqual(expected) {
+		t.Fatalf("%s != %s", marshalPattern(f), marshalPattern(expected))
+	}
+	if r.String() != rainbowKey {
+		t.Fail()
+	}
+}
+
+func TestRepeated(t *testing.T) {
+	a := Color{0x10, 0x10, 0x10}
+	b := Color{0x20, 0x20, 0x20}
+	c := Color{0x30, 0x30, 0x30}
+	p := &Repeated{Frame{a, b, c}}
+	e := []expectation{
+		{0, Frame{a, b, c, a, b}},
+		{0, Frame{a}},
+	}
+	testFrames(t, p, e)
 }
 
 func TestWaveLength2RGB(t *testing.T) {
@@ -475,31 +579,6 @@ func TestWaveLength2RGB(t *testing.T) {
 	}
 }
 
-func TestRainbow(t *testing.T) {
-	f := make(Frame, 16)
-	r := Rainbow{}
-	r.NextFrame(f, 0)
-	var expected Frame
-	if err := expected.UnmarshalJSON([]byte("\"L4d00818300ed1b00ff0056ff00c1ff00ff7f2bff0083ff00deff00ffc000ff5600ff0000ff0000dc00007e0000000000\"")); err != nil {
-		t.Fatal(err)
-	}
-	if !frameEqual(f, expected) {
-		t.Fatalf("%s != %s", Marshal(f), Marshal(expected))
-	}
-}
-
-func TestRepeated(t *testing.T) {
-	a := Color{0x10, 0x10, 0x10}
-	b := Color{0x20, 0x20, 0x20}
-	c := Color{0x30, 0x30, 0x30}
-	p := &Repeated{Frame{a, b, c}}
-	e := []expectation{
-		{0, Frame{a, b, c, a, b}},
-		{0, Frame{a}},
-	}
-	testFrames(t, p, e)
-}
-
 //
 
 type expectation struct {
@@ -512,9 +591,9 @@ func testFrames(t *testing.T, p Pattern, expectations []expectation) {
 	for frame, e := range expectations {
 		pixels.reset(len(e.colors))
 		p.NextFrame(pixels, e.offsetMS)
-		if !frameEqual(e.colors, pixels) {
-			x := Marshal(e.colors)
-			t.Fatalf("frame=%d bad expectation:\n%s\n%s", frame, x, Marshal(pixels))
+		if !e.colors.isEqual(pixels) {
+			x := marshalPattern(e.colors)
+			t.Fatalf("frame=%d bad expectation:\n%s\n%s", frame, x, marshalPattern(pixels))
 		}
 	}
 }
@@ -522,21 +601,9 @@ func testFrames(t *testing.T, p Pattern, expectations []expectation) {
 func testFrame(t *testing.T, p Pattern, e expectation) {
 	pixels := make(Frame, len(e.colors))
 	p.NextFrame(pixels, e.offsetMS)
-	if !frameEqual(e.colors, pixels) {
-		t.Fatalf("%s != %s", Marshal(e.colors), Marshal(pixels))
+	if !e.colors.isEqual(pixels) {
+		t.Fatalf("%s != %s", marshalPattern(e.colors), marshalPattern(pixels))
 	}
-}
-
-func frameEqual(lhs, rhs Frame) bool {
-	if len(lhs) != len(rhs) {
-		return false
-	}
-	for i, a := range lhs {
-		if a != rhs[i] {
-			return false
-		}
-	}
-	return true
 }
 
 func frameSimilar(lhs, rhs Frame) bool {

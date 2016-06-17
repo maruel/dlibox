@@ -6,6 +6,13 @@
 
 package anim1d
 
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"strconv"
+)
+
 // Color shows a single color on all lights. It knows how to renders itself
 // into a frame.
 //
@@ -64,6 +71,45 @@ func (c *Color) Mix(d Color, gradient uint8) {
 	c.R = uint8(((uint16(c.R)+1)*grad1 + (uint16(d.R)+1)*grad) >> 8)
 	c.G = uint8(((uint16(c.G)+1)*grad1 + (uint16(d.G)+1)*grad) >> 8)
 	c.B = uint8(((uint16(c.B)+1)*grad1 + (uint16(d.B)+1)*grad) >> 8)
+}
+
+func (c *Color) String() string {
+	return fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B)
+}
+
+// FromString converts a "#RRGGBB" encoded string to a Color.
+//
+// 'c' is untouched in case of error.
+func (c *Color) FromString(s string) error {
+	if len(s) != 7 || s[0] != '#' {
+		return errors.New("invalid color string")
+	}
+	return c.FromRGBString(s[1:])
+}
+
+// FromRGBString converts a "RRGGBB" encoded string to a Color.
+//
+// 'c' is untouched in case of error.
+func (c *Color) FromRGBString(s string) error {
+	if len(s) != 6 {
+		return errors.New("invalid color string")
+	}
+	r, err := strconv.ParseUint(s[0:2], 16, 8)
+	if err != nil {
+		return err
+	}
+	g, err := strconv.ParseUint(s[2:4], 16, 8)
+	if err != nil {
+		return err
+	}
+	b, err := strconv.ParseUint(s[4:6], 16, 8)
+	if err != nil {
+		return err
+	}
+	c.R = uint8(r)
+	c.G = uint8(g)
+	c.B = uint8(b)
+	return nil
 }
 
 //
@@ -138,6 +184,34 @@ func (f Frame) isEqual(rhs Frame) bool {
 	return true
 }
 
+// FromString converts a "LRRGGBB..." encoded string to a Frame.
+//
+// 'f' is untouched in case of error.
+func (f *Frame) FromString(s string) error {
+	if len(s) == 0 || (len(s)-1)%6 != 0 || s[0] != 'L' {
+		return errors.New("invalid frame string")
+	}
+	l := (len(s) - 1) / 6
+	f2 := make(Frame, l)
+	for i := 0; i < l; i++ {
+		if err := f2[i].FromRGBString(s[1+i*6 : 1+(i+1)*6]); err != nil {
+			return err
+		}
+	}
+	*f = f2
+	return nil
+}
+
+func (f Frame) String() string {
+	out := bytes.Buffer{}
+	out.Grow(1 + 6*len(f))
+	out.WriteByte('L')
+	for _, c := range f {
+		fmt.Fprintf(&out, "%02x%02x%02x", c.R, c.G, c.B)
+	}
+	return out.String()
+}
+
 //
 
 // Rainbow renders rainbow colors.
@@ -160,6 +234,10 @@ func (r *Rainbow) NextFrame(pixels Frame, timeMS uint32) {
 		}
 	}
 	copy(pixels, r.buf)
+}
+
+func (r *Rainbow) String() string {
+	return rainbowKey
 }
 
 // waveLengthToRGB returns a color over a rainbow.

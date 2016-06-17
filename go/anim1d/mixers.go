@@ -19,17 +19,17 @@ type Gradient struct {
 }
 
 func (g *Gradient) NextFrame(pixels Frame, timeMS uint32) {
-	if g.Left.Pattern == nil || g.Right.Pattern == nil {
+	l := len(pixels)
+	if l == 0 {
 		return
 	}
-	l := len(pixels) - 1
-	g.buf.reset(len(pixels))
+	g.buf.reset(l)
 	g.Left.NextFrame(pixels, timeMS)
 	g.Right.NextFrame(g.buf, timeMS)
-	if l == 0 {
+	if l == 1 {
 		pixels.Mix(g.buf, g.Curve.Scale8(65535>>1))
 	} else {
-		max := len(pixels) - 1
+		max := l - 1
 		for i := range pixels {
 			intensity := uint16(i * 65535 / max)
 			pixels[i].Mix(g.buf[i], g.Curve.Scale8(intensity))
@@ -52,14 +52,10 @@ type Transition struct {
 func (t *Transition) NextFrame(pixels Frame, timeMS uint32) {
 	if timeMS <= t.OffsetMS {
 		// Before transition.
-		if t.Before.Pattern != nil {
-			t.Before.NextFrame(pixels, timeMS)
-		}
+		t.Before.NextFrame(pixels, timeMS)
 		return
 	}
-	if t.After.Pattern != nil {
-		t.After.NextFrame(pixels, timeMS-t.OffsetMS)
-	}
+	t.After.NextFrame(pixels, timeMS-t.OffsetMS)
 	if timeMS >= t.OffsetMS+t.DurationMS {
 		// After transition.
 		t.buf = nil
@@ -68,9 +64,7 @@ func (t *Transition) NextFrame(pixels Frame, timeMS uint32) {
 	t.buf.reset(len(pixels))
 
 	// TODO(maruel): Add lateral animation and others.
-	if t.Before.Pattern != nil {
-		t.Before.NextFrame(t.buf, timeMS)
-	}
+	t.Before.NextFrame(t.buf, timeMS)
 	intensity := uint16((timeMS - t.OffsetMS) * 65535 / (t.DurationMS))
 	pixels.Mix(t.buf, 255.-t.Curve.Scale8(intensity))
 }
@@ -138,19 +132,16 @@ func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
 //
 // Use 5x oversampling with Scale{} to create smoother animation.
 type Rotate struct {
-	Child        SPattern
-	MovesPerHour MovePerHour // Expressed in number of light jumps per hour.
-	buf          Frame
+	Child       SPattern
+	MovePerHour MovePerHour // Expressed in number of light jumps per hour.
+	buf         Frame
 }
 
 func (r *Rotate) NextFrame(pixels Frame, timeMS uint32) {
 	l := len(pixels)
-	if l == 0 || r.Child.Pattern == nil {
-		return
-	}
 	r.buf.reset(l)
 	r.Child.NextFrame(r.buf, timeMS)
-	offset := r.MovesPerHour.Eval(timeMS, l)
+	offset := r.MovePerHour.Eval(timeMS, l)
 	if offset < 0 {
 		// Reverse direction.
 		offset = l + offset
@@ -170,7 +161,7 @@ type Chronometer struct {
 
 func (r *Chronometer) NextFrame(pixels Frame, timeMS uint32) {
 	l := uint32(len(pixels))
-	if l == 0 || r.Child.Pattern == nil {
+	if l == 0 {
 		return
 	}
 	r.buf.reset(4)
@@ -207,13 +198,13 @@ func (r *Chronometer) NextFrame(pixels Frame, timeMS uint32) {
 // To get smoothed movement, use Scale{} with a 5x factor or so.
 // TODO(maruel): That's a bit inefficient, enable Interpolation here.
 type PingPong struct {
-	Child        SPattern    // [0] is the front pixel so the pixels are effectively drawn in reverse order
-	MovesPerHour MovePerHour // Expressed in number of light jumps per hour
-	buf          Frame
+	Child       SPattern    // [0] is the front pixel so the pixels are effectively drawn in reverse order
+	MovePerHour MovePerHour // Expressed in number of light jumps per hour
+	buf         Frame
 }
 
 func (p *PingPong) NextFrame(pixels Frame, timeMS uint32) {
-	if len(pixels) == 0 || p.Child.Pattern == nil {
+	if len(pixels) == 0 {
 		return
 	}
 	p.buf.reset(len(pixels)*2 - 1)
@@ -233,7 +224,7 @@ func (p *PingPong) NextFrame(pixels Frame, timeMS uint32) {
 	//   move 14 -> move 0; "2*(8-1)"
 	cycle := 2 * (len(pixels) - 1)
 	// TODO(maruel): Smoothing with Curve, defaults to Step.
-	pos := p.MovesPerHour.Eval(timeMS, cycle)
+	pos := p.MovePerHour.Eval(timeMS, cycle)
 
 	// Once it works the following code looks trivial but everytime it takes me
 	// an absurd amount of time to rewrite it.
@@ -269,47 +260,43 @@ func (p *PingPong) NextFrame(pixels Frame, timeMS uint32) {
 // Crop skips the begining and the end of the source.
 type Crop struct {
 	Child  SPattern
-	Before int32 // Starting pixels to skip
-	After  int32 // Ending pixels to skip
+	Before SValue // Starting pixels to skip
+	After  SValue // Ending pixels to skip
 	buf    Frame
 }
 
 func (c *Crop) NextFrame(pixels Frame, timeMS uint32) {
-	if c.Child.Pattern == nil {
-		return
-	}
+	b := int(MinMax32(c.Before.Eval(timeMS), 0, 1000))
+	a := int(MinMax32(c.After.Eval(timeMS), 0, 1000))
 	// This is slightly wasteful as pixels are drawn just to be ditched.
-	c.buf.reset(len(pixels) + int(c.Before+c.After))
+	c.buf.reset(len(pixels) + b + a)
 	c.Child.NextFrame(c.buf, timeMS)
-	copy(pixels, c.buf[c.Before:])
+	copy(pixels, c.buf[b:])
 }
 
 // Subset skips the begining and the end of the destination.
 type Subset struct {
 	Child  SPattern
-	Offset int32 // Starting pixels to skip
-	Length int32 // Length of the pixels to carry over
+	Offset SValue // Starting pixels to skip
+	Length SValue // Length of the pixels to carry over
 }
 
 func (s *Subset) NextFrame(pixels Frame, timeMS uint32) {
-	if s.Child.Pattern == nil {
-		return
-	}
-	s.Child.NextFrame(pixels[s.Offset:s.Offset+s.Length], timeMS)
+	o := MinMax(int(s.Offset.Eval(timeMS)), 0, len(pixels)-1)
+	l := MinMax(int(s.Length.Eval(timeMS)), 0, len(pixels)-1-o)
+	s.Child.NextFrame(pixels[o:o+l], timeMS)
 }
 
 // Dim is a filter that dim the intensity of a buffer.
 type Dim struct {
 	Child     SPattern //
-	Intensity uint8    // 0 is transparent, 255 is fully opaque with original colors.
+	Intensity SValue   // 0 is transparent, 255 is fully opaque with original colors.
 }
 
 func (d *Dim) NextFrame(pixels Frame, timeMS uint32) {
-	if d.Child.Pattern == nil {
-		return
-	}
 	d.Child.NextFrame(pixels, timeMS)
-	pixels.Dim(d.Intensity)
+	i := MinMax32(d.Intensity.Eval(timeMS), 0, 255)
+	pixels.Dim(uint8(i))
 }
 
 // Add is a generic mixer that merges the output from multiple patterns with
@@ -334,15 +321,13 @@ func (a *Add) NextFrame(pixels Frame, timeMS uint32) {
 type Scale struct {
 	Child         SPattern
 	Interpolation Interpolation // Defaults to Linear
-	RatioMilli    int32         // A buffer of this len(buffer)*RatioMilli/1000 will be provided to Child and will be scaled; 500 means smaller, 2000 is larger.
+	RatioMilli    SValue        // A buffer of this len(buffer)*RatioMilli/1000 will be provided to Child and will be scaled; 500 means smaller, 2000 is larger.
 	buf           Frame
 }
 
 func (s *Scale) NextFrame(pixels Frame, timeMS uint32) {
-	if s.Child.Pattern == nil {
-		return
-	}
-	s.buf.reset((int(s.RatioMilli)*len(pixels) + 500) / 1000)
+	v := MinMax32(s.RatioMilli.Eval(timeMS), 1, 1000000)
+	s.buf.reset((int(v)*len(pixels) + 500) / 1000)
 	s.Child.NextFrame(s.buf, timeMS)
 	s.Interpolation.Scale(s.buf, pixels)
 }

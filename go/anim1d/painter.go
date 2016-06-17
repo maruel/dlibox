@@ -48,7 +48,7 @@ func (p *Painter) SetPattern(s string) error {
 	if err := json.Unmarshal([]byte(s), &pat); err != nil {
 		return err
 	}
-	p.c <- pat
+	p.c <- pat.Pattern
 	return nil
 }
 

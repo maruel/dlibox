@@ -10,6 +10,57 @@ import (
 	"github.com/maruel/ut"
 )
 
+func TestMinMax(t *testing.T) {
+	if MinMax(2, 0, 3) != 2 {
+		t.Fail()
+	}
+	if MinMax(-2, 0, 3) != 0 {
+		t.Fail()
+	}
+	if MinMax(4, 0, 3) != 3 {
+		t.Fail()
+	}
+}
+
+func TestMinMax32(t *testing.T) {
+	if MinMax32(2, 0, 3) != 2 {
+		t.Fail()
+	}
+	if MinMax32(-2, 0, 3) != 0 {
+		t.Fail()
+	}
+	if MinMax32(4, 0, 3) != 3 {
+		t.Fail()
+	}
+}
+
+func TestSValue_Eval(t *testing.T) {
+	var s SValue
+	if s.Eval(23) != 0 {
+		t.Fail()
+	}
+}
+
+func TestConst(t *testing.T) {
+	if Const(2).Eval(23) != 2 {
+		t.Fail()
+	}
+}
+
+func TestRand(t *testing.T) {
+	r1 := Rand{0}
+	r2 := Rand{16}
+	if r1.Eval(0) != r2.Eval(15) {
+		t.Fail()
+	}
+	if r1.Eval(15) == r2.Eval(16) {
+		t.Fail()
+	}
+	if r1.Eval(23) != r2.Eval(23) {
+		t.Fail()
+	}
+}
+
 func TestCurve(t *testing.T) {
 	for _, v := range []Curve{Curve(""), Ease, EaseIn, EaseInOut, EaseOut, Direct} {
 		ut.AssertEqual(t, uint16(0), v.Scale(0))
@@ -93,7 +144,7 @@ func TestInterpolation(t *testing.T) {
 
 func TestMovePerHour(t *testing.T) {
 	data := []struct {
-		s        MovePerHour
+		mps      int32
 		timeMS   uint32
 		cycle    int
 		expected int
@@ -122,8 +173,9 @@ func TestMovePerHour(t *testing.T) {
 		{2 * 3600000, 2, 10, 2},
 	}
 	for i, line := range data {
-		if actual := line.s.Eval(line.timeMS, line.cycle); actual != line.expected {
-			t.Fatalf("%d: %d.Eval(%d, %d) = %d != %d", i, line.s, line.timeMS, line.cycle, actual, line.expected)
+		m := MovePerHour{Const(line.mps)}
+		if actual := m.Eval(line.timeMS, line.cycle); actual != line.expected {
+			t.Fatalf("%d: %d.Eval(%d, %d) = %d != %d", i, line.mps, line.timeMS, line.cycle, actual, line.expected)
 		}
 	}
 }
