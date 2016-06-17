@@ -1,11 +1,8 @@
-# dlibox-esp
-
-The box for funny people.
-
+# dlibox for ESP8266
 
 ## Setup
 
-dlibox-esp uses the following tools and their dependencies:
+dlibox/esp uses the following tools and their dependencies:
 
 - [Sming](https://github.com/SmingHub/Sming)
   - [esp-open-sdk](https://github.com/pfalcon/esp-open-sdk)
