@@ -55,19 +55,19 @@ _Note:_ Replace the URL below with the [latest version](https://golang.org/dl/).
     echo 'export GOROOT=$HOME/go' >> $HOME/.bash_aliases
     echo 'export PATH="$GOPATH/bin:$GOROOT/bin:$PATH"' >> $HOME/.bash_aliases
     source $HOME/.bash_aliases
-    go get github.com/maruel/dlibox-go/cmd/dlibox
+    go get github.com/maruel/dlibox/go/cmd/dlibox
     # If you plan to do edit-compile, you can precompile all dependencies:
-    go test -i github.com/maruel/dlibox-go/cmd/dlibox
+    go test -i github.com/maruel/dlibox/go/cmd/dlibox
 
 Set it up to auto-start on boot and auto-restart on scp:
 
-    sudo cp $GOPATH/src/github.com/maruel/dliboxt/setup/dlibox.service /etc/systemd/system
+    sudo cp $GOPATH/src/github.com/maruel/dlibox/go/setup/dlibox.service /etc/systemd/system
     # Edit the file with the right user and path
-    sudo vi $GOPATH/src/github.com/maruel/dliboxt/setup/dlibox.service
+    sudo vi $GOPATH/src/github.com/maruel/dlibox/go/setup/dlibox.service
     sudo systemctl enable dlibox
     sudo service dlibox start
 
-Anytime you `go install github.com/maruel/dlibox-go/cmd/dlibox`, systemd will
+Anytime you `go install github.com/maruel/dlibox/go/cmd/dlibox`, systemd will
 restart dlibox automatically.
 
 

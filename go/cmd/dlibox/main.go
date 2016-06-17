@@ -19,8 +19,8 @@ import (
 	"runtime/pprof"
 
 	"github.com/kardianos/osext"
-	"github.com/maruel/dlibox-go/anim1d"
-	"github.com/maruel/dlibox-go/apa102"
+	"github.com/maruel/dlibox/go/anim1d"
+	"github.com/maruel/dlibox/go/apa102"
 	"github.com/maruel/interrupt"
 	"golang.org/x/exp/inotify"
 )

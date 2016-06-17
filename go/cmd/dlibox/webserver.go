@@ -15,7 +15,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/maruel/dlibox-go/anim1d"
+	"github.com/maruel/dlibox/go/anim1d"
 )
 
 var (

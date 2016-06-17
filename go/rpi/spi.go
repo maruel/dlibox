@@ -41,9 +41,9 @@ func makeSPI(path string, speed int64) (*spi, error) {
 		//   run to enable SPI then the device must be rebooted.
 		// - permission denied. In this case, the user has to be added to plugdev.
 		if os.IsNotExist(err) {
-			return nil, errors.New("SPI is not configured; please follow instructions at https://github.com/maruel/dlibox-go/tree/master/setup")
+			return nil, errors.New("SPI is not configured; please follow instructions at https://github.com/maruel/dlibox/tree/master/go/setup")
 		}
-		return nil, fmt.Errorf("are you member of group 'plugdev'? please follow instructions at https://github.com/maruel/dlibox-go/tree/master/setup. %s", err)
+		return nil, fmt.Errorf("are you member of group 'plugdev'? please follow instructions at https://github.com/maruel/dlibox/tree/master/go/setup. %s", err)
 	}
 	s := &spi{path: path, speed: speed, f: f}
 	if err := s.setFlag(spiIOCMode, 3); err != nil {

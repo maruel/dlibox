@@ -8,8 +8,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/maruel/dlibox-go/anim1d"
-	"github.com/maruel/dlibox-go/rpi"
+	"github.com/maruel/dlibox/go/anim1d"
+	"github.com/maruel/dlibox/go/rpi"
 	"github.com/maruel/temperature"
 )
 

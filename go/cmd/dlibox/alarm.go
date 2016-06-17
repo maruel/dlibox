@@ -8,7 +8,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/maruel/dlibox-go/anim1d"
+	"github.com/maruel/dlibox/go/anim1d"
 )
 
 type WeekdayBit int

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox-go/rpi"
+	"github.com/maruel/dlibox/go/rpi"
 	"github.com/maruel/interrupt"
 )
 
