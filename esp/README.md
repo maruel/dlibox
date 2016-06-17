@@ -2,8 +2,6 @@
 
 The box for funny people.
 
-It is closely related to https://github.com/maruel/dlibox-go.
-
 
 ## Setup
 
@@ -34,8 +32,7 @@ follow the wiki pages which explains all the steps for your OS.
     [server](https://github.com/marvinroger/homie-server).
 - Multiple message encoding and RPC/PubSub options were looked at.  C/C++ client
   had to be as compact as possible (<10kb ROM, <2kb RAM) and it had to work in
-  Go too for interoperability with
-  [dlibox-go](https://github.com/maruel/dlibox-go).
+  Go too for interoperability with the Go version.
   - RPC/PubSub; I wanted to have a router/broker written in Go if possible in
     addition to a client:
     - [WAMP](http://wamp-proto.org/) looked
