@@ -35,10 +35,15 @@ void cmdconfig(const char* args) {
   Serial.printf("host: %d\n", config.has_host);
   Serial.printf("host.name: \"%s\"\n", config.host.name);
   Serial.printf("host.highSpeed: %d\n", config.host.highSpeed);
+  Serial.printf("host.verbose: %d\n", config.host.verbose);
   Serial.printf("display: %d\n", config.has_display);
   Serial.printf("display.enabled: %d\n", config.display.enabled);
   Serial.printf("display.I2Cspeed: %d\n", config.display.I2Cspeed);
   Serial.printf("romURL: \"%s\"\n", config.romURL);
+  Serial.printf("mqtt.host: \"%s\"\n", config.mqtt.host);
+  Serial.printf("mqtt.port: %d\n", config.mqtt.port);
+  Serial.printf("mqtt.username: \"%s\"\n", config.mqtt.username);
+  Serial.printf("mqtt.password: \"%s\"\n", config.mqtt.password);
 }
 
 void cmdset(char* args) {
@@ -77,6 +82,49 @@ void cmdset(char* args) {
     config.has_apa102 = true;
     config.apa102.has_numLights = true;
     config.apa102.numLights = atoi(value);
+  } else if (!strcmp(args, "apa102.SPIspeed")) {
+    config.has_apa102 = true;
+    config.apa102.has_SPIspeed = true;
+    config.apa102.SPIspeed = atoi(value);
+  } else if (!strcmp(args, "host.name")) {
+    config.has_host = true;
+    config.host.has_name = true;
+    strcpy(config.host.name, value);
+  } else if (!strcmp(args, "host.highSpeed")) {
+    config.has_host = true;
+    config.host.has_highSpeed = true;
+    config.host.highSpeed = atoi(value);
+  } else if (!strcmp(args, "host.verbose")) {
+    config.has_host = true;
+    config.host.has_verbose = true;
+    config.host.verbose = atoi(value);
+  } else if (!strcmp(args, "display.enabled")) {
+    config.has_display = true;
+    config.display.has_enabled = true;
+    config.display.enabled = atoi(value);
+  } else if (!strcmp(args, "display.I2Cspeed")) {
+    config.has_display = true;
+    config.display.has_I2Cspeed = true;
+    config.display.I2Cspeed = atoi(value);
+  } else if (!strcmp(args, "romURL")) {
+    config.has_romURL = true;
+    strcpy(config.romURL, value);
+  } else if (!strcmp(args, "mqtt.host")) {
+    config.has_mqtt = true;
+    config.mqtt.has_host = true;
+    strcpy(config.mqtt.host, value);
+  } else if (!strcmp(args, "mqtt.port")) {
+    config.has_mqtt = true;
+    config.mqtt.has_port = true;
+    config.mqtt.port = atoi(value);
+  } else if (!strcmp(args, "mqtt.username")) {
+    config.has_mqtt = true;
+    config.mqtt.has_username = true;
+    strcpy(config.mqtt.username, value);
+  } else if (!strcmp(args, "mqtt.password")) {
+    config.has_mqtt = true;
+    config.mqtt.has_password = true;
+    strcpy(config.mqtt.password, value);
   } else {
     Serial.printf("invalid key \"%s\"\n", args);
     return;
@@ -88,17 +136,18 @@ void cmdset(char* args) {
 void cmdhelp() {
   Serial.println();
   Serial.println("available commands:");
-  Serial.println("  cat     - show a file in spiffs");
-  Serial.println("  clear   - deletes the current configuration");
-  Serial.println("  config  - display current config");
-  Serial.println("  connect - connect to wifi");
-  Serial.println("  help    - display this message");
-  Serial.println("  info    - show esp8266 and connectivity info");
-  Serial.println("  ls      - list files in spiffs");
-  Serial.println("  ota     - perform ota update, switch rom and reboot");
-  Serial.println("  restart - restart the esp8266");
-  Serial.println("  set     - set a configuration value");
-  Serial.println("  switch  - switch to the other rom and reboot");
+  Serial.println("  cat <file>        - show a file in spiffs");
+  Serial.println("  clear             - deletes the current configuration");
+  Serial.println("  config            - display current config");
+  Serial.println("  connect           - connect to wifi");
+  Serial.println("  format            - format the SPIFFS partition");
+  Serial.println("  help              - display this message");
+  Serial.println("  info              - show esp8266 and connectivity info");
+  Serial.println("  ls                - list files in spiffs");
+  Serial.println("  ota               - perform ota update, switch rom and reboot");
+  Serial.println("  restart           - restart the esp8266");
+  Serial.println("  set <key> <value> - set a configuration value");
+  Serial.println("  switch            - switch to the other rom and reboot");
   Serial.println();
 }
 
@@ -109,17 +158,27 @@ void cmdinfo() {
   Serial.printf("CPU Frequency:  %d MHz\n", system_get_cpu_freq());
   Serial.printf("System Chip ID: %x\n", system_get_chip_id());
   Serial.printf("SPI Flash ID:   %x\n", spi_flash_get_id());
-  Serial.printf("SPI Flash Size: %d\n", (1 << ((spi_flash_get_id() >> 16) & 0xff)));
+  uint32_t size = (1 << ((spi_flash_get_id() >> 16) & 0xff));
+  Serial.printf("SPI Flash Size: 0x%x (%d)\n", size, size);
+  spiffs_config s = spiffs_get_storage_config();
+  Serial.printf("SPIFFS Size:    0x%x (%d)\n", s.phys_size, s.phys_size);
+  Serial.printf("SPIFFS Address: 0x%x\n", s.phys_addr);
+  Serial.printf("SPIFFS Erase:   0x%x\n", s.phys_erase_block);
+  Serial.printf("SPIFFS Block:   0x%x\n", s.log_block_size);
+  Serial.printf("SPIFFS Page:    0x%x\n", s.log_page_size);
   Serial.println();
   Serial.printf("Wifi client enabled: %d\n", WifiStation.isEnabled());
   Serial.printf("Wifi client SSID:    %s\n", WifiStation.getSSID().c_str());
   Serial.printf("Wifi client IP:      %s\n", WifiStation.getIP().toString().c_str());
-  Serial.printf("Wifi client MAC:     %s\n", WifiStation.getMAC().c_str());
-  Serial.printf("Wifi client RSSI:    %d\n", WifiStation.getRssi());
+  uint8 hwaddr[6] = {0};
+  wifi_get_macaddr(STATION_IF, hwaddr);
+  Serial.printf("Wifi client MAC:     " MACSTR "\n", MAC2STR(hwaddr));
+  Serial.printf("Wifi client RSSI:    %d dBm\n", WifiStation.getRssi());
   Serial.printf("Wifi client channel: %d\n", WifiStation.getChannel());
   Serial.printf("AccessPoint enabled: %d\n", WifiAccessPoint.isEnabled());
   Serial.printf("AccessPoint IP:      %s\n", WifiAccessPoint.getIP().toString().c_str());
-  Serial.printf("AccessPoint MAC:     %s\n", WifiAccessPoint.getMAC().c_str());
+  wifi_get_macaddr(SOFTAP_IF, hwaddr);
+  Serial.printf("AccessPoint MAC:     " MACSTR "\n", MAC2STR(hwaddr));
 }
 
 void cmdls(const char* args) {
@@ -156,8 +215,15 @@ void onCommand(const char* cmd, char* args) {
   } else if (!strcmp(cmd, "config")) {
     cmdconfig(args);
   } else if (!strcmp(cmd, "connect")) {
-    WifiStation.config(config.wifiClient.ssid, config.wifiClient.password);
-    WifiStation.enable(true);
+    if (config.wifiClient.ssid[0]) {
+      WifiStation.config(config.wifiClient.ssid, config.wifiClient.password);
+      WifiStation.enable(true);
+    } else {
+      Serial.println("wifi client not set, use 'set'");
+    }
+  } else if (!strcmp(cmd, "format")) {
+    spiffs_format();
+    Serial.println("SPIFFS formatted.");
   } else if (!strcmp(cmd, "help")) {
     cmdhelp();
   } else if (!strcmp(cmd, "info")) {
@@ -205,9 +271,6 @@ void serialCallBack(Stream& stream, char arrivedChar, unsigned short availableCh
 }  // namespace
 
 void initSerialCommand() {
-  Serial.begin(SERIAL_BAUD_RATE);  // TODO(maruel): Needed?
-  Serial.systemDebugOutput(false);
-  system_set_os_print(0);  // may break stuff.
   // Serial.commandProcessing(false); ?
   Serial.printf("\nCurrently running rom %d.\n", rboot_get_current_rom());
   Serial.println("Type 'help' and press enter for instructions.");

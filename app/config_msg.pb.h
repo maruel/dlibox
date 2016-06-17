@@ -38,8 +38,22 @@ typedef struct _Host {
     char name[32];
     bool has_highSpeed;
     bool highSpeed;
+    bool has_verbose;
+    bool verbose;
 /* @@protoc_insertion_point(struct:Host) */
 } Host;
+
+typedef struct _MQTT {
+    bool has_host;
+    char host[32];
+    bool has_port;
+    uint16_t port;
+    bool has_username;
+    char username[32];
+    bool has_password;
+    char password[32];
+/* @@protoc_insertion_point(struct:MQTT) */
+} MQTT;
 
 typedef struct _Wifi {
     bool has_ssid;
@@ -62,6 +76,8 @@ typedef struct _Config {
     DisplaySettings display;
     bool has_romURL;
     char romURL[128];
+    bool has_mqtt;
+    MQTT mqtt;
 /* @@protoc_insertion_point(struct:Config) */
 } Config;
 
@@ -75,19 +91,26 @@ extern const bool DisplaySettings_enabled_default;
 extern const uint32_t DisplaySettings_I2Cspeed_default;
 extern const char Host_name_default[32];
 extern const bool Host_highSpeed_default;
+extern const bool Host_verbose_default;
+extern const char MQTT_host_default[32];
+extern const uint16_t MQTT_port_default;
+extern const char MQTT_username_default[32];
+extern const char MQTT_password_default[32];
 extern const char Config_romURL_default[128];
 
 /* Initializer values for message structs */
 #define Wifi_init_default                        {false, "", false, ""}
 #define APA102_init_default                      {false, 30u, false, 0u, false, 8000000u}
 #define DisplaySettings_init_default             {false, false, false, 4000000u}
-#define Host_init_default                        {false, "", false, false}
-#define Config_init_default                      {false, Wifi_init_default, false, Wifi_init_default, false, APA102_init_default, false, Host_init_default, false, DisplaySettings_init_default, false, ""}
+#define Host_init_default                        {false, "", false, true, false, false}
+#define MQTT_init_default                        {false, "", false, 1883u, false, "", false, ""}
+#define Config_init_default                      {false, Wifi_init_default, false, Wifi_init_default, false, APA102_init_default, false, Host_init_default, false, DisplaySettings_init_default, false, "", false, MQTT_init_default}
 #define Wifi_init_zero                           {false, "", false, ""}
 #define APA102_init_zero                         {false, 0, false, 0, false, 0}
 #define DisplaySettings_init_zero                {false, 0, false, 0}
-#define Host_init_zero                           {false, "", false, 0}
-#define Config_init_zero                         {false, Wifi_init_zero, false, Wifi_init_zero, false, APA102_init_zero, false, Host_init_zero, false, DisplaySettings_init_zero, false, ""}
+#define Host_init_zero                           {false, "", false, 0, false, 0}
+#define MQTT_init_zero                           {false, "", false, 0, false, "", false, ""}
+#define Config_init_zero                         {false, Wifi_init_zero, false, Wifi_init_zero, false, APA102_init_zero, false, Host_init_zero, false, DisplaySettings_init_zero, false, "", false, MQTT_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define APA102_frameRate_tag                     1
@@ -97,6 +120,11 @@ extern const char Config_romURL_default[128];
 #define DisplaySettings_I2Cspeed_tag             2
 #define Host_name_tag                            1
 #define Host_highSpeed_tag                       2
+#define Host_verbose_tag                         3
+#define MQTT_host_tag                            1
+#define MQTT_port_tag                            2
+#define MQTT_username_tag                        3
+#define MQTT_password_tag                        4
 #define Wifi_ssid_tag                            1
 #define Wifi_password_tag                        2
 #define Config_wifiClient_tag                    1
@@ -105,20 +133,23 @@ extern const char Config_romURL_default[128];
 #define Config_host_tag                          4
 #define Config_display_tag                       5
 #define Config_romURL_tag                        6
+#define Config_mqtt_tag                          7
 
 /* Struct field encoding specification for nanopb */
 extern const pb_field_t Wifi_fields[3];
 extern const pb_field_t APA102_fields[4];
 extern const pb_field_t DisplaySettings_fields[3];
-extern const pb_field_t Host_fields[3];
-extern const pb_field_t Config_fields[7];
+extern const pb_field_t Host_fields[4];
+extern const pb_field_t MQTT_fields[5];
+extern const pb_field_t Config_fields[8];
 
 /* Maximum encoded size of messages (where known) */
 #define Wifi_size                                101
 #define APA102_size                              18
 #define DisplaySettings_size                     8
-#define Host_size                                36
-#define Config_size                              405
+#define Host_size                                38
+#define MQTT_size                                108
+#define Config_size                              517
 
 /* Message IDs (where set with "msgid" option) */
 #ifdef PB_MSGID

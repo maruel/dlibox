@@ -39,9 +39,12 @@ char chipID[9];
 Config config = Config_init_default;
 
 void initConfig() {
+  Serial.begin(SERIAL_BAUD_RATE);
   spiffs_mount();
   sprintf(chipID, "%08x", system_get_chip_id());
   loadConfig();
+  system_set_os_print(config.host.verbose);
+  Serial.systemDebugOutput(config.host.verbose);
 }
 
 void clearConfig() {

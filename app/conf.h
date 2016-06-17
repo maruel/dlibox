@@ -11,7 +11,7 @@
 // It should be called first in the setup() function.
 void initConfig();
 
-// Removes any previous configuration.
+// Removes any previous configuration from SPIFFS.
 void clearConfig();
 
 // save saves the config to SPIFFS. Call it after modifying config.

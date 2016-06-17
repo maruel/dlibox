@@ -37,7 +37,16 @@ message Host {
   // name of the device.
   optional string name       = 1 [(nanopb).max_size = 32, default = ""];
   // If set, tries to run at high speed.
-  optional bool highSpeed    = 2 [default = false];
+  optional bool highSpeed    = 2 [default = true];
+  // Logs over serial port.
+  optional bool verbose      = 3 [default = false];
+}
+
+message MQTT {
+  optional string host     = 1 [(nanopb).max_size = 32, default = ""];
+  optional uint32 port     = 2 [(nanopb).int_size = IS_16, default = 1883];
+  optional string username = 3 [(nanopb).max_size = 32, default = ""];
+  optional string password = 4 [(nanopb).max_size = 32, default = ""];
 }
 
 message Config {
@@ -54,4 +63,5 @@ message Config {
   // TODO(maruel): Make it work with dynamically allocated memory.
   // Should look like: "http://host:8010/rom0.bin"
   optional string romURL           = 6 [(nanopb).max_size = 128, default = ""];
+  optional MQTT mqtt               = 7;
 }

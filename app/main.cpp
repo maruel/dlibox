@@ -20,7 +20,6 @@ namespace {
 
 void onReady() {
   digitalWrite(LED_PIN, 1);
-  initConfig();
   initSerialCommand();
   initPerf();
   initSSD1306();
@@ -32,8 +31,8 @@ void onReady() {
 }  // namespace
 
 void init() {
-  system_set_os_print(0);
   pinMode(LED_PIN, OUTPUT);
+  initConfig();
   // The system is ready a few millisecond later. It is possible the system
   // boots for rboot OTA update (?) so don't do anything stupid before being
   // ready.
