@@ -3,7 +3,7 @@
 // that can be found in the LICENSE file.
 
 // Packages the static files in a .go file.
-//go:generate go run ../package/main.go -out static_files_gen.go images web
+//go:generate go run ../package/main.go -out static_files_gen.go images ../../../web
 
 // dlibox drives the dlibox LED strip on a Raspberry Pi. It runs a web server
 // for remote control.

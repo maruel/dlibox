@@ -24,7 +24,7 @@ func mustRead(name string) []byte {
 func read(name string) []byte {
 	gopath := strings.Split(os.Getenv("GOPATH"), string(os.PathListSeparator))[0]
 	staticPaths := []string{
-		filepath.Join(gopath, "src", "github.com", "maruel", "dlibox", "cmd", "dlibox", "web", "static"),
+		filepath.Join(gopath, "src", "github.com", "maruel", "dlibox", "web"),
 		filepath.Join(gopath, "src", "github.com", "maruel", "dlibox", "cmd", "dlibox", "images"),
 	}
 	for _, p := range staticPaths {

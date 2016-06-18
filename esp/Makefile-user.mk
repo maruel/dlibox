@@ -18,6 +18,8 @@ SPI_SIZE := 4M
 SPI_SPEED = 80
 
 
+.PHONY: push f
+
 # Doesn't push SPIFFS rom and doesn't start the terminal.
 push: all
 	$(vecho) "Killing Terminal to free $(COM_PORT)"
@@ -26,10 +28,7 @@ push: all
 
 
 # Like target 'f' but doesn't push SPIFFS rom.
-f: all
-	$(vecho) "Killing Terminal to free $(COM_PORT)"
-	-$(Q) $(KILL_TERM)
-	$(ESPTOOL) -p $(COM_PORT) -b $(COM_SPEED_ESPTOOL) write_flash $(flashimageoptions) 0x00000 $(RBOOT_BIN) 0x02000 $(RBOOT_ROM_0)
+f: push
 	$(TERMINAL)
 
 
@@ -43,13 +42,14 @@ app/%.cpp: rsc/%.html
 
 vpath %.html $(wildcard rsc/*.html)
 
-NANOPB_DIR := nanopb
+PROTO_DIR := ../proto
+NANOPB_DIR := ../proto/nanopb
 NANOPB_PROTO_DIR := $(NANOPB_DIR)/generator/proto
 NANOPB_CORE := $(NANOPB_DIR)/pb_encode.c $(NANOPB_DIR)/pb_decode.c $(NANOPB_DIR)/pb_common.c
 PROTOC := protoc
-PROTOC_OPTS := --plugin=$(NANOPB_DIR)/generator/protoc-gen-nanopb -Inanopb/generator/proto
+PROTOC_OPTS := --plugin=$(NANOPB_DIR)/generator/protoc-gen-nanopb -I$(NANOPB_DIR)/generator/proto -I$(PROTO_DIR)
 EXTRA_INCDIR := include $(NANOPB_DIR)
-MODULES := app nanopb
+MODULES := app $(NANOPB_DIR)
 NANO_LIB := $(NANOPB_PROTO_DIR)/nanopb_pb2.py $(NANOPB_PROTO_DIR)/plugin_pb2.py
 
 # For each proto file, add the corresponding .pb.c source file as a dependency.
@@ -66,7 +66,7 @@ NANO_LIB := $(NANOPB_PROTO_DIR)/nanopb_pb2.py $(NANOPB_PROTO_DIR)/plugin_pb2.py
 
 # nanopb outputs.
 # TODO(maruel): Doesn't get triggered automatically;
-app/%.pb.c app/%.pb.h: app/%.proto
+app/%.pb.c app/%.pb.h: $(PROTO_DIR)/%.proto
 	$(PROTOC) $(PROTOC_OPTS) --nanopb_out=--no-timestamp:app --proto_path=app $<
 
-vpath %.proto $(wildcard app/*.proto)
+vpath %.proto $(wildcard $(PROTO_DIR)/*.proto)
