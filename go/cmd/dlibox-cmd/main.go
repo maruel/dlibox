@@ -34,7 +34,7 @@ func query() error {
 	}()
 	params := mdns.QueryParam{
 		//Service: "dlibox",
-		Domain:  "local",
+		Domain:  "local.",
 		Timeout: 10 * time.Second,
 		Entries: entries,
 	}

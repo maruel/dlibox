@@ -5,17 +5,21 @@
 package main
 
 import (
-	"fmt"
-	"net"
 	"os"
 	"sync"
 	"time"
 
-	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/hashicorp/mdns"
-	"github.com/surgemq/surgemq/service"
 )
 
+// http://www.multicastdns.org/
+// http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml
+// http://www.iana.org/form/ports-services
+const dliboxPort = 2654 // Conflict with "Corel VNC Admin" :)
+const mqttPort = 1883
+const mqttTLSPort = 8883
+
+/*
 func startMQTT() error {
 	svr := &service.Server{
 		KeepAlive:        5 * 60,
@@ -28,7 +32,6 @@ func startMQTT() error {
 	return svr.ListenAndServe("tcp://:1883")
 }
 
-/*
 func pinger() {
 	p = &netx.Pinger{}
 	if err := p.AddIPs(serverIPs); err != nil {
@@ -106,8 +109,11 @@ func client1(host string) error {
 	c.Subscribe(submsg, nil, onPublish)
 	<-done
 }
+// Always try to start as a MQTT broker. If success (e.g. port was
+// available), list itself as server, otherwise don't.
 */
 
+/*
 func defaultHandler(client MQTT.Client, msg MQTT.Message) {
 	fmt.Printf("TOPIC: %s\n", msg.Topic())
 	fmt.Printf("MSG: %s\n", msg.Payload())
@@ -136,41 +142,42 @@ func client(host string) error {
 	c.Disconnect(250)
 	return nil
 }
+*/
 
-// Respond to incoming requests and look up devices.
-func initmDNS(properties []string) (*mDNS, error) {
-	// Always try to start as a MQTT broker. If success (e.g. port was
-	// available), list itself as server, otherwise don't.
-
+// initmDNS initializes a mDNS local server.
+//
+// It responds to incoming requests and looks up devices.
+func initmDNS(port int, properties []string) (*mDNS, error) {
 	hostName, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
-	// "_http._tcp."
-	// http://www.dns-sd.org/servicetypes.html
-	// http://www.iana.org/form/ports-services
-	service, err := mdns.NewMDNSService(hostName, "dlibox", "", "", 1883, nil, properties)
+	service, err := mdns.NewMDNSService(hostName, "_dlibox._tcp.", "local.", hostName+".", port, nil, properties)
 	if err != nil {
 		return nil, err
 	}
-	l, err := net.Listen("udp", ":3611")
-	if err != nil {
-		return nil, err
-	}
+	/*
+		l, err := net.Listen("udp", ":3611")
+		if err != nil {
+			return nil, err
+		}
+	*/
+	//i := net.Interfaces()
 	server, err := mdns.NewServer(&mdns.Config{Zone: service})
 	if err != nil {
-		l.Close()
+		//l.Close()
 		return nil, err
 	}
-	out := &mDNS{s: server, l: l}
-	go out.listen()
+	out := &mDNS{s: server /*, l: l*/}
+	//go out.listen()
 	go out.lookup()
 	return out, err
 }
 
+// mDNS is the local mDNS server.
 type mDNS struct {
 	s *mdns.Server
-	l net.Listener // Communicates over UDP. Eventually using MQTT would be a good idea.
+	//l net.Listener // Communicates over UDP. Eventually using MQTT would be a good idea.
 
 	lock    sync.Mutex
 	entries []*mdns.ServiceEntry
@@ -178,11 +185,14 @@ type mDNS struct {
 
 func (m *mDNS) Close() error {
 	err1 := m.s.Shutdown()
-	err2 := m.l.Close()
-	if err1 != nil {
-		return err1
-	}
-	return err2
+	/*
+		err2 := m.l.Close()
+		if err1 != nil {
+			return err1
+		}
+		return err2
+	*/
+	return err1
 }
 
 // Packet is contextual with the From and To entries in
@@ -203,6 +213,7 @@ func (m *mDNS) IsMaster() bool {
 	return true
 }
 
+/*
 func (m *mDNS) listen() {
 	for {
 		conn, err := m.l.Accept()
@@ -215,10 +226,12 @@ func (m *mDNS) listen() {
 		}(conn)
 	}
 }
+*/
 
 func (m *mDNS) lookup() {
 	// TODO(maruel): When another device polls for services, immediately register
 	// the device too.
+	// TODO(maruel): Refresh at regular interval?
 	entries := make(chan *mdns.ServiceEntry)
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -234,6 +247,11 @@ func (m *mDNS) lookup() {
 	}()
 	defer wg.Wait()
 	defer close(entries)
-	// Is 1sec enough? The ESP8266 isn't fast.
-	_ = mdns.Lookup("dlibox", entries)
+	params := mdns.QueryParam{
+		//Service: "dlibox",
+		Domain:  "local.",
+		Timeout: 10 * time.Second,
+		Entries: entries,
+	}
+	_ = mdns.Query(&params)
 }

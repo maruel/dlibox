@@ -56,7 +56,7 @@ func mainImpl() error {
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
-		properties = append(properties, "profiled")
+		properties = append(properties, "profiled=1")
 	}
 
 	// Config.
@@ -77,13 +77,13 @@ func mainImpl() error {
 	var s anim1d.Strip
 	if *fake {
 		s = apa102.MakeScreen()
-		properties = append(properties, "fake")
+		properties = append(properties, "fake=1")
 	} else {
 		s, err = apa102.MakeAPA102(config.APA102.SPIspeed)
 		if err != nil {
 			return err
 		}
-		properties = append(properties, "APA102")
+		properties = append(properties, fmt.Sprintf("APA102=%d", config.APA102.NumberLights))
 	}
 
 	// Painter.
@@ -98,13 +98,11 @@ func mainImpl() error {
 	}
 	startWebServer(*port, p, &config.Config)
 
-	/* TODO(maruel): Make this work.
-	service, err := initmDNS(properties)
+	service, err := initmDNS(*port, properties)
 	if err != nil {
 		return err
 	}
 	defer service.Close()
-	*/
 
 	defer fmt.Printf("\033[0m\n")
 	return watchFile(thisFile)
