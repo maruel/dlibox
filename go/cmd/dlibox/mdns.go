@@ -5,12 +5,36 @@
 package main
 
 import (
+	"net"
 	"os"
 	"sync"
 	"time"
 
 	"github.com/hashicorp/mdns"
 )
+
+func getIPs() ([]net.IP, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+	var out []net.IP
+	for _, i := range interfaces {
+		if i.Flags&net.FlagUp == 0 || i.Flags&net.FlagLoopback != 0 || i.Flags&net.FlagMulticast == 0 {
+			continue
+		}
+		addrs, err := i.Addrs()
+		if err != nil {
+			return nil, err
+		}
+		for _, a := range addrs {
+			if v, ok := a.(*net.IPNet); ok {
+				out = append(out, v.IP)
+			}
+		}
+	}
+	return out, err
+}
 
 // http://www.multicastdns.org/
 // http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml
@@ -152,7 +176,12 @@ func initmDNS(port int, properties []string) (*mDNS, error) {
 	if err != nil {
 		return nil, err
 	}
-	service, err := mdns.NewMDNSService(hostName, "_dlibox._tcp.", "local.", hostName+".", port, nil, properties)
+	ips, err := getIPs()
+	if err != nil {
+		return nil, err
+	}
+	//fmt.Printf("%#v\n", ips)
+	service, err := mdns.NewMDNSService(hostName, "_dlibox._tcp.", "local.", hostName+".", port, ips, properties)
 	if err != nil {
 		return nil, err
 	}
