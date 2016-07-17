@@ -24,9 +24,11 @@ void startmDNS() {
   info.ipAddr = WifiStation.getIP();
   info.server_name = (char*)"dlibox";
   info.server_port = 80;
-  info.txt_data[0] = (char*)"";
+  info.txt_data[0] = (char*)"esp8266=1";
   //mdns_init(&info);
   espconn_mdns_init(&info);
+  espconn_mdns_server_register();
+  espconn_mdns_enable();
 }
 
 void onMessageReceived(String topic, String message) {
