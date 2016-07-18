@@ -56,28 +56,30 @@ func query() error {
 		}
 	}()
 
+	errs := make([]error, len(ifs))
 	for i := range ifs {
-		//fmt.Printf("Querying %s\n", ifs[i].Name)
 		wgI.Add(1)
 		go func(i int) {
 			defer wgI.Done()
 			params := mdns.QueryParam{
+				Service:   "_dlibox._tcp",
 				Domain:    "local",
 				Timeout:   timeout,
 				Interface: &ifs[i],
 				Entries:   entries,
 			}
-			if err2 := mdns.Query(&params); err != nil {
-				// TODO(maruel): data race.
-				err = err2
-			}
-			//fmt.Printf(" %s done\n", ifs[i].Name)
+			errs[i] = mdns.Query(&params)
 		}(i)
 	}
 	wgI.Wait()
 	close(entries)
 	wgE.Wait()
-	return err
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func mainImpl() error {
