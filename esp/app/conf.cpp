@@ -24,6 +24,34 @@ void loadConfig() {
       memset(&config, 0, sizeof(config));
     }
   }
+
+  // This is the perfect place to disable functionality when the device turns
+  // into a boot loop.
+  rst_info* i = system_get_rst_info();
+  Serial.printf("Boot reason: %d\n", i->reason);
+  switch (i->reason) {
+    case REASON_DEFAULT_RST:
+      break;
+    case REASON_WDT_RST:
+    case REASON_EXCEPTION_RST:
+    case REASON_SOFT_WDT_RST:
+      config.host.verbose = true;
+      // Disable SPI output for the lightS:
+      config.apa102.numLights = 0;
+      break;
+    case REASON_SOFT_RESTART:
+      break;
+    case REASON_DEEP_SLEEP_AWAKE:
+      break;
+    case REASON_EXT_SYS_RST:
+      break;
+    default:
+      break;
+  }
+
+  // Disable I²C output for the display:
+  //config.display.enabled = 0;
+
   // Set default hostname.
   if (!config.has_host || !config.host.has_name || !config.host.name[0]) {
     config.has_host = true;
