@@ -19,7 +19,8 @@ type APA102 struct {
 	SPIspeed int64
 	// Number of lights controlled by this device. If lower than the actual
 	// number of lights, the remaining lights will flash oddly.
-	NumberLights int
+	NumberLights   int
+	StartupPattern string
 }
 
 // Config stores the configuration for this specific host.
@@ -56,8 +57,9 @@ func (c *Config) ResetDefault() {
 			},
 		},
 		APA102: APA102{
-			SPIspeed:     10000000,
-			NumberLights: 150,
+			SPIspeed:       10000000,
+			NumberLights:   150,
+			StartupPattern: "\"#000001\"",
 		},
 	}
 }
@@ -74,10 +76,16 @@ func (c *Config) Load(n string) error {
 	defer f.Close()
 	d := json.NewDecoder(f)
 	d.UseNumber()
-	return d.Decode(c)
+	if err := d.Decode(c); err != nil {
+		return err
+	}
+	return c.verify()
 }
 
 func (c *Config) Save(n string) error {
+	if err := c.verify(); err != nil {
+		return err
+	}
 	b, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
@@ -89,6 +97,19 @@ func (c *Config) Save(n string) error {
 	defer f.Close()
 	_, err = f.Write(append(b, '\n'))
 	return err
+}
+
+func (c *Config) verify() error {
+	var p anim1d.SPattern
+	if err := json.Unmarshal([]byte(c.APA102.StartupPattern), &p); err != nil {
+		return err
+	}
+	for _, s := range c.Patterns {
+		if err := json.Unmarshal([]byte(s), &p); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type ConfigMgr struct {
@@ -106,7 +127,10 @@ func (c *ConfigMgr) Load() error {
 }
 
 func (c *ConfigMgr) Init(p *anim1d.Painter) error {
-	return c.Alarms.Reset(p)
+	if err := c.Alarms.Reset(p); err != nil {
+		return nil
+	}
+	return p.SetPattern(c.APA102.StartupPattern)
 }
 
 func (c *ConfigMgr) Close() error {
