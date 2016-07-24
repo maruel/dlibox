@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -23,8 +24,22 @@ const (
 	Saturday
 )
 
+const weekdayLetters = "SMTWTFS"
+
 func (w WeekdayBit) IsEnabledFor(d time.Weekday) bool {
 	return (w & WeekdayBit(1<<uint(d))) != 0
+}
+
+func (w WeekdayBit) String() string {
+	var out [7]rune
+	for i := uint(0); i < 7; i++ {
+		if (w & (1 << i)) != 0 {
+			out[i] = rune(weekdayLetters[i])
+		} else {
+			out[i] = '•'
+		}
+	}
+	return string(out[:])
 }
 
 type Alarm struct {
@@ -75,6 +90,14 @@ func (a *Alarm) Reset(p *anim1d.Painter) error {
 		})
 	}
 	return nil
+}
+
+func (a *Alarm) String() string {
+	out := fmt.Sprintf("%02d:%02d (%s)", a.Hour, a.Minute, a.Days)
+	if !a.Enabled {
+		out += " (disabled)"
+	}
+	return out
 }
 
 type Alarms []Alarm

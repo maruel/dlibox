@@ -6,12 +6,13 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
 
 	"github.com/maruel/dlibox/go/anim1d"
+	"github.com/pkg/errors"
 )
 
 type APA102 struct {
@@ -27,7 +28,7 @@ type APA102 struct {
 type Config struct {
 	Alarms   Alarms
 	APA102   APA102
-	Patterns []string // List of recent patterns.
+	Patterns []string // List of recent patterns. The first is the oldest.
 }
 
 func (c *Config) ResetDefault() {
@@ -60,6 +61,23 @@ func (c *Config) ResetDefault() {
 			SPIspeed:       10000000,
 			NumberLights:   150,
 			StartupPattern: "\"#000001\"",
+		},
+		Patterns: []string{
+			"{\"_type\":\"Aurore\"}",
+			"{\"MovesPerSec\":6,\"Child\":{\"Frame\":\"Lff0000ff0000ff0000ff0000ff0000ffffffffffffffffffffffffffffff\",\"_type\":\"Repeated\"},\"_type\":\"Rotate\"}",
+			"{\"Patterns\":[{\"_type\":\"Aurore\"},{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"Weights\":[1,1,1],\"_type\":\"Mixer\"}",
+			"{\"DurationShowMS\":1000000,\"DurationTransitionMS\":1000000,\"Patterns\":[\"#ff0000\",\"#00ff00\",\"#0000ff\"],\"Transition\":\"easeinout\",\"_type\":\"Loop\"}",
+			"{\"Left\":\"#000000\",\"Right\":\"#0000ff\",\"Transition\":\"linear\",\"_type\":\"Gradient\"}",
+			"{\"Left\":\"#000000\",\"Right\":\"#ff0000\",\"Transition\":\"linear\",\"_type\":\"Gradient\"}",
+			"{\"Left\":\"#000000\",\"Right\":\"#00ff00\",\"Transition\":\"linear\",\"_type\":\"Gradient\"}",
+			"{\"Left\":\"#000000\",\"Right\":\"#ffffff\",\"Transition\":\"linear\",\"_type\":\"Gradient\"}",
+			"{\"Child\":\"Lff0000ff0000ee0000dd0000cc0000bb0000aa0000990000880000770000660000550000440000330000220000110000\",\"MovesPerSec\":30,\"_type\":\"PingPong\"}",
+			"{\"Duration\":600000000000,\"After\":\"#000000\",\"Offset\":1800000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ffffff\",\"Offset\":600000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ff7f00\",\"Offset\":0,\"Before\":\"#000000\",\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"}",
+			"\"#000000\"",
+			"{\"Child\":\"Lffffff\",\"MovesPerSec\":30,\"_type\":\"PingPong\"}",
+			"{\"DurationShowMS\":1000000,\"DurationTransitionMS\":10000000,\"Patterns\":[\"#ff0000\",\"#ff7f00\",\"#ffff00\",\"#00ff00\",\"#0000ff\",\"#4b0082\",\"#8b00ff\"],\"Transition\":\"easeinout\",\"_type\":\"Loop\"}",
+			"\"Rainbow\"",
+			"{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"}",
 		},
 	}
 }
@@ -102,11 +120,16 @@ func (c *Config) Save(n string) error {
 func (c *Config) verify() error {
 	var p anim1d.SPattern
 	if err := json.Unmarshal([]byte(c.APA102.StartupPattern), &p); err != nil {
-		return err
+		return errors.Wrap(err, "can't load startup pattern")
 	}
-	for _, s := range c.Patterns {
+	for _, a := range c.Alarms {
+		if err := json.Unmarshal([]byte(a.Pattern), &p); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("can't load pattern for alarm %s", a))
+		}
+	}
+	for i, s := range c.Patterns {
 		if err := json.Unmarshal([]byte(s), &p); err != nil {
-			return err
+			return errors.Wrap(err, fmt.Sprintf("can't load recent pattern %d", i))
 		}
 	}
 	return nil
