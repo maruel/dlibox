@@ -25,6 +25,15 @@ exec 1<>$LOG_FILE
 exec 2>&1
 
 
+# Change hostname to unique name. The problem is that it becomes harder to find
+# the device on the network but this is necessary when configuring multiple
+# devices.
+SERIAL=$(cat /proc/cpuinfo | grep Serial | cut -d ":" -f 2 | sed 's/^ 0\+//')
+HOST=dlibox-$SERIAL
+echo "- Changing hostname to $HOST"
+raspi-config nonint do_hostname $HOST
+
+
 echo "- Configuring SSH, SPI, I2C, GPU memory"
 # Force key based authentication since the password is known.
 sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
@@ -71,16 +80,16 @@ export GOPATH="$HOME/src/gopath"
 go get github.com/maruel/dlibox/go/cmd/dlibox
 EOF
 
-# TODO(maruel): Setup dlibox.service
 
+echo "- Setting up dlibox.service"
+cp /home/pi/src/gopath/src/github.com/maruel/dlibox/go/setup/dlibox.service /etc/systemd/system
+systemctl daemon-reload
+systemctl enable dlibox.service
 
-# TODO(maruel): Change hostname to unique name. The problem is that it becomes
-# harder to find the device on the network.
-#SERIAL=$(cat /proc/cpuinfo | grep Serial | cut -d ":" -f 2 | sed 's/^ 0\+//')
-# raspi-config nonint do_hostname dlibox-$SERIAL
 
 # TODO(maruel): avahi browse to detect if MQTT is installed, install otherwise.
 # TODO(maruel): kbdrate -d 200 -r 60
+
 
 echo "- Done, rebooting"
 reboot
