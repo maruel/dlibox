@@ -5,32 +5,41 @@
 
 set -eu
 
+
 if [ "$USER" != "root" ]; then
-  echo "raspbian.sh can only be run as root"
+  echo "OMG don't run this locally!"
   exit 1
 fi
 
+
+# The idea is that this command will fail if not running on Raspbian, as a
+# safety measure.
+echo "- Testing if running on Raspbian"
+grep raspbian /etc/os-release
+
+
+# Close stdout and stderr and redirect both to a logfile.
 LOG_FILE=/var/log/dlibox_firstboot.log
 if [ -f $LOG_FILE ]; then
   exit 1
 fi
-
-# Close stdout and stderr
 exec 1<&-
 exec 2<&-
-
-# Open stdout as $LOG_FILE file for read and write.
 exec 1<>$LOG_FILE
-# Redirect stderr to stdout.
 exec 2>&1
 
 
+echo "- Changing hostname"
 # Change hostname to unique name. The problem is that it becomes harder to find
 # the device on the network but this is necessary when configuring multiple
-# devices.
+# devices. Hint: find it with:
+#   avahi-browse -t _workstation._tcp -l -k | grep IPv4
+#
+# Since the hostname is based on the serial number of the CPU with leading zeros
+# trimmed off, it is a constant yet unique value.
 SERIAL=$(cat /proc/cpuinfo | grep Serial | cut -d ":" -f 2 | sed 's/^ 0\+//')
 HOST=dlibox-$SERIAL
-echo "- Changing hostname to $HOST"
+echo "  New hostname is: $HOST"
 raspi-config nonint do_hostname $HOST
 
 
@@ -46,9 +55,9 @@ raspi-config nonint do_i2c 0
 raspi-config nonint do_memory_split 16
 
 
-echo "- Configuring locale as French Canadian"
-# Use the best keyboard layout. Change to "us" if needed. :)
-sed -i s/XKBLAYOUT="gb"/XKBLAYOUT="ca"/ /etc/default/keyboard
+echo "- Configuring locale as Canadian"
+# Use the us keyboard layout.
+sed -i s/XKBLAYOUT="gb"/XKBLAYOUT="us"/ /etc/default/keyboard
 # Use "timedatectl list-timezones" to list the values.
 timedatectl set-timezone America/Toronto
 # Switch to en_US.
@@ -62,10 +71,14 @@ echo "- Updating OS"
 apt-get update
 apt-get upgrade -y
 apt-get install -y git ifstat ntpdate sysstat tmux vim
+apt-get autoclean
 
 
-# TODO(maruel): Do not forget to update the Go version as needed.
 echo "- Installing as user"
+# TODO(maruel): Do not forget to update the Go version as needed.
+# Running bin/bin_pub/setup/install_golang.py would unconditionally install the
+# latest version but it is slower to run (several minutes) than just fetching a
+# known good version.
 sudo -u pi -- <<'EOF'
 cd
 mkdir src
@@ -74,24 +87,55 @@ bin/bin_pub/setup_scripts/update_config.py
 export GOROOT=/home/pi/src/golang
 curl -S https://storage.googleapis.com/golang/go1.6.3.linux-armv6l.tar.gz | tar xz
 mv go src/golang
-#bin/bin_pub/setup/install_golang.py
 PATH="$PATH:$GOROOT/bin"
 export GOPATH="$HOME/src/gopath"
 go get github.com/maruel/dlibox/go/cmd/dlibox
 EOF
 
 
-echo "- Setting up dlibox.service"
+echo "- Setting up dlibox as a service and auto-update timer"
+# Copy and enable the 2 services but do not start them, the host will soon
+# reboot.
 cp /home/pi/src/gopath/src/github.com/maruel/dlibox/go/setup/dlibox.service /etc/systemd/system
+cp /home/pi/src/gopath/src/github.com/maruel/dlibox/go/setup/dlibox_update.service /etc/systemd/system
+cp /home/pi/src/gopath/src/github.com/maruel/dlibox/go/setup/dlibox_update.timer /etc/systemd/system
 systemctl daemon-reload
 systemctl enable dlibox.service
+systemctl enable dlibox_update.service
+systemctl enable dlibox_update.timer
 
 
-# TODO(maruel): avahi browse to detect if MQTT is installed, install otherwise.
-# TODO(maruel): kbdrate -d 200 -r 60
+echo "- Setting up automated upgrade"
+# This runs through /etc/cron.daily/apt. More details at
+# https://wiki.debian.org/UnattendedUpgrades
+# TODO(maruel): Confirm the following to work.
+# TODO(maruel): Does this need apt-get install unattended-upgrades
+# update-notifier-common ?
+# TODO(maruel): Configure /etc/apt/listchanges.conf
+echo > /etc/apt/apt.conf.d/30dlibox <<EOF
+# Enable /etc/cron.daily/apt.
+APT::Periodic::Enable "1";
+# apt-get update every 7 days.
+APT::Periodic::Update-Package-Lists "7";
+# apt-get upgrade every 7 days.
+APT::Periodic::Unattended-Upgrade "7";
+# apt-get autoclean evey 21 days.
+APT::Periodic::AutocleanInterval "21";
+# Log a bit more.
+APT::Periodic::Verbose "1";
+# automatically reboot after updates.
+Unattended-Upgrade::Automatic-Reboot "true";
+# apt-get autoremove.
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Mail "root@$HOST";
+EOF
+
+
+# TODO(maruel): Configure outgoing email for notifications.
 
 
 echo "- Done, rebooting"
 reboot
+# Not necessary anymore:
 #echo "- Extending partition"
 #raspi-config --expand-rootfs

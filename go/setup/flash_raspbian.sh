@@ -3,38 +3,74 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
+# Fetches Raspbian Jessie Lite and flash it to an SDCard.
+# Then it updates the SDCard so it automatically self-initializes as a dlibox on
+# first boot.
+
+# TODO(someone): Make this script OSX compatible. For now it was only tested on
+# Ubuntu.
+
 set -eu
 
-IMGNAME=2016-05-27-raspbian-jessie-lite
 
-if [ "$#" -ne 3 ]; then
-  echo "usage: ./fetch_raspbian.sh /dev/<sdcard_path> <ssid> <wifi_pwd>"
+if [ "$#" -ne 2 ]; then
+  echo "usage: ./fetch_raspbian.sh /dev/<sdcard_path> <ssid>"
   exit 1
 fi
 
+
+# TODO(maruel): Some confirmation or verification. A user could destroy their
+# workstation easily.
+# Linux generally use /dev/sdX, OSX uses /dev/diskN.
 SDCARD=$1
 SSID="$2"
-WIFI_PWD="$3"
+# TODO(maruel): When not found, ask the user for the password. It's annoying to
+# test since the file is only readable by root.
+# TODO(maruel): Ensure it works with SSID with whitespace/emoji in their name.
+WIFI_PWD="$(sudo grep -oP '(?<=psk=).+' /etc/NetworkManager/system-connections/$SSID)"
 
+
+echo "- Unmounting"
+# TODO(maruel): I don't think this is actually useful after all.
 if [ -d ${SDCARD}1 ]; then
-  echo "- Unmounting"
   for i in ${SDCARD}?; do
     echo "  $i"
     umount $i || true
   done
 fi
-
-if [ ! -f $IMGNAME.img ]; then
-  echo "- Fetching Raspbian Jessie Lite latest"
-  curl -LO https://downloads.raspberrypi.org/raspbian_lite_latest
-  unzip $IMGNAME.zip
-  rm $IMGNAME.zip
+# TODO(maruel): This is quite aggressive.
+if [ -d /media/$USER ]; then
+  for i in /media/$USER/*; do
+    echo "  $i"
+    umount $i || true
+  done
 fi
 
+
+# TODO(maruel): Figure the name automatically.
+IMGNAME=2016-05-27-raspbian-jessie-lite.img
+if [ ! -f $IMGNAME ]; then
+  echo "- Fetching Raspbian Jessie Lite latest"
+  curl -L -o raspbian_lite_latest.zip https://downloads.raspberrypi.org/raspbian_lite_latest
+  unzip raspbian_lite_latest.zip
+fi
+
+
 echo "- Flashing (takes 2 minutes)"
-sudo time dd bs=4M if=$IMGNAME.img of=$SDCARD
+sudo /bin/bash -c "time dd bs=4M if=$IMGNAME of=$SDCARD"
+echo "- Flushing I/O cache"
+# This is important otherwise the mount afterward may 'see' the old partition
+# table.
+time sync
+echo "- Reloading partition table"
+sudo partprobe $SDCARD
 
 
+# TODO(maruel): Figure out the path via Ubuntu's automounting mechanism in
+# /media/$USER and use this?
+if [ -d mounted_img ]; then
+  rm -r mounted_img
+fi
 mkdir mounted_img
 
 
@@ -69,7 +105,7 @@ EOF
 fi
 
 
-# Setup SSH keys, wifi and automatic setup process.
+# Setup SSH keys, wifi and automatic setup process on first boot.
 if [ true ]; then
   # TODO(maruel): Formatting to F2FS would be nice but this requires one boot on
   # the rPi to be able to run "apt-get install f2fs-tools" first. I don't know
@@ -81,6 +117,7 @@ if [ true ]; then
 
   echo "- Copying dlibox_firstboot.sh"
   sudo cp dlibox_firstboot.sh mounted_img/etc/init.d
+  sudo chmod +x mounted_img/etc/init.d/dlibox_firstboot.sh
   echo "- Copying ~/.ssh/authorized_keys"
   sudo mkdir mounted_img/home/pi/.ssh
   # This assumes you have properly set your own ssh keys and plan to use them.
@@ -103,4 +140,3 @@ fi
 
 
 rm -r mounted_img
-sync

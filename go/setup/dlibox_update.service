@@ -1,0 +1,23 @@
+# Copyright 2016 Marc-Antoine Ruel. All rights reserved.
+# Use of this source code is governed under the Apache License, Version 2.0
+# that can be found in the LICENSE file.
+
+# Copy to /etc/systemd/system/dlibox_update.service
+# Then run:
+#   systemctl daemon-reload
+#   systemctl enable dlibox_update.service
+#
+# To view logs:
+#   journalctl dlibox_update.service
+
+# All the flags in the following help pages apply:
+# - https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+# - https://www.freedesktop.org/software/systemd/man/systemd.service.html
+# - https://www.freedesktop.org/software/systemd/man/systemd.unit.html
+
+[Unit]
+Description=Updates dlibox, as triggered by dlibox_update.timer
+
+[Service]
+Type=oneshot
+ExecStart=/bin/su - pi -c "go get -v -u github.com/maruel/dlibox/cmd/dlibox"

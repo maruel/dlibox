@@ -2,8 +2,6 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
-# Enables running dlibox upon boot.
-#
 # Copy to /etc/systemd/system/dlibox.service
 # Then run:
 #   systemctl daemon-reload
@@ -19,7 +17,7 @@
 # - https://www.freedesktop.org/software/systemd/man/systemd.unit.html
 
 [Unit]
-Description=Runs dlibox
+Description=Runs dlibox automatically upon boot
 After=auditd.service
 
 [Service]
