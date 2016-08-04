@@ -3,10 +3,13 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
+# As part of https://github.com/maruel/dlibox
+
 set -eu
 
 
-if [ "$USER" != "root" ]; then
+# When run via /etc/rc.local, USER is not defined.
+if [ "${USER:=root}" != "root" ]; then
   echo "OMG don't run this locally!"
   exit 1
 fi
@@ -15,18 +18,7 @@ fi
 # The idea is that this command will fail if not running on Raspbian, as a
 # safety measure.
 echo "- Testing if running on Raspbian"
-grep raspbian /etc/os-release
-
-
-# Close stdout and stderr and redirect both to a logfile.
-LOG_FILE=/var/log/dlibox_firstboot.log
-if [ -f $LOG_FILE ]; then
-  exit 1
-fi
-exec 1<&-
-exec 2<&-
-exec 1<>$LOG_FILE
-exec 2>&1
+grep raspbian /etc/os-release > /dev/null
 
 
 echo "- Changing hostname"
@@ -48,7 +40,6 @@ echo "- Configuring SSH, SPI, I2C, GPU memory"
 sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
 # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
 # 0 means enabled.
-raspi-config nonint do_ssh 0
 raspi-config nonint do_spi 0
 raspi-config nonint do_i2c 0
 # Lowers GPU memory from 64Mb to 16Mb. Doing so means goodbye to startx.
@@ -57,13 +48,13 @@ raspi-config nonint do_memory_split 16
 
 echo "- Configuring locale as Canadian"
 # Use the us keyboard layout.
-sed -i s/XKBLAYOUT="gb"/XKBLAYOUT="us"/ /etc/default/keyboard
+sed -i 's/XKBLAYOUT="gb"/XKBLAYOUT="us"/' /etc/default/keyboard
 # Use "timedatectl list-timezones" to list the values.
 timedatectl set-timezone America/Toronto
 # Switch to en_US.
 locale-gen --purge en_US.UTF-8
 sed -i s/en_GB/en_US/ /etc/default/locale
-# Fix Wifi country settings for Canda.
+# Fix Wifi country settings for Canada.
 raspi-config nonint do_wifi_country CA
 
 
@@ -75,33 +66,36 @@ apt-get autoclean
 
 
 echo "- Installing as user"
+cat >> /home/pi/.profile <<'EOF'
+
+export GOROOT=$HOME/go
+export GOPATH=$HOME
+export PATH="$PATH:$GOROOT/bin:$GOPATH/bin"
+
+EOF
+
 # TODO(maruel): Do not forget to update the Go version as needed.
 # Running bin/bin_pub/setup/install_golang.py would unconditionally install the
 # latest version but it is slower to run (several minutes) than just fetching a
 # known good version.
-sudo -u pi -- <<'EOF'
+sudo -i -u pi /bin/sh <<'EOF'
 cd
-mkdir src
 git clone --recurse https://github.com/maruel/bin_pub bin/bin_pub
-bin/bin_pub/setup_scripts/update_config.py
-export GOROOT=/home/pi/src/golang
+#bin/bin_pub/setup_scripts/update_config.py
 curl -S https://storage.googleapis.com/golang/go1.6.3.linux-armv6l.tar.gz | tar xz
-mv go src/golang
-PATH="$PATH:$GOROOT/bin"
-export GOPATH="$HOME/src/gopath"
-go get github.com/maruel/dlibox/go/cmd/dlibox
+go get -v github.com/maruel/dlibox/go/cmd/dlibox
 EOF
 
 
 echo "- Setting up dlibox as a service and auto-update timer"
 # Copy and enable the 2 services but do not start them, the host will soon
 # reboot.
-cp /home/pi/src/gopath/src/github.com/maruel/dlibox/go/setup/dlibox.service /etc/systemd/system
-cp /home/pi/src/gopath/src/github.com/maruel/dlibox/go/setup/dlibox_update.service /etc/systemd/system
-cp /home/pi/src/gopath/src/github.com/maruel/dlibox/go/setup/dlibox_update.timer /etc/systemd/system
+cp /home/pi/src/github.com/maruel/dlibox/go/setup/support/dlibox.service /etc/systemd/system
+cp /home/pi/src/github.com/maruel/dlibox/go/setup/support/dlibox_update.service /etc/systemd/system
+cp /home/pi/src/github.com/maruel/dlibox/go/setup/support/dlibox_update.timer /etc/systemd/system
 systemctl daemon-reload
 systemctl enable dlibox.service
-systemctl enable dlibox_update.service
+#systemctl enable dlibox_update.service
 systemctl enable dlibox_update.timer
 
 
@@ -136,6 +130,3 @@ EOF
 
 echo "- Done, rebooting"
 reboot
-# Not necessary anymore:
-#echo "- Extending partition"
-#raspi-config --expand-rootfs
