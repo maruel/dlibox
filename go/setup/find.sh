@@ -5,4 +5,4 @@
 
 # Find the raspberry pis on the local network.
 
-avahi-browse -t _workstation._tcp | grep IPv4 | cut -f 4 -d ' ' | sort | uniq
+avahi-browse -t _workstation._tcp | grep IPv4 | perl -lape 's/.*IPv4 ([^ ]+) .+/$1/g' | sort | uniq
