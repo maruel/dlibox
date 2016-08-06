@@ -61,7 +61,13 @@ raspi-config nonint do_wifi_country CA
 echo "- Updating OS"
 apt-get update
 apt-get upgrade -y
-apt-get install -y git ifstat ntpdate sysstat tmux vim
+apt-get install -y \
+  git \
+  ifstat \
+  ntpdate \
+  sysstat \
+  tmux \
+  vim
 apt-get autoclean
 
 
@@ -87,16 +93,12 @@ go get -v github.com/maruel/dlibox/go/cmd/dlibox
 EOF
 
 
+echo "- Installing dependencies"
+/home/pi/src/github.com/maruel/dlibox/go/setup/support/install_dependencies.sh
+
+
 echo "- Setting up dlibox as a service and auto-update timer"
-# Copy and enable the 2 services but do not start them, the host will soon
-# reboot.
-cp /home/pi/src/github.com/maruel/dlibox/go/setup/support/dlibox.service /etc/systemd/system
-cp /home/pi/src/github.com/maruel/dlibox/go/setup/support/dlibox_update.service /etc/systemd/system
-cp /home/pi/src/github.com/maruel/dlibox/go/setup/support/dlibox_update.timer /etc/systemd/system
-systemctl daemon-reload
-systemctl enable dlibox.service
-#systemctl enable dlibox_update.service
-systemctl enable dlibox_update.timer
+/home/pi/src/github.com/maruel/dlibox/go/setup/support/install_systemd.sh
 
 
 echo "- Setting up automated upgrade"
