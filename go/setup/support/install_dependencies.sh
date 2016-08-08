@@ -4,9 +4,19 @@
 # that can be found in the LICENSE file.
 
 # Install dlibox Raspbian dependencies.
+# Change hardware settings to enable I²C, SPI and lower GPU memory usage.
 
 set -eu
 cd "$(dirname $0)"
+
+# https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
+# 0 means enabled.
+raspi-config nonint do_spi 0
+raspi-config nonint do_i2c 0
+# Lowers GPU memory from 64Mb to 16Mb. Doing so means goodbye to startx.
+raspi-config nonint do_memory_split 16
+
+# lirc
 
 apt-get -y install lirc
 
@@ -15,10 +25,8 @@ sed -i s'/DRIVER="UNCONFIGURED"/DRIVER="default"/' /etc/lirc/hardware.conf
 sed -i s'/DEVICE=""/DEVICE="\/dev\/lirc0"/' /etc/lirc/hardware.conf
 sed -i s'/MODULES=""/MODULES="lirc_rpi"/' /etc/lirc/hardware.conf
 
-
 mv /etc/lirc/lircd.conf /etc/lirc/lircd.conf.org
 cp lircd.conf /etc/lirc/
-
 
 # TODO(maruel): Do not add twice.
 echo "" >> /boot/config.txt

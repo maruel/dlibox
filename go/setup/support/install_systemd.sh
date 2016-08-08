@@ -4,6 +4,7 @@
 # that can be found in the LICENSE file.
 
 # Install dlibox as a service.
+# Do not start it.
 
 set -eu
 cd "$(dirname $0)"

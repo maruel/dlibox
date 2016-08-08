@@ -71,6 +71,8 @@ sudo mkdir $ROOT_PATH/home/pi/.ssh
 sudo cp $HOME/.ssh/authorized_keys $ROOT_PATH/home/pi/.ssh/authorized_keys
 # pi(1000).
 sudo chown -R 1000:1000 $ROOT_PATH/home/pi/.ssh
+# Force key based authentication since the password is known.
+sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' $ROOT_PATH/etc/ssh/sshd_config
 
 
 echo "- Wifi"
