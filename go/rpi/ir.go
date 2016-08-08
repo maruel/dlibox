@@ -30,6 +30,9 @@ type IR struct {
 //
 // To debug, use either 'irw' or 'nc -U /var/run/lirc/lircd' and use your IR
 // remote to test if lirc is correctly configured.
+//
+// http://alexba.in/blog/2013/01/06/setting-up-lirc-on-the-raspberrypi/ is a
+// good starter guide.
 func MakeIR() *IR {
 	c, err := net.Dial("unix", "/var/run/lirc/lircd")
 	if err != nil {
