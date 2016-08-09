@@ -86,4 +86,4 @@ Look at the logs on the dlibox server:
 `irw` will print decoded messages by [lirc](http://www.lirc.org/) via the
 [Raspbian specific lirc-rpi kernel
 module](https://github.com/raspberrypi/firmware/blob/master/boot/overlays/README).
-See [rpi/ir.go](../../rpi/ir.go) for more details.
+See [rpi/ir.go](../rpi/ir.go) for more details.
