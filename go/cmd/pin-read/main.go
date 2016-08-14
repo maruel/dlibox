@@ -7,34 +7,62 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
 	"github.com/maruel/dlibox/go/rpi"
+	"github.com/ziutek/emgo/egroot/src/io"
 )
 
+func read(p rpi.Pin, edge rpi.Edge) {
+	if p.ReadEdge() == rpi.Low {
+		os.Stdout.Write([]byte{'0', '\n'})
+	} else {
+		os.Stdout.Write([]byte{'1', '\n'})
+	}
+}
+
 func mainImpl() error {
-	pull := rpi.PullNoChange
-	if len(os.Args) == 3 {
-		i, err := strconv.Atoi(os.Args[2])
-		if err != nil {
-			return err
+	pullUp := flag.Bool("u", false, "pull up")
+	pullDown := flag.Bool("d", false, "pull down")
+	edgeRising := flag.Bool("r", false, "wait for rising edge; can be used along -f")
+	edgeFalling := flag.Bool("f", false, "wait for falling edge; can be used along -r")
+	loop := flag.Bool("l", false, "loop")
+	verbose := flag.Bool("v", false, "enable verbose logs")
+	flag.Parse()
+
+	if !*verbose {
+		log.SetOutput(io.Discard)
+	}
+	log.SetFlags(log.Lmicroseconds)
+
+	//pull := rpi.PullNoChange
+	pull := rpi.Float
+	if *pullUp {
+		if *pullDown {
+			return errors.New("use only one of -d or -u")
 		}
-		switch i {
-		case 0:
-			pull = rpi.Float
-		case 1:
-			pull = rpi.Down
-		case 2:
-			pull = rpi.Up
-		default:
-			return errors.New("specify pull value as 0 for float, 1 for down, 2 for up, or omit for no change")
-		}
-	} else if len(os.Args) != 2 {
+		pull = rpi.Up
+	}
+	if *pullDown {
+		pull = rpi.Down
+	}
+	if flag.NArg() != 1 {
 		return errors.New("specify pin to read")
 	}
-	pin, err := strconv.Atoi(os.Args[1])
+
+	edge := rpi.EdgeNone
+	if *edgeRising {
+		edge |= rpi.Rising
+	}
+	if *edgeFalling {
+		edge |= rpi.Falling
+	}
+
+	pin, err := strconv.Atoi(flag.Args()[0])
 	if err != nil {
 		return err
 	}
@@ -42,11 +70,12 @@ func mainImpl() error {
 		return errors.New("specify pin between 0 and 53")
 	}
 	p := rpi.Pin(pin)
-	p.In(pull)
-	if p.Read() == rpi.Low {
-		os.Stdout.Write([]byte{'0', '\n'})
-	} else {
-		os.Stdout.Write([]byte{'1', '\n'})
+
+	if err = p.In(pull, edge); err != nil {
+		return err
+	}
+	for *loop {
+		read(p, edge)
 	}
 	return nil
 }

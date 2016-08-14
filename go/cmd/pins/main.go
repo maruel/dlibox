@@ -76,7 +76,7 @@ func mainImpl() error {
 			f := p.Function()
 			if p.IsConnected() {
 				if f == rpi.In || f == rpi.Out {
-					fmt.Printf("%-6s: %-4s %s\n", p, f, p.Read())
+					fmt.Printf("%-6s: %-4s %s\n", p, f, p.ReadInstant())
 				} else {
 					fmt.Printf("%-6s: %s\n", p, f)
 				}

@@ -26,11 +26,12 @@ func mainImpl() error {
 		return errors.New("specify pin between 0 and 53")
 	}
 	p := rpi.Pin(pin)
+	p.Out()
 	switch os.Args[2] {
 	case "0":
-		p.Out(rpi.Low)
+		p.SetLow()
 	case "1":
-		p.Out(rpi.High)
+		p.SetHigh()
 	default:
 		return errors.New("specify level as 0 or 1")
 	}
