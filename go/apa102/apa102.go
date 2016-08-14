@@ -173,7 +173,7 @@ func MakeAPA102(speed int64) (*APA102, error) {
 	// The speed must be high, as there's 32 bits sent per LED, creating a
 	// staggered effect. See
 	// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
-	w, err := rpi.MakeSPI("", speed)
+	w, err := rpi.MakeSPI(0, 0, speed)
 	if err != nil {
 		return nil, err
 	}

@@ -32,23 +32,31 @@ func loadCPUInfo() map[string]string {
 	return values
 }
 
+func maxCPUSpeed() int64 {
+	bytes, err := ioutil.ReadFile("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq")
+	if err != nil {
+		return 0
+	}
+	i, _ := strconv.ParseInt(string(bytes), 10, 64)
+	return i
+}
+
 // Version returns the Raspberry Pi version 1, 2 or 3.
 //
 // This function is not futureproof, it will return 0 on a Raspberry Pi 4
 // whenever it comes out.
 func Version() int {
-	i, err := strconv.Atoi(loadCPUInfo()["Revision"])
-	if err != nil {
-		return 0
+	if version == 0 {
+		i, err := strconv.Atoi(loadCPUInfo()["Revision"])
+		if err == nil {
+			if i < 0x20 {
+				version = 1
+			} else if i == 0xa01041 || i == 0xa21041 {
+				version = 2
+			} else if i == 0xa02082 {
+				version = 3
+			}
+		}
 	}
-	if i < 0x20 {
-		return 1
-	}
-	if i == 0xa01041 || i == 0xa21041 {
-		return 2
-	}
-	if i == 0xa02082 {
-		return 3
-	}
-	return 0
+	return version
 }

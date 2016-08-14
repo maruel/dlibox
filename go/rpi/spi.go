@@ -18,23 +18,28 @@ import (
 	"unsafe"
 )
 
-// spi is a thread-safe SPI writer.
-type spi struct {
+// SPI is a thread-safe SPI writer.
+type SPI struct {
 	closed int32
-	path   string
-	speed  int64
 	lock   sync.Mutex
 	f      *os.File
 }
 
-func makeSPI(path string, speed int64) (*spi, error) {
+// MakeSPI is to be used when testing directly to the bus bypassing the DotStar
+// controller.
+//
+// `bus` should normally be 0, unless SPI1 was manually enabled.
+// `chipSelect` should normally be 0, unless CE lines were manually enabled.
+// `path` can be omitted and defaults to "/dev/spidev0.0". The Raspberry Pi has
+// 2 SPI port, the second can be accessed via "/dev/spidev0.1".
+// `speed` must be specified and should be in the high Khz
+// or low Mhz range, it's a good idea to start at 4000000 (4Mhz) and go upward
+// as long as the signal is good.
+func MakeSPI(bus, chipSelect int, speed int64) (*SPI, error) {
 	if speed < 1000 {
 		return nil, errors.New("invalid speed")
 	}
-	if path == "" {
-		path = "/dev/spidev0.0"
-	}
-	f, err := os.OpenFile(path, os.O_RDWR, os.ModeExclusive)
+	f, err := os.OpenFile(fmt.Sprintf("/dev/spidev%d.%d", bus, chipSelect), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
 		// Try to be helpful here. There are generally two cases:
 		// - /dev/spidev0.0 doesn't exist. In this case, raspi-config has to be
@@ -45,7 +50,7 @@ func makeSPI(path string, speed int64) (*spi, error) {
 		}
 		return nil, fmt.Errorf("are you member of group 'plugdev'? please follow instructions at https://github.com/maruel/dlibox/tree/master/go/setup. %s", err)
 	}
-	s := &spi{path: path, speed: speed, f: f}
+	s := &SPI{f: f}
 	if err := s.setFlag(spiIOCMode, 3); err != nil {
 		s.Close()
 		return nil, err
@@ -61,19 +66,7 @@ func makeSPI(path string, speed int64) (*spi, error) {
 	return s, nil
 }
 
-// MakeSPI is to be used when testing directly to the bus bypassing the DotStar
-// controller.
-//
-// `path` can be omitted and defaults to "/dev/spidev0.0". The Raspberry Pi has
-// 2 SPI port, the second can be accessed via "/dev/spidev0.1".
-// `speed` must be specified and should be in the high Khz
-// or low Mhz range, it's a good idea to start at 4000000 (4Mhz) and go upward
-// as long as the signal is good.
-func MakeSPI(path string, speed int64) (io.WriteCloser, error) {
-	return makeSPI(path, speed)
-}
-
-func (s *spi) Close() error {
+func (s *SPI) Close() error {
 	if !atomic.CompareAndSwapInt32(&s.closed, 0, 1) {
 		return io.ErrClosedPipe
 	}
@@ -87,8 +80,8 @@ func (s *spi) Close() error {
 	return err
 }
 
-// Write pushes a buffer as-is.
-func (s *spi) Write(b []byte) (int, error) {
+// Write writes to the SPI bus without reading.
+func (s *SPI) Write(b []byte) (int, error) {
 	if atomic.LoadInt32(&s.closed) != 0 {
 		return 0, io.ErrClosedPipe
 	}
@@ -97,8 +90,8 @@ func (s *spi) Write(b []byte) (int, error) {
 	return s.f.Write(b)
 }
 
-// Read returns a buffer as-is.
-func (s *spi) Read(b []byte) (int, error) {
+// Read reads from the SPI bus.
+func (s *SPI) Read(b []byte) (int, error) {
 	if atomic.LoadInt32(&s.closed) != 0 {
 		return 0, io.ErrClosedPipe
 	}
@@ -111,6 +104,17 @@ func (s *spi) Read(b []byte) (int, error) {
 	return n, err
 }
 
+// Tx sends and receives data simultaneously.
+func (s *SPI) Tx(w, r []byte) error {
+	p := payload{
+		tx:     uint64(uintptr(unsafe.Pointer(&w[0]))),
+		rx:     uint64(uintptr(unsafe.Pointer(&r[0]))),
+		length: uint32(len(w)),
+		bits:   8,
+	}
+	return s.ioctl(spiIOCTx|0x40000000, unsafe.Pointer(&p))
+}
+
 // Private details.
 
 // spidev driver IOCTL control codes.
@@ -118,9 +122,23 @@ const (
 	spiIOCMode        = 0x16B01
 	spiIOCBitsPerWord = 0x16B03
 	spiIOCMaxSpeedHz  = 0x46B04
+	spiIOCTx          = 0x206B00
 )
 
-func (s *spi) setFlag(op uint, arg uint64) error {
+type payload struct {
+	tx       uint64
+	rx       uint64
+	length   uint32
+	speed    uint32
+	delay    uint16
+	bits     uint8
+	csChange uint8
+	txNBits  uint8
+	rxNBits  uint8
+	pad      uint16
+}
+
+func (s *SPI) setFlag(op uint, arg uint64) error {
 	if atomic.LoadInt32(&s.closed) != 0 {
 		return io.ErrClosedPipe
 	}
@@ -140,7 +158,7 @@ func (s *spi) setFlag(op uint, arg uint64) error {
 	return nil
 }
 
-func (s *spi) ioctl(op uint, arg unsafe.Pointer) error {
+func (s *SPI) ioctl(op uint, arg unsafe.Pointer) error {
 	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, s.f.Fd(), uintptr(op), uintptr(arg)); errno != 0 {
 		return fmt.Errorf("spi ioctl: %s", syscall.Errno(errno))
 	}

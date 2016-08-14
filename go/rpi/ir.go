@@ -32,7 +32,17 @@ type IR struct {
 // remote to test if lirc is correctly configured.
 //
 // http://alexba.in/blog/2013/01/06/setting-up-lirc-on-the-raspberrypi/ is a
-// good starter guide.
+// good starter guide. Normally, add the following to your /boot/config.txt:
+//
+//    dtoverlay=lirc-rpi,gpio_in_pin=18,gpio_out_pin=17,gpio_in_pull=down
+//
+// See https://github.com/raspberrypi/firmware/blob/master/boot/overlays/README
+//
+// Soure at:
+// https://github.com/raspberrypi/linux/blob/rpi-4.8.y/drivers/staging/media/lirc/lirc_rpi.c
+//
+// Someone made a version that supports multiple devices:
+// https://github.com/bengtmartensson/lirc_rpi
 func MakeIR() *IR {
 	c, err := net.Dial("unix", "/var/run/lirc/lircd")
 	if err != nil {
