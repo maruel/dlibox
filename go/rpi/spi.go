@@ -10,31 +10,26 @@ package rpi
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
-	"sync"
-	"sync/atomic"
 	"syscall"
 	"unsafe"
 )
 
-// SPI is a thread-safe SPI writer.
+// SPI is a SPI writer.
 type SPI struct {
-	closed int32
-	lock   sync.Mutex
-	f      *os.File
+	f *os.File
 }
 
 // MakeSPI is to be used when testing directly to the bus bypassing the DotStar
 // controller.
 //
 // `bus` should normally be 0, unless SPI1 was manually enabled.
+//
 // `chipSelect` should normally be 0, unless CE lines were manually enabled.
-// `path` can be omitted and defaults to "/dev/spidev0.0". The Raspberry Pi has
-// 2 SPI port, the second can be accessed via "/dev/spidev0.1".
-// `speed` must be specified and should be in the high Khz
-// or low Mhz range, it's a good idea to start at 4000000 (4Mhz) and go upward
-// as long as the signal is good.
+//
+// `speed` must be specified and should be in the high Khz or low Mhz range,
+// it's a good idea to start at 4000000 (4Mhz) and go upward as long as the
+// signal is good.
 func MakeSPI(bus, chipSelect int, speed int64) (*SPI, error) {
 	if speed < 1000 {
 		return nil, errors.New("invalid speed")
@@ -42,8 +37,8 @@ func MakeSPI(bus, chipSelect int, speed int64) (*SPI, error) {
 	f, err := os.OpenFile(fmt.Sprintf("/dev/spidev%d.%d", bus, chipSelect), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
 		// Try to be helpful here. There are generally two cases:
-		// - /dev/spidev0.0 doesn't exist. In this case, raspi-config has to be
-		//   run to enable SPI then the device must be rebooted.
+		// - /dev/spidevX.Y doesn't exist. In this case, /boot/config.txt has to be
+		//   edited to enable SPI then the device must be rebooted.
 		// - permission denied. In this case, the user has to be added to plugdev.
 		if os.IsNotExist(err) {
 			return nil, errors.New("SPI is not configured; please follow instructions at https://github.com/maruel/dlibox/tree/master/go/setup")
@@ -66,43 +61,31 @@ func MakeSPI(bus, chipSelect int, speed int64) (*SPI, error) {
 	return s, nil
 }
 
+// Close closes the handle to the SPI driver. It is not a requirement to close
+// before process termination.
 func (s *SPI) Close() error {
-	if !atomic.CompareAndSwapInt32(&s.closed, 0, 1) {
-		return io.ErrClosedPipe
-	}
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	var err error
-	if s.f != nil {
-		err = s.f.Close()
-		s.f = nil
-	}
+	err := s.f.Close()
+	s.f = nil
 	return err
 }
 
 // Write writes to the SPI bus without reading.
 func (s *SPI) Write(b []byte) (int, error) {
-	if atomic.LoadInt32(&s.closed) != 0 {
-		return 0, io.ErrClosedPipe
-	}
-	s.lock.Lock()
-	defer s.lock.Unlock()
 	return s.f.Write(b)
 }
 
+/* Add back if there is a use case.
 // Read reads from the SPI bus.
+//
+// Returns io.ErrShortBuffer if the buffer was not filled.
 func (s *SPI) Read(b []byte) (int, error) {
-	if atomic.LoadInt32(&s.closed) != 0 {
-		return 0, io.ErrClosedPipe
-	}
-	s.lock.Lock()
-	defer s.lock.Unlock()
 	n, err := s.f.Read(b)
 	if err == nil && n != len(b) {
 		err = io.ErrShortBuffer
 	}
 	return n, err
 }
+*/
 
 // Tx sends and receives data simultaneously.
 func (s *SPI) Tx(w, r []byte) error {
@@ -139,11 +122,6 @@ type payload struct {
 }
 
 func (s *SPI) setFlag(op uint, arg uint64) error {
-	if atomic.LoadInt32(&s.closed) != 0 {
-		return io.ErrClosedPipe
-	}
-	s.lock.Lock()
-	defer s.lock.Unlock()
 	if err := s.ioctl(op|0x40000000, unsafe.Pointer(&arg)); err != nil {
 		return err
 	}

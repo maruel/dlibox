@@ -2,16 +2,11 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// piblaster specific code. Not thread safe.
+// piblaster specific code.
 
 package rpi
 
-import (
-	"fmt"
-	"io"
-	"os"
-)
-
+/*
 // IsPiblaster returns true if the pin can be used as a PWM source via
 // piblaster.
 //
@@ -82,3 +77,4 @@ func closePiblaster() error {
 	}
 	return nil
 }
+*/

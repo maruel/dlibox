@@ -2,8 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// BCM283x GPIO GPIO handling. Not thread safe.
-// Requires Raspbian Jessie.
+// BCM283x GPIO GPIO handling.
 
 //go:generate stringer -type Edge
 //go:generate stringer -type Function
@@ -15,11 +14,8 @@
 package rpi
 
 import (
-	"io/ioutil"
 	"os"
 	"reflect"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -27,24 +23,30 @@ import (
 
 // Function specifies the active functionality of a pin. The alternative
 // function is GPIO pin dependent.
+//
+// Values are specified according to Broadcom spec:
 // https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 // page 92.
 type Function uint8
 
-const In Function = 0
-const Out Function = 1
-const Alt0 Function = 4
-const Alt1 Function = 5
-const Alt2 Function = 6
-const Alt3 Function = 7
-const Alt4 Function = 3
-const Alt5 Function = 2
+const (
+	In   Function = 0
+	Out  Function = 1
+	Alt0 Function = 4
+	Alt1 Function = 5
+	Alt2 Function = 6
+	Alt3 Function = 7
+	Alt4 Function = 3
+	Alt5 Function = 2
+)
 
 // Level is the level of the pin: Low or High.
 type Level bool
 
-const Low Level = false
-const High Level = true
+const (
+	Low  Level = false
+	High Level = true
+)
 
 func (l Level) String() string {
 	if l == Low {
@@ -56,40 +58,31 @@ func (l Level) String() string {
 // Edge specifies interrupt based triggering for a pin set as input.
 type Edge uint8
 
-const EdgeNone Edge = 0
-const Rising Edge = 1
-const Falling Edge = 2
-const EdgeBoth Edge = 3
+const (
+	EdgeNone Edge = 0
+	Rising   Edge = 1
+	Falling  Edge = 2
+	EdgeBoth Edge = 3
+)
 
 // Pull specifies the internal pull-up or pull-down for a pin set as input.
 type Pull uint8
 
-const Float Pull = 0
-const Down Pull = 1
-const Up Pull = 2
-const PullNoChange Pull = 3
+const (
+	Float        Pull = 0 // Let the input float
+	Down         Pull = 1 // Apply 50KOhm~60kOhm pull-down
+	Up           Pull = 2 // Apply 50kOhm~65kOhm pull-up
+	PullNoChange Pull = 3 // Do not change the previous pull resistor setting
+)
 
-// Pin defines the mapping by GPIO number (GPIOnn) on BCM238(5|6|7).
+// Pin is a GPIO number (GPIOnn) on BCM238(5|6|7) or can be aliased by bus
+// (P1_xx) or functionality (e.g. SPI0_xx).
 //
-// The pins function can be affected by device overlays as defined in
-// /boot/config.txt. The full documentation of overlays is at
-// https://github.com/raspberrypi/firmware/blob/master/boot/overlays/README
-// and https://www.raspberrypi.org/documentation/configuration/device-tree.md
-//
-// http://elinux.org/RPi_BCM2835_GPIOs is also useful to learn about the
-// various mapping available at the hardware level. This page was created from
+// As defined at
 // https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
-// page 102.
-//
-// https://www.raspberrypi.org/documentation/hardware/raspberrypi/README.md
+// page 102 and 103.
 type Pin uint8
 
-// Pin definition as per BCM238(5|6|7).
-//
-// The comments about P1_xx and GPIO functionality are the default position on
-// Raspberry Pi 2 and 3, along their most common functionality.
-//
-// Also list the internal pull resistor at power down.
 const (
 	INVALID Pin = 255 //
 	GROUND  Pin = 254 // Connected to Ground
@@ -99,7 +92,7 @@ const (
 	GPIO1   Pin = 1   // High,  P1_28, I2C_SCL0
 	GPIO2   Pin = 2   // High,  P1_3,  I2C_SDA1
 	GPIO3   Pin = 3   // High,  P1_5,  I2C_SCL1
-	GPIO4   Pin = 4   // High,  P1_7,  GPCLK0 / piblaster
+	GPIO4   Pin = 4   // High,  P1_7,  GPCLK0
 	GPIO5   Pin = 5   // High,  P1_29, GPCLK1
 	GPIO6   Pin = 6   // High,  P1_31, GPCLK2
 	GPIO7   Pin = 7   // High,  P1_26, SPI0_CE1
@@ -112,17 +105,17 @@ const (
 	GPIO14  Pin = 14  // Low,   P1_8,  UART_TXD0, UART_TXD1
 	GPIO15  Pin = 15  // Low,   P1_10, UART_RXD0, UART_RXD1
 	GPIO16  Pin = 16  // Low,   P1_36
-	GPIO17  Pin = 17  // Low,   P1_11, SPI1_CE1, IR_IN / piblaster
-	GPIO18  Pin = 18  // Low,   P1_12, IR_OUT / piblaster
+	GPIO17  Pin = 17  // Low,   P1_11, SPI1_CE1, IR_IN
+	GPIO18  Pin = 18  // Low,   P1_12, IR_OUT
 	GPIO19  Pin = 19  // Low,   P1_35
 	GPIO20  Pin = 20  // Low,   P1_38
-	GPIO21  Pin = 21  // Low,   P1_40, piblaster
-	GPIO22  Pin = 22  // Low,   P1_15, piblaster
-	GPIO23  Pin = 23  // Low,   P1_16, piblaster
-	GPIO24  Pin = 24  // Low,   P1_18, piblaster
-	GPIO25  Pin = 25  // Low,   P1_22, piblaster
+	GPIO21  Pin = 21  // Low,   P1_40
+	GPIO22  Pin = 22  // Low,   P1_15
+	GPIO23  Pin = 23  // Low,   P1_16
+	GPIO24  Pin = 24  // Low,   P1_18
+	GPIO25  Pin = 25  // Low,   P1_22
 	GPIO26  Pin = 26  // Low,   P1_37
-	GPIO27  Pin = 27  // Low,   P1_13, piblaster
+	GPIO27  Pin = 27  // Low,   P1_13
 	GPIO28  Pin = 28  // Float, Not connected, SDA0, PCM_CLK
 	GPIO29  Pin = 29  // Float, Not connected, SCL0, PCM_FS
 	GPIO30  Pin = 30  // Low,   Not connected, PCM_DIN, UART_CTS0, UARTS_CTS1
@@ -140,72 +133,19 @@ const (
 	GPIO42  Pin = 42  // Low,   Not connected, GPCLK1, SPI2_CLK, UART_RTS1
 	GPIO43  Pin = 43  // Low,   Not connected, GPCLK2, SPI2_CE0, UART_CTS1
 	GPIO44  Pin = 44  // Float, Not connected, GPCLK1, I2C_SDA0, I2C_SDA1, SPI2_CE1
-	GPIO45  Pin = 45  // Float, Not connected, PWM1_OUT, I2C_SCL0, I2C_SCL1, SPI2_CE2
-	GPIO46  Pin = 46  // High,  Not connected
-	GPIO47  Pin = 47  // High,  Not connected
-	GPIO48  Pin = 48  // High,  Not connected
-	GPIO49  Pin = 49  // High,  Not connected
-	GPIO50  Pin = 50  // High,  Not connected
-	GPIO51  Pin = 51  // High,  Not connected
-	GPIO52  Pin = 52  // High,  Not connected
-	GPIO53  Pin = 53  // High,  Not connected
+	GPIO45  Pin = 45  // Float, Audio Left, PWM1_OUT, I2C_SCL0, I2C_SCL1, SPI2_CE2
+	GPIO46  Pin = 46  // High,  HDMI hotplug detect
+	GPIO47  Pin = 47  // High,  SDCard
+	GPIO48  Pin = 48  // High,  SDCard
+	GPIO49  Pin = 49  // High,  SDCard
+	GPIO50  Pin = 50  // High,  SDCard
+	GPIO51  Pin = 51  // High,  SDCard
+	GPIO52  Pin = 52  // High,  SDCard
+	GPIO53  Pin = 53  // High,  SDCard
 )
 
-// Pin as connect on the 40 pins extention header.
-//
-// Schematics are useful to know what is connected to what:
-// https://www.raspberrypi.org/documentation/hardware/raspberrypi/schematics/README.md
-//
-// The actual pin mapping depends on the board revision! The values are set as
-// the default for the 40 pins header on Raspberry Pi 2 and Raspberry Pi 3.
-//
-// TODO(maruel): Update based on the running version.
-//
-// P1 is also known as J8.
-var (
-	P1_1  Pin = V3_3   // 3.3 volt; max 30mA
-	P1_2  Pin = V5     // 5 volt (after filtering)
-	P1_3  Pin = GPIO2  // I2C_SDA1
-	P1_4  Pin = V5     //
-	P1_5  Pin = GPIO3  // I2C_SCL1
-	P1_6  Pin = GROUND //
-	P1_7  Pin = GPIO4  // GPCLK0 / piblaster
-	P1_8  Pin = GPIO14 // UART_TXD1
-	P1_9  Pin = GROUND //
-	P1_10 Pin = GPIO15 // UART_RXD1
-	P1_11 Pin = GPIO17 // IR_IN / piblaster
-	P1_12 Pin = GPIO18 // IR_OUT / piblaster
-	P1_13 Pin = GPIO27 // piblaster
-	P1_14 Pin = GROUND //
-	P1_15 Pin = GPIO22 // piblaster
-	P1_16 Pin = GPIO23 // piblaster
-	P1_17 Pin = V3_3   //
-	P1_18 Pin = GPIO24 // piblaster
-	P1_19 Pin = GPIO10 // SPI0_MOSI
-	P1_20 Pin = GROUND //
-	P1_21 Pin = GPIO9  // SPI0_MISO
-	P1_22 Pin = GPIO25 // piblaster
-	P1_23 Pin = GPIO11 // SPI0_CLK
-	P1_24 Pin = GPIO8  // SPI0_CE0
-	P1_25 Pin = GROUND //
-	P1_26 Pin = GPIO7  // SPI0_CE1
-	P1_27 Pin = GPIO0  // I2C_SDA0 used to probe for HAT EEPROM, see https://github.com/raspberrypi/hats
-	P1_28 Pin = GPIO1  // I2C_SCL0
-	P1_29 Pin = GPIO5  // GPCLK1
-	P1_30 Pin = GROUND //
-	P1_31 Pin = GPIO6  // GPCLK2
-	P1_32 Pin = GPIO12 // PWM0_OUT
-	P1_33 Pin = GPIO13 // PWM1_OUT
-	P1_34 Pin = GROUND //
-	P1_35 Pin = GPIO19 // SPI1_MISO
-	P1_36 Pin = GPIO16 // SPI1_CE2
-	P1_37 Pin = GPIO26 //
-	P1_38 Pin = GPIO20 // SPI1_MOSI
-	P1_39 Pin = GROUND //
-	P1_40 Pin = GPIO21 // SPI1_CLK
-)
-
-// Special functions. The values are probed at runtime.
+// Special functions that can be assigned to a GPIO. The values are probed and
+// set at runtime. Changing the value of the variables has no effect.
 var (
 	GPCLK0    Pin = INVALID // GPIO4, GPIO20, GPIO32, GPIO34 (also named GPIO_GCLK)
 	GPCLK1    Pin = INVALID // GPIO5, GPIO21
@@ -214,8 +154,8 @@ var (
 	I2C_SDA0  Pin = INVALID // GPIO0, GPIO29, GPIO44
 	I2C_SCL1  Pin = INVALID // GPIO3, GPIO45
 	I2C_SDA1  Pin = INVALID // GPIO2, GPIO44
-	IR_IN     Pin = INVALID //
-	IR_OUT    Pin = INVALID //
+	IR_IN     Pin = INVALID // (any GPIO)
+	IR_OUT    Pin = INVALID // (any GPIO)
 	PCM_CLK   Pin = INVALID // GPIO18, GPIO28 (I2S)
 	PCM_FS    Pin = INVALID // GPIO19, GPIO29
 	PCM_DIN   Pin = INVALID // GPIO20, GPIO30
@@ -255,14 +195,6 @@ func (p Pin) Function() Function {
 	return Function((gpioMemory32[p/10] >> ((p % 10) * 3)) & 7)
 }
 
-// IsConnected returns true if the pin is connected (not floating).
-//
-// TODO(maruel): This uses an internal table, need to populate for rPi1 and
-// rPi2.
-func (p Pin) IsConnected() bool {
-	return p <= GPIO27 || p == GPIO40 || p == GPIO41
-}
-
 // IsClock returns true if the pin is owned an output clock.
 func (p Pin) IsClock() bool {
 	// https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
@@ -279,15 +211,6 @@ func (p Pin) IsClock() bool {
 }
 
 // IsI2C returns true if the pin is owned by the I2C driver.
-//
-// I2C_SDA1&I2C_SCL1 can be enabled with dtparam=i2c=on or
-// dtoverlay=i2c1-bcm2708, exposed as /dev/i2c-1
-//
-// I2C_SDA0&I2C_SCL0 are enabled on GPIO0 and GPIO1 at boot, the firmware
-// probe for an HAT EEPROM on these pins. https://github.com/raspberrypi/hats
-//
-// I2C_SDA0&I2C_SCL0 can be enabled with dtparam=i2c_vc=on (?) or
-// dtoverlay=i2c0-bcm2708. Exposed as /dev/i2c-0.
 func (p Pin) IsI2C() bool {
 	switch p {
 	case INVALID:
@@ -300,9 +223,6 @@ func (p Pin) IsI2C() bool {
 }
 
 // IsI2S returns true if the pin is owned by the I2S driver.
-//
-// Can be enabled with dtparam=i2s=on but can be used directly via the
-// registers too.
 func (p Pin) IsI2S() bool {
 	switch p {
 	case INVALID:
@@ -315,11 +235,6 @@ func (p Pin) IsI2S() bool {
 }
 
 // IsIR returns true if the pin is owned by the LIRC driver.
-//
-// Needs to be enabled with dtoverlay=lirc-rpi
-// Exposed as /dev/lirc0
-// It's default pins (out=GPIO17 & in=GPIO18) clashes with SPI1, so remap with:
-// gpio_out_pin=NN,gpio_in_pin=NN
 func (p Pin) IsIR() bool {
 	switch p {
 	case INVALID:
@@ -333,9 +248,6 @@ func (p Pin) IsIR() bool {
 
 // IsPWM returns true if the pin is owned by the PWM driver. By default used
 // for audio output.
-//
-// Configured by default with dtparam=audio=on (as audio, not as general
-// purpose PWM)
 func (p Pin) IsPWM() bool {
 	switch p {
 	case INVALID:
@@ -348,14 +260,6 @@ func (p Pin) IsPWM() bool {
 }
 
 // IsSPI returns true if the pin is owned by the SPI driver.
-//
-// Needs to be enabled with dtparam=spi=on, with one per CE: /dev/spidev0.0 and
-// /dev/spidev0.1.
-// SPI1 can be enabled with: dtoverlay=spi1-1cs
-// On rPi3, this requires to also disable bluetooth with: dtoverlay=pi3-disable-bt
-//
-// The bluetooth UART needs to be disabled too with:
-//     sudo systemctl disable hciuart
 func (p Pin) IsSPI() bool {
 	switch p {
 	case INVALID:
@@ -368,18 +272,6 @@ func (p Pin) IsSPI() bool {
 }
 
 // IsUART returns true if the pin is owned by the UART driver.
-//
-// On Rasberry Pi 1 and 2, UART0 is used.
-// On Raspberry Pi 3, UART0 is connected to bluetooth so the console is
-// connected to UART1 instead.
-// Bluetooth can be disabled with dtoverlay=pi3-disable-bt; this also reverts
-// to use UART0 and not UART1.
-//
-// The bluetooth UART needs to be disabled too with:
-//     sudo systemctl disable hciuart
-//
-// UART0 can be disabled with: dtparam=uart0=off
-// UART1 can be enabled with: dtoverlay=uart1
 func (p Pin) IsUART() bool {
 	switch p {
 	case INVALID:
@@ -478,6 +370,7 @@ func (p Pin) setFunction(f Function) {
 	gpioMemory32[off] = (gpioMemory32[off] &^ (7 << shift)) | (uint32(f) << shift)
 }
 
+/*
 // Close the handle implicitly open by either SetPinPWM or ReleasePinPWM.
 //
 // It's not required to call it. It doesn't reset the GPIO pin either.
@@ -489,6 +382,7 @@ func Close() error {
 	}
 	return err2
 }
+*/
 
 //
 
@@ -605,10 +499,6 @@ func setIfAlt(p Pin, special0 *Pin, special1 *Pin, special2 *Pin, special3 *Pin,
 }
 
 func init() {
-	if max := maxCPUSpeed(); max != 0 {
-		sleep160cycles = time.Second * 160 / time.Duration(max)
-	}
-
 	gpioMemory8, globalError = openGPIOMem()
 	if globalError != nil {
 		return
@@ -661,30 +551,6 @@ func init() {
 	// GPIO46-GPIO53 do not have interesting alternate function.
 
 	IR_IN, IR_OUT = getLIRCPins()
-
-	// TODO(maruel): if Version() == 1 { /* Update P1_xx variables */ }
-}
-
-func getLIRCPins() (Pin, Pin) {
-	// This is configured in /boot/config.txt as:
-	// dtoverlay=gpio_in_pin=23,gpio_out_pin=22
-	bytes, err := ioutil.ReadFile("/sys/module/lirc_rpi/parameters/gpio_in_pin")
-	if err != nil || len(bytes) == 0 {
-		return INVALID, INVALID
-	}
-	in, err := strconv.Atoi(strings.TrimRight(string(bytes), "\n"))
-	if err != nil {
-		return INVALID, INVALID
-	}
-	bytes, err = ioutil.ReadFile("/sys/module/lirc_rpi/parameters/gpio_out_pin")
-	if err != nil || len(bytes) == 0 {
-		return INVALID, INVALID
-	}
-	out, err := strconv.Atoi(strings.TrimRight(string(bytes), "\n"))
-	if err != nil {
-		return INVALID, INVALID
-	}
-	return Pin(in), Pin(out)
 }
 
 func openGPIOMem() ([]uint8, error) {

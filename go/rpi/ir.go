@@ -8,6 +8,7 @@ package rpi
 
 import (
 	"bufio"
+	"io/ioutil"
 	"net"
 	"strconv"
 	"strings"
@@ -19,30 +20,7 @@ type IR struct {
 	r *bufio.Reader
 }
 
-// MakeIR returns a IR receiver.
-//
-// Returns nil on failure.
-//
-// You can try to 'irrecord -a -d /var/run/lirc/lircd ~/lircd.conf' and identify
-// a few key, then 'grep -R '<hex value>' /usr/share/lirc/remotes/' on one of
-// the key you found. Then copy the file found or your generated config file to
-// /etc/lirc/lircd.conf.
-//
-// To debug, use either 'irw' or 'nc -U /var/run/lirc/lircd' and use your IR
-// remote to test if lirc is correctly configured.
-//
-// http://alexba.in/blog/2013/01/06/setting-up-lirc-on-the-raspberrypi/ is a
-// good starter guide. Normally, add the following to your /boot/config.txt:
-//
-//    dtoverlay=lirc-rpi,gpio_in_pin=18,gpio_out_pin=17,gpio_in_pull=down
-//
-// See https://github.com/raspberrypi/firmware/blob/master/boot/overlays/README
-//
-// Soure at:
-// https://github.com/raspberrypi/linux/blob/rpi-4.8.y/drivers/staging/media/lirc/lirc_rpi.c
-//
-// Someone made a version that supports multiple devices:
-// https://github.com/bengtmartensson/lirc_rpi
+// MakeIR returns a IR receiver. Returns nil on failure.
 func MakeIR() *IR {
 	c, err := net.Dial("unix", "/var/run/lirc/lircd")
 	if err != nil {
@@ -51,6 +29,8 @@ func MakeIR() *IR {
 	return &IR{c, bufio.NewReader(c)}
 }
 
+// Close closes the socket to lirc. It is not a requirement to close before
+// process termination.
 func (r *IR) Close() error {
 	err := r.c.Close()
 	r.c = nil
@@ -61,13 +41,6 @@ func (r *IR) Close() error {
 // Next blocks until the next IR keypress is received.
 //
 // Returns the key and the repeat count.
-//
-// Use one of the following to list all the valid key names:
-//
-//     irrecord -l
-//     grep -hoER '(BTN|KEY)_\w+' /usr/share/lirc/remotes | sort | uniq | less
-//
-// http://www.lirc.org/api-docs/html/input__map_8inc_source.html
 func (r *IR) Next() (string, int, error) {
 	// TODO(maruel): handle when isPrefix is set.
 	line, _, err := r.r.ReadLine()
@@ -86,4 +59,30 @@ func (r *IR) Next() (string, int, error) {
 		return "", 0, nil
 	}
 	return parts[3], i, nil
+}
+
+//
+
+// getLIRCPins queries the kernel module to determine which GPIO pins are taken
+// by the driver.
+func getLIRCPins() (Pin, Pin) {
+	// This is configured in /boot/config.txt as:
+	// dtoverlay=gpio_in_pin=23,gpio_out_pin=22
+	bytes, err := ioutil.ReadFile("/sys/module/lirc_rpi/parameters/gpio_in_pin")
+	if err != nil || len(bytes) == 0 {
+		return INVALID, INVALID
+	}
+	in, err := strconv.Atoi(strings.TrimRight(string(bytes), "\n"))
+	if err != nil {
+		return INVALID, INVALID
+	}
+	bytes, err = ioutil.ReadFile("/sys/module/lirc_rpi/parameters/gpio_out_pin")
+	if err != nil || len(bytes) == 0 {
+		return INVALID, INVALID
+	}
+	out, err := strconv.Atoi(strings.TrimRight(string(bytes), "\n"))
+	if err != nil {
+		return INVALID, INVALID
+	}
+	return Pin(in), Pin(out)
 }

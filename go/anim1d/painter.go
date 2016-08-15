@@ -92,8 +92,8 @@ const d30Hz = 33333333 * time.Nanosecond
 func getDelay(s Strip) time.Duration {
 	delay := s.MinDelay()
 	defaultHz := d60Hz
-	if rpi.Version() == 1 {
-		// Use 30Hz on a rPi1 because it is too slow.
+	if rpi.MaxSpeed < 900000 {
+		// Use 30Hz on slower devices because it is too slow.
 		defaultHz = d30Hz
 	}
 	if delay < defaultHz {
