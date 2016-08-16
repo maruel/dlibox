@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// rpi contains Raspberry Pi and BCM238x interfacing code.
+// Package rpi contains Raspberry Pi and BCM238x interfacing code.
 //
 // Requires Raspbian Jessie.
 //
@@ -15,7 +15,7 @@
 //
 // The pins function can be affected by device overlays as defined in
 // /boot/config.txt. The full documentation of overlays is at
-// https://github.com/raspberrypi/firmware/blob/master/boot/overlays/README
+// https://github.com/raspberrypi/firmware/blob/master/boot/overlays/README.
 // Documentation for the file format at
 // https://www.raspberrypi.org/documentation/configuration/device-tree.md#part3
 //

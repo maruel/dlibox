@@ -6,7 +6,6 @@ package anim1d
 
 import (
 	"encoding/json"
-	"io"
 	"log"
 	"sync"
 	"time"
@@ -33,7 +32,6 @@ type Pattern interface {
 
 // Strip is an 1D output device.
 type Strip interface {
-	io.Closer
 	// Write writes a new frame.
 	Write(pixels Frame) error
 	// MinDelay returns the minimum delay between each draw refresh.
@@ -64,7 +62,8 @@ func (p *Painter) SetPattern(s string) error {
 func (p *Painter) Close() error {
 	p.c <- nil
 	p.wg.Wait()
-	return p.s.Close()
+	p.c = nil
+	return nil
 }
 
 // MakePainter returns a Painter that manages updating the Patterns to the

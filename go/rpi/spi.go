@@ -4,6 +4,9 @@
 
 // Feel free to copy-paste this file along the license when you need a quick
 // and dirty SPI client.
+//
+// Keep in mind for quick and dirty write-only operation over SPI, you can do:
+//   cat file > /dev/spidev0.0
 
 package rpi
 
@@ -15,13 +18,14 @@ import (
 	"unsafe"
 )
 
-// SPI is a SPI writer.
+// SPI is an open SPI bus.
 type SPI struct {
 	f *os.File
 }
 
-// MakeSPI is to be used when testing directly to the bus bypassing the DotStar
-// controller.
+// MakeSPI opens an SPI bus via its sysfs interface as described at
+// https://www.kernel.org/doc/Documentation/spi/spidev. It is not Raspberry Pi
+// specific.
 //
 // `bus` should normally be 0, unless SPI1 was manually enabled.
 //
@@ -89,11 +93,11 @@ func (s *SPI) Read(b []byte) (int, error) {
 
 // Tx sends and receives data simultaneously.
 func (s *SPI) Tx(w, r []byte) error {
-	p := payload{
-		tx:     uint64(uintptr(unsafe.Pointer(&w[0]))),
-		rx:     uint64(uintptr(unsafe.Pointer(&r[0]))),
-		length: uint32(len(w)),
-		bits:   8,
+	p := spiIOCTransfer{
+		tx:          uint64(uintptr(unsafe.Pointer(&w[0]))),
+		rx:          uint64(uintptr(unsafe.Pointer(&r[0]))),
+		length:      uint32(len(w)),
+		bitsPerWord: 8,
 	}
 	return s.ioctl(spiIOCTx|0x40000000, unsafe.Pointer(&p))
 }
@@ -101,6 +105,9 @@ func (s *SPI) Tx(w, r []byte) error {
 // Private details.
 
 // spidev driver IOCTL control codes.
+//
+// Constants and structure definition can be found at
+// /usr/include/linux/spi/spidev.h.
 const (
 	spiIOCMode        = 0x16B01
 	spiIOCBitsPerWord = 0x16B03
@@ -108,17 +115,17 @@ const (
 	spiIOCTx          = 0x206B00
 )
 
-type payload struct {
-	tx       uint64
-	rx       uint64
-	length   uint32
-	speed    uint32
-	delay    uint16
-	bits     uint8
-	csChange uint8
-	txNBits  uint8
-	rxNBits  uint8
-	pad      uint16
+type spiIOCTransfer struct {
+	tx          uint64 // Pointer to byte slice
+	rx          uint64 // Pointer to byte slice
+	length      uint32
+	speedHz     uint32
+	delayUsecs  uint16
+	bitsPerWord uint8
+	csChange    uint8
+	txNBits     uint8
+	rxNBits     uint8
+	pad         uint16
 }
 
 func (s *SPI) setFlag(op uint, arg uint64) error {

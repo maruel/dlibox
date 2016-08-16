@@ -21,6 +21,7 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/apa102"
+	"github.com/maruel/dlibox/go/rpi"
 	"github.com/maruel/interrupt"
 )
 
@@ -79,10 +80,12 @@ func mainImpl() error {
 		s = apa102.MakeScreen()
 		properties = append(properties, "fake=1")
 	} else {
-		s, err = apa102.MakeAPA102(config.APA102.SPIspeed)
+		//
+		spi, err := rpi.MakeSPI(0, 0, config.APA102.SPIspeed)
 		if err != nil {
 			return err
 		}
+		s = apa102.MakeAPA102(spi)
 		properties = append(properties, fmt.Sprintf("APA102=%d", config.APA102.NumberLights))
 	}
 

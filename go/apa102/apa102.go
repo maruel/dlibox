@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/rpi"
 	"github.com/maruel/temperature"
 )
 
@@ -139,14 +138,8 @@ func raster(pixels anim1d.Frame, buf *[]byte, maxR, maxG, maxB uint16) {
 type APA102 struct {
 	Intensity   uint8  // Set an intensity between 0 (off) and 255 (full brightness).
 	Temperature uint16 // In Kelvin.
-	w           io.WriteCloser
+	w           io.Writer
 	buf         []byte
-}
-
-func (a *APA102) Close() error {
-	w := a.w
-	a.w = nil
-	return w.Close()
 }
 
 func (a *APA102) Write(pixels anim1d.Frame) error {
@@ -168,18 +161,13 @@ func (a *APA102) MinDelay() time.Duration {
 
 // MakeAPA102 returns a strip that communicates over SPI to APA102 LEDs.
 //
-// This is generally what you want once the hardware is connected.
-func MakeAPA102(speed int64) (*APA102, error) {
-	// The speed must be high, as there's 32 bits sent per LED, creating a
-	// staggered effect. See
-	// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
-	w, err := rpi.MakeSPI(0, 0, speed)
-	if err != nil {
-		return nil, err
-	}
+// w should be a *SPI as returned by rpi.MakeSPI. The speed must be high, as
+// there's 32 bits sent per LED, creating a staggered effect. See
+// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
+func MakeAPA102(w io.Writer) *APA102 {
 	return &APA102{
 		Intensity:   255,
 		Temperature: 6500,
 		w:           w,
-	}, err
+	}
 }

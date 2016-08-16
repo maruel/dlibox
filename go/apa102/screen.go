@@ -20,10 +20,6 @@ type screenStrip struct {
 	buf bytes.Buffer
 }
 
-func (s *screenStrip) Close() error {
-	return nil
-}
-
 func (s *screenStrip) Write(pixels anim1d.Frame) error {
 	// This code is designed to minimize the amount of memory allocated per call.
 	s.buf.Reset()
