@@ -9,10 +9,15 @@
 #
 # Since the hostname is based on the serial number of the CPU with leading zeros
 # trimmed off, it is a constant yet unique value.
+#
+# Set a short motd.
 
 set -eu
+cd "$(dirname $0)"
 
-SERIAL=$(cat /proc/cpuinfo | grep Serial | cut -d ":" -f 2 | sed 's/^ 0\+//')
-HOST=dlibox-$SERIAL
-echo "New hostname is: $HOST"
+HOST="$(./gen_hostname.sh)"
+echo "- New hostname is: $HOST"
 raspi-config nonint do_hostname $HOST
+
+echo "- Changing MOTD"
+echo "Welcome to $HOST" > /etc/motd

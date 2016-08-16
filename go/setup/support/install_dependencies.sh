@@ -51,11 +51,11 @@ apt-get -y install mosquitto
 
 # http://www.openhab.org/getting-started/downloads.html
 # TODO(maruel): Update.
-OPENHAB_DISTRO=distribution-1.8.3
-curl -O https://bintray.com/artifact/download/openhab/bin/$OPENHAB_DISTRO-runtime.zip
-unzip OPENHAB_DISTRO-runtime.zip
-rm OPENHAB_DISTRO-runtime.zip
-https://bintray.com/artifact/download/openhab/bin/$OPENHAB_DISTRO-addons.zip
-unzip OPENHAB_DISTRO-addons.zip
-rm OPENHAB_DISTRO-addons.zip
+#OPENHAB_DISTRO=distribution-1.8.3
+#curl -O https://bintray.com/artifact/download/openhab/bin/$OPENHAB_DISTRO-runtime.zip
+#unzip $OPENHAB_DISTRO-runtime.zip
+#rm $OPENHAB_DISTRO-runtime.zip
+#curl -O https://bintray.com/artifact/download/openhab/bin/$OPENHAB_DISTRO-addons.zip
+#unzip $OPENHAB_DISTRO-addons.zip
+#rm $OPENHAB_DISTRO-addons.zip
 # TODO(maruel): Enable and configure.

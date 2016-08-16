@@ -6,6 +6,9 @@
 # Make apt-get update & upgrade run on a scheduled basis.
 
 set -eu
+cd "$(dirname $0)"
+
+HOST="$(./gen_hostname.sh)"
 
 # This runs through /etc/cron.daily/apt. More details at
 # https://wiki.debian.org/UnattendedUpgrades
