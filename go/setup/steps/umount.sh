@@ -16,6 +16,8 @@ if [ "$#" -ne 1 ]; then
 fi
 
 
-for i in $1?; do
-  /usr/bin/udisksctl unmount -f -b $i || true
+for i in $1*; do
+  if [ "$i" != "$1" ]; then
+    /usr/bin/udisksctl unmount -f -b $i || true
+  fi
 done

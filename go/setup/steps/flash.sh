@@ -53,6 +53,8 @@ echo "- Reloading partition table"
 sudo partprobe $SDCARD
 sync
 sleep 1
-while [ ! -b ${SDCARD}2 ]; do
+# Needs 'p' for /dev/mmcblkN but not for /dev/sdX
+while [ ! -b ${SDCARD}*2 ]; do
+  echo " (still waiting for partition to show up)"
   sleep 1
 done

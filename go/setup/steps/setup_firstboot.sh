@@ -72,7 +72,7 @@ sudo cp $HOME/.ssh/authorized_keys $ROOT_PATH/home/pi/.ssh/authorized_keys
 # pi(1000).
 sudo chown -R 1000:1000 $ROOT_PATH/home/pi/.ssh
 # Force key based authentication since the password is known.
-sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' $ROOT_PATH/etc/ssh/sshd_config
+sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' $ROOT_PATH/etc/ssh/sshd_config
 
 
 echo "- Wifi"
@@ -81,7 +81,11 @@ SSID="$2"
 # TODO(maruel): When not found, ask the user for the password. It's annoying to
 # test since the file is only readable by root.
 # TODO(maruel): Ensure it works with SSID with whitespace/emoji in their name.
-WIFI_PWD="$(sudo grep -oP '(?<=psk=).+' /etc/NetworkManager/system-connections/$SSID)"
+if [ ! -f "/etc/NetworkManager/system-connections/$SSID" ]; then
+  read -r -p "Password for SSID $SSID: " WIFI_PWD
+else
+  WIFI_PWD="$(sudo grep -oP '(?<=psk=).+' /etc/NetworkManager/system-connections/$SSID)"
+fi
 sudo tee --append $ROOT_PATH/etc/wpa_supplicant/wpa_supplicant.conf > /dev/null <<EOF
 
 network={

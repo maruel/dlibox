@@ -27,9 +27,10 @@ SSID="$2"
 
 echo "- Mounting"
 ./umount.sh $SDCARD  &>/dev/null
-BOOT=$(/usr/bin/udisksctl mount -b ${SDCARD}1 | sed 's/.\+ at \(.\+\)\+\./\1/')
+# Needs 'p' for /dev/mmcblkN but not for /dev/sdX
+BOOT=$(LANG=C /usr/bin/udisksctl mount -b ${SDCARD}*1 | sed 's/.\+ at \(.\+\)\+\./\1/')
 echo "- /boot mounted as $BOOT"
-ROOT=$(/usr/bin/udisksctl mount -b ${SDCARD}2 | sed 's/.\+ at \(.\+\)\+\./\1/')
+ROOT=$(LANG=C /usr/bin/udisksctl mount -b ${SDCARD}*2 | sed 's/.\+ at \(.\+\)\+\./\1/')
 echo "- / mounted as $ROOT"
 
 
