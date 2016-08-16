@@ -9,9 +9,12 @@ set -eu
 
 
 echo "- Installing git"
-# Defer apt-get update & upgrade for later. It'll be done via a nightly cron
-# job. Doing it now takes several minutes and the user is eagerly waiting for
-# the lights to come up!
+# apt-get update must be done right away, since the old packages are likely not
+# on the mirrors anymore.
+# Defer apt-get upgrade for later. It'll be done via a nightly cron job. Doing
+# it now takes several minutes and the user is eagerly waiting for the lights to
+# come up!
+apt-get update
 apt-get install -y git
 
 
