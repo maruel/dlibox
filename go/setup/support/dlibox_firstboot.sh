@@ -31,7 +31,7 @@ EOF
 echo "- Installing as user - Go and dlibox"
 sudo -i -u pi /bin/sh <<'EOF'
 cd
-curl -S https://storage.googleapis.com/golang/go1.6.3.linux-armv6l.tar.gz | tar xz
+curl -S https://storage.googleapis.com/golang/go1.7.linux-armv6l.tar.gz | tar xz
 go get -v github.com/maruel/dlibox/go/cmd/dlibox
 EOF
 
