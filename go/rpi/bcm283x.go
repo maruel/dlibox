@@ -195,8 +195,8 @@ func (p Pin) Function() Function {
 	return Function((gpioMemory32[p/10] >> ((p % 10) * 3)) & 7)
 }
 
-// IsClock returns true if the pin is owned an output clock.
-func (p Pin) IsClock() bool {
+// isClock returns true if the pin is owned an output clock.
+func (p Pin) isClock() bool {
 	// https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 	// Page 105.
 	// TODO(maruel): Add code to generate clocks.
@@ -210,8 +210,8 @@ func (p Pin) IsClock() bool {
 	}
 }
 
-// IsI2C returns true if the pin is owned by the I2C driver.
-func (p Pin) IsI2C() bool {
+// isI2C returns true if the pin is owned by the I2C driver.
+func (p Pin) isI2C() bool {
 	switch p {
 	case INVALID:
 		return false
@@ -222,8 +222,8 @@ func (p Pin) IsI2C() bool {
 	}
 }
 
-// IsI2S returns true if the pin is owned by the I2S driver.
-func (p Pin) IsI2S() bool {
+// isI2S returns true if the pin is owned by the I2S driver.
+func (p Pin) isI2S() bool {
 	switch p {
 	case INVALID:
 		return false
@@ -234,8 +234,8 @@ func (p Pin) IsI2S() bool {
 	}
 }
 
-// IsIR returns true if the pin is owned by the LIRC driver.
-func (p Pin) IsIR() bool {
+// isIR returns true if the pin is owned by the LIRC driver.
+func (p Pin) isIR() bool {
 	switch p {
 	case INVALID:
 		return false
@@ -246,9 +246,9 @@ func (p Pin) IsIR() bool {
 	}
 }
 
-// IsPWM returns true if the pin is owned by the PWM driver. By default used
+// isPWM returns true if the pin is owned by the PWM driver. By default used
 // for audio output.
-func (p Pin) IsPWM() bool {
+func (p Pin) isPWM() bool {
 	switch p {
 	case INVALID:
 		return false
@@ -259,8 +259,8 @@ func (p Pin) IsPWM() bool {
 	}
 }
 
-// IsSPI returns true if the pin is owned by the SPI driver.
-func (p Pin) IsSPI() bool {
+// isSPI returns true if the pin is owned by the SPI driver.
+func (p Pin) isSPI() bool {
 	switch p {
 	case INVALID:
 		return false
@@ -271,8 +271,8 @@ func (p Pin) IsSPI() bool {
 	}
 }
 
-// IsUART returns true if the pin is owned by the UART driver.
-func (p Pin) IsUART() bool {
+// isUART returns true if the pin is owned by the UART driver.
+func (p Pin) isUART() bool {
 	switch p {
 	case INVALID:
 		return false
