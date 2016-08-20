@@ -5,10 +5,9 @@
 package apa102
 
 import (
+	"errors"
 	"io"
-	"time"
 
-	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/temperature"
 )
 
@@ -70,9 +69,9 @@ func ensureRampCached(max uint16) *rampTable {
 }
 
 // Serializes converts a buffer of colors to the APA102 SPI format.
-func raster(pixels anim1d.Frame, buf *[]byte, maxR, maxG, maxB uint16) {
+func raster(pixels []byte, buf *[]byte, maxR, maxG, maxB uint16) {
 	// https://cpldcpu.files.wordpress.com/2014/08/apa-102c-super-led-specifications-2014-en.pdf
-	numLights := len(pixels)
+	numLights := len(pixels) / 3
 	// End frames are needed to be able to push enough SPI clock signals due to
 	// internal half-delay of data signal from each individual LED. See
 	// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
@@ -93,7 +92,7 @@ func raster(pixels anim1d.Frame, buf *[]byte, maxR, maxG, maxB uint16) {
 
 	// Start frame is all zeros. Just skip it.
 	s := (*buf)[4 : 4+4*numLights]
-	for i, c := range pixels {
+	for i := 0; i < len(pixels)/3; i++ {
 		// Converts a color into the 4 bytes needed to control an APA-102 LED.
 		//
 		// The response as seen by the human eye is very non-linear. The APA-102
@@ -116,9 +115,9 @@ func raster(pixels anim1d.Frame, buf *[]byte, maxR, maxG, maxB uint16) {
 		// Each channel duty cycle ramps from 100% to 1/(31*255) == 1/7905.
 		//
 		// Computes brighness, blue, green, red.
-		r := rampR[c.R]
-		g := rampG[c.G]
-		b := rampB[c.B]
+		r := rampR[pixels[3*i]]
+		g := rampG[pixels[3*i+1]]
+		b := rampB[pixels[3*i+2]]
 		m := r | g | b
 		if m <= 1023 {
 			if m <= 255 {
@@ -135,6 +134,10 @@ func raster(pixels anim1d.Frame, buf *[]byte, maxR, maxG, maxB uint16) {
 	}
 }
 
+// APA102 accepts a stream of raw RGB pixels and converts it to the full
+// dynamic range as supported by APA102.
+//
+// Includes intensity and temperature correction.
 type APA102 struct {
 	Intensity   uint8  // Set an intensity between 0 (off) and 255 (full brightness).
 	Temperature uint16 // In Kelvin.
@@ -142,21 +145,19 @@ type APA102 struct {
 	buf         []byte
 }
 
-func (a *APA102) Write(pixels anim1d.Frame) error {
+// Write accepts a stream of raw RGB pixels and sends it as APA102 encoded
+// stream.
+func (a *APA102) Write(pixels []byte) (int, error) {
+	if len(pixels)%3 != 0 {
+		return 0, errLength
+	}
 	tr, tg, tb := temperature.ToRGB(a.Temperature)
 	r := uint16((uint32(maxOut)*uint32(a.Intensity)*uint32(tr) + 127*127) / 65025)
 	g := uint16((uint32(maxOut)*uint32(a.Intensity)*uint32(tg) + 127*127) / 65025)
 	b := uint16((uint32(maxOut)*uint32(a.Intensity)*uint32(tb) + 127*127) / 65025)
 	raster(pixels, &a.buf, r, g, b)
 	_, err := a.w.Write(a.buf)
-	return err
-}
-
-func (a *APA102) MinDelay() time.Duration {
-	// As per APA102-C spec, it's max refresh rate is 400hz.
-	// https://en.wikipedia.org/wiki/Flicker_fusion_threshold is a recommended
-	// reading.
-	return time.Second / 400
+	return len(pixels), err
 }
 
 // MakeAPA102 returns a strip that communicates over SPI to APA102 LEDs.
@@ -164,6 +165,10 @@ func (a *APA102) MinDelay() time.Duration {
 // w should be a *SPI as returned by rpi.MakeSPI. The speed must be high, as
 // there's 32 bits sent per LED, creating a staggered effect. See
 // https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
+//
+// As per APA102-C spec, it's max refresh rate is 400hz.
+// https://en.wikipedia.org/wiki/Flicker_fusion_threshold is a recommended
+// reading.
 func MakeAPA102(w io.Writer) *APA102 {
 	return &APA102{
 		Intensity:   255,
@@ -171,3 +176,7 @@ func MakeAPA102(w io.Writer) *APA102 {
 		w:           w,
 	}
 }
+
+//
+
+var errLength = errors.New("invalid RGB stream length")

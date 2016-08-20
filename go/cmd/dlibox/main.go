@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -74,10 +75,18 @@ func mainImpl() error {
 	}
 	log.Printf("Config:\n%s", string(b))
 
+	fps := 60
+	if rpi.MaxSpeed < 900000 {
+		// Use 30Hz on slower devices because it is too slow.
+		fps = 30
+	}
+
 	// Output (screen or APA102).
-	var s anim1d.Strip
+	var s io.Writer
 	if *fake {
 		s = apa102.MakeScreen()
+		// Use lower refresh rate too.
+		fps = 30
 		properties = append(properties, "fake=1")
 	} else {
 		//
@@ -95,7 +104,7 @@ func mainImpl() error {
 		// Hardcode to 100 characters when using a terminal output.
 		numLights = 100
 	}
-	p := anim1d.MakePainter(s, numLights)
+	p := anim1d.MakePainter(s, numLights, fps)
 	if err := config.Init(p); err != nil {
 		return err
 	}

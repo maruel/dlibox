@@ -320,8 +320,23 @@ func TestAPA102Empty(t *testing.T) {
 		Temperature: 6500,
 		w:           nopCloser{b},
 	}
-	ut.AssertEqual(t, nil, d.Write([]anim1d.Color{}))
+	n, err := d.Write([]byte{})
+	ut.AssertEqual(t, 0, n)
+	ut.AssertEqual(t, nil, err)
 	ut.AssertEqual(t, []byte{0x0, 0x0, 0x0, 0x0, 0xFF}, b.Bytes())
+}
+
+func TestAPA102Len(t *testing.T) {
+	b := &bytes.Buffer{}
+	d := &APA102{
+		Intensity:   255,
+		Temperature: 6500,
+		w:           nopCloser{b},
+	}
+	n, err := d.Write([]byte{0})
+	ut.AssertEqual(t, 0, n)
+	ut.AssertEqual(t, errLength, err)
+	ut.AssertEqual(t, 0, b.Len())
 }
 
 func TestAPA102(t *testing.T) {
@@ -343,7 +358,9 @@ func TestAPA102(t *testing.T) {
 		{0x00, 0x00, 0x01},
 		{0x00, 0x00, 0x00},
 	}
-	ut.AssertEqual(t, nil, d.Write(colors))
+	n, err := d.Write(colorsToBytes(colors))
+	ut.AssertEqual(t, len(colors)*3, n)
+	ut.AssertEqual(t, nil, err)
 	expected := []byte{
 		0x00, 0x00, 0x00, 0x00,
 		0xFF, 0xFF, 0xFF, 0xFF,
@@ -380,7 +397,9 @@ func TestAPA102Intensity(t *testing.T) {
 		{0x00, 0x00, 0x01},
 		{0x00, 0x00, 0x00},
 	}
-	ut.AssertEqual(t, nil, d.Write(colors))
+	n, err := d.Write(colorsToBytes(colors))
+	ut.AssertEqual(t, len(colors)*3, n)
+	ut.AssertEqual(t, nil, err)
 	expected := []byte{
 		0x00, 0x00, 0x00, 0x00,
 		0xFF, 0x7F, 0x7F, 0x7F,
@@ -411,7 +430,9 @@ func TestAPA102TemperatureWarm(t *testing.T) {
 		{0x01, 0x01, 0x01},
 		{0x00, 0x00, 0x00},
 	}
-	ut.AssertEqual(t, nil, d.Write(colors))
+	n, err := d.Write(colorsToBytes(colors))
+	ut.AssertEqual(t, len(colors)*3, n)
+	ut.AssertEqual(t, nil, err)
 	expected := []byte{
 		0x00, 0x00, 0x00, 0x00,
 		0xFF, 0xCE, 0xE5, 0xFF,
@@ -431,7 +452,9 @@ func TestAPA102Long(t *testing.T) {
 		w:           nopCloser{b},
 	}
 	colors := make(anim1d.Frame, 256)
-	ut.AssertEqual(t, nil, d.Write(colors))
+	n, err := d.Write(colorsToBytes(colors))
+	ut.AssertEqual(t, len(colors)*3, n)
+	ut.AssertEqual(t, nil, err)
 	expected := make([]byte, 4*(256+1)+17)
 	for i := 0; i < 256; i++ {
 		expected[4+4*i] = 0xE1
@@ -450,10 +473,10 @@ func BenchmarkRasterWhite(b *testing.B) {
 	}
 	var buf []byte
 	// Prime the buffer first.
-	raster(pixels, &buf, maxOut, maxOut, maxOut)
+	raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		raster(pixels, &buf, maxOut, maxOut, maxOut)
+		raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
 	}
 }
 
@@ -465,10 +488,10 @@ func BenchmarkRasterDim(b *testing.B) {
 	}
 	var buf []byte
 	// Prime the buffer first.
-	raster(pixels, &buf, maxOut, maxOut, maxOut)
+	raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		raster(pixels, &buf, maxOut, maxOut, maxOut)
+		raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
 	}
 }
 
@@ -476,10 +499,10 @@ func BenchmarkRasterBlack(b *testing.B) {
 	pixels := make(anim1d.Frame, 150)
 	var buf []byte
 	// Prime the buffer first.
-	raster(pixels, &buf, maxOut, maxOut, maxOut)
+	raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		raster(pixels, &buf, maxOut, maxOut, maxOut)
+		raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
 	}
 }
 
@@ -491,4 +514,14 @@ type nopCloser struct {
 
 func (nopCloser) Close() error {
 	return nil
+}
+
+func colorsToBytes(pixels anim1d.Frame) []byte {
+	buf := make([]byte, len(pixels)*3)
+	for i := range pixels {
+		buf[3*i] = pixels[i].R
+		buf[3*i+1] = pixels[i].G
+		buf[3*i+2] = pixels[i].B
+	}
+	return buf
 }

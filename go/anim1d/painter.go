@@ -6,11 +6,11 @@ package anim1d
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/rpi"
 	"github.com/maruel/interrupt"
 )
 
@@ -30,19 +30,12 @@ type Pattern interface {
 	NextFrame(pixels Frame, timeMS uint32)
 }
 
-// Strip is an 1D output device.
-type Strip interface {
-	// Write writes a new frame.
-	Write(pixels Frame) error
-	// MinDelay returns the minimum delay between each draw refresh.
-	MinDelay() time.Duration
-}
-
 // Painter handles the "draw frame, write" loop.
 type Painter struct {
-	s  Strip
-	c  chan Pattern
-	wg sync.WaitGroup
+	s             io.Writer
+	c             chan Pattern
+	wg            sync.WaitGroup
+	frameDuration time.Duration
 }
 
 // SetPattern changes the current pattern to a new one.
@@ -67,9 +60,13 @@ func (p *Painter) Close() error {
 }
 
 // MakePainter returns a Painter that manages updating the Patterns to the
-// Strip.
-func MakePainter(s Strip, numLights int) *Painter {
-	p := &Painter{s: s, c: make(chan Pattern)}
+// strip.
+func MakePainter(s io.Writer, numLights int, fps int) *Painter {
+	p := &Painter{
+		s:             s,
+		c:             make(chan Pattern),
+		frameDuration: time.Second / time.Duration(fps),
+	}
 	// Tripple buffering.
 	cGen := make(chan Frame, 3)
 	cWrite := make(chan Frame, cap(cGen))
@@ -78,28 +75,11 @@ func MakePainter(s Strip, numLights int) *Painter {
 	}
 	p.wg.Add(2)
 	go p.runPattern(cGen, cWrite)
-	go p.runWrite(cGen, cWrite)
+	go p.runWrite(cGen, cWrite, numLights)
 	return p
 }
 
 // Private stuff.
-
-// d60Hz is the duration of one frame at 60Hz.
-const d60Hz = 16666667 * time.Nanosecond
-const d30Hz = 33333333 * time.Nanosecond
-
-func getDelay(s Strip) time.Duration {
-	delay := s.MinDelay()
-	defaultHz := d60Hz
-	if rpi.MaxSpeed < 900000 {
-		// Use 30Hz on slower devices because it is too slow.
-		defaultHz = d30Hz
-	}
-	if delay < defaultHz {
-		delay = defaultHz
-	}
-	return delay
-}
 
 var black = &Color{}
 
@@ -116,7 +96,6 @@ func (p *Painter) runPattern(cGen, cWrite chan Frame) {
 		Transition: TransitionEaseOut,
 	}
 	var since time.Duration
-	delay := getDelay(p.s)
 	for {
 		select {
 		case newPat := <-p.c:
@@ -135,7 +114,7 @@ func (p *Painter) runPattern(cGen, cWrite chan Frame) {
 				pixels[i] = Color{}
 			}
 			ease.NextFrame(pixels, uint32(since/time.Millisecond))
-			since += delay
+			since += p.frameDuration
 			cWrite <- pixels
 
 		case <-interrupt.Channel:
@@ -144,19 +123,25 @@ func (p *Painter) runPattern(cGen, cWrite chan Frame) {
 	}
 }
 
-func (p *Painter) runWrite(cGen, cWrite chan Frame) {
+func (p *Painter) runWrite(cGen, cWrite chan Frame, numLights int) {
 	defer p.wg.Done()
-	delay := getDelay(p.s)
-	tick := time.NewTicker(delay)
+	tick := time.NewTicker(p.frameDuration)
 	defer tick.Stop()
 	var err error
+	buf := make([]byte, numLights*3)
 	for {
 		pixels := <-cWrite
 		if len(pixels) == 0 {
 			return
 		}
 		if err == nil {
-			if err = p.s.Write(pixels); err != nil {
+			// Convert the Frame to the raw RGB stream.
+			for i := range pixels {
+				buf[3*i] = pixels[i].R
+				buf[3*i+1] = pixels[i].G
+				buf[3*i+2] = pixels[i].B
+			}
+			if _, err = p.s.Write(buf); err != nil {
 				log.Printf("Writing failed: %s", err)
 			}
 		}
