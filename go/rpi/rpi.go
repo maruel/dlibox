@@ -8,6 +8,7 @@ package rpi
 
 import (
 	"io/ioutil"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -112,24 +113,33 @@ func (p Pin) IsConnected() bool {
 func init() {
 	// Initialize Version. This function is not futureproof, it will return 0 on
 	// a Raspberry Pi 4 whenever it comes out.
-	i, err := strconv.Atoi(loadCPUInfo()["Revision"])
-	if err == nil {
+	if i, err := strconv.ParseInt(loadCPUInfo()["Revision"], 16, 32); err == nil {
 		// Ignore the overclock bit.
 		i &= 0xFFFFFF
 		if i < 0x20 {
 			Version = 1
 		} else if i == 0xa01041 || i == 0xa21041 {
 			Version = 2
-		} else if i == 0xa02082 {
+		} else if i == 0xa02082 || i == 0xa22082 {
 			Version = 3
+		} else {
+			log.Printf("Unknown hardware version: 0x%x", i)
 		}
+	} else {
+		log.Printf("Failed to read cpu_info: %v", err)
 	}
 
 	if bytes, err := ioutil.ReadFile("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq"); err == nil {
-		if i, err := strconv.ParseInt(string(bytes), 10, 64); err == nil {
-			MaxSpeed = i
+		s := strings.TrimSpace(string(bytes))
+		if i, err := strconv.ParseInt(s, 10, 64); err == nil {
+			// Weirdly, the speed is listed as khz. :(
+			MaxSpeed = i * 1000
 			sleep160cycles = time.Second * 160 / time.Duration(MaxSpeed)
+		} else {
+			log.Printf("Failed to parse scaling_max_freq: %s", s)
 		}
+	} else {
+		log.Printf("Failed to read scaling_max_freq: %v", err)
 	}
 
 	if Version == 1 {
