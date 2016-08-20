@@ -9,12 +9,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 
 	"github.com/maruel/dlibox/go/rpi"
-	"github.com/ziutek/emgo/egroot/src/io"
 )
 
 func read(p rpi.Pin, edge rpi.Edge) {
@@ -35,7 +35,7 @@ func mainImpl() error {
 	flag.Parse()
 
 	if !*verbose {
-		log.SetOutput(io.Discard)
+		log.SetOutput(ioutil.Discard)
 	}
 	log.SetFlags(log.Lmicroseconds)
 
