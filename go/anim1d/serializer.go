@@ -36,6 +36,7 @@ var knownPatterns = []Pattern{
 	&Transition{},
 	&Cycle{},
 	&Loop{},
+	&Chronometer{},
 	&Rotate{},
 	&PingPong{},
 	&Crop{},

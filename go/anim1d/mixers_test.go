@@ -121,6 +121,23 @@ func TestRotateRev(t *testing.T) {
 	testFrames(t, p, e)
 }
 
+func TestChronometer(t *testing.T) {
+	r := Color{0xff, 0x00, 0x00}
+	g := Color{0x00, 0xff, 0x00}
+	b := Color{0x00, 0x00, 0xff}
+	p := &Chronometer{Child: SPattern{Frame{{}, r, g, b}}}
+	exp := []expectation{
+		{0, Frame{r, {}, {}, {}, {}, {}}},                        // 0:00:00
+		{1000 * 10, Frame{g, r, {}, {}, {}, {}}},                 // 0:00:10
+		{1000 * 20, Frame{g, {}, r, {}, {}, {}}},                 // 0:00:20
+		{1000 * 60, Frame{r, {}, {}, {}, {}, {}}},                // 0:01:00
+		{1000 * 600, Frame{r, g, {}, {}, {}, {}}},                // 0:10:00
+		{1000 * 3600, Frame{r, b, {}, {}, {}, {}}},               // 1:00:00
+		{1000 * (3600 + 20*60 + 30), Frame{{}, b, g, r, {}, {}}}, // 1:20:30
+	}
+	testFrames(t, p, exp)
+}
+
 func TestPingPong(t *testing.T) {
 	a := Color{0x10, 0x10, 0x10}
 	b := Color{0x20, 0x20, 0x20}

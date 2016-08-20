@@ -261,6 +261,43 @@ func (r *Rotate) NextFrame(pixels Frame, timeMS uint32) {
 	copy(pixels[:offset], r.buf[l-offset:])
 }
 
+// Chronometer moves 3 lights to the right, each indicating second, minute, and
+// hour passed since the start.
+type Chronometer struct {
+	Child SPattern
+	buf   Frame
+}
+
+func (r *Chronometer) NextFrame(pixels Frame, timeMS uint32) {
+	l := uint32(len(pixels))
+	if l == 0 || r.Child.Pattern == nil {
+		return
+	}
+	r.buf.reset(4)
+	r.Child.NextFrame(r.buf, timeMS)
+
+	seconds := timeMS / 1000
+	mins := seconds / 60
+	hours := mins / 60
+
+	secPos := (l*(seconds%60) + 30) / 60
+	minPos := (l*(mins%60) + 30) / 60
+	hourPos := hours % l
+
+	for i := range pixels {
+		switch uint32(i) {
+		case secPos:
+			pixels[i] = r.buf[1]
+		case minPos:
+			pixels[i] = r.buf[2]
+		case hourPos:
+			pixels[i] = r.buf[3]
+		default:
+			pixels[i] = r.buf[0]
+		}
+	}
+}
+
 // PingPong shows a 'ball' with a trail that bounces from one side to
 // the other.
 //
