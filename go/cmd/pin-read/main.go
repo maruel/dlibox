@@ -74,6 +74,7 @@ func mainImpl() error {
 	if err = p.In(pull, edge); err != nil {
 		return err
 	}
+	read(p, edge)
 	for *loop {
 		read(p, edge)
 	}

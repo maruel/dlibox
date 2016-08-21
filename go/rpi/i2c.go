@@ -22,10 +22,12 @@ type I2C struct {
 }
 
 // MakeI2C opens an I²C bus via its sysfs interface as described at
-// https://www.kernel.org/doc/Documentation/i2c/dev-interface. It is not
+// https://www.kernel.org/doc/Documentation/i2c/dev-interface It is not
 // Raspberry Pi specific.
 //
 // `bus` should normally be 1, unless I2C0 was manually enabled.
+//
+// Spec: http://cache.nxp.com/documents/user_manual/UM10204.pdf
 func MakeI2C(bus int) (*I2C, error) {
 	f, err := os.OpenFile(fmt.Sprintf("/dev/i2c-%d", bus), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
@@ -58,6 +60,10 @@ func (i *I2C) Close() error {
 // Address changes the address of the device to communicate with.
 func (i *I2C) Address(addr uint16) error {
 	if i.addr != addr {
+		// Addresses are at maximum 10 bits.
+		if addr >= 1<<9 {
+			return errors.New("invalid address")
+		}
 		// TODO(maruel): Add support for i2cTenbit when addr >= 0x400.
 		if err := i.ioctl(i2cSlave, uintptr(addr)); err != nil {
 			return err
