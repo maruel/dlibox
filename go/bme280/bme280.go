@@ -74,6 +74,7 @@ func (b *BME280) Read() (float32, float32, float32, error) {
 	// Pressure: 0xF7~0xF9
 	// Temperature: 0xFA~0xFC
 	// Humidity: 0xFD~0xFE
+	b.i.Address(bme280Address)
 	buf := [0xFF - 0xF7]byte{}
 	if err := b.i.ReadReg(0xF7, buf[:]); err != nil {
 		return 0, 0, 0, err
@@ -87,11 +88,23 @@ func (b *BME280) Read() (float32, float32, float32, error) {
 	return t, p, h, nil
 }
 
-// MakeBME280 returns a strip that communicates over I²C to BME280
+// Stop stops the bme280 from acquiring measurements. It is recommended to call
+// to reduce idle power usage.
+func (b *BME280) Stop() error {
+	b.i.Address(bme280Address)
+	_, err := b.i.Write([]byte{0xF7, 0xF4, byte(sleep)})
+	return err
+}
+
+// MakeBME280 returns an object that communicates over I²C to BME280
 // environmental sensor.
 //
-// Recommended values are O8x for oversampling, S20ms for standby and FOff for
-// filter.
+// Recommended values are O4x for oversampling, S20ms for standby and FOff for
+// filter if planing to call frequently, else use S500ms to get a bit more than
+// one reading per second.
+//
+// It is recommended to call Stop() when done with the device so it stops
+// sampling.
 func MakeBME280(i *rpi.I2C, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*BME280, error) {
 	b := &BME280{i: i}
 	b.i.Address(bme280Address)

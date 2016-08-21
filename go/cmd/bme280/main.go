@@ -52,6 +52,7 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
+	defer b.Stop()
 	for {
 		t, p, h, err := b.Read()
 		if err != nil {
