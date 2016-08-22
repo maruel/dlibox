@@ -17,7 +17,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/rpi"
+	"github.com/maruel/dlibox/go/buses/i2c"
 )
 
 func mainImpl() error {
@@ -65,17 +65,15 @@ func mainImpl() error {
 		buf = make([]byte, *l)
 	}
 
-	i2c, err := rpi.MakeI2C(*bus)
+	i, err := i2c.Make(*bus)
 	if err != nil {
 		return err
 	}
-	if err = i2c.Address(uint16(*addr)); err != nil {
-		return err
-	}
+	d := i.Device(uint16(*addr))
 	if *write {
-		_, err = i2c.Write(buf)
+		_, err = d.Write(buf)
 	} else {
-		if err = i2c.ReadReg(byte(*reg), buf); err != nil {
+		if err = d.ReadReg(byte(*reg), buf); err != nil {
 			return err
 		}
 		fmt.Printf("%s\n", hex.EncodeToString(buf))

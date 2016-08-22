@@ -2,7 +2,9 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package apa102
+// Package screen implements a ANSI terminal LED emulator while you are waiting
+// for your super nice APA-102 LED strip to come by mail.
+package screen
 
 import (
 	"bytes"
@@ -14,14 +16,14 @@ import (
 	"github.com/mattn/go-colorable"
 )
 
-// ScreenStrip is a 1d LED strip emulator.
-type ScreenStrip struct {
+// Dev is a 1d LED strip emulator.
+type Dev struct {
 	w   io.Writer
 	buf bytes.Buffer
 }
 
 // Write accepts a stream of raw RGB pixels and writes it to os.Stdout.
-func (s *ScreenStrip) Write(pixels []byte) (int, error) {
+func (s *Dev) Write(pixels []byte) (int, error) {
 	if len(pixels)%3 != 0 {
 		return 0, errors.New("invalid RGB stream length")
 	}
@@ -36,10 +38,10 @@ func (s *ScreenStrip) Write(pixels []byte) (int, error) {
 	return len(pixels), err
 }
 
-// MakeScreen returns a strip that displays at the console.
+// Make returns a strip that displays at the console.
 //
 // This is generally what you want while waiting for the LED strip to be
 // shipped and you are excited to try it out.
-func MakeScreen() *ScreenStrip {
-	return &ScreenStrip{w: colorable.NewColorableStdout()}
+func Make() *Dev {
+	return &Dev{w: colorable.NewColorableStdout()}
 }

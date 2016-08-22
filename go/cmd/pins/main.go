@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/maruel/dlibox/go/rpi"
+	"github.com/maruel/dlibox/go/buses/rpi"
 )
 
 func makeMapping() ([]string, int) {

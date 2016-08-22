@@ -13,8 +13,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/maruel/dlibox/go/bme280"
-	"github.com/maruel/dlibox/go/rpi"
+	"github.com/maruel/dlibox/go/buses/i2c"
+	"github.com/maruel/dlibox/go/devices/bme280"
 )
 
 func mainImpl() error {
@@ -36,7 +36,7 @@ func mainImpl() error {
 	}
 	log.SetFlags(log.Lmicroseconds)
 
-	i2c, err := rpi.MakeI2C(*bus)
+	i, err := i2c.Make(*bus)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func mainImpl() error {
 	} else if *filter16x {
 		f = bme280.F16
 	}
-	b, err := bme280.MakeBME280(i2c, s, s, s, bme280.S20ms, f)
+	b, err := bme280.Make(i, s, s, s, bme280.S20ms, f)
 	if err != nil {
 		return err
 	}

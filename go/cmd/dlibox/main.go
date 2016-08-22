@@ -22,11 +22,14 @@ import (
 
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/apa102"
+	"github.com/maruel/dlibox/go/buses/i2c"
+	"github.com/maruel/dlibox/go/buses/rpi"
+	"github.com/maruel/dlibox/go/buses/spi"
 	"github.com/maruel/dlibox/go/bw2d"
+	"github.com/maruel/dlibox/go/devices/apa102"
+	"github.com/maruel/dlibox/go/devices/screen"
+	"github.com/maruel/dlibox/go/devices/ssd1306"
 	"github.com/maruel/dlibox/go/psf"
-	"github.com/maruel/dlibox/go/rpi"
-	"github.com/maruel/dlibox/go/ssd1306"
 	"github.com/maruel/interrupt"
 )
 
@@ -88,7 +91,7 @@ func mainImpl() error {
 	// Output (screen or APA102).
 	var s io.Writer
 	if *fake {
-		s = apa102.MakeScreen()
+		s = screen.Make()
 		// Use lower refresh rate too.
 		fps = 30
 		properties = append(properties, "fake=1")
@@ -97,14 +100,14 @@ func mainImpl() error {
 		if rpi.IR_OUT != rpi.GPIO5 || rpi.IR_IN != rpi.GPIO13 {
 			return errors.New("configure lirc for out=5, in=13")
 		}
-		spi, err := rpi.MakeSPI(0, 0, config.APA102.SPIspeed)
+		spiBus, err := spi.Make(0, 0, config.APA102.SPIspeed)
 		if err != nil {
 			return err
 		}
-		s = apa102.MakeAPA102(spi)
+		s = apa102.Make(spiBus)
 
-		i2c, err := rpi.MakeI2C(1)
-		s, err := ssd1306.MakeSSD1306(i2c, 128, 64, false)
+		i2cBus, err := i2c.Make(1)
+		s, err := ssd1306.Make(i2cBus, 128, 64, false)
 		if err != nil {
 			return err
 		}

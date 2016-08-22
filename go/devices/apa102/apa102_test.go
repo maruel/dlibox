@@ -313,9 +313,9 @@ func TestRampMonotonic(t *testing.T) {
 	}
 }
 
-func TestAPA102Empty(t *testing.T) {
+func TestDevEmpty(t *testing.T) {
 	b := &bytes.Buffer{}
-	d := &APA102{
+	d := &Dev{
 		Intensity:   255,
 		Temperature: 6500,
 		w:           nopCloser{b},
@@ -326,9 +326,9 @@ func TestAPA102Empty(t *testing.T) {
 	ut.AssertEqual(t, []byte{0x0, 0x0, 0x0, 0x0, 0xFF}, b.Bytes())
 }
 
-func TestAPA102Len(t *testing.T) {
+func TestDevLen(t *testing.T) {
 	b := &bytes.Buffer{}
-	d := &APA102{
+	d := &Dev{
 		Intensity:   255,
 		Temperature: 6500,
 		w:           nopCloser{b},
@@ -339,9 +339,9 @@ func TestAPA102Len(t *testing.T) {
 	ut.AssertEqual(t, 0, b.Len())
 }
 
-func TestAPA102(t *testing.T) {
+func TestDev(t *testing.T) {
 	b := &bytes.Buffer{}
-	d := &APA102{
+	d := &Dev{
 		Intensity:   255,
 		Temperature: 6500,
 		w:           nopCloser{b},
@@ -378,9 +378,9 @@ func TestAPA102(t *testing.T) {
 	ut.AssertEqual(t, expected, b.Bytes())
 }
 
-func TestAPA102Intensity(t *testing.T) {
+func TestDevIntensity(t *testing.T) {
 	b := &bytes.Buffer{}
-	d := &APA102{
+	d := &Dev{
 		Intensity:   127,
 		Temperature: 6500,
 		w:           nopCloser{b},
@@ -417,9 +417,9 @@ func TestAPA102Intensity(t *testing.T) {
 	ut.AssertEqual(t, expected, b.Bytes())
 }
 
-func TestAPA102TemperatureWarm(t *testing.T) {
+func TestDevTemperatureWarm(t *testing.T) {
 	b := &bytes.Buffer{}
-	d := &APA102{
+	d := &Dev{
 		Intensity:   255,
 		Temperature: 5000,
 		w:           nopCloser{b},
@@ -444,9 +444,9 @@ func TestAPA102TemperatureWarm(t *testing.T) {
 	ut.AssertEqual(t, expected, b.Bytes())
 }
 
-func TestAPA102Long(t *testing.T) {
+func TesttDevLong(t *testing.T) {
 	b := &bytes.Buffer{}
-	d := &APA102{
+	d := &Dev{
 		Intensity:   255,
 		Temperature: 6500,
 		w:           nopCloser{b},

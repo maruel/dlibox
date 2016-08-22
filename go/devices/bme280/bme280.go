@@ -13,7 +13,7 @@ package bme280
 import (
 	"errors"
 
-	"github.com/maruel/dlibox/go/rpi"
+	"github.com/maruel/dlibox/go/buses/i2c"
 )
 
 // Oversampling affects how much time is taken to measure each of temperature,
@@ -64,39 +64,37 @@ const (
 	F16  Filter = 4
 )
 
-type BME280 struct {
-	i *rpi.I2C
+type Dev struct {
+	d *i2c.Dev
 	c calibration
 }
 
-// Read returns measurements as C, kPa and % of relative humidity.
-func (b *BME280) Read() (float32, float32, float32, error) {
+// Read returns measurements as °C, kPa and % of relative humidity.
+func (d *Dev) Read() (float32, float32, float32, error) {
 	// Pressure: 0xF7~0xF9
 	// Temperature: 0xFA~0xFC
 	// Humidity: 0xFD~0xFE
-	b.i.Address(bme280Address)
 	buf := [0xFF - 0xF7]byte{}
-	if err := b.i.ReadReg(0xF7, buf[:]); err != nil {
+	if err := d.d.ReadReg(0xF7, buf[:]); err != nil {
 		return 0, 0, 0, err
 	}
 	pRaw := int32(buf[0])<<12 | int32(buf[1])<<4 | int32(buf[2])>>4
 	tRaw := int32(buf[3])<<12 | int32(buf[4])<<4 | int32(buf[5])>>4
 	hRaw := int32(buf[6])<<8 | int32(buf[7])
-	t, tFine := b.c.compensateTempFloat(tRaw)
-	p := b.c.compensatePressureFloat(pRaw, tFine)
-	h := b.c.compensateHumidityFloat(hRaw, tFine)
+	t, tFine := d.c.compensateTempFloat(tRaw)
+	p := d.c.compensatePressureFloat(pRaw, tFine)
+	h := d.c.compensateHumidityFloat(hRaw, tFine)
 	return t, p, h, nil
 }
 
 // Stop stops the bme280 from acquiring measurements. It is recommended to call
 // to reduce idle power usage.
-func (b *BME280) Stop() error {
-	b.i.Address(bme280Address)
-	_, err := b.i.Write([]byte{0xF7, 0xF4, byte(sleep)})
+func (d *Dev) Stop() error {
+	_, err := d.d.Write([]byte{0xF7, 0xF4, byte(sleep)})
 	return err
 }
 
-// MakeBME280 returns an object that communicates over I²C to BME280
+// Make returns an object that communicates over I²C to BME280
 // environmental sensor.
 //
 // Recommended values are O4x for oversampling, S20ms for standby and FOff for
@@ -105,52 +103,10 @@ func (b *BME280) Stop() error {
 //
 // It is recommended to call Stop() when done with the device so it stops
 // sampling.
-func MakeBME280(i *rpi.I2C, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*BME280, error) {
-	b := &BME280{i: i}
-	b.i.Address(bme280Address)
+func Make(i *i2c.Bus, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
+	d := &Dev{d: i.Device(0x76)}
 
-	// The device starts in 2ms as per datasheet. No need to wait for boot to be
-	// finished.
-
-	// Read the chipd ID right away. It should be 0x60.
-	buf := [0xA2 - 0x88]byte{}
-	if err := b.i.ReadReg(0xD0, buf[:1]); err != nil {
-		return nil, err
-	}
-	if buf[0] != 0x60 {
-		return nil, errors.New("unexpected chip id; is this a BME280?")
-	}
-
-	// Read t1~3, p1~9, 8bits padding, h1.
-	if err := b.i.ReadReg(0x88, buf[:]); err != nil {
-		return nil, err
-	}
-	b.c.t1 = uint16(buf[0]) | uint16(buf[1])<<8
-	b.c.t2 = int16(buf[2]) | int16(buf[3])<<8
-	b.c.t3 = int16(buf[4]) | int16(buf[5])<<8
-	b.c.p1 = uint16(buf[6]) | uint16(buf[7])<<8
-	b.c.p2 = int16(buf[8]) | int16(buf[9])<<8
-	b.c.p3 = int16(buf[10]) | int16(buf[11])<<8
-	b.c.p4 = int16(buf[12]) | int16(buf[13])<<8
-	b.c.p5 = int16(buf[14]) | int16(buf[15])<<8
-	b.c.p6 = int16(buf[16]) | int16(buf[17])<<8
-	b.c.p7 = int16(buf[18]) | int16(buf[19])<<8
-	b.c.p8 = int16(buf[20]) | int16(buf[21])<<8
-	b.c.p9 = int16(buf[22]) | int16(buf[23])<<8
-	b.c.h1 = uint8(buf[25])
-
-	// Read h2~6
-	if err := b.i.ReadReg(0xE1, buf[:0xE8-0xE1]); err != nil {
-		return nil, err
-	}
-	b.c.h2 = int16(buf[0]) | int16(buf[1])<<8
-	b.c.h3 = uint8(buf[2])
-	b.c.h4 = int16(buf[3])<<4 | int16(buf[4])&0xF
-	b.c.h5 = int16(buf[4])&0xF0 | int16(buf[5])<<4
-	b.c.h6 = int8(buf[6])
-
-	// Write config and start it.
-	if _, err := b.i.Write([]byte{
+	config := []byte{
 		// ctrl_meas; put it to sleep otherwise the config update may be ignored.
 		0xF4, byte(temperature)<<5 | byte(pressure)<<2 | byte(sleep),
 		// ctrl_hum
@@ -159,15 +115,54 @@ func MakeBME280(i *rpi.I2C, temperature, pressure, humidity Oversampling, standb
 		0xF5, byte(standby)<<5 | byte(filter)<<2,
 		// ctrl_meas
 		0xF4, byte(temperature)<<5 | byte(pressure)<<2 | byte(normal),
-	}); err != nil {
+	}
+
+	// The device starts in 2ms as per datasheet. No need to wait for boot to be
+	// finished.
+	cmds := []i2c.Cmd{
+		// Read register 0xD0 to read the chip id.
+		{true, []byte{0xD0}},
+		{Buf: make([]byte, 1)},
+		// Read calibration data t1~3, p1~9, 8bits padding, h1.
+		{true, []byte{0x88}},
+		{Buf: make([]byte, 0xA2-0x88)},
+		// Read calibration data  h2~6
+		{true, []byte{0xE1}},
+		{Buf: make([]byte, 0xE8-0xE1)},
+		// Write config and start it.
+		{true, config},
+	}
+	if err := d.d.Tx(cmds); err != nil {
 		return nil, err
 	}
-	return b, nil
+
+	if cmds[1].Buf[0] != 0x60 {
+		return nil, errors.New("unexpected chip id; is this a BME280?")
+	}
+
+	d.c.t1 = uint16(cmds[3].Buf[0]) | uint16(cmds[3].Buf[1])<<8
+	d.c.t2 = int16(cmds[3].Buf[2]) | int16(cmds[3].Buf[3])<<8
+	d.c.t3 = int16(cmds[3].Buf[4]) | int16(cmds[3].Buf[5])<<8
+	d.c.p1 = uint16(cmds[3].Buf[6]) | uint16(cmds[3].Buf[7])<<8
+	d.c.p2 = int16(cmds[3].Buf[8]) | int16(cmds[3].Buf[9])<<8
+	d.c.p3 = int16(cmds[3].Buf[10]) | int16(cmds[3].Buf[11])<<8
+	d.c.p4 = int16(cmds[3].Buf[12]) | int16(cmds[3].Buf[13])<<8
+	d.c.p5 = int16(cmds[3].Buf[14]) | int16(cmds[3].Buf[15])<<8
+	d.c.p6 = int16(cmds[3].Buf[16]) | int16(cmds[3].Buf[17])<<8
+	d.c.p7 = int16(cmds[3].Buf[18]) | int16(cmds[3].Buf[19])<<8
+	d.c.p8 = int16(cmds[3].Buf[20]) | int16(cmds[3].Buf[21])<<8
+	d.c.p9 = int16(cmds[3].Buf[22]) | int16(cmds[3].Buf[23])<<8
+	d.c.h1 = uint8(cmds[3].Buf[25])
+
+	d.c.h2 = int16(cmds[3].Buf[0]) | int16(cmds[3].Buf[1])<<8
+	d.c.h3 = uint8(cmds[3].Buf[2])
+	d.c.h4 = int16(cmds[3].Buf[3])<<4 | int16(cmds[3].Buf[4])&0xF
+	d.c.h5 = int16(cmds[3].Buf[4])&0xF0 | int16(cmds[3].Buf[5])<<4
+	d.c.h6 = int8(cmds[3].Buf[6])
+	return d, nil
 }
 
 //
-
-const bme280Address = 0x76
 
 // mode is stored in config
 type mode byte

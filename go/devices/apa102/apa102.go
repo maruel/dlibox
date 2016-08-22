@@ -134,11 +134,12 @@ func raster(pixels []byte, buf *[]byte, maxR, maxG, maxB uint16) {
 	}
 }
 
-// APA102 accepts a stream of raw RGB pixels and converts it to the full
-// dynamic range as supported by APA102.
+// Dev represents a strip of APA-102 LEDs as a strip connected over a SPI bus.
+// Itaccepts a stream of raw RGB pixels and converts it to the full dynamic
+// range as supported by APA102 protocol (nearly 8000:1 contrast ratio).
 //
 // Includes intensity and temperature correction.
-type APA102 struct {
+type Dev struct {
 	Intensity   uint8  // Set an intensity between 0 (off) and 255 (full brightness).
 	Temperature uint16 // In Kelvin.
 	w           io.Writer
@@ -147,30 +148,30 @@ type APA102 struct {
 
 // Write accepts a stream of raw RGB pixels and sends it as APA102 encoded
 // stream.
-func (a *APA102) Write(pixels []byte) (int, error) {
+func (d *Dev) Write(pixels []byte) (int, error) {
 	if len(pixels)%3 != 0 {
 		return 0, errLength
 	}
-	tr, tg, tb := temperature.ToRGB(a.Temperature)
-	r := uint16((uint32(maxOut)*uint32(a.Intensity)*uint32(tr) + 127*127) / 65025)
-	g := uint16((uint32(maxOut)*uint32(a.Intensity)*uint32(tg) + 127*127) / 65025)
-	b := uint16((uint32(maxOut)*uint32(a.Intensity)*uint32(tb) + 127*127) / 65025)
-	raster(pixels, &a.buf, r, g, b)
-	_, err := a.w.Write(a.buf)
+	tr, tg, tb := temperature.ToRGB(d.Temperature)
+	r := uint16((uint32(maxOut)*uint32(d.Intensity)*uint32(tr) + 127*127) / 65025)
+	g := uint16((uint32(maxOut)*uint32(d.Intensity)*uint32(tg) + 127*127) / 65025)
+	b := uint16((uint32(maxOut)*uint32(d.Intensity)*uint32(tb) + 127*127) / 65025)
+	raster(pixels, &d.buf, r, g, b)
+	_, err := d.w.Write(d.buf)
 	return len(pixels), err
 }
 
-// MakeAPA102 returns a strip that communicates over SPI to APA102 LEDs.
+// Make returns a strip that communicates over SPI to APA102 LEDs.
 //
-// w should be a *SPI as returned by rpi.MakeSPI. The speed must be high, as
+// w should be a *SPI as returned by spi.Make. The speed must be high, as
 // there's 32 bits sent per LED, creating a staggered effect. See
 // https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
 //
 // As per APA102-C spec, it's max refresh rate is 400hz.
 // https://en.wikipedia.org/wiki/Flicker_fusion_threshold is a recommended
 // reading.
-func MakeAPA102(w io.Writer) *APA102 {
-	return &APA102{
+func Make(w io.Writer) *Dev {
+	return &Dev{
 		Intensity:   255,
 		Temperature: 6500,
 		w:           w,

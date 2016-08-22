@@ -30,6 +30,8 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+
+	"github.com/maruel/dlibox/go/buses/ir"
 )
 
 // Function specifies the active functionality of a pin. The alternative
@@ -582,7 +584,13 @@ func init() {
 	setIfAlt(GPIO45, &PWM1_OUT, &I2C_SCL0, &I2C_SCL1, nil, &spi2_ce2, nil) // Not connected
 	// GPIO46-GPIO53 do not have interesting alternate function.
 
-	IR_IN, IR_OUT = getLIRCPins()
+	in, out := ir.Pins()
+	if in != -1 {
+		IR_IN = Pin(in)
+	}
+	if out != -1 {
+		IR_OUT = Pin(out)
+	}
 }
 
 func openGPIOMem() ([]uint8, error) {

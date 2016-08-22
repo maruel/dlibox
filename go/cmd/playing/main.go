@@ -19,11 +19,13 @@ import (
 
 	_ "image/png"
 
-	"github.com/maruel/dlibox/go/bme280"
+	"github.com/maruel/dlibox/go/buses/i2c"
+	"github.com/maruel/dlibox/go/buses/ir"
+	"github.com/maruel/dlibox/go/buses/rpi"
 	"github.com/maruel/dlibox/go/bw2d"
+	"github.com/maruel/dlibox/go/devices/bme280"
+	"github.com/maruel/dlibox/go/devices/ssd1306"
 	"github.com/maruel/dlibox/go/psf"
-	"github.com/maruel/dlibox/go/rpi"
-	"github.com/maruel/dlibox/go/ssd1306"
 	"github.com/maruel/interrupt"
 )
 
@@ -70,13 +72,13 @@ func mainImpl() error {
 		return err
 	}
 
-	i2c, err := rpi.MakeI2C(1)
+	i, err := i2c.Make(1)
 	if err != nil {
 		return err
 	}
 
 	// Display
-	s, err := ssd1306.MakeSSD1306(i2c, 128, 64, false)
+	s, err := ssd1306.Make(i, 128, 64, false)
 	if err != nil {
 		return err
 	}
@@ -93,7 +95,7 @@ func mainImpl() error {
 	go displayLoop(s, f8, img, button, motion, bme, keys)
 
 	if useBME280 {
-		b, err := bme280.MakeBME280(i2c, bme280.O4x, bme280.O4x, bme280.O4x, bme280.S20ms, bme280.F4)
+		b, err := bme280.Make(i, bme280.O4x, bme280.O4x, bme280.O4x, bme280.S20ms, bme280.F4)
 		if err != nil {
 			return err
 		}
@@ -124,11 +126,11 @@ func mainImpl() error {
 	}
 
 	if useIR {
-		ir := rpi.MakeIR()
-		if ir == nil {
+		irBus := ir.Make()
+		if irBus == nil {
 			return errors.New("failed to open lirc")
 		}
-		go irLoop(ir, keys)
+		go irLoop(irBus, keys)
 	}
 
 	interrupt.HandleCtrlC()
@@ -137,7 +139,7 @@ func mainImpl() error {
 	return nil
 }
 
-func displayLoop(s *ssd1306.SSD1306, f *psf.Font, img *bw2d.Image, button, motion <-chan bool, bme <-chan env, keys <-chan string) {
+func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-chan bool, bme <-chan env, keys <-chan string) {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
 	for {
@@ -182,9 +184,9 @@ func displayLoop(s *ssd1306.SSD1306, f *psf.Font, img *bw2d.Image, button, motio
 	}
 }
 
-func irLoop(ir *rpi.IR, keys chan<- string) {
+func irLoop(irBus *ir.Bus, keys chan<- string) {
 	for !interrupt.IsSet() {
-		s, _, err := ir.Next()
+		s, _, err := irBus.Next()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -211,7 +213,7 @@ func pirLoop(p rpi.Pin, c chan<- bool) {
 	}
 }
 
-func sensorLoop(b *bme280.BME280, c chan<- env) {
+func sensorLoop(b *bme280.Dev, c chan<- env) {
 	tick := time.NewTicker(500 * time.Millisecond)
 	defer tick.Stop()
 	for {

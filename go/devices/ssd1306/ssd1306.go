@@ -18,7 +18,7 @@ package ssd1306
 import (
 	"errors"
 
-	"github.com/maruel/dlibox/go/rpi"
+	"github.com/maruel/dlibox/go/buses/i2c"
 )
 
 // FrameRate determines scrolling speed.
@@ -45,20 +45,19 @@ const (
 	UpLeft  Orientation = 0x2A
 )
 
-// SSD1306 is an open handle to the display.
-type SSD1306 struct {
-	i *rpi.I2C
+// Dev is an open handle to the display controler.
+type Dev struct {
+	d *i2c.Dev
 	W int
 	H int
 }
 
-// MakeSSD1306 returns an object  that communicates over I²C to SSD1306 display
+// Make returns a Dev object that communicates over I²C to SSD1306 display
 // controler.
 //
 // If rotated, turns the display by 180°
-func MakeSSD1306(i *rpi.I2C, w, h int, rotated bool) (*SSD1306, error) {
-	s := &SSD1306{i: i, W: w, H: h}
-	s.i.Address(ssd1306Address)
+func Make(i *i2c.Bus, w, h int, rotated bool) (*Dev, error) {
+	d := &Dev{d: i.Device(0x3C), W: w, H: h}
 
 	contrast := byte(0x7F) // (default value)
 
@@ -76,7 +75,7 @@ func MakeSSD1306(i *rpi.I2C, w, h int, rotated bool) (*SSD1306, error) {
 	// Page 28 lists all the commands.
 	init := []byte{
 		0xAE,                // Display off
-		0xA8, byte(s.H - 1), // Set MUX ratio
+		0xA8, byte(d.H - 1), // Set MUX ratio
 		0xD3, 0x00, // Set display offset; 0
 		0x40,       // Start display start line; 0
 		columnAddr, // Set segment remap; RESET is column 127.
@@ -95,41 +94,40 @@ func MakeSSD1306(i *rpi.I2C, w, h int, rotated bool) (*SSD1306, error) {
 		0x2E,                // Deactivate scroll
 		0x00 | 0x00,         // Set column offset (lower nibble)
 		0x10 | 0x00,         // Set column offset (higher nibble)
-		0xA8, byte(s.H - 1), // Set multiplex ratio (number of lines to display)
+		0xA8, byte(d.H - 1), // Set multiplex ratio (number of lines to display)
 		// TODO(maruel): should probably clear the buffer before enabling display, otherwise the previous buffer is shown until refresh.
 		0xAF, // Display on
 	}
-	if _, err := s.i.Write(init); err != nil {
+	if _, err := d.d.Write(init); err != nil {
 		return nil, err
 	}
-	return s, nil
+	return d, nil
 }
 
 // Write writes a buffer of pixels to the display.
-func (s *SSD1306) Write(pixels []byte) (int, error) {
-	if len(pixels) != s.H*s.W/8 {
+func (d *Dev) Write(pixels []byte) (int, error) {
+	if len(pixels) != d.H*d.W/8 {
 		return 0, errors.New("invalid pixel stream")
 	}
-	s.i.Address(ssd1306Address)
-	if _, err := s.i.Write([]byte{
+	hdr := []byte{
 		0xA4,                      // Write data
 		0x40 | 0,                  // Start line
-		0x21, 0x00, byte(s.W - 1), // Set column address (Width)
-		0x22, 0x00, byte(s.H/8 - 1), // Set page address (Pages)
-	}); err != nil {
+		0x21, 0x00, byte(d.W - 1), // Set column address (Width)
+		0x22, 0x00, byte(d.H/8 - 1), // Set page address (Pages)
+		0x40, // Pixel data
+	}
+	cmds := []i2c.Cmd{
+		{true, hdr},
+		{true, pixels},
+	}
+	if err := d.d.Tx(cmds); err != nil {
 		return 0, err
 	}
-
-	buf := make([]byte, len(pixels)+1)
-	buf[0] = 0x40 // Pixel data
-	copy(buf[1:], pixels)
-
-	_, err := s.i.Write(buf)
-	return 0, err
+	return len(pixels), nil
 }
 
 // Scroll scrolls the entire.
-func (s *SSD1306) Scroll(o Orientation, rate FrameRate) error {
+func (d *Dev) Scroll(o Orientation, rate FrameRate) error {
 	// TODO(maruel): Allow to specify page.
 	// TODO(maruel): Allow to specify offset.
 	var b []byte
@@ -143,8 +141,7 @@ func (s *SSD1306) Scroll(o Orientation, rate FrameRate) error {
 		// page 30: 0xA3 permits to set rows for scroll area.
 		b = []byte{0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x01, 0x2F}
 	}
-	s.i.Address(ssd1306Address)
-	_, err := s.i.Write(b[:])
+	_, err := d.d.Write(b[:])
 	return err
 }
 
@@ -153,36 +150,29 @@ func (s *SSD1306) Scroll(o Orientation, rate FrameRate) error {
 // It will only take effect after redrawing the ram.
 //
 // TODO(maruel): Doesn't work.
-func (s *SSD1306) StopScroll() error {
-	s.i.Address(ssd1306Address)
-	_, err := s.i.Write([]byte{0x2E}[:])
+func (d *Dev) StopScroll() error {
+	_, err := d.d.Write([]byte{0x2E})
 	return err
 }
 
 // SetContrast changes the screen contrast.
 //
 // TODO(maruel): Doesn't work.
-func (s *SSD1306) SetContrast(level byte) error {
-	s.i.Address(ssd1306Address)
-	_, err := s.i.Write([]byte{0x81, level}[:])
+func (d *Dev) SetContrast(level byte) error {
+	_, err := d.d.Write([]byte{0x81, level})
 	return err
 }
 
 // Enable or disable the display.
 //
 // TODO(maruel): Doesn't work.
-func (s *SSD1306) Enable(on bool) error {
+func (d *Dev) Enable(on bool) error {
 	b := [1]byte{}
 	if on {
 		b[0] = 0xAF
 	} else {
 		b[0] = 0xAE
 	}
-	s.i.Address(ssd1306Address)
-	_, err := s.i.Write(b[:])
+	_, err := d.d.Write(b[:])
 	return err
 }
-
-//
-
-const ssd1306Address = 0x3C

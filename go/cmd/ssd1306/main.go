@@ -18,10 +18,10 @@ import (
 	_ "image/gif"
 	_ "image/png"
 
+	"github.com/maruel/dlibox/go/buses/i2c"
 	"github.com/maruel/dlibox/go/bw2d"
+	"github.com/maruel/dlibox/go/devices/ssd1306"
 	"github.com/maruel/dlibox/go/psf"
-	"github.com/maruel/dlibox/go/rpi"
-	"github.com/maruel/dlibox/go/ssd1306"
 )
 
 // loadImg loads an image as black and white.
@@ -41,7 +41,7 @@ func loadImg(path string) (*bw2d.Image, error) {
 	return img, nil
 }
 
-func demo(s *ssd1306.SSD1306) error {
+func demo(s *ssd1306.Dev) error {
 	if err := s.Scroll(ssd1306.Left, ssd1306.FrameRate2); err != nil {
 		return err
 	}
@@ -87,11 +87,11 @@ func mainImpl() error {
 	log.SetFlags(log.Lmicroseconds)
 
 	// Open the device
-	i2c, err := rpi.MakeI2C(*bus)
+	i, err := i2c.Make(*bus)
 	if err != nil {
 		return err
 	}
-	s, err := ssd1306.MakeSSD1306(i2c, 128, 64, *rotated)
+	s, err := ssd1306.Make(i, 128, 64, *rotated)
 	if err != nil {
 		return err
 	}
