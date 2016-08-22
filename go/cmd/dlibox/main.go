@@ -11,6 +11,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -22,7 +23,10 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/apa102"
+	"github.com/maruel/dlibox/go/bw2d"
+	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/dlibox/go/rpi"
+	"github.com/maruel/dlibox/go/ssd1306"
 	"github.com/maruel/interrupt"
 )
 
@@ -89,12 +93,38 @@ func mainImpl() error {
 		fps = 30
 		properties = append(properties, "fake=1")
 	} else {
-		//
+		// Verify the pinout is as expected.
+		if rpi.IR_OUT != rpi.GPIO5 || rpi.IR_IN != rpi.GPIO13 {
+			return errors.New("configure lirc for out=5, in=13")
+		}
 		spi, err := rpi.MakeSPI(0, 0, config.APA102.SPIspeed)
 		if err != nil {
 			return err
 		}
 		s = apa102.MakeAPA102(spi)
+
+		i2c, err := rpi.MakeI2C(1)
+		s, err := ssd1306.MakeSSD1306(i2c, 128, 64, false)
+		if err != nil {
+			return err
+		}
+		f12, err := psf.Load("Terminus12x6")
+		if err != nil {
+			return err
+		}
+		f20, err := psf.Load("Terminus20x10")
+		if err != nil {
+			return err
+		}
+		// TODO(maruel): Leverage bme280 while at it but don't fail if not
+		// connected.
+		img := bw2d.Make(s.W, s.H)
+		f20.Draw(img, 0, 0, bw2d.On, nil, "dlibox!")
+		f12.Draw(img, 0, s.H-f12.H-1, bw2d.On, nil, "is awesome")
+		if _, err = s.Write(img.Buf); err != nil {
+			return err
+		}
+
 		properties = append(properties, fmt.Sprintf("APA102=%d", config.APA102.NumberLights))
 	}
 

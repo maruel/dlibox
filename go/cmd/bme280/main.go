@@ -19,11 +19,15 @@ import (
 
 func mainImpl() error {
 	bus := flag.Int("b", 1, "I²C bus to use")
-	sample1x := flag.Bool("1", false, "sample at 1x")
-	sample2x := flag.Bool("2", false, "sample at 2x")
-	sample4x := flag.Bool("4", false, "sample at 4x")
-	sample8x := flag.Bool("8", false, "sample at 8x")
-	sample16x := flag.Bool("16", false, "sample at 16x")
+	sample1x := flag.Bool("s1", false, "sample at 1x")
+	sample2x := flag.Bool("s2", false, "sample at 2x")
+	sample4x := flag.Bool("s4", false, "sample at 4x")
+	sample8x := flag.Bool("s8", false, "sample at 8x")
+	sample16x := flag.Bool("s16", false, "sample at 16x")
+	filter2x := flag.Bool("f2", false, "filter IIR at 2x")
+	filter4x := flag.Bool("f4", false, "filter IIR at 4x")
+	filter8x := flag.Bool("f8", false, "filter IIR at 8x")
+	filter16x := flag.Bool("f16", false, "filter IIR at 16x")
 	loop := flag.Bool("l", false, "loop every 100ms")
 	verbose := flag.Bool("v", false, "verbose mode")
 	flag.Parse()
@@ -48,7 +52,17 @@ func mainImpl() error {
 	} else if *sample16x {
 		s = bme280.O16x
 	}
-	b, err := bme280.MakeBME280(i2c, s, s, s, bme280.S20ms, bme280.FOff)
+	f := bme280.FOff
+	if *filter2x {
+		f = bme280.F2
+	} else if *filter4x {
+		f = bme280.F4
+	} else if *filter8x {
+		f = bme280.F8
+	} else if *filter16x {
+		f = bme280.F16
+	}
+	b, err := bme280.MakeBME280(i2c, s, s, s, bme280.S20ms, f)
 	if err != nil {
 		return err
 	}
@@ -58,7 +72,7 @@ func mainImpl() error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%f°C %fkPa %f%%rH\n", t, p, h)
+		fmt.Printf("%.3f°C %.4fkPa %.3f%%rH\n", t, p, h)
 		if !*loop {
 			break
 		}

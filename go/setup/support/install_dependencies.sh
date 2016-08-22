@@ -33,7 +33,7 @@ cp lircd.conf /etc/lirc/
 echo "" >> /boot/config.txt
 echo "# dlibox" >> /boot/config.txt
 echo "# https://github.com/raspberrypi/firmware/blob/master/boot/overlays/README" >> /boot/config.txt
-echo "dtoverlay=lirc-rpi,gpio_out_pin=5,gpio_in_pin=6,gpio_in_pull=high" >> /boot/config.txt
+echo "dtoverlay=lirc-rpi,gpio_out_pin=5,gpio_in_pin=13,gpio_in_pull=high" >> /boot/config.txt
 echo "dtoverlay=spi1-1cs" >> /boot/config.txt
 echo "dtoverlay=pi3-disable-bt" >> /boot/config.txt
 

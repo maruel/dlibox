@@ -19,6 +19,7 @@ import (
 	_ "image/png"
 
 	"github.com/maruel/dlibox/go/bw2d"
+	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/dlibox/go/rpi"
 	"github.com/maruel/dlibox/go/ssd1306"
 )
@@ -95,7 +96,7 @@ func mainImpl() error {
 		return err
 	}
 
-	f, err := bw2d.BasicFont(8)
+	f, err := psf.Load("VGA8")
 	if err != nil {
 		return err
 	}
@@ -106,12 +107,12 @@ func mainImpl() error {
 		return err
 	}
 	src.Inverse()
-	img := bw2d.Make(128, 64)
+	img := bw2d.Make(s.W, s.H)
 	r := src.Bounds()
 	r = r.Add(image.Point{(img.W - r.Max.X) / 2, (img.H - r.Max.Y) / 2})
 	draw.Draw(img, r, src, image.Point{}, draw.Src)
-	img.Text(0, 0, f, "dlibox!")
-	img.Text(0, s.H-f.H-1, f, "is awesome")
+	f.Draw(img, 0, 0, bw2d.On, nil, "dlibox!")
+	f.Draw(img, 0, s.H-f.H-1, bw2d.On, nil, "is awesome")
 	if _, err = s.Write(img.Buf); err != nil {
 		return err
 	}

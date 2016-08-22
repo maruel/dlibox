@@ -25,6 +25,7 @@ import (
 	"os"
 	"strconv"
 	"syscall"
+	"time"
 )
 
 // ReadEdge waits until a edge detection occured and returns the pin level read.
@@ -108,7 +109,12 @@ func (g *gpio) open(p Pin) error {
 		}
 	}
 	if g.edge == nil && err == nil {
-		g.edge, err = os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/edge", p), os.O_WRONLY, 0600)
+		// TODO(maruel): Figure out the problem or better use the register instead
+		// of the file.
+		for i := 0; i < 30 && g.edge == nil; i++ {
+			g.edge, err = os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/edge", p), os.O_WRONLY, 0600)
+			time.Sleep(time.Millisecond)
+		}
 	}
 	if g.epollFd == 0 && err == nil {
 		if g.epollFd, err = syscall.EpollCreate(1); err == nil {

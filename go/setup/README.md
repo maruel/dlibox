@@ -38,7 +38,7 @@ but it's totally acceptable on a rPi 2 or rPi 3.
 _Note:_ Replace the URL below with the [latest version](https://golang.org/dl/).
 
     cd
-    curl https://storage.googleapis.com/golang/go1.6.2.linux-armv6l.tar.gz | tar xz
+    curl https://storage.googleapis.com/golang/go1.7.linux-armv6l.tar.gz | tar xz
     echo 'export GOPATH=$HOME' >> $HOME/.profile
     echo 'export GOROOT=$HOME/go' >> $HOME/.profile
     echo 'export PATH="$GOPATH/bin:$GOROOT/bin:$PATH"' >> $HOME/.profile
