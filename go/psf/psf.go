@@ -93,10 +93,10 @@ func Load(name string) (*Font, error) {
 // Returns the end point.
 func (f *Font) Draw(dst draw.Image, x, y int, fore, back color.Color, text string) (int, int) {
 	for _, r := range text {
-		c := f.Letters[r]
+		bitmap := f.Letters[r]
 		for yL := 0; yL < f.H; yL++ {
 			for xL := 0; xL < f.W; xL++ {
-				v := c[xL/8+yL*f.W/8]
+				v := bitmap[xL/8+yL*f.W/8]
 				b := byte(1 << (7 - byte(xL&7)))
 				if v&b != 0 {
 					if fore != nil {
@@ -156,7 +156,7 @@ func (f *Font) loadPSF(path string) error {
 	// Grab the glyph bitmaps.
 	for c := 0; c < nbGlyphs; c++ {
 		n := make([]byte, charSize)
-		copy(n, b)
+		copy(n, data)
 		for _, i := range mapping[c] {
 			f.Letters[i] = n
 		}

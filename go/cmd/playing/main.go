@@ -61,7 +61,7 @@ func mainImpl() error {
 	keys := make(chan string)
 	bme := make(chan env)
 
-	f, err := psf.Load("VGA8")
+	f8, err := psf.Load("VGA8")
 	if err != nil {
 		return err
 	}
@@ -85,12 +85,12 @@ func mainImpl() error {
 	r := src.Bounds()
 	r = r.Add(image.Point{(img.W - r.Max.X), (img.H - r.Max.Y) / 2})
 	draw.Draw(img, r, src, image.Point{}, draw.Src)
-	f.Draw(img, 0, 0, bw2d.On, nil, "dlibox!")
-	f.Draw(img, 0, s.H-f.H-1, bw2d.On, nil, "is awesome")
+	f8.Draw(img, 0, 0, bw2d.On, nil, "dlibox!")
+	f8.Draw(img, 0, s.H-f8.H-1, bw2d.On, nil, "is awesome")
 	if _, err = s.Write(img.Buf); err != nil {
 		return err
 	}
-	go displayLoop(s, f, img, button, motion, bme, keys)
+	go displayLoop(s, f8, img, button, motion, bme, keys)
 
 	if useBME280 {
 		b, err := bme280.MakeBME280(i2c, bme280.O4x, bme280.O4x, bme280.O4x, bme280.S20ms, bme280.F4)
