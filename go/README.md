@@ -1,7 +1,11 @@
 # dlibox for Go
 
 Drives an APA-102 LED strip via a Raspberry Pi and expose a web server to
-control it.
+control it. The package includes many other utilities, i2c, spi, GPOI edge
+triggering, bme280, ssd1306, PSF font support, 1bit image, 1D stateless
+animation.
+
+[![GoDoc](https://godoc.org/github.com/maruel/dlibox/go?status.svg)](https://godoc.org/github.com/maruel/dlibox/go)
 
 
 ## Features
