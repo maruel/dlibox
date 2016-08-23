@@ -7,11 +7,9 @@ package apa102
 import (
 	"bytes"
 	"fmt"
+	"image/color"
 	"io"
 	"testing"
-
-	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/ut"
 )
 
 func TestRamp(t *testing.T) {
@@ -283,12 +281,19 @@ func TestRamp(t *testing.T) {
 		}
 	}
 	for i, line := range data {
-		ut.AssertEqual(t, i, int(line.input))
-		ut.AssertEqualIndex(t, i, line.expected, ramp(line.input, maxOut))
+		if i != int(line.input) || line.expected != ramp(line.input, maxOut) {
+			t.Fail()
+		}
 	}
-	ut.AssertEqual(t, uint16(0x00), ramp(0x00, 0xFF))
-	ut.AssertEqual(t, uint16(0x21), ramp(0x7F, 0xFF))
-	ut.AssertEqual(t, uint16(0xFF), ramp(0xFF, 0xFF))
+	if 0x00 != ramp(0x00, 0xFF) {
+		t.Fail()
+	}
+	if 0x21 != ramp(0x7F, 0xFF) {
+		t.Fail()
+	}
+	if 0xFF != ramp(0xFF, 0xFF) {
+		t.Fail()
+	}
 }
 
 func TestRampMonotonic(t *testing.T) {
@@ -320,10 +325,12 @@ func TestDevEmpty(t *testing.T) {
 		Temperature: 6500,
 		w:           nopCloser{b},
 	}
-	n, err := d.Write([]byte{})
-	ut.AssertEqual(t, 0, n)
-	ut.AssertEqual(t, nil, err)
-	ut.AssertEqual(t, []byte{0x0, 0x0, 0x0, 0x0, 0xFF}, b.Bytes())
+	if n, err := d.Write([]byte{}); n != 0 || err != nil {
+		t.Fail()
+	}
+	if !bytes.Equal([]byte{0x0, 0x0, 0x0, 0x0, 0xFF}, b.Bytes()) {
+		t.Fail()
+	}
 }
 
 func TestDevLen(t *testing.T) {
@@ -333,10 +340,12 @@ func TestDevLen(t *testing.T) {
 		Temperature: 6500,
 		w:           nopCloser{b},
 	}
-	n, err := d.Write([]byte{0})
-	ut.AssertEqual(t, 0, n)
-	ut.AssertEqual(t, errLength, err)
-	ut.AssertEqual(t, 0, b.Len())
+	if n, err := d.Write([]byte{0}); n != 0 || err != errLength {
+		t.Fail()
+	}
+	if !bytes.Equal([]byte{}, b.Bytes()) {
+		t.Fail()
+	}
 }
 
 func TestDev(t *testing.T) {
@@ -346,21 +355,21 @@ func TestDev(t *testing.T) {
 		Temperature: 6500,
 		w:           nopCloser{b},
 	}
-	colors := anim1d.Frame{
-		{0xFF, 0xFF, 0xFF},
-		{0xFE, 0xFE, 0xFE},
-		{0xF0, 0xF0, 0xF0},
-		{0x80, 0x80, 0x80},
-		{0x80, 0x00, 0x00},
-		{0x00, 0x80, 0x00},
-		{0x00, 0x00, 0x80},
-		{0x00, 0x00, 0x10},
-		{0x00, 0x00, 0x01},
-		{0x00, 0x00, 0x00},
+	colors := []color.NRGBA{
+		{0xFF, 0xFF, 0xFF, 0x00},
+		{0xFE, 0xFE, 0xFE, 0x00},
+		{0xF0, 0xF0, 0xF0, 0x00},
+		{0x80, 0x80, 0x80, 0x00},
+		{0x80, 0x00, 0x00, 0x00},
+		{0x00, 0x80, 0x00, 0x00},
+		{0x00, 0x00, 0x80, 0x00},
+		{0x00, 0x00, 0x10, 0x00},
+		{0x00, 0x00, 0x01, 0x00},
+		{0x00, 0x00, 0x00, 0x00},
 	}
-	n, err := d.Write(colorsToBytes(colors))
-	ut.AssertEqual(t, len(colors)*3, n)
-	ut.AssertEqual(t, nil, err)
+	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
+		t.Fail()
+	}
 	expected := []byte{
 		0x00, 0x00, 0x00, 0x00,
 		0xFF, 0xFF, 0xFF, 0xFF,
@@ -375,7 +384,9 @@ func TestDev(t *testing.T) {
 		0xE1, 0x00, 0x00, 0x00,
 		0xFF,
 	}
-	ut.AssertEqual(t, expected, b.Bytes())
+	if !bytes.Equal(expected, b.Bytes()) {
+		t.Fail()
+	}
 }
 
 func TestDevIntensity(t *testing.T) {
@@ -385,21 +396,21 @@ func TestDevIntensity(t *testing.T) {
 		Temperature: 6500,
 		w:           nopCloser{b},
 	}
-	colors := anim1d.Frame{
-		{0xFF, 0xFF, 0xFF},
-		{0xFE, 0xFE, 0xFE},
-		{0xF0, 0xF0, 0xF0},
-		{0x80, 0x80, 0x80},
-		{0x80, 0x00, 0x00},
-		{0x00, 0x80, 0x00},
-		{0x00, 0x00, 0x80},
-		{0x00, 0x00, 0x10},
-		{0x00, 0x00, 0x01},
-		{0x00, 0x00, 0x00},
+	colors := []color.NRGBA{
+		{0xFF, 0xFF, 0xFF, 0x00},
+		{0xFE, 0xFE, 0xFE, 0x00},
+		{0xF0, 0xF0, 0xF0, 0x00},
+		{0x80, 0x80, 0x80, 0x00},
+		{0x80, 0x00, 0x00, 0x00},
+		{0x00, 0x80, 0x00, 0x00},
+		{0x00, 0x00, 0x80, 0x00},
+		{0x00, 0x00, 0x10, 0x00},
+		{0x00, 0x00, 0x01, 0x00},
+		{0x00, 0x00, 0x00, 0x00},
 	}
-	n, err := d.Write(colorsToBytes(colors))
-	ut.AssertEqual(t, len(colors)*3, n)
-	ut.AssertEqual(t, nil, err)
+	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
+		t.Fail()
+	}
 	expected := []byte{
 		0x00, 0x00, 0x00, 0x00,
 		0xFF, 0x7F, 0x7F, 0x7F,
@@ -414,7 +425,9 @@ func TestDevIntensity(t *testing.T) {
 		0xE1, 0x00, 0x00, 0x00,
 		0xFF,
 	}
-	ut.AssertEqual(t, expected, b.Bytes())
+	if !bytes.Equal(expected, b.Bytes()) {
+		t.Fail()
+	}
 }
 
 func TestDevTemperatureWarm(t *testing.T) {
@@ -424,15 +437,15 @@ func TestDevTemperatureWarm(t *testing.T) {
 		Temperature: 5000,
 		w:           nopCloser{b},
 	}
-	colors := anim1d.Frame{
-		{0xFF, 0xFF, 0xFF},
-		{0x80, 0x80, 0x80},
-		{0x01, 0x01, 0x01},
-		{0x00, 0x00, 0x00},
+	colors := []color.NRGBA{
+		{0xFF, 0xFF, 0xFF, 0x00},
+		{0x80, 0x80, 0x80, 0x00},
+		{0x01, 0x01, 0x01, 0x00},
+		{0x00, 0x00, 0x00, 0x00},
 	}
-	n, err := d.Write(colorsToBytes(colors))
-	ut.AssertEqual(t, len(colors)*3, n)
-	ut.AssertEqual(t, nil, err)
+	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
+		t.Fail()
+	}
 	expected := []byte{
 		0x00, 0x00, 0x00, 0x00,
 		0xFF, 0xCE, 0xE5, 0xFF,
@@ -441,7 +454,9 @@ func TestDevTemperatureWarm(t *testing.T) {
 		0xE1, 0x00, 0x00, 0x00,
 		0xFF,
 	}
-	ut.AssertEqual(t, expected, b.Bytes())
+	if !bytes.Equal(expected, b.Bytes()) {
+		t.Fail()
+	}
 }
 
 func TesttDevLong(t *testing.T) {
@@ -451,10 +466,10 @@ func TesttDevLong(t *testing.T) {
 		Temperature: 6500,
 		w:           nopCloser{b},
 	}
-	colors := make(anim1d.Frame, 256)
-	n, err := d.Write(colorsToBytes(colors))
-	ut.AssertEqual(t, len(colors)*3, n)
-	ut.AssertEqual(t, nil, err)
+	colors := make([]color.NRGBA, 256)
+	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
+		t.Fail()
+	}
 	expected := make([]byte, 4*(256+1)+17)
 	for i := 0; i < 256; i++ {
 		expected[4+4*i] = 0xE1
@@ -463,46 +478,48 @@ func TesttDevLong(t *testing.T) {
 	for i := range trailer {
 		trailer[i] = 0xFF
 	}
-	ut.AssertEqual(t, expected, b.Bytes())
+	if !bytes.Equal(expected, b.Bytes()) {
+		t.Fail()
+	}
 }
 
 func BenchmarkRasterWhite(b *testing.B) {
-	pixels := make(anim1d.Frame, 150)
+	pixels := make([]color.NRGBA, 150)
 	for i := range pixels {
-		pixels[i] = anim1d.Color{255, 255, 255}
+		pixels[i] = color.NRGBA{255, 255, 255, 255}
 	}
 	var buf []byte
 	// Prime the buffer first.
-	raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
+	raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
+		raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
 	}
 }
 
 func BenchmarkRasterDim(b *testing.B) {
-	pixels := make(anim1d.Frame, 150)
+	pixels := make([]color.NRGBA, 150)
 	for i := range pixels {
 		// This is in the linear range.
-		pixels[i] = anim1d.Color{1, 1, 1}
+		pixels[i] = color.NRGBA{1, 1, 1, 1}
 	}
 	var buf []byte
 	// Prime the buffer first.
-	raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
+	raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
+		raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
 	}
 }
 
 func BenchmarkRasterBlack(b *testing.B) {
-	pixels := make(anim1d.Frame, 150)
+	pixels := make([]color.NRGBA, 150)
 	var buf []byte
 	// Prime the buffer first.
-	raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
+	raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		raster(colorsToBytes(pixels), &buf, maxOut, maxOut, maxOut)
+		raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
 	}
 }
 
@@ -514,14 +531,4 @@ type nopCloser struct {
 
 func (nopCloser) Close() error {
 	return nil
-}
-
-func colorsToBytes(pixels anim1d.Frame) []byte {
-	buf := make([]byte, len(pixels)*3)
-	for i := range pixels {
-		buf[3*i] = pixels[i].R
-		buf[3*i+1] = pixels[i].G
-		buf[3*i+2] = pixels[i].B
-	}
-	return buf
 }

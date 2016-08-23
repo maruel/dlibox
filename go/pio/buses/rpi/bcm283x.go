@@ -15,10 +15,7 @@
 // expose the internal pull resistors (pull-up, pull-down). The only way to set
 // them is via /dev/gpiomem.
 
-//go:generate stringer -type Edge
-//go:generate stringer -type Function
-//go:generate stringer -type Pin
-//go:generate stringer -type Pull
+//go:generate stringer -type Edge,Function,Pin,Pull
 
 // From go get -u golang.org/x/tools/cmd/stringer
 
