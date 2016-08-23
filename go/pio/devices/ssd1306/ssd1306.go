@@ -117,37 +117,41 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 		0x21, 0x00, byte(d.W - 1), // Set column address (Width)
 		0x22, 0x00, byte(d.H/8 - 1), // Set page address (Pages)
 	}
+
+	//*
+	d.d.Write(hdr)
+	d.d.Write(append([]byte{0x40}, pixels...))
+	return 0, nil
+	/*/
+	// TODO(maruel): Use oscilloscope to figure out why this doesn't work.
 	start := []byte{
 		0x40, // Pixel data
 	}
 	ios := []buses.IO{
 		{buses.WriteStop, hdr},
 		{buses.Write, start},
-		{buses.Write, pixels},
+		{buses.WriteStop, pixels},
 	}
 	if err := d.d.Tx(ios); err != nil {
 		return 0, err
 	}
 	return len(pixels), nil
+	//*/
 }
 
 // Scroll scrolls the entire.
 func (d *Dev) Scroll(o Orientation, rate FrameRate) error {
 	// TODO(maruel): Allow to specify page.
 	// TODO(maruel): Allow to specify offset.
-	var b []byte
 	if o == Left || o == Right {
 		// page 28
 		// STOP, <op>, dummy, <start page>, <rate>,  <end page>, <dummy>, <dummy>, <ENABLE>
-		b = []byte{0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x00, 0xFF, 0x2F}
-	} else {
-		// page 29
-		// STOP, <op>, dummy, <start page>, <rate>,  <end page>, <offset>, <ENABLE>
-		// page 30: 0xA3 permits to set rows for scroll area.
-		b = []byte{0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x01, 0x2F}
+		return d.d.WriteBytes(0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x00, 0xFF, 0x2F)
 	}
-	_, err := d.d.Write(b[:])
-	return err
+	// page 29
+	// STOP, <op>, dummy, <start page>, <rate>,  <end page>, <offset>, <ENABLE>
+	// page 30: 0xA3 permits to set rows for scroll area.
+	return d.d.WriteBytes(0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x01, 0x2F)
 }
 
 // StopScroll stops any scrolling previously set.
@@ -156,28 +160,22 @@ func (d *Dev) Scroll(o Orientation, rate FrameRate) error {
 //
 // TODO(maruel): Doesn't work.
 func (d *Dev) StopScroll() error {
-	_, err := d.d.Write([]byte{0x2E})
-	return err
+	return d.d.WriteBytes(0x2E)
 }
 
 // SetContrast changes the screen contrast.
 //
 // TODO(maruel): Doesn't work.
 func (d *Dev) SetContrast(level byte) error {
-	_, err := d.d.Write([]byte{0x81, level})
-	return err
+	return d.d.WriteBytes(0x81, level)
 }
 
 // Enable or disable the display.
 //
 // TODO(maruel): Doesn't work.
 func (d *Dev) Enable(on bool) error {
-	b := [1]byte{}
 	if on {
-		b[0] = 0xAF
-	} else {
-		b[0] = 0xAE
+		return d.d.WriteBytes(0xAF)
 	}
-	_, err := d.d.Write(b[:])
-	return err
+	return d.d.WriteBytes(0xAE)
 }

@@ -6,6 +6,7 @@ package apa102
 
 import (
 	"errors"
+	"image/color"
 	"io"
 
 	"github.com/maruel/temperature"
@@ -144,6 +145,17 @@ type Dev struct {
 	Temperature uint16 // In Kelvin.
 	w           io.Writer
 	buf         []byte
+}
+
+// ToRGB converts a slice of color.NRGBA to a byte stream of RGB pixels.
+//
+// Ignores alpha.
+func ToRGB(p []color.NRGBA) []byte {
+	b := make([]byte, 0, len(p)*3)
+	for _, c := range p {
+		b = append(b, c.R, c.G, c.B)
+	}
+	return b
 }
 
 // Write accepts a stream of raw RGB pixels and sends it as APA102 encoded

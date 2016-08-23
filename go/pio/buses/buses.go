@@ -44,13 +44,14 @@ type I2C interface {
 
 // Dev is a device on a I²C bus.
 //
-// It saves from repeatedly specifying the device address.
+// It saves from repeatedly specifying the device address and implements
+// utility functions.
 type Dev struct {
 	Bus  I2C
 	Addr uint16
 }
 
-// Write writes to the I²C bus without reading.
+// Write writes to the I²C bus without reading, implementing io.Writer.
 //
 // It's a wrapper for Tx()
 func (d *Dev) Write(b []byte) (int, error) {
@@ -58,6 +59,13 @@ func (d *Dev) Write(b []byte) (int, error) {
 		return 0, err
 	}
 	return len(b), nil
+}
+
+// WriteBytes writes to the I²C bus without reading.
+//
+// This is a shorter form than Write(). It's a wrapper for Tx()
+func (d *Dev) WriteBytes(b ...byte) error {
+	return d.Tx([]IO{{WriteStop, b}})
 }
 
 // ReadReg writes the register number to the I²C bus, then reads data.

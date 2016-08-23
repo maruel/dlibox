@@ -95,7 +95,7 @@ func (b *Bus) Tx(ios []buses.IOFull) error {
 	return b.txFast(ios)
 }
 
-// tx sends and receives data as a single transaction.
+// txSlow sends and receives data as a single transaction by simply using a mutex.
 func (b *Bus) txSlow(ios []buses.IOFull) error {
 	// A limitation of txSlow() only.
 	addr := ios[0].Addr
@@ -144,17 +144,22 @@ func (b *Bus) setAddr(addr uint16) error {
 func (b *Bus) txFast(ios []buses.IOFull) error {
 	// Convert the messages to the internal format.
 	msgs := make([]i2cMsg, len(ios))
+	last := buses.WriteStop
 	for i := range ios {
 		msgs[i].addr = ios[i].Addr
 		switch ios[i].Op {
-		case buses.Write:
-		case buses.WriteStop:
-			msgs[i].flags = flagSTOP
-		case buses.Read:
-			msgs[i].flags = flagRD
-		case buses.ReadStop:
-			msgs[i].flags = flagRD | flagSTOP
+		case buses.Write, buses.WriteStop:
+			if last == buses.Write {
+				msgs[i].flags = flagNOSTART
+			}
+		case buses.Read, buses.ReadStop:
+			if last == buses.Read {
+				msgs[i].flags = flagRD | flagNOSTART
+			} else {
+				msgs[i].flags = flagRD
+			}
 		}
+		last = ios[i].Op
 		msgs[i].length = uint16(len(ios[i].Buf))
 		msgs[i].buf = uintptr(unsafe.Pointer(&ios[i].Buf[0]))
 	}
