@@ -19,12 +19,12 @@ import (
 
 	_ "image/png"
 
-	"github.com/maruel/dlibox/go/buses/i2c"
-	"github.com/maruel/dlibox/go/buses/ir"
-	"github.com/maruel/dlibox/go/buses/rpi"
 	"github.com/maruel/dlibox/go/bw2d"
-	"github.com/maruel/dlibox/go/devices/bme280"
-	"github.com/maruel/dlibox/go/devices/ssd1306"
+	"github.com/maruel/dlibox/go/pio/buses/i2c"
+	"github.com/maruel/dlibox/go/pio/buses/ir"
+	"github.com/maruel/dlibox/go/pio/buses/rpi"
+	"github.com/maruel/dlibox/go/pio/devices/bme280"
+	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
 )

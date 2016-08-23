@@ -13,7 +13,7 @@ package bme280
 import (
 	"errors"
 
-	"github.com/maruel/dlibox/go/buses"
+	"github.com/maruel/dlibox/go/pio/buses"
 )
 
 // Oversampling affects how much time is taken to measure each of temperature,

@@ -13,8 +13,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/maruel/dlibox/go/buses/i2c"
-	"github.com/maruel/dlibox/go/devices/bme280"
+	"github.com/maruel/dlibox/go/pio/buses/i2c"
+	"github.com/maruel/dlibox/go/pio/devices/bme280"
 )
 
 func mainImpl() error {

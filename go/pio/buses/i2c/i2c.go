@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/maruel/dlibox/go/buses"
+	"github.com/maruel/dlibox/go/pio/buses"
 )
 
 // Bus is an open I²C bus.

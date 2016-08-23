@@ -17,8 +17,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/buses"
-	"github.com/maruel/dlibox/go/buses/i2c"
+	"github.com/maruel/dlibox/go/pio/buses"
+	"github.com/maruel/dlibox/go/pio/buses/i2c"
 )
 
 func mainImpl() error {

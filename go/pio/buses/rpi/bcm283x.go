@@ -31,7 +31,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/maruel/dlibox/go/buses/ir"
+	"github.com/maruel/dlibox/go/pio/buses/ir"
 )
 
 // Function specifies the active functionality of a pin. The alternative

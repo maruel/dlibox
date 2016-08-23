@@ -18,7 +18,7 @@ package ssd1306
 import (
 	"errors"
 
-	"github.com/maruel/dlibox/go/buses"
+	"github.com/maruel/dlibox/go/pio/buses"
 )
 
 // FrameRate determines scrolling speed.

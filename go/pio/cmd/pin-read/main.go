@@ -14,7 +14,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/buses/rpi"
+	"github.com/maruel/dlibox/go/pio/buses/rpi"
 )
 
 func read(p rpi.Pin, edge rpi.Edge) {

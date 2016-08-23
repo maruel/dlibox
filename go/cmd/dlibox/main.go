@@ -22,14 +22,14 @@ import (
 
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/buses/i2c"
-	"github.com/maruel/dlibox/go/buses/rpi"
-	"github.com/maruel/dlibox/go/buses/spi"
 	"github.com/maruel/dlibox/go/bw2d"
-	"github.com/maruel/dlibox/go/devices/apa102"
-	"github.com/maruel/dlibox/go/devices/screen"
-	"github.com/maruel/dlibox/go/devices/ssd1306"
+	"github.com/maruel/dlibox/go/pio/buses/i2c"
+	"github.com/maruel/dlibox/go/pio/buses/rpi"
+	"github.com/maruel/dlibox/go/pio/buses/spi"
+	"github.com/maruel/dlibox/go/pio/devices/apa102"
+	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/psf"
+	"github.com/maruel/dlibox/go/screen"
 	"github.com/maruel/interrupt"
 )
 

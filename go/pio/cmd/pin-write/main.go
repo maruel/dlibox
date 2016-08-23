@@ -11,7 +11,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/buses/rpi"
+	"github.com/maruel/dlibox/go/pio/buses/rpi"
 )
 
 func mainImpl() error {
