@@ -13,7 +13,7 @@ package bme280
 import (
 	"errors"
 
-	"github.com/maruel/dlibox/go/buses/i2c"
+	"github.com/maruel/dlibox/go/buses"
 )
 
 // Oversampling affects how much time is taken to measure each of temperature,
@@ -65,7 +65,7 @@ const (
 )
 
 type Dev struct {
-	d *i2c.Dev
+	d buses.Dev
 	c calibration
 }
 
@@ -103,8 +103,8 @@ func (d *Dev) Stop() error {
 //
 // It is recommended to call Stop() when done with the device so it stops
 // sampling.
-func Make(i *i2c.Bus, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
-	d := &Dev{d: i.Device(0x76)}
+func Make(i buses.I2C, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
+	d := &Dev{d: buses.Dev{i, 0x76}}
 
 	config := []byte{
 		// ctrl_meas; put it to sleep otherwise the config update may be ignored.
@@ -119,46 +119,51 @@ func Make(i *i2c.Bus, temperature, pressure, humidity Oversampling, standby Stan
 
 	// The device starts in 2ms as per datasheet. No need to wait for boot to be
 	// finished.
-	cmds := []i2c.Cmd{
+
+	// Do all the I/O as one big transaction.
+	chipId := [1]byte{}
+	tph := [0xA2 - 0x88]byte{}
+	h := [0xE8 - 0xE1]byte{}
+	ios := []buses.IO{
 		// Read register 0xD0 to read the chip id.
-		{true, []byte{0xD0}},
-		{Buf: make([]byte, 1)},
+		{buses.Write, []byte{0xD0}},
+		{buses.ReadStop, chipId[:]},
 		// Read calibration data t1~3, p1~9, 8bits padding, h1.
-		{true, []byte{0x88}},
-		{Buf: make([]byte, 0xA2-0x88)},
+		{buses.Write, []byte{0x88}},
+		{buses.ReadStop, tph[:]},
 		// Read calibration data  h2~6
-		{true, []byte{0xE1}},
-		{Buf: make([]byte, 0xE8-0xE1)},
+		{buses.Write, []byte{0xE1}},
+		{buses.ReadStop, h[:]},
 		// Write config and start it.
-		{true, config},
+		{buses.WriteStop, config},
 	}
-	if err := d.d.Tx(cmds); err != nil {
+	if err := d.d.Tx(ios); err != nil {
 		return nil, err
 	}
 
-	if cmds[1].Buf[0] != 0x60 {
+	if chipId[0] != 0x60 {
 		return nil, errors.New("unexpected chip id; is this a BME280?")
 	}
 
-	d.c.t1 = uint16(cmds[3].Buf[0]) | uint16(cmds[3].Buf[1])<<8
-	d.c.t2 = int16(cmds[3].Buf[2]) | int16(cmds[3].Buf[3])<<8
-	d.c.t3 = int16(cmds[3].Buf[4]) | int16(cmds[3].Buf[5])<<8
-	d.c.p1 = uint16(cmds[3].Buf[6]) | uint16(cmds[3].Buf[7])<<8
-	d.c.p2 = int16(cmds[3].Buf[8]) | int16(cmds[3].Buf[9])<<8
-	d.c.p3 = int16(cmds[3].Buf[10]) | int16(cmds[3].Buf[11])<<8
-	d.c.p4 = int16(cmds[3].Buf[12]) | int16(cmds[3].Buf[13])<<8
-	d.c.p5 = int16(cmds[3].Buf[14]) | int16(cmds[3].Buf[15])<<8
-	d.c.p6 = int16(cmds[3].Buf[16]) | int16(cmds[3].Buf[17])<<8
-	d.c.p7 = int16(cmds[3].Buf[18]) | int16(cmds[3].Buf[19])<<8
-	d.c.p8 = int16(cmds[3].Buf[20]) | int16(cmds[3].Buf[21])<<8
-	d.c.p9 = int16(cmds[3].Buf[22]) | int16(cmds[3].Buf[23])<<8
-	d.c.h1 = uint8(cmds[3].Buf[25])
+	d.c.t1 = uint16(tph[0]) | uint16(tph[1])<<8
+	d.c.t2 = int16(tph[2]) | int16(tph[3])<<8
+	d.c.t3 = int16(tph[4]) | int16(tph[5])<<8
+	d.c.p1 = uint16(tph[6]) | uint16(tph[7])<<8
+	d.c.p2 = int16(tph[8]) | int16(tph[9])<<8
+	d.c.p3 = int16(tph[10]) | int16(tph[11])<<8
+	d.c.p4 = int16(tph[12]) | int16(tph[13])<<8
+	d.c.p5 = int16(tph[14]) | int16(tph[15])<<8
+	d.c.p6 = int16(tph[16]) | int16(tph[17])<<8
+	d.c.p7 = int16(tph[18]) | int16(tph[19])<<8
+	d.c.p8 = int16(tph[20]) | int16(tph[21])<<8
+	d.c.p9 = int16(tph[22]) | int16(tph[23])<<8
+	d.c.h1 = uint8(tph[25])
 
-	d.c.h2 = int16(cmds[3].Buf[0]) | int16(cmds[3].Buf[1])<<8
-	d.c.h3 = uint8(cmds[3].Buf[2])
-	d.c.h4 = int16(cmds[3].Buf[3])<<4 | int16(cmds[3].Buf[4])&0xF
-	d.c.h5 = int16(cmds[3].Buf[4])&0xF0 | int16(cmds[3].Buf[5])<<4
-	d.c.h6 = int8(cmds[3].Buf[6])
+	d.c.h2 = int16(h[0]) | int16(h[1])<<8
+	d.c.h3 = uint8(h[2])
+	d.c.h4 = int16(h[3])<<4 | int16(h[4])&0xF
+	d.c.h5 = int16(h[4])&0xF0 | int16(h[5])<<4
+	d.c.h6 = int8(h[6])
 	return d, nil
 }
 

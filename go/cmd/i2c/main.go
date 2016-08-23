@@ -17,6 +17,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/maruel/dlibox/go/buses"
 	"github.com/maruel/dlibox/go/buses/i2c"
 )
 
@@ -69,7 +70,7 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	d := i.Device(uint16(*addr))
+	d := buses.Dev{i, uint16(*addr)}
 	if *write {
 		_, err = d.Write(buf)
 	} else {

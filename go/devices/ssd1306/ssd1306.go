@@ -18,7 +18,7 @@ package ssd1306
 import (
 	"errors"
 
-	"github.com/maruel/dlibox/go/buses/i2c"
+	"github.com/maruel/dlibox/go/buses"
 )
 
 // FrameRate determines scrolling speed.
@@ -47,7 +47,7 @@ const (
 
 // Dev is an open handle to the display controler.
 type Dev struct {
-	d *i2c.Dev
+	d buses.Dev
 	W int
 	H int
 }
@@ -56,8 +56,8 @@ type Dev struct {
 // controler.
 //
 // If rotated, turns the display by 180°
-func Make(i *i2c.Bus, w, h int, rotated bool) (*Dev, error) {
-	d := &Dev{d: i.Device(0x3C), W: w, H: h}
+func Make(i buses.I2C, w, h int, rotated bool) (*Dev, error) {
+	d := &Dev{d: buses.Dev{i, 0x3C}, W: w, H: h}
 
 	contrast := byte(0x7F) // (default value)
 
@@ -109,18 +109,23 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 	if len(pixels) != d.H*d.W/8 {
 		return 0, errors.New("invalid pixel stream")
 	}
+
+	// Run everything as one big transaction to reduce downtime on the bus.
 	hdr := []byte{
 		0xA4,                      // Write data
 		0x40 | 0,                  // Start line
 		0x21, 0x00, byte(d.W - 1), // Set column address (Width)
 		0x22, 0x00, byte(d.H/8 - 1), // Set page address (Pages)
+	}
+	start := []byte{
 		0x40, // Pixel data
 	}
-	cmds := []i2c.Cmd{
-		{true, hdr},
-		{true, pixels},
+	ios := []buses.IO{
+		{buses.WriteStop, hdr},
+		{buses.Write, start},
+		{buses.Write, pixels},
 	}
-	if err := d.d.Tx(cmds); err != nil {
+	if err := d.d.Tx(ios); err != nil {
 		return 0, err
 	}
 	return len(pixels), nil
