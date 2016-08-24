@@ -19,6 +19,7 @@ enabled, lirc (IR) enabled and Bluetooth disabled with the following in
     dtoverlay=pi3-disable-bt
 
 then running:
+
     sudo systemctl disable hciuart
 
 For more information for enabling functional pins, see
