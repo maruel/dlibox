@@ -10,17 +10,18 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
 	"github.com/maruel/dlibox/go/pio/buses/rpi"
 )
 
 func makeMapping() ([]string, int) {
 	m := make([]string, 256)
-	doFunctionalPins(func(name string, p rpi.Pin) {
+	doFunctionalPins(func(name string, p bcm283x.Pin) {
 		m[p] = name
 	})
-	m[rpi.INVALID] = ""
+	m[bcm283x.INVALID] = ""
 	max := 0
-	for p := rpi.GPIO0; p <= rpi.GPIO53; p++ {
+	for p := bcm283x.GPIO0; p <= bcm283x.GPIO53; p++ {
 		if len(m[p]) == 0 {
 			m[p] = fmt.Sprintf("%s/%s", p.Function().String(), p.ReadInstant())
 		}
@@ -31,54 +32,54 @@ func makeMapping() ([]string, int) {
 	return m, max
 }
 
-func doFunctionalPins(pin func(name string, value rpi.Pin)) {
-	pin("GPCLK0", rpi.GPCLK0)
-	pin("GPCLK1", rpi.GPCLK1)
-	pin("GPCLK2", rpi.GPCLK2)
-	pin("I2C_SCL0", rpi.I2C_SCL0)
-	pin("I2C_SDA0", rpi.I2C_SDA0)
-	pin("I2C_SCL1", rpi.I2C_SCL1)
-	pin("I2C_SDA1", rpi.I2C_SDA1)
-	pin("IR_IN", rpi.IR_IN)
-	pin("IR_OUT", rpi.IR_OUT)
-	pin("PCM_CLK", rpi.PCM_CLK)
-	pin("PCM_FS", rpi.PCM_FS)
-	pin("PCM_DIN", rpi.PCM_DIN)
-	pin("PCM_DOUT", rpi.PCM_DOUT)
-	pin("PWM0_OUT", rpi.PWM0_OUT)
-	pin("PWM1_OUT", rpi.PWM1_OUT)
-	pin("SPI0_CE0", rpi.SPI0_CE0)
-	pin("SPI0_CE1", rpi.SPI0_CE1)
-	pin("SPI0_CLK", rpi.SPI0_CLK)
-	pin("SPI0_MISO", rpi.SPI0_MISO)
-	pin("SPI0_MOSI", rpi.SPI0_MOSI)
-	pin("SPI1_CE0", rpi.SPI1_CE0)
-	pin("SPI1_CE1", rpi.SPI1_CE1)
-	pin("SPI1_CE2", rpi.SPI1_CE2)
-	pin("SPI1_CLK", rpi.SPI1_CLK)
-	pin("SPI1_MISO", rpi.SPI1_MISO)
-	pin("SPI1_MOSI", rpi.SPI1_MOSI)
-	pin("UART_RXD0", rpi.UART_RXD0)
-	pin("UART_CTS0", rpi.UART_CTS0)
-	pin("UART_CTS1", rpi.UART_CTS1)
-	pin("UART_RTS0", rpi.UART_RTS0)
-	pin("UART_RTS1", rpi.UART_RTS1)
-	pin("UART_TXD0", rpi.UART_TXD0)
-	pin("UART_RXD1", rpi.UART_RXD1)
-	pin("UART_TXD1", rpi.UART_TXD1)
+func doFunctionalPins(pin func(name string, value bcm283x.Pin)) {
+	pin("GPCLK0", bcm283x.GPCLK0)
+	pin("GPCLK1", bcm283x.GPCLK1)
+	pin("GPCLK2", bcm283x.GPCLK2)
+	pin("I2C_SCL0", bcm283x.I2C_SCL0)
+	pin("I2C_SDA0", bcm283x.I2C_SDA0)
+	pin("I2C_SCL1", bcm283x.I2C_SCL1)
+	pin("I2C_SDA1", bcm283x.I2C_SDA1)
+	pin("IR_IN", bcm283x.IR_IN)
+	pin("IR_OUT", bcm283x.IR_OUT)
+	pin("PCM_CLK", bcm283x.PCM_CLK)
+	pin("PCM_FS", bcm283x.PCM_FS)
+	pin("PCM_DIN", bcm283x.PCM_DIN)
+	pin("PCM_DOUT", bcm283x.PCM_DOUT)
+	pin("PWM0_OUT", bcm283x.PWM0_OUT)
+	pin("PWM1_OUT", bcm283x.PWM1_OUT)
+	pin("SPI0_CE0", bcm283x.SPI0_CE0)
+	pin("SPI0_CE1", bcm283x.SPI0_CE1)
+	pin("SPI0_CLK", bcm283x.SPI0_CLK)
+	pin("SPI0_MISO", bcm283x.SPI0_MISO)
+	pin("SPI0_MOSI", bcm283x.SPI0_MOSI)
+	pin("SPI1_CE0", bcm283x.SPI1_CE0)
+	pin("SPI1_CE1", bcm283x.SPI1_CE1)
+	pin("SPI1_CE2", bcm283x.SPI1_CE2)
+	pin("SPI1_CLK", bcm283x.SPI1_CLK)
+	pin("SPI1_MISO", bcm283x.SPI1_MISO)
+	pin("SPI1_MOSI", bcm283x.SPI1_MOSI)
+	pin("UART_RXD0", bcm283x.UART_RXD0)
+	pin("UART_CTS0", bcm283x.UART_CTS0)
+	pin("UART_CTS1", bcm283x.UART_CTS1)
+	pin("UART_RTS0", bcm283x.UART_RTS0)
+	pin("UART_RTS1", bcm283x.UART_RTS1)
+	pin("UART_TXD0", bcm283x.UART_TXD0)
+	pin("UART_RXD1", bcm283x.UART_RXD1)
+	pin("UART_TXD1", bcm283x.UART_TXD1)
 }
 
 func printFunc(invalid bool) {
-	doFunctionalPins(func(name string, value rpi.Pin) {
-		if invalid || (value != rpi.INVALID && value.IsConnected()) {
+	doFunctionalPins(func(name string, value bcm283x.Pin) {
+		if invalid || (value != bcm283x.INVALID && rpi.IsConnected(value)) {
 			fmt.Printf("%-9s: %s\n", name, value)
 		}
 	})
 }
 
 func printGPIO(invalid bool, m []string, max int) {
-	for p := rpi.GPIO0; p <= rpi.GPIO53; p++ {
-		if p.IsConnected() {
+	for p := bcm283x.GPIO0; p <= bcm283x.GPIO53; p++ {
+		if rpi.IsConnected(p) {
 			fmt.Printf("%-6s: %s\n", p, m[p])
 		} else if invalid {
 			fmt.Printf("%-6s: %-*s (not connected)\n", p, max, m[p])
@@ -101,7 +102,7 @@ func printHardware(invalid bool, m []string, max int) {
 	fmt.Printf("    %*s %6s 21 x x 22 %-6s %s\n", max, m[rpi.P1_21], rpi.P1_21, rpi.P1_22, m[rpi.P1_22])
 	fmt.Printf("    %*s %6s 23 x x 24 %-6s %s\n", max, m[rpi.P1_23], rpi.P1_23, rpi.P1_24, m[rpi.P1_24])
 	fmt.Printf("    %*s %6s 25 x x 26 %-6s %s\n", max, m[rpi.P1_25], rpi.P1_25, rpi.P1_26, m[rpi.P1_26])
-	if rpi.P1_27 != rpi.INVALID || invalid {
+	if rpi.P1_27 != bcm283x.INVALID || invalid {
 		fmt.Printf("    %*s %6s 27 x x 28 %-6s %s\n", max, m[rpi.P1_27], rpi.P1_27, rpi.P1_28, m[rpi.P1_28])
 		fmt.Printf("    %*s %6s 29 x x 30 %-6s %s\n", max, m[rpi.P1_29], rpi.P1_29, rpi.P1_30, m[rpi.P1_30])
 		fmt.Printf("    %*s %6s 31 x x 32 %-6s %s\n", max, m[rpi.P1_31], rpi.P1_31, rpi.P1_32, m[rpi.P1_32])
@@ -110,7 +111,7 @@ func printHardware(invalid bool, m []string, max int) {
 		fmt.Printf("    %*s %6s 37 x x 38 %-6s %s\n", max, m[rpi.P1_37], rpi.P1_37, rpi.P1_38, m[rpi.P1_38])
 		fmt.Printf("    %*s %6s 39 x x 40 %-6s %s\n", max, m[rpi.P1_39], rpi.P1_39, rpi.P1_40, m[rpi.P1_40])
 	}
-	if rpi.P5_1 != rpi.INVALID || invalid {
+	if rpi.P5_1 != bcm283x.INVALID || invalid {
 		fmt.Print("\n")
 		fmt.Printf("P5: %*s %6s 1 x x 2 %-6s %s\n", max, m[rpi.P5_1], rpi.P5_2, rpi.P5_1, m[rpi.P5_2])
 		fmt.Printf("    %*s %6s 3 x x 4 %-6s %s\n", max, m[rpi.P5_3], rpi.P5_4, rpi.P5_3, m[rpi.P5_4])
@@ -142,7 +143,7 @@ func mainImpl() error {
 	}
 
 	if *info {
-		fmt.Printf("Version: %d  MaxSpeed: %dMhz\n", rpi.Version, rpi.MaxSpeed/1000000)
+		fmt.Printf("Version: %d  MaxSpeed: %dMhz\n", rpi.Version, bcm283x.MaxSpeed/1000000)
 	}
 	m, max := makeMapping()
 	if *fun {

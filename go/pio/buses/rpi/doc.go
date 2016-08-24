@@ -2,7 +2,8 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package rpi contains Raspberry Pi and BCM238x interfacing code.
+// Package rpi contains Raspberry Pi hardware logic. It is intrinsically
+// related to package bcm283x.
 //
 // Requires Raspbian Jessie.
 //

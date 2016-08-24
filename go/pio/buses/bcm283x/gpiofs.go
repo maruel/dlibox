@@ -16,7 +16,7 @@
 // All other functionality is using /dev/gpiomem since it is infinitely faster,
 // and GPIO sysfs doesn't expose pull resistors.
 
-package rpi
+package bcm283x
 
 import (
 	"fmt"

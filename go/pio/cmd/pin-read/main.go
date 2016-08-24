@@ -14,11 +14,11 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/pio/buses/rpi"
+	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
 )
 
-func read(p rpi.Pin, edge rpi.Edge) {
-	if p.ReadEdge() == rpi.Low {
+func read(p bcm283x.Pin, edge bcm283x.Edge) {
+	if p.ReadEdge() == bcm283x.Low {
 		os.Stdout.Write([]byte{'0', '\n'})
 	} else {
 		os.Stdout.Write([]byte{'1', '\n'})
@@ -39,27 +39,27 @@ func mainImpl() error {
 	}
 	log.SetFlags(log.Lmicroseconds)
 
-	//pull := rpi.PullNoChange
-	pull := rpi.Float
+	//pull := bcm283x.PullNoChange
+	pull := bcm283x.Float
 	if *pullUp {
 		if *pullDown {
 			return errors.New("use only one of -d or -u")
 		}
-		pull = rpi.Up
+		pull = bcm283x.Up
 	}
 	if *pullDown {
-		pull = rpi.Down
+		pull = bcm283x.Down
 	}
 	if flag.NArg() != 1 {
 		return errors.New("specify pin to read")
 	}
 
-	edge := rpi.EdgeNone
+	edge := bcm283x.EdgeNone
 	if *edgeRising {
-		edge |= rpi.Rising
+		edge |= bcm283x.Rising
 	}
 	if *edgeFalling {
-		edge |= rpi.Falling
+		edge |= bcm283x.Falling
 	}
 
 	pin, err := strconv.Atoi(flag.Args()[0])
@@ -69,7 +69,7 @@ func mainImpl() error {
 	if pin > 53 || pin < 0 {
 		return errors.New("specify pin between 0 and 53")
 	}
-	p := rpi.Pin(pin)
+	p := bcm283x.Pin(pin)
 
 	if err = p.In(pull, edge); err != nil {
 		return err

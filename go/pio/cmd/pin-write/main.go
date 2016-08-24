@@ -11,7 +11,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/pio/buses/rpi"
+	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
 )
 
 func mainImpl() error {
@@ -25,8 +25,10 @@ func mainImpl() error {
 	if pin > 53 || pin < 0 {
 		return errors.New("specify pin between 0 and 53")
 	}
-	p := rpi.Pin(pin)
-	p.Out()
+	p := bcm283x.Pin(pin)
+	if err := p.Out(); err != nil {
+		return err
+	}
 	switch os.Args[2] {
 	case "0":
 		p.SetLow()

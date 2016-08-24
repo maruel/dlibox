@@ -23,8 +23,8 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/bw2d"
+	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
 	"github.com/maruel/dlibox/go/pio/buses/i2c"
-	"github.com/maruel/dlibox/go/pio/buses/rpi"
 	"github.com/maruel/dlibox/go/pio/buses/spi"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
@@ -83,7 +83,7 @@ func mainImpl() error {
 	log.Printf("Config:\n%s", string(b))
 
 	fps := 60
-	if rpi.MaxSpeed < 900000 {
+	if bcm283x.MaxSpeed < 900000 {
 		// Use 30Hz on slower devices because it is too slow.
 		fps = 30
 	}
@@ -97,7 +97,7 @@ func mainImpl() error {
 		properties = append(properties, "fake=1")
 	} else {
 		// Verify the pinout is as expected.
-		if rpi.IR_OUT != rpi.GPIO5 || rpi.IR_IN != rpi.GPIO13 {
+		if bcm283x.IR_OUT != bcm283x.GPIO5 || bcm283x.IR_IN != bcm283x.GPIO13 {
 			return errors.New("configure lirc for out=5, in=13")
 		}
 		spiBus, err := spi.Make(0, 0, config.APA102.SPIspeed)
