@@ -87,7 +87,8 @@ Print the pins per GPIO number:
 ### Hardware
 
 Print the pins per their hardware location on the headers. This uses an
-internal lookup table then query each pin.
+internal lookup table then query each pin. Here's an example on a host with two
+SPI buses and lirc enabled:
 
     $ ./pins -h
     Header    Func  Name  Pos Pos  Name   Func
@@ -111,11 +112,6 @@ internal lookup table then query each pin.
         SPI1_MISO GPIO19 35 x x 36 GPIO16 In/High
            In/Low GPIO26 37 x x 38 GPIO20 SPI1_MOSI
                   GROUND 39 x x 40 GPIO21 SPI1_CLK
-    
-    P5:           INVALID 1 x x 2 INVALID 
-                  INVALID 3 x x 4 INVALID 
-                  INVALID 5 x x 6 INVALID 
-                  INVALID 7 x x 8 INVALID 
     
     AUDIO_LEFT  : GPIO41
     AUDIO_RIGHT : GPIO40
