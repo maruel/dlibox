@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/maruel/dlibox/go/pio/fakes/spi"
+	"github.com/maruel/temperature"
 )
 
 func TestRamp(t *testing.T) {
@@ -461,7 +462,7 @@ func TesttDevLong(t *testing.T) {
 }
 
 func BenchmarkRasterWhite(b *testing.B) {
-	pixels := make([]color.NRGBA, 150)
+	pixels := make([]color.NRGBA, 255)
 	for i := range pixels {
 		pixels[i] = color.NRGBA{255, 255, 255, 255}
 	}
@@ -475,9 +476,8 @@ func BenchmarkRasterWhite(b *testing.B) {
 }
 
 func BenchmarkRasterDim(b *testing.B) {
-	pixels := make([]color.NRGBA, 150)
+	pixels := make([]color.NRGBA, 255)
 	for i := range pixels {
-		// This is in the linear range.
 		pixels[i] = color.NRGBA{1, 1, 1, 1}
 	}
 	var buf []byte
@@ -490,12 +490,47 @@ func BenchmarkRasterDim(b *testing.B) {
 }
 
 func BenchmarkRasterBlack(b *testing.B) {
-	pixels := make([]color.NRGBA, 150)
+	pixels := make([]color.NRGBA, 255)
 	var buf []byte
 	// Prime the buffer first.
 	raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
+	}
+}
+
+func BenchmarkRasterColorful(b *testing.B) {
+	pixels := make([]color.NRGBA, 255)
+	for i := range pixels {
+		pixels[i] = color.NRGBA{uint8(i), 255 - uint8(i), uint8(i) + 127, 255}
+	}
+	var buf []byte
+	// Prime the buffer first.
+	tr, tg, tb := temperature.ToRGB(5000)
+	maxR := uint16((uint32(maxOut)*uint32(250)*uint32(tr) + 127*127) / 65025)
+	maxG := uint16((uint32(maxOut)*uint32(250)*uint32(tg) + 127*127) / 65025)
+	maxB := uint16((uint32(maxOut)*uint32(250)*uint32(tb) + 127*127) / 65025)
+	raster(ToRGB(pixels), &buf, maxR, maxG, maxB)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		raster(ToRGB(pixels), &buf, maxR, maxG, maxB)
+	}
+}
+
+func BenchmarkRasterColorfulVariation(b *testing.B) {
+	pixels := make([]color.NRGBA, 255)
+	for i := range pixels {
+		pixels[i] = color.NRGBA{uint8(i), 255 - uint8(i), uint8(i) + 127, 255}
+	}
+	var buf []byte
+	b.ResetTimer()
+	// Continuously vary the lookup tables.
+	for i := 0; i < b.N; i++ {
+		tr, tg, tb := temperature.ToRGB(uint16(4000 + (i&7)*400))
+		maxR := uint16((uint32(maxOut)*uint32(250)*uint32(tr) + 127*127) / 65025)
+		maxG := uint16((uint32(maxOut)*uint32(250)*uint32(tg) + 127*127) / 65025)
+		maxB := uint16((uint32(maxOut)*uint32(250)*uint32(tb) + 127*127) / 65025)
+		raster(ToRGB(pixels), &buf, maxR, maxG, maxB)
 	}
 }
