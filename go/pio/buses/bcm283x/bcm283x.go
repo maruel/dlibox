@@ -157,24 +157,24 @@ const (
 	GPIO9   Pin = 9   // Low,   SPI0_MISO
 	GPIO10  Pin = 10  // Low,   SPI0_MOSI
 	GPIO11  Pin = 11  // Low,   SPI0_CLK
-	GPIO12  Pin = 12  // Low,   PWM0
-	GPIO13  Pin = 13  // Low,   PWM1
+	GPIO12  Pin = 12  // Low,   PWM0_OUT
+	GPIO13  Pin = 13  // Low,   PWM1_OUT
 	GPIO14  Pin = 14  // Low,   UART_TXD0, UART_TXD1
 	GPIO15  Pin = 15  // Low,   UART_RXD0, UART_RXD1
-	GPIO16  Pin = 16  // Low,
-	GPIO17  Pin = 17  // Low,   SPI1_CE1, IR_IN
-	GPIO18  Pin = 18  // Low,   IR_OUT
-	GPIO19  Pin = 19  // Low,
-	GPIO20  Pin = 20  // Low,
-	GPIO21  Pin = 21  // Low,
+	GPIO16  Pin = 16  // Low,   UART_CTS0, SPI1_CE2, UART_CTS1
+	GPIO17  Pin = 17  // Low,   UART_RTS0, SPI1_CE1, UART_RTS1
+	GPIO18  Pin = 18  // Low,   PCM_CLK, SPI1_CE0, PWM0_OUT
+	GPIO19  Pin = 19  // Low,   PCM_FS, SPI1_MISO, PWM1_OUT
+	GPIO20  Pin = 20  // Low,   PCM_DIN, SPI1_MOSI, GPCLK0
+	GPIO21  Pin = 21  // Low,   PCM_DOUT, SPI1_CLK, GPCLK1
 	GPIO22  Pin = 22  // Low,
 	GPIO23  Pin = 23  // Low,
 	GPIO24  Pin = 24  // Low,
 	GPIO25  Pin = 25  // Low,
 	GPIO26  Pin = 26  // Low,
 	GPIO27  Pin = 27  // Low,
-	GPIO28  Pin = 28  // Float, SDA0, PCM_CLK
-	GPIO29  Pin = 29  // Float, SCL0, PCM_FS
+	GPIO28  Pin = 28  // Float, I2C_SDA0, PCM_CLK
+	GPIO29  Pin = 29  // Float, I2C_SCL0, PCM_FS
 	GPIO30  Pin = 30  // Low,   PCM_DIN, UART_CTS0, UARTS_CTS1
 	GPIO31  Pin = 31  // Low,   PCM_DOUT, UART_RTS0, UARTS_RTS1
 	GPIO32  Pin = 32  // Low,   GPCLK0, UART_TXD0, UARTS_TXD1
@@ -185,8 +185,8 @@ const (
 	GPIO37  Pin = 37  // Low,   SPI0_MISO, UART_RXD0
 	GPIO38  Pin = 38  // Low,   SPI0_MOSI, UART_RTS0
 	GPIO39  Pin = 39  // Low,   SPI0_CLK, UART_CTS0
-	GPIO40  Pin = 40  // Low,   PWM0_OUT; with low pass filter
-	GPIO41  Pin = 41  // Low,   PWM1_OUT; with low pass filter
+	GPIO40  Pin = 40  // Low,   PWM0_OUT, SPI2_MISO, UART_TXD1
+	GPIO41  Pin = 41  // Low,   PWM1_OUT, SPI2_MOSI, UART_RXD1
 	GPIO42  Pin = 42  // Low,   GPCLK1, SPI2_CLK, UART_RTS1
 	GPIO43  Pin = 43  // Low,   GPCLK2, SPI2_CE0, UART_CTS1
 	GPIO44  Pin = 44  // Float, GPCLK1, I2C_SDA0, I2C_SDA1, SPI2_CE1
@@ -205,10 +205,10 @@ const (
 // set at runtime. Changing the value of the variables has no effect.
 var (
 	GPCLK0    Pin = INVALID // GPIO4, GPIO20, GPIO32, GPIO34 (also named GPIO_GCLK)
-	GPCLK1    Pin = INVALID // GPIO5, GPIO21
-	GPCLK2    Pin = INVALID // GPIO6
-	I2C_SCL0  Pin = INVALID // GPIO1, GPIO28, GPIO45
-	I2C_SDA0  Pin = INVALID // GPIO0, GPIO29, GPIO44
+	GPCLK1    Pin = INVALID // GPIO5, GPIO21, GPIO42, GPIO44
+	GPCLK2    Pin = INVALID // GPIO6, GPIO43
+	I2C_SCL0  Pin = INVALID // GPIO1, GPIO29, GPIO45
+	I2C_SDA0  Pin = INVALID // GPIO0, GPIO28, GPIO44
 	I2C_SCL1  Pin = INVALID // GPIO3, GPIO45
 	I2C_SDA1  Pin = INVALID // GPIO2, GPIO44
 	IR_IN     Pin = INVALID // (any GPIO)
@@ -604,25 +604,26 @@ func init() {
 	setIfAlt(GPIO20, &PCM_DIN, nil, nil, nil, &SPI1_MOSI, &GPCLK0)
 	setIfAlt(GPIO21, &PCM_DOUT, nil, nil, nil, &SPI1_CLK, &GPCLK1)
 	// GPIO22-GPIO27 do not have interesting alternate function.
-	setIfAlt0(GPIO28, &I2C_SDA0)                                           // Not connected
-	setIfAlt0(GPIO29, &I2C_SCL0)                                           // Not connected
-	setIfAlt(GPIO30, nil, nil, nil, &UART_CTS0, nil, &UART_CTS1)           // Not connected
-	setIfAlt(GPIO31, nil, nil, nil, &UART_RTS0, nil, &UART_RTS1)           // Not connected
-	setIfAlt(GPIO32, &GPCLK0, nil, nil, &UART_TXD0, nil, &UART_TXD1)       // Not connected
-	setIfAlt(GPIO33, nil, nil, nil, &UART_RXD0, nil, &UART_RXD1)           // Not connected
-	setIfAlt0(GPIO34, &GPCLK0)                                             // Not connected
-	setIfAlt0(GPIO35, &SPI0_CE1)                                           // Not connected
-	setIfAlt(GPIO36, &SPI0_CE0, nil, &UART_TXD0, nil, nil, nil)            // Not connected
-	setIfAlt(GPIO37, &SPI0_MISO, nil, &UART_RXD0, nil, nil, nil)           // Not connected
-	setIfAlt(GPIO38, &SPI0_MOSI, nil, &UART_RTS0, nil, nil, nil)           // Not connected
-	setIfAlt(GPIO39, &SPI0_CLK, nil, &UART_CTS0, nil, nil, nil)            // Not connected
-	setIfAlt(GPIO40, &PWM0_OUT, nil, nil, nil, &SPI2_MISO, &UART_TXD1)     // Connected to audio right
-	setIfAlt(GPIO41, &PWM1_OUT, nil, nil, nil, &SPI2_MOSI, &UART_RXD1)     // Connected to audio left
-	setIfAlt(GPIO42, &GPCLK1, nil, nil, nil, &SPI2_CLK, &UART_RTS1)        // Not connected
-	setIfAlt(GPIO43, &GPCLK2, nil, nil, nil, &SPI2_CE0, &UART_CTS1)        // Not connected
-	setIfAlt(GPIO44, &GPCLK1, &I2C_SDA0, &I2C_SDA1, nil, &SPI2_CE1, nil)   // Not connected
-	setIfAlt(GPIO45, &PWM1_OUT, &I2C_SCL0, &I2C_SCL1, nil, &SPI2_CE2, nil) // Not connected
-	// GPIO46-GPIO53 do not have interesting alternate function.
+	setIfAlt(GPIO28, &I2C_SDA0, nil, &PCM_CLK, nil, nil, nil)
+	setIfAlt(GPIO29, &I2C_SCL0, nil, &PCM_FS, nil, nil, nil)
+	setIfAlt(GPIO30, nil, nil, &PCM_DIN, &UART_CTS0, nil, &UART_CTS1)
+	setIfAlt(GPIO31, nil, nil, &PCM_DOUT, &UART_RTS0, nil, &UART_RTS1)
+	setIfAlt(GPIO32, &GPCLK0, nil, nil, &UART_TXD0, nil, &UART_TXD1)
+	setIfAlt(GPIO33, nil, nil, nil, &UART_RXD0, nil, &UART_RXD1)
+	setIfAlt0(GPIO34, &GPCLK0)
+	setIfAlt0(GPIO35, &SPI0_CE1)
+	setIfAlt(GPIO36, &SPI0_CE0, nil, &UART_TXD0, nil, nil, nil)
+	setIfAlt(GPIO37, &SPI0_MISO, nil, &UART_RXD0, nil, nil, nil)
+	setIfAlt(GPIO38, &SPI0_MOSI, nil, &UART_RTS0, nil, nil, nil)
+	setIfAlt(GPIO39, &SPI0_CLK, nil, &UART_CTS0, nil, nil, nil)
+	setIfAlt(GPIO40, &PWM0_OUT, nil, nil, nil, &SPI2_MISO, &UART_TXD1)
+	setIfAlt(GPIO41, &PWM1_OUT, nil, nil, nil, &SPI2_MOSI, &UART_RXD1)
+	setIfAlt(GPIO42, &GPCLK1, nil, nil, nil, &SPI2_CLK, &UART_RTS1)
+	setIfAlt(GPIO43, &GPCLK2, nil, nil, nil, &SPI2_CE0, &UART_CTS1)
+	setIfAlt(GPIO44, &GPCLK1, &I2C_SDA0, &I2C_SDA1, nil, &SPI2_CE1, nil)
+	setIfAlt(GPIO45, &PWM1_OUT, &I2C_SCL0, &I2C_SCL1, nil, &SPI2_CE2, nil)
+	// GPIO46 doesn't have interesting alternate function.
+	// GPIO47-GPIO53 are connected to the SDCard.
 
 	in, out := ir.Pins()
 	if in != -1 {
