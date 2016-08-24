@@ -23,7 +23,7 @@ then running:
     sudo systemctl disable hciuart
 
 For more information for enabling functional pins, see
-Doc](https://godoc.org/github.com/maruel/dlibox/go/rpi?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/rpi).
+[![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio/buses/rpi?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio/buses/rpi).
 
 
 ### Functional
