@@ -4,7 +4,8 @@
 
 // Package bme280 controls a Bosch BME280 device over I²C.
 //
-// Implemented as per datasheet at
+// Datasheet
+//
 // https://cdn-shop.adafruit.com/datasheets/BST-BME280_DS001-10.pdf
 package bme280
 

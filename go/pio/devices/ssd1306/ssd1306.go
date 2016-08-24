@@ -5,7 +5,8 @@
 // Package ssd1306 controls a 128x64 monochrome OLED display via a ssd1306
 // controler.
 //
-// Implemented as per datasheet at
+// Datasheet
+//
 // https://cdn-shop.adafruit.com/datasheets/SSD1306.pdf
 package ssd1306
 

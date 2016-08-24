@@ -3,8 +3,6 @@
 // that can be found in the LICENSE file.
 
 // i2c is a small app to communicate an I²C device.
-//
-//
 package main
 
 import (

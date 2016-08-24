@@ -10,8 +10,10 @@
 // TODO(maruel): "dtoverlay=pwm" or "dtoverlay=pwm-2chan" works without having
 // to install anything, albeit with less pins supported.
 //
-// Warning: piblaster doesn't report what pins is controls so it is easy to
-// misuse this library.
+// Warning
+//
+// piblaster doesn't report what pins is controls so it is easy to misuse this
+// library.
 package piblaster
 
 import (
