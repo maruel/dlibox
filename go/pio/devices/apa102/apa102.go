@@ -7,8 +7,8 @@ package apa102
 import (
 	"errors"
 	"image/color"
-	"io"
 
+	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/temperature"
 )
 
@@ -71,7 +71,6 @@ func ensureRampCached(max uint16) *rampTable {
 
 // Serializes converts a buffer of colors to the APA102 SPI format.
 func raster(pixels []byte, buf *[]byte, maxR, maxG, maxB uint16) {
-	// https://cpldcpu.files.wordpress.com/2014/08/apa-102c-super-led-specifications-2014-en.pdf
 	numLights := len(pixels) / 3
 	// End frames are needed to be able to push enough SPI clock signals due to
 	// internal half-delay of data signal from each individual LED. See
@@ -143,7 +142,7 @@ func raster(pixels []byte, buf *[]byte, maxR, maxG, maxB uint16) {
 type Dev struct {
 	Intensity   uint8  // Set an intensity between 0 (off) and 255 (full brightness).
 	Temperature uint16 // In Kelvin.
-	w           io.Writer
+	s           buses.SPI
 	buf         []byte
 }
 
@@ -169,25 +168,30 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 	g := uint16((uint32(maxOut)*uint32(d.Intensity)*uint32(tg) + 127*127) / 65025)
 	b := uint16((uint32(maxOut)*uint32(d.Intensity)*uint32(tb) + 127*127) / 65025)
 	raster(pixels, &d.buf, r, g, b)
-	_, err := d.w.Write(d.buf)
+	_, err := d.s.Write(d.buf)
 	return len(pixels), err
 }
 
 // Make returns a strip that communicates over SPI to APA102 LEDs.
 //
-// w should be a *SPI as returned by spi.Make. The speed must be high, as
+// The SPI bus speed should be high, at least in the Mhz range, as
 // there's 32 bits sent per LED, creating a staggered effect. See
 // https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
 //
-// As per APA102-C spec, it's max refresh rate is 400hz.
+// Temperature is in °Kelvin and a reasonable default value is 6500°K.
+//
+// As per APA102-C spec, the chip's max refresh rate is 400hz.
 // https://en.wikipedia.org/wiki/Flicker_fusion_threshold is a recommended
 // reading.
-func Make(w io.Writer) *Dev {
-	return &Dev{
-		Intensity:   255,
-		Temperature: 6500,
-		w:           w,
+func Make(s buses.SPI, intensity uint8, temperature uint16) (*Dev, error) {
+	if err := s.Configure(buses.Mode3, 8); err != nil {
+		return nil, err
 	}
+	return &Dev{
+		Intensity:   intensity,
+		Temperature: temperature,
+		s:           s,
+	}, nil
 }
 
 //

@@ -2,8 +2,11 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package screen implements a ANSI terminal LED emulator while you are waiting
-// for your super nice APA-102 LED strip to come by mail.
+// Package screen implements a fake APA102 LED strip that instead outputs to
+// terminal (stdout) using ANSI color codes.
+//
+// Useful while you are waiting for your super nice APA-102 LED strip to come
+// by mail.
 package screen
 
 import (

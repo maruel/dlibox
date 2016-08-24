@@ -6,8 +6,6 @@
 //
 // Implemented as per datasheet at
 // https://cdn-shop.adafruit.com/datasheets/BST-BME280_DS001-10.pdf
-//
-// Mostly implemented it to prove myself I can still read a datasheet at my age.
 package bme280
 
 import (

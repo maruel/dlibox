@@ -32,9 +32,6 @@ type Bus struct {
 // https://www.kernel.org/doc/Documentation/i2c/dev-interface It is not
 // Raspberry Pi specific.
 //
-// `bus` should normally be 1, unless I2C0 was manually enabled.
-//
-//
 // The resulting object is safe for concurent use.
 func Make(bus int) (*Bus, error) {
 	f, err := os.OpenFile(fmt.Sprintf("/dev/i2c-%d", bus), os.O_RDWR, os.ModeExclusive)

@@ -7,8 +7,6 @@
 //
 // Implemented as per datasheet at
 // https://cdn-shop.adafruit.com/datasheets/SSD1306.pdf
-//
-// Mostly implemented it to prove myself I can still read a datasheet at my age.
 package ssd1306
 
 // Some have SPI enabled;

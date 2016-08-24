@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package spi implements a sane SPI sysfs library that is generic.
+// Package spi implements a sane SPI sysfs library.
 package spi
 
 import (
@@ -11,6 +11,16 @@ import (
 	"os"
 	"syscall"
 	"unsafe"
+
+	"github.com/maruel/dlibox/go/pio/buses"
+)
+
+const (
+	cSHigh    buses.Mode = 0x4
+	lSBFirst  buses.Mode = 0x8
+	threeWire buses.Mode = 0x10
+	loop      buses.Mode = 0x20
+	noCS      buses.Mode = 0x40
 )
 
 // Bus is an open SPI bus.
@@ -19,41 +29,29 @@ type Bus struct {
 }
 
 // Make opens a *Bus via its sysfs interface as described at
-// https://www.kernel.org/doc/Documentation/spi/spidev. It is not Raspberry Pi
-// specific.
-//
-// `bus` should normally be 0, unless SPI1 was manually enabled.
-//
-// `chipSelect` should normally be 0, unless CE lines were manually enabled.
+// https://www.kernel.org/doc/Documentation/spi/spidev.
 //
 // `speed` must be specified and should be in the high Khz or low Mhz range,
 // it's a good idea to start at 4000000 (4Mhz) and go upward as long as the
 // signal is good.
+//
+// Default configuration is Mode3 and 8 bits.
 func Make(bus, chipSelect int, speed int64) (*Bus, error) {
+	if bus < 0 || bus > 255 {
+		return nil, errors.New("invalid bus")
+	}
+	if chipSelect < 0 || chipSelect > 255 {
+		return nil, errors.New("invalid chip select")
+	}
 	if speed < 1000 {
 		return nil, errors.New("invalid speed")
 	}
 	f, err := os.OpenFile(fmt.Sprintf("/dev/spidev%d.%d", bus, chipSelect), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
-		// Try to be helpful here. There are generally two cases:
-		// - /dev/spidevX.Y doesn't exist. In this case, /boot/config.txt has to be
-		//   edited to enable SPI then the device must be rebooted.
-		// - permission denied. In this case, the user has to be added to plugdev.
-		if os.IsNotExist(err) {
-			return nil, errors.New("SPI is not configured; please follow instructions at https://github.com/maruel/dlibox/tree/master/go/setup")
-		}
-		return nil, fmt.Errorf("are you member of group 'plugdev'? please follow instructions at https://github.com/maruel/dlibox/tree/master/go/setup. %s", err)
+		return nil, err
 	}
 	s := &Bus{f: f}
-	if err := s.setFlag(spiIOCMode, 3); err != nil {
-		s.Close()
-		return nil, err
-	}
-	if err := s.setFlag(spiIOCBitsPerWord, 8); err != nil {
-		s.Close()
-		return nil, err
-	}
-	if err := s.setFlag(spiIOCMaxSpeedHz, uint64(speed)); err != nil {
+	if err := s.Configure(buses.Mode3, 8); err != nil {
 		s.Close()
 		return nil, err
 	}
@@ -66,6 +64,17 @@ func (s *Bus) Close() error {
 	err := s.f.Close()
 	s.f = nil
 	return err
+}
+
+// Configure changes the communication parameters of the bus.
+func (s *Bus) Configure(mode buses.Mode, bits int) error {
+	if bits < 1 || bits > 256 {
+		return errors.New("invalid bits")
+	}
+	if err := s.setFlag(spiIOCMode, uint64(mode)); err != nil {
+		return err
+	}
+	return s.setFlag(spiIOCBitsPerWord, uint64(bits))
 }
 
 // Write writes to the SPI bus without reading.
@@ -93,7 +102,7 @@ func (s *Bus) Tx(w, r []byte) error {
 const (
 	spiIOCMode        = 0x16B01
 	spiIOCBitsPerWord = 0x16B03
-	spiIOCMaxSpeedHz  = 0x46B04
+	spiIOCMaxSpeedHz  = 0x16B04
 	spiIOCTx          = 0x206B00
 )
 

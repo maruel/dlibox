@@ -8,8 +8,9 @@ import (
 	"bytes"
 	"fmt"
 	"image/color"
-	"io"
 	"testing"
+
+	"github.com/maruel/dlibox/go/pio/fakes/spi"
 )
 
 func TestRamp(t *testing.T) {
@@ -319,42 +320,30 @@ func TestRampMonotonic(t *testing.T) {
 }
 
 func TestDevEmpty(t *testing.T) {
-	b := &bytes.Buffer{}
-	d := &Dev{
-		Intensity:   255,
-		Temperature: 6500,
-		w:           nopCloser{b},
-	}
+	b := &spi.Bus{}
+	d, _ := Make(b, 255, 6500)
 	if n, err := d.Write([]byte{}); n != 0 || err != nil {
 		t.Fail()
 	}
-	if !bytes.Equal([]byte{0x0, 0x0, 0x0, 0x0, 0xFF}, b.Bytes()) {
+	if !bytes.Equal([]byte{0x0, 0x0, 0x0, 0x0, 0xFF}, b.Buf.Bytes()) {
 		t.Fail()
 	}
 }
 
 func TestDevLen(t *testing.T) {
-	b := &bytes.Buffer{}
-	d := &Dev{
-		Intensity:   255,
-		Temperature: 6500,
-		w:           nopCloser{b},
-	}
+	b := &spi.Bus{}
+	d, _ := Make(b, 255, 6500)
 	if n, err := d.Write([]byte{0}); n != 0 || err != errLength {
 		t.Fail()
 	}
-	if !bytes.Equal([]byte{}, b.Bytes()) {
+	if !bytes.Equal([]byte{}, b.Buf.Bytes()) {
 		t.Fail()
 	}
 }
 
 func TestDev(t *testing.T) {
-	b := &bytes.Buffer{}
-	d := &Dev{
-		Intensity:   255,
-		Temperature: 6500,
-		w:           nopCloser{b},
-	}
+	b := &spi.Bus{}
+	d, _ := Make(b, 255, 6500)
 	colors := []color.NRGBA{
 		{0xFF, 0xFF, 0xFF, 0x00},
 		{0xFE, 0xFE, 0xFE, 0x00},
@@ -384,18 +373,14 @@ func TestDev(t *testing.T) {
 		0xE1, 0x00, 0x00, 0x00,
 		0xFF,
 	}
-	if !bytes.Equal(expected, b.Bytes()) {
+	if !bytes.Equal(expected, b.Buf.Bytes()) {
 		t.Fail()
 	}
 }
 
 func TestDevIntensity(t *testing.T) {
-	b := &bytes.Buffer{}
-	d := &Dev{
-		Intensity:   127,
-		Temperature: 6500,
-		w:           nopCloser{b},
-	}
+	b := &spi.Bus{}
+	d, _ := Make(b, 127, 6500)
 	colors := []color.NRGBA{
 		{0xFF, 0xFF, 0xFF, 0x00},
 		{0xFE, 0xFE, 0xFE, 0x00},
@@ -425,18 +410,14 @@ func TestDevIntensity(t *testing.T) {
 		0xE1, 0x00, 0x00, 0x00,
 		0xFF,
 	}
-	if !bytes.Equal(expected, b.Bytes()) {
+	if !bytes.Equal(expected, b.Buf.Bytes()) {
 		t.Fail()
 	}
 }
 
 func TestDevTemperatureWarm(t *testing.T) {
-	b := &bytes.Buffer{}
-	d := &Dev{
-		Intensity:   255,
-		Temperature: 5000,
-		w:           nopCloser{b},
-	}
+	b := &spi.Bus{}
+	d, _ := Make(b, 255, 5000)
 	colors := []color.NRGBA{
 		{0xFF, 0xFF, 0xFF, 0x00},
 		{0x80, 0x80, 0x80, 0x00},
@@ -454,18 +435,14 @@ func TestDevTemperatureWarm(t *testing.T) {
 		0xE1, 0x00, 0x00, 0x00,
 		0xFF,
 	}
-	if !bytes.Equal(expected, b.Bytes()) {
+	if !bytes.Equal(expected, b.Buf.Bytes()) {
 		t.Fail()
 	}
 }
 
 func TesttDevLong(t *testing.T) {
-	b := &bytes.Buffer{}
-	d := &Dev{
-		Intensity:   255,
-		Temperature: 6500,
-		w:           nopCloser{b},
-	}
+	b := &spi.Bus{}
+	d, _ := Make(b, 255, 6500)
 	colors := make([]color.NRGBA, 256)
 	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
 		t.Fail()
@@ -478,7 +455,7 @@ func TesttDevLong(t *testing.T) {
 	for i := range trailer {
 		trailer[i] = 0xFF
 	}
-	if !bytes.Equal(expected, b.Bytes()) {
+	if !bytes.Equal(expected, b.Buf.Bytes()) {
 		t.Fail()
 	}
 }
@@ -521,14 +498,4 @@ func BenchmarkRasterBlack(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
 	}
-}
-
-//
-
-type nopCloser struct {
-	io.Writer
-}
-
-func (nopCloser) Close() error {
-	return nil
 }

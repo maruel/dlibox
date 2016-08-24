@@ -3,6 +3,8 @@
 // that can be found in the LICENSE file.
 
 // Package ir implements InfraRed receiver support through native linux lirc.
+//
+// See http://www.lirc.org/ for details about daemon configuration.
 package ir
 
 import (

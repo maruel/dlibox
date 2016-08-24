@@ -28,8 +28,8 @@ import (
 	"github.com/maruel/dlibox/go/pio/buses/spi"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
+	"github.com/maruel/dlibox/go/pio/fakes/screen"
 	"github.com/maruel/dlibox/go/psf"
-	"github.com/maruel/dlibox/go/screen"
 	"github.com/maruel/interrupt"
 )
 
@@ -89,9 +89,9 @@ func mainImpl() error {
 	}
 
 	// Output (screen or APA102).
-	var s io.Writer
+	var leds io.Writer
 	if *fake {
-		s = screen.Make()
+		leds = screen.Make()
 		// Use lower refresh rate too.
 		fps = 30
 		properties = append(properties, "fake=1")
@@ -104,10 +104,12 @@ func mainImpl() error {
 		if err != nil {
 			return err
 		}
-		s = apa102.Make(spiBus)
+		if leds, err = apa102.Make(spiBus, 255, 6500); err != nil {
+			return err
+		}
 
 		i2cBus, err := i2c.Make(1)
-		s, err := ssd1306.Make(i2cBus, 128, 64, false)
+		display, err := ssd1306.Make(i2cBus, 128, 64, false)
 		if err != nil {
 			return err
 		}
@@ -121,10 +123,10 @@ func mainImpl() error {
 		}
 		// TODO(maruel): Leverage bme280 while at it but don't fail if not
 		// connected.
-		img := bw2d.Make(s.W, s.H)
+		img := bw2d.Make(display.W, display.H)
 		f20.Draw(img, 0, 0, bw2d.On, nil, "dlibox!")
-		f12.Draw(img, 0, s.H-f12.H-1, bw2d.On, nil, "is awesome")
-		if _, err = s.Write(img.Buf); err != nil {
+		f12.Draw(img, 0, display.H-f12.H-1, bw2d.On, nil, "is awesome")
+		if _, err = display.Write(img.Buf); err != nil {
 			return err
 		}
 
@@ -137,7 +139,7 @@ func mainImpl() error {
 		// Hardcode to 100 characters when using a terminal output.
 		numLights = 100
 	}
-	p := anim1d.MakePainter(s, numLights, fps)
+	p := anim1d.MakePainter(leds, numLights, fps)
 	if err := config.Init(p); err != nil {
 		return err
 	}
