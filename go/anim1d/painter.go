@@ -135,12 +135,7 @@ func (p *Painter) runWrite(cGen, cWrite chan Frame, numLights int) {
 			return
 		}
 		if err == nil {
-			// Convert the Frame to the raw RGB stream.
-			for i := range pixels {
-				buf[3*i] = pixels[i].R
-				buf[3*i+1] = pixels[i].G
-				buf[3*i+2] = pixels[i].B
-			}
+			pixels.ToRGB(buf)
 			if _, err = p.s.Write(buf); err != nil {
 				log.Printf("Writing failed: %s", err)
 			}

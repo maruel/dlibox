@@ -67,6 +67,15 @@ func (f Frame) Mix(b Frame, gradient uint8) {
 	}
 }
 
+// ToRGB converts the Frame to a raw RGB stream.
+func (f Frame) ToRGB(b []byte) {
+	for i := range f {
+		b[3*i] = f[i].R
+		b[3*i+1] = f[i].G
+		b[3*i+2] = f[i].B
+	}
+}
+
 // reset() always resets the buffer to black.
 func (f *Frame) reset(l int) {
 	if len(*f) != l {
@@ -91,7 +100,7 @@ func (f Frame) isEqual(rhs Frame) bool {
 	return true
 }
 
-// MakeRainbow renders rainbow colors.
+// Rainbow renders rainbow colors.
 type Rainbow struct {
 	buf Frame
 }
