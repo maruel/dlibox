@@ -73,7 +73,9 @@
 //
 // SPI
 //
-// The BCM238x has 3 SPI buses but only two are usable.
+// The BCM238x has 3 SPI buses but only two are usable. The pins implementing
+// bcm283x.SPI2_xxx pins are not physically usable because they are not
+// connected to hardware pins on the board.
 //
 // - /dev/spidev0.0 and /dev/spidev0.1 can be enabled with:
 //     dtparam=spi=on

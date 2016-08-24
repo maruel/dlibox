@@ -2,7 +2,8 @@
 
 Buses are connection points where devices can be connected on.
 
-* i2c uses sysfs to communicate with multiple devices on a I²C bus
-* ir uses lircd to send and receive infra red based remote signals
-* rpi implements GPIO use on BCM283x CPU plus hardware header representation
-* spi uses sysfs to communicate with a device on a SPI bus
+* [bcm283x](bcm283x) exposes GPIO functionality as found on the CPU
+* [i2c](i2c) exposes an I²C bus via sysfs
+* [ir](ir) exposes infra red remote support via lircd
+* [rpi](rpi) exposes Raspberry Pi specific hardware functionality
+* [spi](spi) exposes a SPI bus via sysfs

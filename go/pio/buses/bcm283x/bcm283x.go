@@ -19,15 +19,14 @@
 // The downside of gpio sysfs, beside performance, is that it does not expose
 // the internal pull resistors (pull-up, pull-down). The only way to set them
 // is via /dev/gpiomem.
-
-// Get string from go get -u golang.org/x/tools/cmd/stringer
-
-//go:generate stringer -type Edge,Function,Pin,Pull
-
+//
+// Implemented as per datasheet at
+// https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 package bcm283x
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -47,10 +46,6 @@ var MaxSpeed int64
 
 // Function specifies the active functionality of a pin. The alternative
 // function is GPIO pin dependent.
-//
-// Values are specified according to Broadcom spec:
-// https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
-// page 92.
 type Function uint8
 
 const (
@@ -63,6 +58,17 @@ const (
 	Alt4 Function = 3
 	Alt5 Function = 2
 )
+
+const functionName = "InOutAlt5Alt4Alt0Alt1Alt2Alt3"
+
+var functionIndex = [...]uint8{0, 2, 5, 9, 13, 17, 21, 25, 29}
+
+func (i Function) String() string {
+	if i >= Function(len(functionIndex)-1) {
+		return fmt.Sprintf("Function(%d)", i)
+	}
+	return functionName[functionIndex[i]:functionIndex[i+1]]
+}
 
 // Level is the level of the pin: Low or High.
 type Level bool
@@ -94,11 +100,22 @@ func (l Level) String() string {
 type Edge uint8
 
 const (
-	EdgeNone Edge = 0
-	Rising   Edge = 1
-	Falling  Edge = 2
-	EdgeBoth Edge = 3
+	EdgeNone Edge = Edge(0)
+	Rising   Edge = Edge(1)
+	Falling  Edge = Edge(2)
+	EdgeBoth Edge = Edge(3)
 )
+
+const edgeName = "NoneRisingFallingBoth"
+
+var edgeIndex = [...]uint8{0, 4, 10, 17, 21}
+
+func (i Edge) String() string {
+	if i >= Edge(len(edgeIndex)-1) {
+		return fmt.Sprintf("Edge(%d)", i)
+	}
+	return edgeName[edgeIndex[i]:edgeIndex[i+1]]
+}
 
 // Pull specifies the internal pull-up or pull-down for a pin set as input.
 //
@@ -113,12 +130,8 @@ const (
 	PullNoChange Pull = 3 // Do not change the previous pull resistor setting
 )
 
-// Pin is a GPIO number (GPIOnn) on BCM238(5|6|7) or can be aliased by bus
-// (P1_xx) or functionality (e.g. SPI0_xx).
-//
-// As defined at
-// https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
-// page 102 and 103.
+// Pin is a GPIO number (GPIOnn) on BCM238(5|6|7). If you search for pin per
+// their position on the P1 header, look at ../rpi package.
 type Pin uint8
 
 const (
@@ -126,53 +139,53 @@ const (
 	GROUND  Pin = 254 // Connected to Ground
 	V3_3    Pin = 253 // Connected to 3.3v
 	V5      Pin = 252 // Connected to 5v
-	GPIO0   Pin = 0   // High,  P1_27, I2C_SDA0
-	GPIO1   Pin = 1   // High,  P1_28, I2C_SCL0
-	GPIO2   Pin = 2   // High,  P1_3,  I2C_SDA1
-	GPIO3   Pin = 3   // High,  P1_5,  I2C_SCL1
-	GPIO4   Pin = 4   // High,  P1_7,  GPCLK0
-	GPIO5   Pin = 5   // High,  P1_29, GPCLK1
-	GPIO6   Pin = 6   // High,  P1_31, GPCLK2
-	GPIO7   Pin = 7   // High,  P1_26, SPI0_CE1
-	GPIO8   Pin = 8   // High,  P1_24, SPI0_CE0
-	GPIO9   Pin = 9   // Low,   P1_21, SPI0_MISO
-	GPIO10  Pin = 10  // Low,   P1_19, SPI0_MOSI
-	GPIO11  Pin = 11  // Low,   P1_23, SPI0_CLK
-	GPIO12  Pin = 12  // Low,   P1_32, PWM0
-	GPIO13  Pin = 13  // Low,   P1_33, PWM1
-	GPIO14  Pin = 14  // Low,   P1_8,  UART_TXD0, UART_TXD1
-	GPIO15  Pin = 15  // Low,   P1_10, UART_RXD0, UART_RXD1
-	GPIO16  Pin = 16  // Low,   P1_36
-	GPIO17  Pin = 17  // Low,   P1_11, SPI1_CE1, IR_IN
-	GPIO18  Pin = 18  // Low,   P1_12, IR_OUT
-	GPIO19  Pin = 19  // Low,   P1_35
-	GPIO20  Pin = 20  // Low,   P1_38
-	GPIO21  Pin = 21  // Low,   P1_40
-	GPIO22  Pin = 22  // Low,   P1_15
-	GPIO23  Pin = 23  // Low,   P1_16
-	GPIO24  Pin = 24  // Low,   P1_18
-	GPIO25  Pin = 25  // Low,   P1_22
-	GPIO26  Pin = 26  // Low,   P1_37
-	GPIO27  Pin = 27  // Low,   P1_13
-	GPIO28  Pin = 28  // Float, Not connected, SDA0, PCM_CLK
-	GPIO29  Pin = 29  // Float, Not connected, SCL0, PCM_FS
-	GPIO30  Pin = 30  // Low,   Not connected, PCM_DIN, UART_CTS0, UARTS_CTS1
-	GPIO31  Pin = 31  // Low,   Not connected, PCM_DOUT, UART_RTS0, UARTS_RTS1
-	GPIO32  Pin = 32  // Low,   Not connected, GPCLK0, UART_TXD0, UARTS_TXD1
-	GPIO33  Pin = 33  // Low,   Not connected, UART_RXD0, UARTS_RXD1
-	GPIO34  Pin = 34  // High,  Not connected, GPCLK0
-	GPIO35  Pin = 35  // High,  Not connected, SPI0_CE1
-	GPIO36  Pin = 36  // High,  Not connected, SPI0_CE0, UART_TXD0
-	GPIO37  Pin = 37  // Low,   Not connected, SPI0_MISO, UART_RXD0
-	GPIO38  Pin = 38  // Low,   Not connected, SPI0_MOSI, UART_RTS0
-	GPIO39  Pin = 39  // Low,   Not connected, SPI0_CLK, UART_CTS0
-	GPIO40  Pin = 40  // Low,   Audio Right, PWM0_OUT; with low pass filter
-	GPIO41  Pin = 41  // Low,   Audio Left, PWM1_OUT; with low pass filter
-	GPIO42  Pin = 42  // Low,   Not connected, GPCLK1, SPI2_CLK, UART_RTS1
-	GPIO43  Pin = 43  // Low,   Not connected, GPCLK2, SPI2_CE0, UART_CTS1
-	GPIO44  Pin = 44  // Float, Not connected, GPCLK1, I2C_SDA0, I2C_SDA1, SPI2_CE1
-	GPIO45  Pin = 45  // Float, Audio Left, PWM1_OUT, I2C_SCL0, I2C_SCL1, SPI2_CE2
-	GPIO46  Pin = 46  // High,  HDMI hotplug detect
+	GPIO0   Pin = 0   // High,  I2C_SDA0
+	GPIO1   Pin = 1   // High,  I2C_SCL0
+	GPIO2   Pin = 2   // High,  I2C_SDA1
+	GPIO3   Pin = 3   // High,  I2C_SCL1
+	GPIO4   Pin = 4   // High,  GPCLK0
+	GPIO5   Pin = 5   // High,  GPCLK1
+	GPIO6   Pin = 6   // High,  GPCLK2
+	GPIO7   Pin = 7   // High,  SPI0_CE1
+	GPIO8   Pin = 8   // High,  SPI0_CE0
+	GPIO9   Pin = 9   // Low,   SPI0_MISO
+	GPIO10  Pin = 10  // Low,   SPI0_MOSI
+	GPIO11  Pin = 11  // Low,   SPI0_CLK
+	GPIO12  Pin = 12  // Low,   PWM0
+	GPIO13  Pin = 13  // Low,   PWM1
+	GPIO14  Pin = 14  // Low,   UART_TXD0, UART_TXD1
+	GPIO15  Pin = 15  // Low,   UART_RXD0, UART_RXD1
+	GPIO16  Pin = 16  // Low,
+	GPIO17  Pin = 17  // Low,   SPI1_CE1, IR_IN
+	GPIO18  Pin = 18  // Low,   IR_OUT
+	GPIO19  Pin = 19  // Low,
+	GPIO20  Pin = 20  // Low,
+	GPIO21  Pin = 21  // Low,
+	GPIO22  Pin = 22  // Low,
+	GPIO23  Pin = 23  // Low,
+	GPIO24  Pin = 24  // Low,
+	GPIO25  Pin = 25  // Low,
+	GPIO26  Pin = 26  // Low,
+	GPIO27  Pin = 27  // Low,
+	GPIO28  Pin = 28  // Float, SDA0, PCM_CLK
+	GPIO29  Pin = 29  // Float, SCL0, PCM_FS
+	GPIO30  Pin = 30  // Low,   PCM_DIN, UART_CTS0, UARTS_CTS1
+	GPIO31  Pin = 31  // Low,   PCM_DOUT, UART_RTS0, UARTS_RTS1
+	GPIO32  Pin = 32  // Low,   GPCLK0, UART_TXD0, UARTS_TXD1
+	GPIO33  Pin = 33  // Low,   UART_RXD0, UARTS_RXD1
+	GPIO34  Pin = 34  // High,  GPCLK0
+	GPIO35  Pin = 35  // High,  SPI0_CE1
+	GPIO36  Pin = 36  // High,  SPI0_CE0, UART_TXD0
+	GPIO37  Pin = 37  // Low,   SPI0_MISO, UART_RXD0
+	GPIO38  Pin = 38  // Low,   SPI0_MOSI, UART_RTS0
+	GPIO39  Pin = 39  // Low,   SPI0_CLK, UART_CTS0
+	GPIO40  Pin = 40  // Low,   PWM0_OUT; with low pass filter
+	GPIO41  Pin = 41  // Low,   PWM1_OUT; with low pass filter
+	GPIO42  Pin = 42  // Low,   GPCLK1, SPI2_CLK, UART_RTS1
+	GPIO43  Pin = 43  // Low,   GPCLK2, SPI2_CE0, UART_CTS1
+	GPIO44  Pin = 44  // Float, GPCLK1, I2C_SDA0, I2C_SDA1, SPI2_CE1
+	GPIO45  Pin = 45  // Float, PWM1_OUT, I2C_SCL0, I2C_SCL1, SPI2_CE2
+	GPIO46  Pin = 46  // High,
 	GPIO47  Pin = 47  // High,  SDCard
 	GPIO48  Pin = 48  // High,  SDCard
 	GPIO49  Pin = 49  // High,  SDCard
@@ -211,12 +224,12 @@ var (
 	SPI1_CLK  Pin = INVALID // GPIO21
 	SPI1_MISO Pin = INVALID // GPIO19
 	SPI1_MOSI Pin = INVALID // GPIO20
-	spi2_miso Pin = INVALID // GPIO40
-	spi2_mosi Pin = INVALID // GPIO41
-	spi2_clk  Pin = INVALID // GPIO42
-	spi2_ce0  Pin = INVALID // GPIO43
-	spi2_ce1  Pin = INVALID // GPIO44
-	spi2_ce2  Pin = INVALID // GPIO45
+	SPI2_MISO Pin = INVALID // GPIO40
+	SPI2_MOSI Pin = INVALID // GPIO41
+	SPI2_CLK  Pin = INVALID // GPIO42
+	SPI2_CE0  Pin = INVALID // GPIO43
+	SPI2_CE1  Pin = INVALID // GPIO44
+	SPI2_CE2  Pin = INVALID // GPIO45
 	UART_RXD0 Pin = INVALID // GPIO15, GPIO33, GPIO37
 	UART_CTS0 Pin = INVALID // GPIO16, GPIO30, GPIO39
 	UART_CTS1 Pin = INVALID // GPIO16, GPIO30
@@ -341,6 +354,7 @@ func (p Pin) In(pull Pull, edge Edge) error {
 		return errors.New("failed to change pin mode")
 	}
 	if pull != PullNoChange {
+		// Changing pull resistor requires a specific dance as described at
 		// https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 		// page 101.
 
@@ -429,16 +443,12 @@ func (p Pin) setFunction(f Function) bool {
 //
 // It's not required to call it. It doesn't reset the GPIO pin either.
 func Close() error {
-	err1 := closePiblaster()
-	err2 := closeGPIOMem()
-	err3 := closeExport()
+	err1 := closeGPIOMem()
+	err2 := closeExport()
 	if err1 != nil {
 		return err1
 	}
-	if err2 != nil {
-		return err2
-	}
-	return err3
+	return err2
 }
 */
 
@@ -600,12 +610,12 @@ func init() {
 	setIfAlt(GPIO37, &SPI0_MISO, nil, &UART_RXD0, nil, nil, nil)           // Not connected
 	setIfAlt(GPIO38, &SPI0_MOSI, nil, &UART_RTS0, nil, nil, nil)           // Not connected
 	setIfAlt(GPIO39, &SPI0_CLK, nil, &UART_CTS0, nil, nil, nil)            // Not connected
-	setIfAlt(GPIO40, &PWM0_OUT, nil, nil, nil, &spi2_miso, &UART_TXD1)     // Connected to audio right
-	setIfAlt(GPIO41, &PWM1_OUT, nil, nil, nil, &spi2_mosi, &UART_RXD1)     // Connected to audio left
-	setIfAlt(GPIO42, &GPCLK1, nil, nil, nil, &spi2_clk, &UART_RTS1)        // Not connected
-	setIfAlt(GPIO43, &GPCLK2, nil, nil, nil, &spi2_ce0, &UART_CTS1)        // Not connected
-	setIfAlt(GPIO44, &GPCLK1, &I2C_SDA0, &I2C_SDA1, nil, &spi2_ce1, nil)   // Not connected
-	setIfAlt(GPIO45, &PWM1_OUT, &I2C_SCL0, &I2C_SCL1, nil, &spi2_ce2, nil) // Not connected
+	setIfAlt(GPIO40, &PWM0_OUT, nil, nil, nil, &SPI2_MISO, &UART_TXD1)     // Connected to audio right
+	setIfAlt(GPIO41, &PWM1_OUT, nil, nil, nil, &SPI2_MOSI, &UART_RXD1)     // Connected to audio left
+	setIfAlt(GPIO42, &GPCLK1, nil, nil, nil, &SPI2_CLK, &UART_RTS1)        // Not connected
+	setIfAlt(GPIO43, &GPCLK2, nil, nil, nil, &SPI2_CE0, &UART_CTS1)        // Not connected
+	setIfAlt(GPIO44, &GPCLK1, &I2C_SDA0, &I2C_SDA1, nil, &SPI2_CE1, nil)   // Not connected
+	setIfAlt(GPIO45, &PWM1_OUT, &I2C_SCL0, &I2C_SCL1, nil, &SPI2_CE2, nil) // Not connected
 	// GPIO46-GPIO53 do not have interesting alternate function.
 
 	in, out := ir.Pins()
