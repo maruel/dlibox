@@ -102,7 +102,7 @@ func (s *Bus) Tx(w, r []byte) error {
 const (
 	spiIOCMode        = 0x16B01
 	spiIOCBitsPerWord = 0x16B03
-	spiIOCMaxSpeedHz  = 0x16B04
+	spiIOCMaxSpeedHz  = 0x46B04
 	spiIOCTx          = 0x206B00
 )
 
