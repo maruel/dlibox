@@ -76,13 +76,6 @@ func (d *Dev) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-// WriteBytes writes to the I²C bus without reading.
-//
-// This is a shorter form than Write(). It's a wrapper for Tx()
-func (d *Dev) WriteBytes(b ...byte) error {
-	return d.Tx([]IO{{WriteStop, b}})
-}
-
 // ReadReg writes the register number to the I²C bus, then reads data.
 //
 // It's a wrapper for Tx()

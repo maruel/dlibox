@@ -145,12 +145,14 @@ func (d *Dev) Scroll(o Orientation, rate FrameRate) error {
 	if o == Left || o == Right {
 		// page 28
 		// STOP, <op>, dummy, <start page>, <rate>,  <end page>, <dummy>, <dummy>, <ENABLE>
-		return d.d.WriteBytes(0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x00, 0xFF, 0x2F)
+		_, err := d.d.Write([]byte{0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x00, 0xFF, 0x2F})
+		return err
 	}
 	// page 29
 	// STOP, <op>, dummy, <start page>, <rate>,  <end page>, <offset>, <ENABLE>
 	// page 30: 0xA3 permits to set rows for scroll area.
-	return d.d.WriteBytes(0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x01, 0x2F)
+	_, err := d.d.Write([]byte{0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x01, 0x2F})
+	return err
 }
 
 // StopScroll stops any scrolling previously set.
@@ -159,22 +161,26 @@ func (d *Dev) Scroll(o Orientation, rate FrameRate) error {
 //
 // TODO(maruel): Doesn't work.
 func (d *Dev) StopScroll() error {
-	return d.d.WriteBytes(0x2E)
+	_, err := d.d.Write([]byte{0x2E})
+	return err
 }
 
 // SetContrast changes the screen contrast.
 //
 // TODO(maruel): Doesn't work.
 func (d *Dev) SetContrast(level byte) error {
-	return d.d.WriteBytes(0x81, level)
+	_, err := d.d.Write([]byte{0x81, level})
+	return err
 }
 
 // Enable or disable the display.
 //
 // TODO(maruel): Doesn't work.
 func (d *Dev) Enable(on bool) error {
+	b := byte(0xAE)
 	if on {
-		return d.d.WriteBytes(0xAF)
+		b = 0xAF
 	}
-	return d.d.WriteBytes(0xAE)
+	_, err := d.d.Write([]byte{b})
+	return err
 }
