@@ -64,6 +64,8 @@ type Dev struct {
 // It's up to the caller to use the RES (reset) pin if desired. Simpler
 // connection is to connect RES and DC to ground, CS to 3.3v, SDA to MOSI, SCK
 // to SCLK.
+//
+// As per datasheet, maximum clock speed is 1/100ns = 10MHz.
 func MakeSPI(s buses.SPI, w, h int, rotated bool) (*Dev, error) {
 	if err := s.Configure(buses.Mode3, 8); err != nil {
 		return nil, err
@@ -75,6 +77,9 @@ func MakeSPI(s buses.SPI, w, h int, rotated bool) (*Dev, error) {
 // controler.
 //
 // If rotated, turns the display by 180°
+//
+// As per datasheet, maximum clock speed is 1/2.5µs = 400KHz. It's worth
+// bumping up from default bus speed of 100KHz if possible.
 func MakeI2C(i buses.I2C, w, h int, rotated bool) (*Dev, error) {
 	return makeDev(&buses.Dev{i, 0x3C}, w, h, rotated)
 }
