@@ -22,6 +22,7 @@ import (
 
 	"github.com/maruel/dlibox/go/bw2d"
 	"github.com/maruel/dlibox/go/pio/buses/i2c"
+	"github.com/maruel/dlibox/go/pio/buses/spi"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/nfnt/resize"
@@ -127,7 +128,10 @@ func convert(s *ssd1306.Dev, src image.Image, f *psf.Font, text string) (*bw2d.I
 }
 
 func mainImpl() error {
-	bus := flag.Int("b", 1, "I²C bus to use")
+	i2cId := flag.Int("i2c", -1, "specify I²C bus to use")
+	spiId := flag.Int("spi", -1, "specify SPI bus to use")
+	csId := flag.Int("cs", 0, "specify SPI chip select (CS) to use")
+	speed := flag.Int("speed", 4000000, "specify SPI speed in Hz to use")
 	fontName := flag.String("f", "VGA8", "PSF font to use; use psf -l to list them")
 	h := flag.Int("h", 64, "display height")
 	imgName := flag.String("i", "ballerine.gif", "image to load; try bunny.gif")
@@ -144,23 +148,40 @@ func mainImpl() error {
 	if flag.NArg() != 0 {
 		return errors.New("unexpected argument, try -help")
 	}
-
-	// Open the device
-	i2cBus, err := i2c.Make(*bus)
-	if err != nil {
-		return err
-	}
-	s, err := ssd1306.Make(i2cBus, *w, *h, *rotated)
-	if err != nil {
-		return err
+	if (*i2cId >= 0) == (*spiId >= 0) {
+		return errors.New("use exactly one of -i2c or -spi")
 	}
 
+	// Open the device on the right bus.
+	var s *ssd1306.Dev
+	if *i2cId >= 0 {
+		i2cBus, err := i2c.Make(*i2cId)
+		if err != nil {
+			return err
+		}
+		s, err = ssd1306.MakeI2C(i2cBus, *w, *h, *rotated)
+		if err != nil {
+			return err
+		}
+	} else {
+		spiBus, err := spi.Make(*spiId, *csId, int64(*speed))
+		if err != nil {
+			return err
+		}
+		s, err = ssd1306.MakeSPI(spiBus, *w, *h, *rotated)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Load console font.
 	f, err := psf.Load(*fontName)
 	if err != nil {
 		return err
 	}
 	log.Printf("Font: %dx%d", f.W, f.H)
 
+	// Load image.
 	src, g, err := loadImg(*imgName)
 	if err != nil {
 		return err

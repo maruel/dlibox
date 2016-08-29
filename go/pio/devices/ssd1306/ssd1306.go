@@ -5,6 +5,10 @@
 // Package ssd1306 controls a 128x64 monochrome OLED display via a ssd1306
 // controler.
 //
+// The SSD1306 is a write-only device. It can be driven on either I²C or SPI.
+// Changing between protocol is likely done through resistor soldering, for
+// boards that support both.
+//
 // Datasheet
 //
 // https://cdn-shop.adafruit.com/datasheets/SSD1306.pdf
@@ -16,6 +20,7 @@ package ssd1306
 
 import (
 	"errors"
+	"io"
 
 	"github.com/maruel/dlibox/go/pio/buses"
 )
@@ -46,17 +51,48 @@ const (
 
 // Dev is an open handle to the display controler.
 type Dev struct {
-	d buses.Dev
+	w io.Writer
 	W int
 	H int
 }
 
-// Make returns a Dev object that communicates over I²C to SSD1306 display
+// MakeSPI returns a Dev object that communicates over SPI to SSD1306 display
 // controler.
 //
 // If rotated, turns the display by 180°
-func Make(i buses.I2C, w, h int, rotated bool) (*Dev, error) {
-	d := &Dev{d: buses.Dev{i, 0x3C}, W: w, H: h}
+//
+// It's up to the caller to use the RES (reset) pin if desired. Simpler
+// connection is to connect RES and DC to ground, CS to 3.3v, SDA to MOSI, SCK
+// to SCLK.
+func MakeSPI(s buses.SPI, w, h int, rotated bool) (*Dev, error) {
+	if err := s.Configure(buses.Mode3, 8); err != nil {
+		return nil, err
+	}
+	return makeDev(s, w, h, rotated)
+}
+
+// MakeI2C returns a Dev object that communicates over I²C to SSD1306 display
+// controler.
+//
+// If rotated, turns the display by 180°
+func MakeI2C(i buses.I2C, w, h int, rotated bool) (*Dev, error) {
+	return makeDev(&buses.Dev{i, 0x3C}, w, h, rotated)
+}
+
+// makeDev is the common initialization code that is independent of the bus
+// being used.
+func makeDev(dev io.Writer, w, h int, rotated bool) (*Dev, error) {
+	if w&7 != 0 || h&7 != 0 {
+		return nil, errors.New("height and width must be multiple of 8")
+	}
+	if w < 8 || w > 128 {
+		return nil, errors.New("invalid height")
+	}
+	if h < 8 || h > 64 {
+		return nil, errors.New("invalid width")
+	}
+
+	d := &Dev{w: dev, W: w, H: h}
 
 	contrast := byte(0x7F) // (default value)
 
@@ -65,6 +101,7 @@ func Make(i buses.I2C, w, h int, rotated bool) (*Dev, error) {
 	// See page 40.
 	columnAddr := byte(0xA1)
 	if rotated {
+		// Change order both horizontally and vertically.
 		comScan = 0xC0
 		columnAddr = byte(0xA0)
 	}
@@ -73,8 +110,7 @@ func Make(i buses.I2C, w, h int, rotated bool) (*Dev, error) {
 	// Page 64 has the full recommended flow.
 	// Page 28 lists all the commands.
 	init := []byte{
-		0xAE,                // Display off
-		0xA8, byte(d.H - 1), // Set MUX ratio
+		0xAE,       // Display off
 		0xD3, 0x00, // Set display offset; 0
 		0x40,       // Start display start line; 0
 		columnAddr, // Set segment remap; RESET is column 127.
@@ -94,16 +130,18 @@ func Make(i buses.I2C, w, h int, rotated bool) (*Dev, error) {
 		0x00 | 0x00,         // Set column offset (lower nibble)
 		0x10 | 0x00,         // Set column offset (higher nibble)
 		0xA8, byte(d.H - 1), // Set multiplex ratio (number of lines to display)
-		// TODO(maruel): should probably clear the buffer before enabling display, otherwise the previous buffer is shown until refresh.
 		0xAF, // Display on
 	}
-	if _, err := d.d.Write(init); err != nil {
+	if _, err := d.w.Write(init); err != nil {
 		return nil, err
 	}
 	return d, nil
 }
 
 // Write writes a buffer of pixels to the display.
+//
+// The format is unsual as each byte represent 8 vertical pixels at a time. So
+// the memory is effectively horizontal bands of 8 pixels high.
 func (d *Dev) Write(pixels []byte) (int, error) {
 	if len(pixels) != d.H*d.W/8 {
 		return 0, errors.New("invalid pixel stream")
@@ -111,15 +149,13 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 
 	// Run everything as one big transaction to reduce downtime on the bus.
 	hdr := []byte{
-		0xA4,                      // Write data
-		0x40 | 0,                  // Start line
 		0x21, 0x00, byte(d.W - 1), // Set column address (Width)
 		0x22, 0x00, byte(d.H/8 - 1), // Set page address (Pages)
 	}
 
 	//*
-	d.d.Write(hdr)
-	d.d.Write(append([]byte{0x40}, pixels...))
+	d.w.Write(hdr)
+	d.w.Write(append([]byte{0x40}, pixels...))
 	return 0, nil
 	/*/
 	// TODO(maruel): Use oscilloscope to figure out why this doesn't work.
@@ -131,7 +167,7 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 		{buses.Write, start},
 		{buses.WriteStop, pixels},
 	}
-	if err := d.d.Tx(ios); err != nil {
+	if err := d.w.Tx(ios); err != nil {
 		return 0, err
 	}
 	return len(pixels), nil
@@ -145,13 +181,13 @@ func (d *Dev) Scroll(o Orientation, rate FrameRate) error {
 	if o == Left || o == Right {
 		// page 28
 		// STOP, <op>, dummy, <start page>, <rate>,  <end page>, <dummy>, <dummy>, <ENABLE>
-		_, err := d.d.Write([]byte{0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x00, 0xFF, 0x2F})
+		_, err := d.w.Write([]byte{0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x00, 0xFF, 0x2F})
 		return err
 	}
 	// page 29
 	// STOP, <op>, dummy, <start page>, <rate>,  <end page>, <offset>, <ENABLE>
 	// page 30: 0xA3 permits to set rows for scroll area.
-	_, err := d.d.Write([]byte{0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x01, 0x2F})
+	_, err := d.w.Write([]byte{0x2E, byte(o), 0x00, 0x00, byte(rate), 0x07, 0x01, 0x2F})
 	return err
 }
 
@@ -161,7 +197,7 @@ func (d *Dev) Scroll(o Orientation, rate FrameRate) error {
 //
 // TODO(maruel): Doesn't work.
 func (d *Dev) StopScroll() error {
-	_, err := d.d.Write([]byte{0x2E})
+	_, err := d.w.Write([]byte{0x2E})
 	return err
 }
 
@@ -169,7 +205,7 @@ func (d *Dev) StopScroll() error {
 //
 // TODO(maruel): Doesn't work.
 func (d *Dev) SetContrast(level byte) error {
-	_, err := d.d.Write([]byte{0x81, level})
+	_, err := d.w.Write([]byte{0x81, level})
 	return err
 }
 
@@ -181,6 +217,6 @@ func (d *Dev) Enable(on bool) error {
 	if on {
 		b = 0xAF
 	}
-	_, err := d.d.Write([]byte{b})
+	_, err := d.w.Write([]byte{b})
 	return err
 }

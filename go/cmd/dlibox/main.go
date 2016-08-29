@@ -109,7 +109,7 @@ func mainImpl() error {
 		}
 
 		i2cBus, err := i2c.Make(1)
-		display, err := ssd1306.Make(i2cBus, 128, 64, false)
+		display, err := ssd1306.MakeI2C(i2cBus, 128, 64, false)
 		if err != nil {
 			return err
 		}

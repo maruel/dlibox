@@ -81,7 +81,7 @@ func mainImpl() error {
 	}
 
 	// Display
-	s, err := ssd1306.Make(i, 128, 64, false)
+	s, err := ssd1306.MakeI2C(i, 128, 64, false)
 	if err != nil {
 		return err
 	}
