@@ -109,10 +109,13 @@ func demo(s *ssd1306.Dev) error {
 	return nil
 }
 
-func convert(s *ssd1306.Dev, src image.Image, f *psf.Font, text string) *bw2d.Image {
+func convert(s *ssd1306.Dev, src image.Image, f *psf.Font, text string) (*bw2d.Image, error) {
 	// Resize automatically while keeping aspect ratio.
 	src = resize.Thumbnail(uint(s.W), uint(s.H), src, resize.Lanczos3)
-	img := bw2d.Make(s.W, s.H)
+	img, err := bw2d.Make(s.W, s.H)
+	if err != nil {
+		return nil, err
+	}
 	r := src.Bounds()
 	// Center the image.
 	r = r.Add(image.Point{(s.W - r.Max.X) / 2, (s.H - r.Max.Y) / 2})
@@ -120,7 +123,7 @@ func convert(s *ssd1306.Dev, src image.Image, f *psf.Font, text string) *bw2d.Im
 	// Use nil instead of bw2d.Off to not print the black pixels, or reverse the
 	// two argument for inverted text.
 	f.Draw(img, 0, s.H-f.H-1, bw2d.On, bw2d.Off, text)
-	return img
+	return img, nil
 }
 
 func mainImpl() error {
@@ -167,7 +170,10 @@ func mainImpl() error {
 		// Resize all the images up front to save on CPU processing.
 		imgs := make([]*bw2d.Image, len(g.Image))
 		for i := range g.Image {
-			imgs[i] = convert(s, g.Image[i], f, *text)
+			imgs[i], err = convert(s, g.Image[i], f, *text)
+			if err != nil {
+				return err
+			}
 		}
 		for i := 0; g.LoopCount <= 0 || i < g.LoopCount*len(g.Image); i++ {
 			index := i % len(g.Image)
@@ -182,10 +188,16 @@ func mainImpl() error {
 
 	if src == nil {
 		// Create a blank image.
-		src = bw2d.Make(s.W, s.H)
+		if src, err = bw2d.Make(s.W, s.H); err != nil {
+			return err
+		}
 	}
 
-	if _, err := s.Write(convert(s, src, f, *text).Buf); err != nil {
+	img, err := convert(s, src, f, *text)
+	if err != nil {
+		return err
+	}
+	if _, err = s.Write(img.Buf); err != nil {
 		return err
 	}
 	if *demoMode {

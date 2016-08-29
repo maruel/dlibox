@@ -8,38 +8,63 @@
 package bw2d
 
 import (
+	"errors"
 	"image"
 	"image/color"
 	"image/draw"
 )
 
-// Whenever a bit is set or not.
-const On = bit(true)
-const Off = bit(false)
+// Bit implements a 1 bit color.
+type Bit bool
 
-// Image is a 1bit image.
+// RGBA() returns either all white or all black and transparent.
+func (b Bit) RGBA() (uint32, uint32, uint32, uint32) {
+	if b {
+		return 65535, 65535, 65535, 65535
+	}
+	return 0, 0, 0, 0
+}
+
+const (
+	On  = Bit(true)
+	Off = Bit(false)
+)
+
+// Image is a 1 bit (black and white) image.
+//
+// The packing used is unusual, each byte is 8 vertical pixels, with each byte
+// stride being an horizontal band of 8 pixels high.
+//
+// It is designed specifically to work with SSD1306 OLED display controler.
 type Image struct {
 	W   int
 	H   int
-	Buf []byte
+	Buf []byte // Can be passed directly to ssd1306.(*Dev).Write()
 }
 
-func Make(w, h int) *Image {
-	return &Image{w, h, make([]byte, w*h/8)}
+// Make returns an initialized Image instance.
+func Make(w, h int) (*Image, error) {
+	if h&7 != 0 {
+		return nil, errors.New("height must be multiple of 8")
+	}
+	return &Image{w, h, make([]byte, w*h/8)}, nil
 }
 
+// SetAll sets all pixels to On.
 func (i *Image) SetAll() {
 	for j := range i.Buf {
 		i.Buf[j] = 0xFF
 	}
 }
 
+// Clear sets all pixels to Off.
 func (i *Image) Clear() {
 	for j := range i.Buf {
 		i.Buf[j] = 0
 	}
 }
 
+// Inverse changes all On pixels to Off and Off pixels to On.
 func (i *Image) Inverse() {
 	for j := range i.Buf {
 		i.Buf[j] ^= 0xFF
@@ -59,25 +84,28 @@ func (i *Image) Bounds() image.Rectangle {
 // At implements image.Image.
 func (i *Image) At(x, y int) color.Color {
 	// Addressing is a bit odd, each byte is 8 vertical bits.
-	o := x + y/8*i.W
-	b := byte(1 << byte(y&7))
-	return bit(i.Buf[o]&b != 0)
+	offset := x + y/8*i.W
+	mask := byte(1 << byte(y&7))
+	return Bit(i.Buf[offset]&mask != 0)
 }
 
 // Set implements draw.Image
 func (i *Image) Set(x, y int, c color.Color) {
-	if x >= i.W {
-		panic("out of bound")
-	}
-	if y >= i.H {
-		panic("out of bound")
-	}
-	o := x + y/8*i.W
-	b := byte(1 << byte(y&7))
-	if convertBit(c) {
-		i.Buf[o] |= b
-	} else {
-		i.Buf[o] &^= b
+	i.SetBit(x, y, convertBit(c))
+}
+
+// SetBit is the optimized version of Set().
+func (i *Image) SetBit(x, y int, b Bit) {
+	if x >= 0 && x < i.W {
+		if y >= 0 && y < i.H {
+			offset := x + y/8*i.W
+			mask := byte(1 << byte(y&7))
+			if b {
+				i.Buf[offset] |= mask
+			} else {
+				i.Buf[offset] &^= mask
+			}
+		}
 	}
 }
 
@@ -91,22 +119,13 @@ func convert(c color.Color) color.Color {
 }
 
 // Anything not transparent and not pure black is white.
-func convertBit(c color.Color) bit {
+func convertBit(c color.Color) Bit {
 	switch t := c.(type) {
-	case bit:
+	case Bit:
 		return t
 	default:
 		// Values are on 16 bits.
 		r, g, b, a := c.RGBA()
-		return bit((r+g+b) > 0x10000 && a >= 0x4000)
+		return Bit((r+g+b) > 0xC000 && a >= 0x4000)
 	}
-}
-
-type bit bool
-
-func (b bit) RGBA() (uint32, uint32, uint32, uint32) {
-	if b {
-		return 255, 255, 255, 255
-	}
-	return 0, 0, 0, 0
 }

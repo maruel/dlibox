@@ -40,7 +40,10 @@ func loadImg(path string) (*bw2d.Image, error) {
 		return nil, err
 	}
 	r := src.Bounds()
-	img := bw2d.Make(r.Max.X, r.Max.Y)
+	img, err := bw2d.Make(r.Max.X, r.Max.Y)
+	if err != nil {
+		return nil, err
+	}
 	draw.Draw(img, r, src, image.Point{}, draw.Src)
 	return img, nil
 }
@@ -83,7 +86,10 @@ func mainImpl() error {
 		return err
 	}
 	src.Inverse()
-	img := bw2d.Make(s.W, s.H)
+	img, err := bw2d.Make(s.W, s.H)
+	if err != nil {
+		return err
+	}
 	r := src.Bounds()
 	r = r.Add(image.Point{(img.W - r.Max.X), (img.H - r.Max.Y) / 2})
 	draw.Draw(img, r, src, image.Point{}, draw.Src)

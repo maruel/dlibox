@@ -123,7 +123,10 @@ func mainImpl() error {
 		}
 		// TODO(maruel): Leverage bme280 while at it but don't fail if not
 		// connected.
-		img := bw2d.Make(display.W, display.H)
+		img, err := bw2d.Make(display.W, display.H)
+		if err != nil {
+			return err
+		}
 		f20.Draw(img, 0, 0, bw2d.On, nil, "dlibox!")
 		f12.Draw(img, 0, display.H-f12.H-1, bw2d.On, nil, "is awesome")
 		if _, err = display.Write(img.Buf); err != nil {
