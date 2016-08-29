@@ -28,6 +28,9 @@ echo "- Setting up dlibox as a service and auto-update cron job"
 echo "- Setting up automated apt cron job"
 ./schedule_apt.sh
 
+echo "- Installing ancillary utilities"
+go get github.com/maruel/dlibox/go/cmd/... github.com/maruel/dlibox/go/pio/cmd/...
+
 echo "- User specific installation"
 ./user_config.sh
 

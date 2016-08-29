@@ -15,5 +15,5 @@ cd
 git clone --recurse https://github.com/maruel/bin_pub bin/bin_pub
 bin/bin_pub/setup_scripts/update_config.py
 go get -v golang.org/x/tools/cmd/goimports
-go get -v golang.org/x/tools/cmd/oracle
+go get -v github.com/maruel/panicparse/cmd/pp
 EOF

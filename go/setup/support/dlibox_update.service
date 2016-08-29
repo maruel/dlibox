@@ -20,4 +20,4 @@ Description=Updates dlibox, as triggered by dlibox_update.timer
 
 [Service]
 Type=oneshot
-ExecStart=/bin/su - pi -c "go get -v -u github.com/maruel/dlibox/cmd/dlibox"
+ExecStart=/bin/su - pi -c "go get -v -u github.com/maruel/dlibox/go/cmd/... github.com/maruel/dlibox/go/pio/cmd/..."
