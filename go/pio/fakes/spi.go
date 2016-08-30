@@ -2,8 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package spi implements a fake SPI bus.
-package spi
+package fakes
 
 import (
 	"bytes"
@@ -12,27 +11,29 @@ import (
 	"github.com/maruel/dlibox/go/pio/buses"
 )
 
-// Bus registers everything written to it.
-type Bus struct {
+// SPI implements buses.SPI. It registers everything written to it.
+type SPI struct {
 	Buf bytes.Buffer
 }
 
 // Close is a no-op.
-func (b *Bus) Close() error {
+func (s *SPI) Close() error {
 	return nil
 }
 
 // Configure is a no-op.
-func (b *Bus) Configure(mode buses.Mode, bits int) error {
+func (s *SPI) Configure(mode buses.Mode, bits int) error {
 	return nil
 }
 
 // Write accumulates all the bytes written.
-func (b *Bus) Write(d []byte) (int, error) {
-	return b.Buf.Write(d)
+func (s *SPI) Write(d []byte) (int, error) {
+	return s.Buf.Write(d)
 }
 
 // Tx returns an error.
-func (b *Bus) Tx(w, r []byte) error {
+func (s *SPI) Tx(w, r []byte) error {
 	return errors.New("not implemented")
 }
+
+var _ buses.SPI = &SPI{}

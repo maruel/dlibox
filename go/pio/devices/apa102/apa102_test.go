@@ -10,7 +10,7 @@ import (
 	"image/color"
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/fakes/spi"
+	"github.com/maruel/dlibox/go/pio/fakes"
 	"github.com/maruel/temperature"
 )
 
@@ -321,7 +321,7 @@ func TestRampMonotonic(t *testing.T) {
 }
 
 func TestDevEmpty(t *testing.T) {
-	b := &spi.Bus{}
+	b := &fakes.SPI{}
 	d, _ := Make(b, 255, 6500)
 	if n, err := d.Write([]byte{}); n != 0 || err != nil {
 		t.Fail()
@@ -332,7 +332,7 @@ func TestDevEmpty(t *testing.T) {
 }
 
 func TestDevLen(t *testing.T) {
-	b := &spi.Bus{}
+	b := &fakes.SPI{}
 	d, _ := Make(b, 255, 6500)
 	if n, err := d.Write([]byte{0}); n != 0 || err != errLength {
 		t.Fail()
@@ -343,7 +343,7 @@ func TestDevLen(t *testing.T) {
 }
 
 func TestDev(t *testing.T) {
-	b := &spi.Bus{}
+	b := &fakes.SPI{}
 	d, _ := Make(b, 255, 6500)
 	colors := []color.NRGBA{
 		{0xFF, 0xFF, 0xFF, 0x00},
@@ -380,7 +380,7 @@ func TestDev(t *testing.T) {
 }
 
 func TestDevIntensity(t *testing.T) {
-	b := &spi.Bus{}
+	b := &fakes.SPI{}
 	d, _ := Make(b, 127, 6500)
 	colors := []color.NRGBA{
 		{0xFF, 0xFF, 0xFF, 0x00},
@@ -417,7 +417,7 @@ func TestDevIntensity(t *testing.T) {
 }
 
 func TestDevTemperatureWarm(t *testing.T) {
-	b := &spi.Bus{}
+	b := &fakes.SPI{}
 	d, _ := Make(b, 255, 5000)
 	colors := []color.NRGBA{
 		{0xFF, 0xFF, 0xFF, 0x00},
@@ -442,7 +442,7 @@ func TestDevTemperatureWarm(t *testing.T) {
 }
 
 func TesttDevLong(t *testing.T) {
-	b := &spi.Bus{}
+	b := &fakes.SPI{}
 	d, _ := Make(b, 255, 6500)
 	colors := make([]color.NRGBA, 256)
 	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {

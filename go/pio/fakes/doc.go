@@ -3,4 +3,4 @@
 // that can be found in the LICENSE file.
 
 // Package fakes contains non-hardware buses, devices implementations.
-package pio
+package fakes
