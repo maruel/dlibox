@@ -25,14 +25,3 @@ func (i Pin) String() string {
 		return fmt.Sprintf("Pin(%d)", i)
 	}
 }
-
-const _Pull_name = "FloatDownUpPullNoChange"
-
-var _Pull_index = [...]uint8{0, 5, 9, 11, 23}
-
-func (i Pull) String() string {
-	if i >= Pull(len(_Pull_index)-1) {
-		return fmt.Sprintf("Pull(%d)", i)
-	}
-	return _Pull_name[_Pull_index[i]:_Pull_index[i+1]]
-}

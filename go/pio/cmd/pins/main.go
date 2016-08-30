@@ -10,20 +10,22 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
 	"github.com/maruel/dlibox/go/pio/buses/rpi"
 )
 
 func makeMapping() ([]string, int) {
 	m := make([]string, 256)
-	doFunctionalPins(func(name string, p bcm283x.Pin) {
-		m[p] = name
+	doFunctionalPins(func(name string, p buses.Pin) {
+		p2 := p.(bcm283x.Pin)
+		m[p2] = name
 	})
 	m[bcm283x.INVALID] = ""
 	max := 0
 	for p := bcm283x.GPIO0; p <= bcm283x.GPIO53; p++ {
 		if len(m[p]) == 0 {
-			m[p] = fmt.Sprintf("%s/%s", p.Function().String(), p.ReadInstant())
+			m[p] = fmt.Sprintf("%s/%s", p.Function(), p.ReadInstant())
 		}
 		if len(m[p]) > max {
 			max = len(m[p])
@@ -32,7 +34,7 @@ func makeMapping() ([]string, int) {
 	return m, max
 }
 
-func doFunctionalPins(pin func(name string, value bcm283x.Pin)) {
+func doFunctionalPins(pin func(name string, value buses.Pin)) {
 	pin("GPCLK0", bcm283x.GPCLK0)
 	pin("GPCLK1", bcm283x.GPCLK1)
 	pin("GPCLK2", bcm283x.GPCLK2)
@@ -70,8 +72,9 @@ func doFunctionalPins(pin func(name string, value bcm283x.Pin)) {
 }
 
 func printFunc(invalid bool) {
-	doFunctionalPins(func(name string, value bcm283x.Pin) {
-		if invalid || (value != bcm283x.INVALID && rpi.IsConnected(value)) {
+	doFunctionalPins(func(name string, value buses.Pin) {
+		p := value.(bcm283x.Pin)
+		if invalid || (p != bcm283x.INVALID && rpi.IsConnected(p)) {
 			fmt.Printf("%-9s: %s\n", name, value)
 		}
 	})

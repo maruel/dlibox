@@ -26,24 +26,26 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/maruel/dlibox/go/pio/buses"
 )
 
 // ReadEdge waits until a edge detection occured and returns the pin level read.
 //
-// When Pin.In(..., EdgeNone) was used or if the pin is not set as input,
+// When Pin.In(..., buses.EdgeNone) was used or if the pin is not set as input,
 // behaves the same as ReadInstant().
-func (p Pin) ReadEdge() Level {
+func (p Pin) ReadEdge() buses.Level {
 	if !gpios[p].usingEdge {
 		return p.ReadInstant()
 	}
 	var b [1]byte
-	l := Low
+	l := buses.Low
 	if err := gpios[p].readPoll(b[:]); err != nil {
 		// In case of error or unknown value, returns low. The file handle was
 		// already opened so the chance of this happening is low.
 		log.Printf("%s: error reading edge: %v", p, err)
 	} else if b[0] == '1' {
-		l = High
+		l = buses.High
 	}
 	return l
 }
@@ -56,8 +58,8 @@ var edgeBoth = []byte("both")
 // setEdge changes the edge detection setting for the pin.
 //
 // It is the function that opens the gpio sysfs file handle.
-func (p Pin) setEdge(edge Edge) error {
-	if edge == EdgeNone {
+func (p Pin) setEdge(edge buses.Edge) error {
+	if edge == buses.EdgeNone {
 		// Do not close the handles.
 		gpios[p].usingEdge = false
 		return nil
@@ -67,11 +69,11 @@ func (p Pin) setEdge(edge Edge) error {
 		return err
 	}
 	b := edgeNone
-	if edge == Rising {
+	if edge == buses.Rising {
 		b = edgeRising
-	} else if edge == Falling {
+	} else if edge == buses.Falling {
 		b = edgeFalling
-	} else if edge == EdgeBoth {
+	} else if edge == buses.EdgeBoth {
 		b = edgeBoth
 	}
 	err := gpios[p].writeEdge(b)

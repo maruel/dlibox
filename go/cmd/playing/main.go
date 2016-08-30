@@ -20,6 +20,7 @@ import (
 	_ "image/png"
 
 	"github.com/maruel/dlibox/go/bw2d"
+	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
 	"github.com/maruel/dlibox/go/pio/buses/i2c"
 	"github.com/maruel/dlibox/go/pio/buses/ir"
@@ -110,7 +111,7 @@ func mainImpl() error {
 	}
 
 	if useButton {
-		if err := bcm283x.GPIO24.In(bcm283x.Up, bcm283x.EdgeBoth); err != nil {
+		if err := bcm283x.GPIO24.In(buses.Up, buses.EdgeBoth); err != nil {
 			return err
 		}
 		go buttonLoop(bcm283x.GPIO24, button)
@@ -129,7 +130,7 @@ func mainImpl() error {
 	*/
 
 	if usePir {
-		if err := bcm283x.GPIO19.In(bcm283x.Down, bcm283x.EdgeBoth); err != nil {
+		if err := bcm283x.GPIO19.In(buses.Down, buses.EdgeBoth); err != nil {
 			return err
 		}
 		go pirLoop(bcm283x.GPIO19, motion)
@@ -207,19 +208,19 @@ func irLoop(irBus *ir.Bus, keys chan<- string) {
 	}
 }
 
-func buttonLoop(p bcm283x.Pin, c chan<- bool) {
+func buttonLoop(p buses.Pin, c chan<- bool) {
 	for !interrupt.IsSet() {
 		l := p.ReadEdge()
 		log.Printf("Bouton: %s", l)
-		c <- l == bcm283x.Low
+		c <- l == buses.Low
 	}
 }
 
-func pirLoop(p bcm283x.Pin, c chan<- bool) {
+func pirLoop(p buses.Pin, c chan<- bool) {
 	for !interrupt.IsSet() {
 		l := p.ReadEdge()
 		log.Printf("PIR: %s", l)
-		c <- l == bcm283x.High
+		c <- l == buses.High
 	}
 }
 

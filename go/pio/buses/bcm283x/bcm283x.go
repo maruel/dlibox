@@ -43,6 +43,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/dlibox/go/pio/buses/ir"
 )
 
@@ -76,68 +77,10 @@ func (i Function) String() string {
 	return functionName[functionIndex[i]:functionIndex[i+1]]
 }
 
-// Level is the level of the pin: Low or High.
-type Level bool
-
-const (
-	Low  Level = false
-	High Level = true
-)
-
-func (l Level) String() string {
-	if l == Low {
-		return "Low"
-	}
-	return "High"
-}
-
-// Edge specifies the processor to generate an interrupt based on edge
-// detection.
-//
-// The processor samples the inputs at its CPU clock rate and looks for '011'
-// to rising and '100' for falling detection, to avoid glitches.
-//
-// Using any other value than EdgeNone will cause the library to open gpio
-// sysfs file handles. Make sure the user is member of group 'gpio'.
-//
-// TODO(maruel): There is support for 'asynchronous edge detection', not
-// exposed here because it is not resilient to glitches, so less useful for
-// general practical purposes.
-type Edge uint8
-
-const (
-	EdgeNone Edge = Edge(0)
-	Rising   Edge = Edge(1)
-	Falling  Edge = Edge(2)
-	EdgeBoth Edge = Edge(3)
-)
-
-const edgeName = "NoneRisingFallingBoth"
-
-var edgeIndex = [...]uint8{0, 4, 10, 17, 21}
-
-func (i Edge) String() string {
-	if i >= Edge(len(edgeIndex)-1) {
-		return fmt.Sprintf("Edge(%d)", i)
-	}
-	return edgeName[edgeIndex[i]:edgeIndex[i+1]]
-}
-
-// Pull specifies the internal pull-up or pull-down for a pin set as input.
-//
-// The pull resistor stays set even after the processor shuts down. It is not
-// possible to 'read back' what value was specified for each pin.
-type Pull uint8
-
-const (
-	Float        Pull = 0 // Let the input float
-	Down         Pull = 1 // Apply 50KOhm~60kOhm pull-down
-	Up           Pull = 2 // Apply 50kOhm~65kOhm pull-up
-	PullNoChange Pull = 3 // Do not change the previous pull resistor setting
-)
-
 // Pin is a GPIO number (GPIOnn) on BCM238(5|6|7). If you search for pin per
 // their position on the P1 header, look at ../rpi package.
+//
+// Pin implements buses.Pin.
 type Pin uint8
 
 const (
@@ -345,21 +288,26 @@ func (p Pin) isUART() bool {
 	}
 }
 
-// In setups a pin as an input.
+// In setups a pin as an input and implements buses.Pin.
 //
-// Specifying a value for pull other than PullNoChange causes this function to
-// be slightly slower (after 1ms).
+// Specifying a value for pull other than buses.PullNoChange causes this
+// function to be slightly slower (after 1ms).
 //
-// Specify EdgeNone unless you actively plan to use edge detection as this
-// requires opening a gpio sysfs file handle. The pin will be "exported" at
-// /sys/class/gpio/gpio*/. Note that the pin will not be unexported at shutdown.
+// Specify buses.EdgeNone unless you actively plan to use edge detection as this
+// requires opening a gpio sysfs file handle. Make sure the user is member of
+// group 'gpio'. The pin will be "exported" at /sys/class/gpio/gpio*/. Note
+// that the pin will not be unexported at shutdown.
+//
+// For edge detection, the processor samples the input at its CPU clock rate
+// and looks for '011' to rising and '100' for falling detection to avoid
+// glitches. Because gpio sysfs is used, the latency is unpredictable.
 //
 // Will fail if requesting to change a pin that is set to special functionality.
-func (p Pin) In(pull Pull, edge Edge) error {
+func (p Pin) In(pull buses.Pull, edge buses.Edge) error {
 	if !p.setFunction(In) {
 		return errors.New("failed to change pin mode")
 	}
-	if pull != PullNoChange {
+	if pull != buses.PullNoChange {
 		// Changing pull resistor requires a specific dance as described at
 		// https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 		// page 101.
@@ -382,29 +330,30 @@ func (p Pin) In(pull Pull, edge Edge) error {
 	return p.setEdge(edge)
 }
 
-// ReadInstant return the current pin level without waiting.
+// ReadInstant return the current pin level and implements buses.Pin.
 //
 // This function is very fast. It works even if the pin is set as output.
-func (p Pin) ReadInstant() Level {
+func (p Pin) ReadInstant() buses.Level {
 	// 0x34    R    GPIO Pin Level 0 (GPIO0-31)
 	// 0x38    R    GPIO Pin Level 1 (GPIO32-53)
-	return Level((gpioMemory32[13+p/32] & (1 << (p & 31))) != 0)
+	return buses.Level((gpioMemory32[13+p/32] & (1 << (p & 31))) != 0)
 }
 
-// Out sets a pin as output. The caller should immediately call SetLow() or
-// SetHigh() afterward.
+// Out sets a pin as output and implements buses.Pin. The caller should
+// immediately call SetLow() or SetHigh() afterward.
 //
 // Will fail if requesting to change a pin that is set to special functionality.
 func (p Pin) Out() error {
 	// Enables ReadEdge() to behave correctly.
-	p.setEdge(EdgeNone)
+	p.setEdge(buses.EdgeNone)
 	if !p.setFunction(In) {
 		return errors.New("failed to change pin mode")
 	}
 	return nil
 }
 
-// SetLow sets a pin already set for output as low (0v).
+// SetLow sets a pin already set for output as buses.Low and implements
+// buses.Pin.
 //
 // This function is very fast.
 func (p Pin) SetLow() {
@@ -413,7 +362,8 @@ func (p Pin) SetLow() {
 	gpioMemory32[10+p/32] = 1 << (p & 31)
 }
 
-// SetHigh sets a pin already set for output as high (3.3v).
+// SetHigh sets a pin already set for output as buses.High and implements
+// buses.Pin.
 //
 // This function is very fast.
 func (p Pin) SetHigh() {

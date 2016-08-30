@@ -14,11 +14,12 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
 )
 
-func read(p bcm283x.Pin, edge bcm283x.Edge) {
-	if p.ReadEdge() == bcm283x.Low {
+func read(p buses.Pin, edge buses.Edge) {
+	if p.ReadEdge() == buses.Low {
 		os.Stdout.Write([]byte{'0', '\n'})
 	} else {
 		os.Stdout.Write([]byte{'1', '\n'})
@@ -39,27 +40,27 @@ func mainImpl() error {
 	}
 	log.SetFlags(log.Lmicroseconds)
 
-	//pull := bcm283x.PullNoChange
-	pull := bcm283x.Float
+	//pull := buses.PullNoChange
+	pull := buses.Float
 	if *pullUp {
 		if *pullDown {
 			return errors.New("use only one of -d or -u")
 		}
-		pull = bcm283x.Up
+		pull = buses.Up
 	}
 	if *pullDown {
-		pull = bcm283x.Down
+		pull = buses.Down
 	}
 	if flag.NArg() != 1 {
 		return errors.New("specify pin to read")
 	}
 
-	edge := bcm283x.EdgeNone
+	edge := buses.EdgeNone
 	if *edgeRising {
-		edge |= bcm283x.Rising
+		edge |= buses.Rising
 	}
 	if *edgeFalling {
-		edge |= bcm283x.Falling
+		edge |= buses.Falling
 	}
 
 	pin, err := strconv.Atoi(flag.Args()[0])
