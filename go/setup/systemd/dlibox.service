@@ -9,7 +9,7 @@
 #   systemctl start dlibox.service
 #
 # To view logs:
-#   journalctl dlibox.service
+#   journalctl -u dlibox.service
 
 # All the flags in the following help pages apply:
 # - https://www.freedesktop.org/software/systemd/man/systemd.exec.html
