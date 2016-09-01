@@ -13,6 +13,7 @@ import (
 	"errors"
 
 	"github.com/maruel/dlibox/go/pio/buses"
+	"github.com/maruel/dlibox/go/pio/devices"
 )
 
 // Oversampling affects how much time is taken to measure each of temperature,
@@ -304,3 +305,5 @@ func (c *calibration) compensateHumidityFloat(raw, tFine int32) float32 {
 	}
 	return float32(h)
 }
+
+var _ devices.Environmental = &Dev{}

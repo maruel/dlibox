@@ -25,6 +25,7 @@ import (
 	"io"
 
 	"github.com/maruel/dlibox/go/pio/buses"
+	"github.com/maruel/dlibox/go/pio/devices"
 )
 
 // FrameRate determines scrolling speed.
@@ -278,3 +279,5 @@ func (d *Dev) Enable(on bool) error {
 	_, err := d.w.Write([]byte{b})
 	return err
 }
+
+var _ devices.Display = &Dev{}

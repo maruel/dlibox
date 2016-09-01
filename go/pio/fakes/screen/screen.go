@@ -17,6 +17,7 @@ import (
 	"io"
 
 	"github.com/maruel/ansi256"
+	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/mattn/go-colorable"
 )
 
@@ -95,3 +96,5 @@ func Make(l int) *Dev {
 		pixels: make([]byte, 3*l),
 	}
 }
+
+var _ devices.Display = &Dev{}

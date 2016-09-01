@@ -33,3 +33,10 @@ type Display interface {
 	// display's native color format.
 	Draw(r image.Rectangle, src image.Image, sp image.Point)
 }
+
+// Environmental represents an environmental sensor.
+type Environmental interface {
+	// Read returns the value read from the sensor. Returns 0 for the unsupported
+	// metrics.
+	Read() (temperatureC, pressurekPa, humidity float32, err error)
+}

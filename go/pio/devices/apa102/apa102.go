@@ -10,6 +10,7 @@ import (
 	"image/color"
 
 	"github.com/maruel/dlibox/go/pio/buses"
+	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/temperature"
 )
 
@@ -301,3 +302,5 @@ func Make(s buses.SPI, numLights int, intensity uint8, temperature uint16) (*Dev
 //
 
 var errLength = errors.New("invalid RGB stream length")
+
+var _ devices.Display = &Dev{}

@@ -14,8 +14,24 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/buses/i2c"
+	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 )
+
+func read(e devices.Environmental, loop bool) error {
+	for {
+		t, p, h, err := e.Read()
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%.3f°C %.4fkPa %.3f%%rH\n", t, p, h)
+		if !loop {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return nil
+}
 
 func mainImpl() error {
 	bus := flag.Int("b", 1, "I²C bus to use")
@@ -67,18 +83,7 @@ func mainImpl() error {
 		return err
 	}
 	defer b.Stop()
-	for {
-		t, p, h, err := b.Read()
-		if err != nil {
-			return err
-		}
-		fmt.Printf("%.3f°C %.4fkPa %.3f%%rH\n", t, p, h)
-		if !*loop {
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	return nil
+	return read(b, *loop)
 }
 
 func main() {
