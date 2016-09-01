@@ -8,10 +8,10 @@ import (
 	"bytes"
 	"fmt"
 	"image/color"
+	"io/ioutil"
 	"testing"
 
 	"github.com/maruel/dlibox/go/pio/fakes"
-	"github.com/maruel/temperature"
 )
 
 func TestRamp(t *testing.T) {
@@ -321,30 +321,29 @@ func TestRampMonotonic(t *testing.T) {
 }
 
 func TestDevEmpty(t *testing.T) {
-	b := &fakes.SPI{}
-	d, _ := Make(b, 255, 6500)
+	buf := bytes.Buffer{}
+	d, _ := Make(&fakes.SPI{W: &buf}, 0, 255, 6500)
 	if n, err := d.Write([]byte{}); n != 0 || err != nil {
-		t.Fail()
+		t.Fatalf("%d %v", n, err)
 	}
-	if !bytes.Equal([]byte{0x0, 0x0, 0x0, 0x0, 0xFF}, b.Buf.Bytes()) {
-		t.Fail()
+	if expected := []byte{0x0, 0x0, 0x0, 0x0, 0xFF}; !bytes.Equal(expected, buf.Bytes()) {
+		t.Fatalf("%v != %v", expected, buf.Bytes())
 	}
 }
 
 func TestDevLen(t *testing.T) {
-	b := &fakes.SPI{}
-	d, _ := Make(b, 255, 6500)
+	buf := bytes.Buffer{}
+	d, _ := Make(&fakes.SPI{W: &buf}, 1, 255, 6500)
 	if n, err := d.Write([]byte{0}); n != 0 || err != errLength {
-		t.Fail()
+		t.Fatalf("%d %v", n, err)
 	}
-	if !bytes.Equal([]byte{}, b.Buf.Bytes()) {
-		t.Fail()
+	if expected := []byte{}; !bytes.Equal(expected, buf.Bytes()) {
+		t.Fatalf("%v != %v", expected, buf.Bytes())
 	}
 }
 
 func TestDev(t *testing.T) {
-	b := &fakes.SPI{}
-	d, _ := Make(b, 255, 6500)
+	buf := bytes.Buffer{}
 	colors := []color.NRGBA{
 		{0xFF, 0xFF, 0xFF, 0x00},
 		{0xFE, 0xFE, 0xFE, 0x00},
@@ -357,8 +356,9 @@ func TestDev(t *testing.T) {
 		{0x00, 0x00, 0x01, 0x00},
 		{0x00, 0x00, 0x00, 0x00},
 	}
+	d, _ := Make(&fakes.SPI{W: &buf}, len(colors), 255, 6500)
 	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
-		t.Fail()
+		t.Fatalf("%d %v", n, err)
 	}
 	expected := []byte{
 		0x00, 0x00, 0x00, 0x00,
@@ -374,14 +374,13 @@ func TestDev(t *testing.T) {
 		0xE1, 0x00, 0x00, 0x00,
 		0xFF,
 	}
-	if !bytes.Equal(expected, b.Buf.Bytes()) {
-		t.Fail()
+	if !bytes.Equal(expected, buf.Bytes()) {
+		t.Fatalf("%v != %v", expected, buf.Bytes())
 	}
 }
 
 func TestDevIntensity(t *testing.T) {
-	b := &fakes.SPI{}
-	d, _ := Make(b, 127, 6500)
+	buf := bytes.Buffer{}
 	colors := []color.NRGBA{
 		{0xFF, 0xFF, 0xFF, 0x00},
 		{0xFE, 0xFE, 0xFE, 0x00},
@@ -394,8 +393,9 @@ func TestDevIntensity(t *testing.T) {
 		{0x00, 0x00, 0x01, 0x00},
 		{0x00, 0x00, 0x00, 0x00},
 	}
+	d, _ := Make(&fakes.SPI{W: &buf}, len(colors), 127, 6500)
 	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
-		t.Fail()
+		t.Fatalf("%d %v", n, err)
 	}
 	expected := []byte{
 		0x00, 0x00, 0x00, 0x00,
@@ -411,22 +411,22 @@ func TestDevIntensity(t *testing.T) {
 		0xE1, 0x00, 0x00, 0x00,
 		0xFF,
 	}
-	if !bytes.Equal(expected, b.Buf.Bytes()) {
-		t.Fail()
+	if !bytes.Equal(expected, buf.Bytes()) {
+		t.Fatalf("%v != %v", expected, buf.Bytes())
 	}
 }
 
 func TestDevTemperatureWarm(t *testing.T) {
-	b := &fakes.SPI{}
-	d, _ := Make(b, 255, 5000)
+	buf := bytes.Buffer{}
 	colors := []color.NRGBA{
 		{0xFF, 0xFF, 0xFF, 0x00},
 		{0x80, 0x80, 0x80, 0x00},
 		{0x01, 0x01, 0x01, 0x00},
 		{0x00, 0x00, 0x00, 0x00},
 	}
+	d, _ := Make(&fakes.SPI{W: &buf}, len(colors), 255, 5000)
 	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
-		t.Fail()
+		t.Fatalf("%d %v", n, err)
 	}
 	expected := []byte{
 		0x00, 0x00, 0x00, 0x00,
@@ -436,17 +436,17 @@ func TestDevTemperatureWarm(t *testing.T) {
 		0xE1, 0x00, 0x00, 0x00,
 		0xFF,
 	}
-	if !bytes.Equal(expected, b.Buf.Bytes()) {
-		t.Fail()
+	if !bytes.Equal(expected, buf.Bytes()) {
+		t.Fatalf("%v != %v", expected, buf.Bytes())
 	}
 }
 
 func TesttDevLong(t *testing.T) {
-	b := &fakes.SPI{}
-	d, _ := Make(b, 255, 6500)
+	buf := bytes.Buffer{}
 	colors := make([]color.NRGBA, 256)
+	d, _ := Make(&fakes.SPI{W: &buf}, len(colors), 255, 6500)
 	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
-		t.Fail()
+		t.Fatalf("%d %v", n, err)
 	}
 	expected := make([]byte, 4*(256+1)+17)
 	for i := 0; i < 256; i++ {
@@ -456,81 +456,72 @@ func TesttDevLong(t *testing.T) {
 	for i := range trailer {
 		trailer[i] = 0xFF
 	}
-	if !bytes.Equal(expected, b.Buf.Bytes()) {
-		t.Fail()
+	if !bytes.Equal(expected, buf.Bytes()) {
+		t.Fatalf("%v != %v", expected, buf.Bytes())
 	}
 }
 
-func BenchmarkRasterWhite(b *testing.B) {
-	pixels := make([]color.NRGBA, 255)
+func BenchmarkWriteWhite(b *testing.B) {
+	pixels := make([]byte, 256*3)
 	for i := range pixels {
-		pixels[i] = color.NRGBA{255, 255, 255, 255}
+		pixels[i] = 0xFF
 	}
-	var buf []byte
-	// Prime the buffer first.
-	raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
+	d, _ := Make(&fakes.SPI{W: ioutil.Discard}, len(pixels)/3, 255, 6500)
+	_, _ = d.Write(pixels)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
+		_, _ = d.Write(pixels)
 	}
 }
 
-func BenchmarkRasterDim(b *testing.B) {
-	pixels := make([]color.NRGBA, 255)
+func BenchmarkWriteDim(b *testing.B) {
+	pixels := make([]byte, 256*3)
 	for i := range pixels {
-		pixels[i] = color.NRGBA{1, 1, 1, 1}
+		pixels[i] = 1
 	}
-	var buf []byte
-	// Prime the buffer first.
-	raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
+	d, _ := Make(&fakes.SPI{W: ioutil.Discard}, len(pixels)/3, 255, 6500)
+	_, _ = d.Write(pixels)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
+		_, _ = d.Write(pixels)
 	}
 }
 
-func BenchmarkRasterBlack(b *testing.B) {
-	pixels := make([]color.NRGBA, 255)
-	var buf []byte
-	// Prime the buffer first.
-	raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
+func BenchmarkWriteBlack(b *testing.B) {
+	pixels := make([]byte, 256*3)
+	d, _ := Make(&fakes.SPI{W: ioutil.Discard}, len(pixels)/3, 255, 6500)
+	_, _ = d.Write(pixels)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		raster(ToRGB(pixels), &buf, maxOut, maxOut, maxOut)
+		_, _ = d.Write(pixels)
 	}
 }
 
-func BenchmarkRasterColorful(b *testing.B) {
-	pixels := make([]color.NRGBA, 255)
+func BenchmarkWriteColorful(b *testing.B) {
+	pixels := make([]byte, 256*3)
 	for i := range pixels {
-		pixels[i] = color.NRGBA{uint8(i), 255 - uint8(i), uint8(i) + 127, 255}
+		pixels[i] = uint8(i) + uint8(i>>8)
 	}
-	var buf []byte
-	// Prime the buffer first.
-	tr, tg, tb := temperature.ToRGB(5000)
-	maxR := uint16((uint32(maxOut)*uint32(250)*uint32(tr) + 127*127) / 65025)
-	maxG := uint16((uint32(maxOut)*uint32(250)*uint32(tg) + 127*127) / 65025)
-	maxB := uint16((uint32(maxOut)*uint32(250)*uint32(tb) + 127*127) / 65025)
-	raster(ToRGB(pixels), &buf, maxR, maxG, maxB)
+	d, _ := Make(&fakes.SPI{W: ioutil.Discard}, len(pixels)/3, 250, 5000)
+	_, _ = d.Write(pixels)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		raster(ToRGB(pixels), &buf, maxR, maxG, maxB)
+		_, _ = d.Write(pixels)
 	}
 }
 
-func BenchmarkRasterColorfulVariation(b *testing.B) {
-	pixels := make([]color.NRGBA, 255)
-	for i := range pixels {
-		pixels[i] = color.NRGBA{uint8(i), 255 - uint8(i), uint8(i) + 127, 255}
-	}
-	var buf []byte
-	b.ResetTimer()
+func BenchmarkWriteColorfulVariation(b *testing.B) {
 	// Continuously vary the lookup tables.
+	pixels := make([]byte, 256*3)
+	for i := range pixels {
+		pixels[i] = uint8(i) + uint8(i>>8)
+	}
+	d, _ := Make(&fakes.SPI{W: ioutil.Discard}, len(pixels)/3, 250, 5000)
+	_, _ = d.Write(pixels)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tr, tg, tb := temperature.ToRGB(uint16(4000 + (i&7)*400))
-		maxR := uint16((uint32(maxOut)*uint32(250)*uint32(tr) + 127*127) / 65025)
-		maxG := uint16((uint32(maxOut)*uint32(250)*uint32(tg) + 127*127) / 65025)
-		maxB := uint16((uint32(maxOut)*uint32(250)*uint32(tb) + 127*127) / 65025)
-		raster(ToRGB(pixels), &buf, maxR, maxG, maxB)
+		d.Intensity = uint8(i)
+		d.Temperature = uint16((3000 + i) & 0x1FFF)
+		_, _ = d.Write(pixels)
 	}
 }

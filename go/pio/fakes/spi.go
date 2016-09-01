@@ -5,15 +5,15 @@
 package fakes
 
 import (
-	"bytes"
 	"errors"
+	"io"
 
 	"github.com/maruel/dlibox/go/pio/buses"
 )
 
 // SPI implements buses.SPI. It registers everything written to it.
 type SPI struct {
-	Buf bytes.Buffer
+	W io.Writer
 }
 
 // Close is a no-op.
@@ -28,7 +28,7 @@ func (s *SPI) Configure(mode buses.Mode, bits int) error {
 
 // Write accumulates all the bytes written.
 func (s *SPI) Write(d []byte) (int, error) {
-	return s.Buf.Write(d)
+	return s.W.Write(d)
 }
 
 // Tx returns an error.

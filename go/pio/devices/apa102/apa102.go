@@ -190,14 +190,20 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 // As per APA102-C spec, the chip's max refresh rate is 400hz.
 // https://en.wikipedia.org/wiki/Flicker_fusion_threshold is a recommended
 // reading.
-func Make(s buses.SPI, intensity uint8, temperature uint16) (*Dev, error) {
+func Make(s buses.SPI, numLights int, intensity uint8, temperature uint16) (*Dev, error) {
 	if err := s.Configure(buses.Mode3, 8); err != nil {
 		return nil, err
+	}
+	buf := make([]byte, 4*(numLights+1)+numLights/2/8+1)
+	tail := buf[4+4*numLights:]
+	for i := range tail {
+		tail[i] = 0xFF
 	}
 	return &Dev{
 		Intensity:   intensity,
 		Temperature: temperature,
 		s:           s,
+		buf:         buf,
 	}, nil
 }
 

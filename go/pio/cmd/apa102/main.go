@@ -89,7 +89,7 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	a, err := apa102.Make(s, uint8(*intensity), uint16(*temperature))
+	a, err := apa102.Make(s, *numLights, uint8(*intensity), uint16(*temperature))
 	if err != nil {
 		return err
 	}

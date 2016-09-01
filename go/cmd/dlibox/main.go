@@ -104,7 +104,7 @@ func mainImpl() error {
 		if err != nil {
 			return err
 		}
-		if leds, err = apa102.Make(spiBus, 255, 6500); err != nil {
+		if leds, err = apa102.Make(spiBus, config.APA102.NumberLights, 255, 6500); err != nil {
 			return err
 		}
 
