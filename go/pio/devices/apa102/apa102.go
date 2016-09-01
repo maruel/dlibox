@@ -52,12 +52,11 @@ func ramp(l uint8, max uint16) uint16 {
 
 // lut is a lookup table that initializes itself on the fly.
 type lut struct {
-	intensity        uint8       // Set an intensity between 0 (off) and 255 (full brightness).
-	temperature      uint16      // In Kelvin.
-	maxR, maxG, maxB uint16      // According to temperature
-	r                [256]uint16 // Values are 0xFFFF when unset.
-	g                [256]uint16 // Values are 0xFFFF when unset.
-	b                [256]uint16 // Values are 0xFFFF when unset.
+	intensity   uint8  // Set an intensity between 0 (off) and 255 (full brightness).
+	temperature uint16 // In Kelvin.
+	r           [256]uint16
+	g           [256]uint16
+	b           [256]uint16
 }
 
 func (l *lut) init(i uint8, t uint16) {
@@ -65,17 +64,27 @@ func (l *lut) init(i uint8, t uint16) {
 		l.intensity = i
 		l.temperature = t
 		tr, tg, tb := temperature.ToRGB(l.temperature)
-		l.maxR = uint16((uint32(maxOut)*uint32(l.intensity)*uint32(tr) + 127*127) / 65025)
-		l.maxG = uint16((uint32(maxOut)*uint32(l.intensity)*uint32(tg) + 127*127) / 65025)
-		l.maxB = uint16((uint32(maxOut)*uint32(l.intensity)*uint32(tb) + 127*127) / 65025)
+		maxR := uint16((uint32(maxOut)*uint32(l.intensity)*uint32(tr) + 127*127) / 65025)
+		maxG := uint16((uint32(maxOut)*uint32(l.intensity)*uint32(tg) + 127*127) / 65025)
+		maxB := uint16((uint32(maxOut)*uint32(l.intensity)*uint32(tb) + 127*127) / 65025)
 		for i := range l.r {
-			l.r[i] = 0xFFFF
+			l.r[i] = ramp(uint8(i), maxR)
 		}
-		for i := range l.g {
-			l.g[i] = 0xFFFF
+		if maxG == maxR {
+			copy(l.g[:], l.r[:])
+		} else {
+			for i := range l.g {
+				l.g[i] = ramp(uint8(i), maxG)
+			}
 		}
-		for i := range l.b {
-			l.b[i] = 0xFFFF
+		if maxB == maxR {
+			copy(l.b[:], l.r[:])
+		} else if maxB == maxG {
+			copy(l.b[:], l.g[:])
+		} else {
+			for i := range l.b {
+				l.b[i] = ramp(uint8(i), maxB)
+			}
 		}
 	}
 }
@@ -117,21 +126,9 @@ func (l *lut) raster(dst []byte, src []byte) {
 		//
 		// Computes brighness, blue, green, red.
 		j := 3 * i
-		pr := src[j]
-		if l.r[pr] == 0xFFFF {
-			l.r[pr] = ramp(pr, l.maxR)
-		}
-		r := l.r[pr]
-		pg := src[j+1]
-		if l.g[pg] == 0xFFFF {
-			l.g[pg] = ramp(pg, l.maxG)
-		}
-		g := l.g[pg]
-		pb := src[j+2]
-		if l.b[pb] == 0xFFFF {
-			l.b[pb] = ramp(pb, l.maxB)
-		}
-		b := l.b[pb]
+		r := l.r[src[j]]
+		g := l.g[src[j+1]]
+		b := l.b[src[j+2]]
 		m := r | g | b
 		j += i
 		if m <= 1023 {
@@ -159,21 +156,9 @@ func (l *lut) rasterImg(dst []byte, r image.Rectangle, src image.Image, srcR ima
 		pix := img.Pix[srcR.Min.Y*img.Stride:]
 		for sX := srcR.Min.X; sX < srcR.Max.X; sX++ {
 			sX4 := 4 * sX
-			pr := pix[sX4]
-			if l.r[pr] == 0xFFFF {
-				l.r[pr] = ramp(pr, l.maxR)
-			}
-			r := l.r[pr]
-			pg := pix[sX4+1]
-			if l.g[pg] == 0xFFFF {
-				l.g[pg] = ramp(pg, l.maxG)
-			}
-			g := l.g[pg]
-			pb := pix[sX4+2]
-			if l.b[pb] == 0xFFFF {
-				l.b[pb] = ramp(pb, l.maxB)
-			}
-			b := l.b[pb]
+			r := l.r[pix[sX4]]
+			g := l.g[pix[sX4+1]]
+			b := l.b[pix[sX4+2]]
 			m := r | g | b
 			rX := sX4 + deltaX4
 			if m <= 1023 {
@@ -193,21 +178,9 @@ func (l *lut) rasterImg(dst []byte, r image.Rectangle, src image.Image, srcR ima
 		// Generic version.
 		for sX := srcR.Min.X; sX < srcR.Max.X; sX++ {
 			r16, g16, b16, _ := src.At(sX, srcR.Min.Y).RGBA()
-			pr := byte(r16 >> 8)
-			if l.r[pr] == 0xFFFF {
-				l.r[pr] = ramp(pr, l.maxR)
-			}
-			r := l.r[pr]
-			pg := byte(g16 >> 8)
-			if l.g[pg] == 0xFFFF {
-				l.g[pg] = ramp(pg, l.maxG)
-			}
-			g := l.g[pg]
-			pb := byte(b16 >> 8)
-			if l.b[pb] == 0xFFFF {
-				l.b[pb] = ramp(pb, l.maxB)
-			}
-			b := l.b[pb]
+			r := l.r[byte(r16>>8)]
+			g := l.g[byte(g16>>8)]
+			b := l.b[byte(b16>>8)]
 			m := r | g | b
 			rX := sX*4 + deltaX4
 			if m <= 1023 {
