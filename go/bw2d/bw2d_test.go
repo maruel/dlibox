@@ -40,8 +40,8 @@ func TestImagePixels(t *testing.T) {
 	if !bytes.Equal(img.Buf, []byte{0x00}) {
 		t.Fatal("Clear sets black")
 	}
-	img.Set(0, 2, color.NRGBA{0x80, 0x80, 0x80, 0x80})
-	img.Set(1, 2, color.NRGBA{0x80, 0x80, 0x80, 0x80})
+	img.Set(0, 2, color.NRGBA{0x80, 0x80, 0x80, 0xFF})
+	img.Set(1, 2, color.NRGBA{0x80, 0x80, 0x80, 0xFF})
 	img.Inverse()
 	if !bytes.Equal(img.Buf, []byte{0xFB}) {
 		t.Fatalf("inverse %# v", img.Buf)
@@ -56,10 +56,10 @@ func TestImagePixels(t *testing.T) {
 
 func TestColorModel(t *testing.T) {
 	img, _ := Make(1, 8)
-	if On != img.ColorModel().Convert(color.NRGBA{0x80, 0x80, 0x80, 0x80}).(Bit) {
-		t.Fail()
+	if v := img.ColorModel().Convert(color.NRGBA{0x80, 0x80, 0x80, 0xFF}).(Bit); v != On {
+		t.Fatalf("%s", v)
 	}
-	if Off != img.ColorModel().Convert(color.NRGBA{0x7F, 0x7F, 0x7F, 0x7F}).(Bit) {
-		t.Fail()
+	if v := img.ColorModel().Convert(color.NRGBA{0x7F, 0x7F, 0x7F, 0xFF}).(Bit); v != Off {
+		t.Fatalf("%s", v)
 	}
 }

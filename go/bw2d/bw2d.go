@@ -25,6 +25,13 @@ func (b Bit) RGBA() (uint32, uint32, uint32, uint32) {
 	return 0, 0, 0, 0
 }
 
+func (b Bit) String() string {
+	if b {
+		return "On"
+	}
+	return "Off"
+}
+
 const (
 	On  = Bit(true)
 	Off = Bit(false)
@@ -125,7 +132,7 @@ func convertBit(c color.Color) Bit {
 		return t
 	default:
 		// Values are on 16 bits.
-		r, g, b, a := c.RGBA()
-		return Bit((r+g+b) > 0xC000 && a >= 0x4000)
+		r, g, b, _ := c.RGBA()
+		return Bit((r | g | b) >= 0x8000)
 	}
 }
