@@ -6,6 +6,7 @@ package apa102
 
 import (
 	"errors"
+	"image"
 	"image/color"
 
 	"github.com/maruel/dlibox/go/pio/buses"
@@ -76,30 +77,25 @@ func ensureRampCached(max uint16) *rampTable {
 	return r
 }
 
-// Serializes converts a buffer of colors to the APA102 SPI format.
-func raster(pixels []byte, buf *[]byte, maxR, maxG, maxB uint16) {
-	numLights := len(pixels) / 3
-	// End frames are needed to be able to push enough SPI clock signals due to
-	// internal half-delay of data signal from each individual LED. See
-	// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
-	l := 4*(numLights+1) + numLights/2/8 + 1
-	if len(*buf) != l {
-		*buf = make([]byte, l)
-		// It is not necessary to set the end frames to 0xFFFFFFFF.
-		// Set end frames right away.
-		s := (*buf)[4+4*numLights:]
-		for i := range s {
-			s[i] = 0xFF
-		}
-	}
+// raster serializes converts a buffer of RGB bytes to the APA102 SPI format.
+//
+// It is expected to be given the part where pixels are, not the header nor
+// footer.
+//
+// dst is in APA102 SPI 32 bits word format. src is in RGB 24 bits word format.
+// maxR, maxG and maxB are the maximum light intensity to use per channel.
+func raster(dst []byte, src []byte, maxR, maxG, maxB uint16) {
 	// Make sure the ramps are cached.
 	rampR := ensureRampCached(maxR)
 	rampG := ensureRampCached(maxG)
 	rampB := ensureRampCached(maxB)
 
-	// Start frame is all zeros. Just skip it.
-	s := (*buf)[4 : 4+4*numLights]
-	for i := 0; i < len(pixels)/3; i++ {
+	// Whichever is the shortest.
+	l := len(src) / 3
+	if o := len(dst) / 4; o < l {
+		l = o
+	}
+	for i := 0; i < l; i++ {
 		// Converts a color into the 4 bytes needed to control an APA-102 LED.
 		//
 		// The response as seen by the human eye is very non-linear. The APA-102
@@ -122,35 +118,83 @@ func raster(pixels []byte, buf *[]byte, maxR, maxG, maxB uint16) {
 		// Each channel duty cycle ramps from 100% to 1/(31*255) == 1/7905.
 		//
 		// Computes brighness, blue, green, red.
-		r := rampR[pixels[3*i]]
-		g := rampG[pixels[3*i+1]]
-		b := rampB[pixels[3*i+2]]
+		j := 3 * i
+		r := rampR[src[j]]
+		g := rampG[src[j+1]]
+		b := rampB[src[j+2]]
 		m := r | g | b
+		j += i
 		if m <= 1023 {
 			if m <= 255 {
-				s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = byte(0xE0+1), byte(b), byte(g), byte(r)
+				dst[j], dst[j+1], dst[j+2], dst[j+3] = byte(0xE0+1), byte(b), byte(g), byte(r)
 			} else if m <= 511 {
-				s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = byte(0xE0+2), byte(b>>1), byte(g>>1), byte(r>>1)
+				dst[j], dst[j+1], dst[j+2], dst[j+3] = byte(0xE0+2), byte(b>>1), byte(g>>1), byte(r>>1)
 			} else {
-				s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = byte(0xE0+4), byte((b+2)>>2), byte((g+2)>>2), byte((r+2)>>2)
+				dst[j], dst[j+1], dst[j+2], dst[j+3] = byte(0xE0+4), byte((b+2)>>2), byte((g+2)>>2), byte((r+2)>>2)
 			}
 		} else {
 			// In this case we need to use a ramp of 255-1 even for lower colors.
-			s[4*i], s[4*i+1], s[4*i+2], s[4*i+3] = byte(0xE0+31), byte((b+15)/31), byte((g+15)/31), byte((r+15)/31)
+			dst[j], dst[j+1], dst[j+2], dst[j+3] = byte(0xE0+31), byte((b+15)/31), byte((g+15)/31), byte((r+15)/31)
 		}
 	}
 }
 
-// Dev represents a strip of APA-102 LEDs as a strip connected over a SPI bus.
-// Itaccepts a stream of raw RGB pixels and converts it to the full dynamic
-// range as supported by APA102 protocol (nearly 8000:1 contrast ratio).
-//
-// Includes intensity and temperature correction.
-type Dev struct {
-	Intensity   uint8  // Set an intensity between 0 (off) and 255 (full brightness).
-	Temperature uint16 // In Kelvin.
-	s           buses.SPI
-	buf         []byte
+// rasterImg is the generic version of raster.
+func rasterImg(dst []byte, r image.Rectangle, src image.Image, srcR image.Rectangle, maxR, maxG, maxB uint16) {
+	// Make sure the ramps are cached.
+	rampR := ensureRampCached(maxR)
+	rampG := ensureRampCached(maxG)
+	rampB := ensureRampCached(maxB)
+
+	// Render directly into the buffer for maximum performance and to keep
+	// untouched sections intact.
+	deltaX4 := 4 * (r.Min.X - srcR.Min.X)
+	if img, ok := src.(*image.NRGBA); ok {
+		// Fast path for image.NRGBA.
+		pix := img.Pix[srcR.Min.Y*img.Stride:]
+		for sX := srcR.Min.X; sX < srcR.Max.X; sX++ {
+			sX4 := 4 * sX
+			r := rampR[pix[sX4]]
+			g := rampG[pix[sX4+1]]
+			b := rampB[pix[sX4+2]]
+			m := r | g | b
+			rX := sX4 + deltaX4
+			if m <= 1023 {
+				if m <= 255 {
+					dst[rX], dst[rX+1], dst[rX+2], dst[rX+3] = byte(0xE0+1), byte(b), byte(g), byte(r)
+				} else if m <= 511 {
+					dst[rX], dst[rX+1], dst[rX+2], dst[rX+3] = byte(0xE0+2), byte(b>>1), byte(g>>1), byte(r>>1)
+				} else {
+					dst[rX], dst[rX+1], dst[rX+2], dst[rX+3] = byte(0xE0+4), byte((b+2)>>2), byte((g+2)>>2), byte((r+2)>>2)
+				}
+			} else {
+				// In this case we need to use a ramp of 255-1 even for lower colors.
+				dst[rX], dst[rX+1], dst[rX+2], dst[rX+3] = byte(0xE0+31), byte((b+15)/31), byte((g+15)/31), byte((r+15)/31)
+			}
+		}
+	} else {
+		// Generic version.
+		for sX := srcR.Min.X; sX < srcR.Max.X; sX++ {
+			r16, g16, b16, _ := src.At(sX, srcR.Min.Y).RGBA()
+			r := rampR[byte(r16>>8)]
+			g := rampG[byte(g16>>8)]
+			b := rampB[byte(b16>>8)]
+			m := r | g | b
+			rX := sX*4 + deltaX4
+			if m <= 1023 {
+				if m <= 255 {
+					dst[rX], dst[rX+1], dst[rX+2], dst[rX+3] = byte(0xE0+1), byte(b), byte(g), byte(r)
+				} else if m <= 511 {
+					dst[rX], dst[rX+1], dst[rX+2], dst[rX+3] = byte(0xE0+2), byte(b>>1), byte(g>>1), byte(r>>1)
+				} else {
+					dst[rX], dst[rX+1], dst[rX+2], dst[rX+3] = byte(0xE0+4), byte((b+2)>>2), byte((g+2)>>2), byte((r+2)>>2)
+				}
+			} else {
+				// In this case we need to use a ramp of 255-1 even for lower colors.
+				dst[rX], dst[rX+1], dst[rX+2], dst[rX+3] = byte(0xE0+31), byte((b+15)/31), byte((g+15)/31), byte((r+15)/31)
+			}
+		}
+	}
 }
 
 // ToRGB converts a slice of color.NRGBA to a byte stream of RGB pixels.
@@ -164,19 +208,67 @@ func ToRGB(p []color.NRGBA) []byte {
 	return b
 }
 
+// Dev represents a strip of APA-102 LEDs as a strip connected over a SPI bus.
+// Itaccepts a stream of raw RGB pixels and converts it to the full dynamic
+// range as supported by APA102 protocol (nearly 8000:1 contrast ratio).
+//
+// Includes intensity and temperature correction.
+type Dev struct {
+	Intensity   uint8  // Set an intensity between 0 (off) and 255 (full brightness).
+	Temperature uint16 // In Kelvin.
+	s           buses.SPI
+	numLights   int
+	buf         []byte
+}
+
+// ColorModel implements devices.Display. There's no surprise, it is
+// color.NRGBAModel.
+func (d *Dev) ColorModel() color.Model {
+	return color.NRGBAModel
+}
+
+// Bounds implements devices.Display. Min is guaranteed to be {0, 0}.
+func (d *Dev) Bounds() image.Rectangle {
+	return image.Rectangle{Max: image.Point{X: d.numLights, Y: 1}}
+}
+
+// Draw implements devices.Display.
+//
+// Using something else than image.NRGBA is 10x slower. When using image.NRGBA,
+// the alpha channel is ignored.
+func (d *Dev) Draw(r image.Rectangle, src image.Image, sp image.Point) {
+	r = r.Intersect(d.Bounds())
+	srcR := src.Bounds()
+	srcR.Min = srcR.Min.Add(sp)
+	if dX := r.Dx(); dX < srcR.Dx() {
+		srcR.Max.X = srcR.Min.X + dX
+	}
+	if dY := r.Dy(); dY < srcR.Dy() {
+		srcR.Max.Y = srcR.Min.Y + dY
+	}
+	maxR, maxG, maxB := d.maxOut()
+	rasterImg(d.buf[4:4+4*d.numLights], r, src, srcR, maxR, maxG, maxB)
+	_, _ = d.s.Write(d.buf)
+}
+
 // Write accepts a stream of raw RGB pixels and sends it as APA102 encoded
 // stream.
 func (d *Dev) Write(pixels []byte) (int, error) {
 	if len(pixels)%3 != 0 {
 		return 0, errLength
 	}
-	tr, tg, tb := temperature.ToRGB(d.Temperature)
-	r := uint16((uint32(maxOut)*uint32(d.Intensity)*uint32(tr) + 127*127) / 65025)
-	g := uint16((uint32(maxOut)*uint32(d.Intensity)*uint32(tg) + 127*127) / 65025)
-	b := uint16((uint32(maxOut)*uint32(d.Intensity)*uint32(tb) + 127*127) / 65025)
-	raster(pixels, &d.buf, r, g, b)
+	maxR, maxG, maxB := d.maxOut()
+	raster(d.buf[4:4+4*d.numLights], pixels, maxR, maxG, maxB)
 	_, err := d.s.Write(d.buf)
 	return len(pixels), err
+}
+
+func (d *Dev) maxOut() (r uint16, g uint16, b uint16) {
+	tr, tg, tb := temperature.ToRGB(d.Temperature)
+	r = uint16((uint32(maxOut)*uint32(d.Intensity)*uint32(tr) + 127*127) / 65025)
+	g = uint16((uint32(maxOut)*uint32(d.Intensity)*uint32(tg) + 127*127) / 65025)
+	b = uint16((uint32(maxOut)*uint32(d.Intensity)*uint32(tb) + 127*127) / 65025)
+	return
 }
 
 // Make returns a strip that communicates over SPI to APA102 LEDs.
@@ -194,6 +286,9 @@ func Make(s buses.SPI, numLights int, intensity uint8, temperature uint16) (*Dev
 	if err := s.Configure(buses.Mode3, 8); err != nil {
 		return nil, err
 	}
+	// End frames are needed to be able to push enough SPI clock signals due to
+	// internal half-delay of data signal from each individual LED. See
+	// https://cpldcpu.wordpress.com/2014/11/30/understanding-the-apa102-superled/
 	buf := make([]byte, 4*(numLights+1)+numLights/2/8+1)
 	tail := buf[4+4*numLights:]
 	for i := range tail {
@@ -203,6 +298,7 @@ func Make(s buses.SPI, numLights int, intensity uint8, temperature uint16) (*Dev
 		Intensity:   intensity,
 		Temperature: temperature,
 		s:           s,
+		numLights:   numLights,
 		buf:         buf,
 	}, nil
 }

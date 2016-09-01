@@ -10,16 +10,24 @@ import (
 	"flag"
 	"fmt"
 	"image"
+	_ "image/gif"
+	_ "image/jpeg"
 	_ "image/png"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/maruel/dlibox/go/anim1d"
+	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/dlibox/go/pio/buses/spi"
+	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
+	"github.com/maruel/dlibox/go/pio/fakes"
+	"github.com/maruel/dlibox/go/pio/fakes/screen"
+	"github.com/nfnt/resize"
 )
 
 func access(name string) bool {
@@ -61,14 +69,44 @@ func loadImg(name string) (image.Image, error) {
 	return img, nil
 }
 
+func showImage(display devices.Display, img image.Image, sleep time.Duration, loop bool, height int) {
+	r := display.Bounds()
+	w := r.Dx()
+	orig := img.Bounds().Size()
+	if height == 0 {
+		height = img.Bounds().Dy()
+	}
+	p := image.Point{}
+	now := time.Now()
+	img = resize.Resize(uint(w), uint(height), img, resize.Bilinear)
+	log.Printf("Resizing %dx%d -> %dx%d took %s", orig.X, orig.Y, w, height, time.Since(now))
+	now = time.Now()
+	for {
+		for p.Y = 0; p.Y < height; p.Y++ {
+			c := time.After(sleep)
+			display.Draw(r, img, p)
+			if p.Y == height-1 && !loop {
+				log.Printf("done %s", time.Since(now))
+				return
+			}
+			<-c
+		}
+	}
+}
+
 func mainImpl() error {
-	bus := flag.Int("b", 0, "SPI bus to use")
+	verbose := flag.Bool("v", false, "verbose mode")
+	bus := flag.Int("b", 0, "SPI bus to use; use -1 to dump the raw binary data to stdout")
+	fake := flag.Bool("fake", false, "display as ANSI terminal color (intensity and temperature are ignored)")
 	numLights := flag.Int("n", 150, "number of lights on the strip")
 	intensity := flag.Int("l", 127, "light intensity [1-255]")
 	temperature := flag.Int("t", 5000, "light temperature in °Kelvin [3500-7500]")
-	imgName := flag.String("i", "", "image to load")
-	speed := flag.Int("s", 4000000, "speed in Hz")
-	verbose := flag.Bool("v", false, "verbose mode")
+	speed := flag.Int("s", 8000000, "speed in Hz")
+	pattern := flag.String("p", "\"Rainbow\"", "pattern to show in json; to show black, use '\"#000000\"', don't forget to quote")
+	imgName := flag.String("img", "", "image to load")
+	lineMs := flag.Int("linems", 2, "number of ms to show each line of the image")
+	imgLoop := flag.Bool("imgloop", false, "loop the image")
+	imgHeight := flag.Int("imgh", 0, "resize the Y axis of the image")
 	flag.Parse()
 	if !*verbose {
 		log.SetOutput(ioutil.Discard)
@@ -84,36 +122,50 @@ func mainImpl() error {
 		return errors.New("max temperature is 65535")
 	}
 
-	// Open the device
-	s, err := spi.Make(*bus, 0, int64(*speed))
-	if err != nil {
-		return err
-	}
-	a, err := apa102.Make(s, *numLights, uint8(*intensity), uint16(*temperature))
-	if err != nil {
-		return err
-	}
-
-	if len(*imgName) != 0 {
-		// Load an image and make it loop through the pixels.
-		/*
-			src, err := loadImg(*imgName)
+	// Open the display device.
+	var display devices.Display
+	if *fake {
+		display = screen.Make(*numLights)
+		defer os.Stdout.Write([]byte("\033[0m\n"))
+	} else {
+		var spiBus buses.SPI
+		if *bus == -1 {
+			spiBus = &fakes.SPI{W: os.Stdout}
+		} else {
+			b, err := spi.Make(*bus, 0, int64(*speed))
 			if err != nil {
 				return err
 			}
-			if _, err := a.Write(nil); err != nil {
-				return err
-			}
-		*/
+			defer b.Close()
+			spiBus = b
+		}
+		var err error
+		display, err = apa102.Make(spiBus, *numLights, uint8(*intensity), uint16(*temperature))
+		if err != nil {
+			return err
+		}
 	}
 
-	// Draw a rainbow.
-	r := anim1d.Rainbow{}
+	// Load an image and make it loop through the pixels.
+	if len(*imgName) != 0 {
+		img, err := loadImg(*imgName)
+		if err != nil {
+			return err
+		}
+		showImage(display, img, time.Duration(*lineMs)*time.Millisecond, *imgLoop, *imgHeight)
+		return nil
+	}
+
+	// Draw a pattern.
+	var p anim1d.SPattern
+	if err := p.UnmarshalJSON([]byte(*pattern)); err != nil {
+		return err
+	}
 	pixels := make(anim1d.Frame, *numLights)
-	r.NextFrame(pixels, 0)
+	p.NextFrame(pixels, 0)
 	buf := make([]byte, *numLights*3)
 	pixels.ToRGB(buf)
-	_, err = a.Write(buf)
+	_, err := display.Write(buf)
 	return err
 }
 

@@ -7,6 +7,7 @@ package apa102
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"image/color"
 	"io/ioutil"
 	"testing"
@@ -327,7 +328,7 @@ func TestDevEmpty(t *testing.T) {
 		t.Fatalf("%d %v", n, err)
 	}
 	if expected := []byte{0x0, 0x0, 0x0, 0x0, 0xFF}; !bytes.Equal(expected, buf.Bytes()) {
-		t.Fatalf("%v != %v", expected, buf.Bytes())
+		t.Fatalf("%#v != %#v", expected, buf.Bytes())
 	}
 }
 
@@ -338,7 +339,7 @@ func TestDevLen(t *testing.T) {
 		t.Fatalf("%d %v", n, err)
 	}
 	if expected := []byte{}; !bytes.Equal(expected, buf.Bytes()) {
-		t.Fatalf("%v != %v", expected, buf.Bytes())
+		t.Fatalf("%#v != %#v", expected, buf.Bytes())
 	}
 }
 
@@ -375,7 +376,13 @@ func TestDev(t *testing.T) {
 		0xFF,
 	}
 	if !bytes.Equal(expected, buf.Bytes()) {
-		t.Fatalf("%v != %v", expected, buf.Bytes())
+		t.Fatalf("%#v != %#v", expected, buf.Bytes())
+	}
+}
+
+func TestDevColo(t *testing.T) {
+	if (&Dev{}).ColorModel() != color.NRGBAModel {
+		t.Fail()
 	}
 }
 
@@ -412,32 +419,7 @@ func TestDevIntensity(t *testing.T) {
 		0xFF,
 	}
 	if !bytes.Equal(expected, buf.Bytes()) {
-		t.Fatalf("%v != %v", expected, buf.Bytes())
-	}
-}
-
-func TestDevTemperatureWarm(t *testing.T) {
-	buf := bytes.Buffer{}
-	colors := []color.NRGBA{
-		{0xFF, 0xFF, 0xFF, 0x00},
-		{0x80, 0x80, 0x80, 0x00},
-		{0x01, 0x01, 0x01, 0x00},
-		{0x00, 0x00, 0x00, 0x00},
-	}
-	d, _ := Make(&fakes.SPI{W: &buf}, len(colors), 255, 5000)
-	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
-		t.Fatalf("%d %v", n, err)
-	}
-	expected := []byte{
-		0x00, 0x00, 0x00, 0x00,
-		0xFF, 0xCE, 0xE5, 0xFF,
-		0xE2, 0x97, 0x8C, 0x7C,
-		0xE1, 0x01, 0x01, 0x01,
-		0xE1, 0x00, 0x00, 0x00,
-		0xFF,
-	}
-	if !bytes.Equal(expected, buf.Bytes()) {
-		t.Fatalf("%v != %v", expected, buf.Bytes())
+		t.Fatalf("%#v != %#v", expected, buf.Bytes())
 	}
 }
 
@@ -457,12 +439,73 @@ func TesttDevLong(t *testing.T) {
 		trailer[i] = 0xFF
 	}
 	if !bytes.Equal(expected, buf.Bytes()) {
-		t.Fatalf("%v != %v", expected, buf.Bytes())
+		t.Fatalf("%#v != %#v", expected, buf.Bytes())
+	}
+}
+
+// Expected output for 3 test cases. Each test case use a completely different
+// code path so make sure each code path results in the exact same output.
+var expectedi250t5000 = []byte{
+	0x00, 0x00, 0x00, 0x00, 0xE1, 0x08, 0x04, 0x00, 0xE1, 0x14, 0x10, 0xC, 0xE1,
+	0x20, 0x1C, 0x18, 0xE1, 0x2C, 0x28, 0x24, 0xE1, 0x38, 0x34, 0x30, 0xE1, 0x3F,
+	0x40, 0x3C, 0xE1, 0x43, 0x46, 0x48, 0xE1, 0x54, 0x4C, 0x4E, 0xE1, 0x7B, 0x63,
+	0x56, 0xE1, 0xC1, 0x96, 0x73, 0xE2, 0x97, 0x78, 0x5A, 0xE2, 0xE7, 0xBF, 0x94,
+	0xE4, 0xAA, 0x93, 0x77, 0xE4, 0xF1, 0xD8, 0xB8, 0xFF, 0x2B, 0x27, 0x23, 0xFF,
+	0x39, 0x36, 0x32, 0xFF, 0xFF,
+}
+
+func TestDevTemperatureWarm(t *testing.T) {
+	buf := bytes.Buffer{}
+	pixels := make([]byte, 16*3)
+	for i := range pixels {
+		// Test all intensity code paths.
+		pixels[i] = uint8(i << 2)
+	}
+	d, _ := Make(&fakes.SPI{W: &buf}, len(pixels)/3, 250, 5000)
+	if n, err := d.Write(pixels); n != len(pixels) || err != nil {
+		t.Fatalf("%d %v", n, err)
+	}
+	if !bytes.Equal(expectedi250t5000, buf.Bytes()) {
+		t.Fatalf("%#v != %#v", expectedi250t5000, buf.Bytes())
+	}
+}
+
+func TestDrawNRGBA(t *testing.T) {
+	img := image.NewNRGBA(image.Rect(0, 0, 16, 1))
+	for i := 0; i < 16; i++ {
+		// Test all intensity code paths. Confirm that alpha is ignored.
+		img.Pix[4*i] = uint8((3 * i) << 2)
+		img.Pix[4*i+1] = uint8((3*i + 1) << 2)
+		img.Pix[4*i+2] = uint8((3*i + 2) << 2)
+		img.Pix[4*i+3] = 0
+	}
+	buf := bytes.Buffer{}
+	d, _ := Make(&fakes.SPI{W: &buf}, 16, 250, 5000)
+	d.Draw(d.Bounds(), img, image.Point{})
+	if !bytes.Equal(expectedi250t5000, buf.Bytes()) {
+		t.Fatalf("%#v != %#v", expectedi250t5000, buf.Bytes())
+	}
+}
+
+func TestDrawRGBA(t *testing.T) {
+	img := image.NewRGBA(image.Rect(0, 0, 16, 1))
+	for i := 0; i < 16; i++ {
+		// Test all intensity code paths. Alpha is not ignored in this case.
+		img.Pix[4*i] = uint8((3 * i) << 2)
+		img.Pix[4*i+1] = uint8((3*i + 1) << 2)
+		img.Pix[4*i+2] = uint8((3*i + 2) << 2)
+		img.Pix[4*i+3] = 0xFF
+	}
+	buf := bytes.Buffer{}
+	d, _ := Make(&fakes.SPI{W: &buf}, 16, 250, 5000)
+	d.Draw(d.Bounds(), img, image.Point{})
+	if !bytes.Equal(expectedi250t5000, buf.Bytes()) {
+		t.Fatalf("%#v != %#v", expectedi250t5000, buf.Bytes())
 	}
 }
 
 func BenchmarkWriteWhite(b *testing.B) {
-	pixels := make([]byte, 256*3)
+	pixels := make([]byte, 150*3)
 	for i := range pixels {
 		pixels[i] = 0xFF
 	}
@@ -475,7 +518,7 @@ func BenchmarkWriteWhite(b *testing.B) {
 }
 
 func BenchmarkWriteDim(b *testing.B) {
-	pixels := make([]byte, 256*3)
+	pixels := make([]byte, 150*3)
 	for i := range pixels {
 		pixels[i] = 1
 	}
@@ -488,7 +531,7 @@ func BenchmarkWriteDim(b *testing.B) {
 }
 
 func BenchmarkWriteBlack(b *testing.B) {
-	pixels := make([]byte, 256*3)
+	pixels := make([]byte, 150*3)
 	d, _ := Make(&fakes.SPI{W: ioutil.Discard}, len(pixels)/3, 255, 6500)
 	_, _ = d.Write(pixels)
 	b.ResetTimer()
@@ -498,7 +541,7 @@ func BenchmarkWriteBlack(b *testing.B) {
 }
 
 func BenchmarkWriteColorful(b *testing.B) {
-	pixels := make([]byte, 256*3)
+	pixels := make([]byte, 150*3)
 	for i := range pixels {
 		pixels[i] = uint8(i) + uint8(i>>8)
 	}
@@ -507,6 +550,38 @@ func BenchmarkWriteColorful(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = d.Write(pixels)
+	}
+}
+
+func BenchmarkDrawNRGBAColorful(b *testing.B) {
+	// Takes the fast path.
+	img := image.NewNRGBA(image.Rect(0, 0, 150, 1))
+	for i := range img.Pix {
+		img.Pix[i] = uint8(i) + uint8(i>>8)
+	}
+	d, _ := Make(&fakes.SPI{W: ioutil.Discard}, img.Bounds().Max.X, 250, 5000)
+	r := d.Bounds()
+	p := image.Point{}
+	d.Draw(r, img, p)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		d.Draw(r, img, p)
+	}
+}
+
+func BenchmarkDrawRGBAColorful(b *testing.B) {
+	// Takes the slow path.
+	img := image.NewRGBA(image.Rect(0, 0, 256, 1))
+	for i := range img.Pix {
+		img.Pix[i] = uint8(i) + uint8(i>>8)
+	}
+	d, _ := Make(&fakes.SPI{W: ioutil.Discard}, img.Bounds().Max.X, 250, 5000)
+	r := d.Bounds()
+	p := image.Point{}
+	d.Draw(r, img, p)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		d.Draw(r, img, p)
 	}
 }
 

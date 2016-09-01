@@ -20,6 +20,8 @@ package ssd1306
 
 import (
 	"errors"
+	"image"
+	"image/color"
 	"io"
 
 	"github.com/maruel/dlibox/go/pio/buses"
@@ -141,6 +143,57 @@ func makeDev(dev io.Writer, w, h int, rotated bool) (*Dev, error) {
 		return nil, err
 	}
 	return d, nil
+}
+
+// ColorModel implements devices.Display. It is a one bit color model.
+func (d *Dev) ColorModel() color.Model {
+	return color.NRGBAModel
+}
+
+// Bounds implements devices.Display. Min is guaranteed to be {0, 0}.
+func (d *Dev) Bounds() image.Rectangle {
+	return image.Rectangle{Max: image.Point{X: d.W, Y: d.H}}
+}
+
+func colorToBit(c color.Color) byte {
+	r, g, b, a := c.RGBA()
+	if (r|g|b) >= 0x8000 && a >= 0x4000 {
+		return 1
+	}
+	return 0
+}
+
+// Draw implements devices.Display.
+func (d *Dev) Draw(r image.Rectangle, src image.Image, sp image.Point) {
+	r = r.Intersect(d.Bounds())
+	srcR := src.Bounds()
+	srcR.Min = srcR.Min.Add(sp)
+	if dX := r.Dx(); dX < srcR.Dx() {
+		srcR.Max.X = srcR.Min.X + dX
+	}
+	if dY := r.Dy(); dY < srcR.Dy() {
+		srcR.Max.Y = srcR.Min.Y + dY
+	}
+	// Take 8 lines at a time.
+	deltaX := r.Min.X - srcR.Min.X
+	deltaY := r.Min.Y - srcR.Min.Y
+	pixels := make([]byte, d.W*d.H/8)
+	for sX := srcR.Min.X; sX < srcR.Max.X; sX++ {
+		rX := sX + deltaX
+		for sY := srcR.Min.Y; sY < srcR.Max.Y; sY += 8 {
+			c0 := colorToBit(src.At(sX, sY))
+			c1 := colorToBit(src.At(sX+1, sY)) << 1
+			c2 := colorToBit(src.At(sX+2, sY)) << 2
+			c3 := colorToBit(src.At(sX+3, sY)) << 3
+			c4 := colorToBit(src.At(sX+4, sY)) << 4
+			c5 := colorToBit(src.At(sX+5, sY)) << 5
+			c6 := colorToBit(src.At(sX+6, sY)) << 6
+			c7 := colorToBit(src.At(sX+7, sY)) << 7
+			rY := sY + deltaY
+			pixels[rX+rY*d.H/8] = c0 | c1 | c2 | c3 | c4 | c5 | c6 | c7
+		}
+	}
+	_, _ = d.Write(pixels)
 }
 
 // Write writes a buffer of pixels to the display.

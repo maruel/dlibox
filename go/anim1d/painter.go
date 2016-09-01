@@ -6,11 +6,11 @@ package anim1d
 
 import (
 	"encoding/json"
-	"io"
 	"log"
 	"sync"
 	"time"
 
+	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/interrupt"
 )
 
@@ -32,7 +32,7 @@ type Pattern interface {
 
 // Painter handles the "draw frame, write" loop.
 type Painter struct {
-	s             io.Writer
+	d             devices.Display
 	c             chan Pattern
 	wg            sync.WaitGroup
 	frameDuration time.Duration
@@ -61,12 +61,15 @@ func (p *Painter) Close() error {
 
 // MakePainter returns a Painter that manages updating the Patterns to the
 // strip.
-func MakePainter(s io.Writer, numLights int, fps int) *Painter {
+//
+// It Assumes the display uses native RGB packed pixels.
+func MakePainter(d devices.Display, fps int) *Painter {
 	p := &Painter{
-		s:             s,
+		d:             d,
 		c:             make(chan Pattern),
 		frameDuration: time.Second / time.Duration(fps),
 	}
+	numLights := d.Bounds().Dx()
 	// Tripple buffering.
 	cGen := make(chan Frame, 3)
 	cWrite := make(chan Frame, cap(cGen))
@@ -136,7 +139,7 @@ func (p *Painter) runWrite(cGen, cWrite chan Frame, numLights int) {
 		}
 		if err == nil {
 			pixels.ToRGB(buf)
-			if _, err = p.s.Write(buf); err != nil {
+			if _, err = p.d.Write(buf); err != nil {
 				log.Printf("Writing failed: %s", err)
 			}
 		}
