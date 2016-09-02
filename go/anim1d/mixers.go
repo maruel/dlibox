@@ -27,14 +27,12 @@ func (g *Gradient) NextFrame(pixels Frame, timeMS uint32) {
 	g.Left.NextFrame(pixels, timeMS)
 	g.Right.NextFrame(g.buf, timeMS)
 	if l == 0 {
-		pixels.Mix(g.buf, FloatToUint8(255.*g.Curve.Scale(0.5)))
+		pixels.Mix(g.buf, g.Curve.Scale8(65535>>1))
 	} else {
-		// TODO(maruel): Convert to integer calculation.
-		max := float32(len(pixels) - 1)
+		max := len(pixels) - 1
 		for i := range pixels {
-			// [0, 1]
-			intensity := float32(i) / max
-			pixels[i].Mix(g.buf[i], FloatToUint8(255.*g.Curve.Scale(intensity)))
+			intensity := uint16(i * 65535 / max)
+			pixels[i].Mix(g.buf[i], g.Curve.Scale8(intensity))
 		}
 	}
 }
@@ -73,7 +71,8 @@ func (t *Transition) NextFrame(pixels Frame, timeMS uint32) {
 	if t.Before.Pattern != nil {
 		t.Before.NextFrame(t.buf, timeMS)
 	}
-	pixels.Mix(t.buf, 255.-FloatToUint8(255.*t.Curve.Scale(float32(timeMS-t.OffsetMS)/float32(t.DurationMS))))
+	intensity := uint16((timeMS - t.OffsetMS) * 65535 / (t.DurationMS))
+	pixels.Mix(t.buf, 255.-t.Curve.Scale8(intensity))
 }
 
 // Cycle cycles between multiple patterns. It can be used as an animatable
@@ -98,6 +97,7 @@ func (c *Cycle) NextFrame(pixels Frame, timeMS uint32) {
 // Display starts with one DurationShow for Patterns[0], then starts looping.
 // timeMS is not modified so it's like as all animations continued animating
 // behind.
+// TODO(maruel): Add lateral transition and others.
 type Loop struct {
 	Patterns             []SPattern
 	DurationShowMS       uint32 // Duration for each pattern to be shown as pure
@@ -107,30 +107,27 @@ type Loop struct {
 }
 
 func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
-	l.buf.reset(len(pixels))
-	ds := float32(l.DurationShowMS)
-	dt := float32(l.DurationTransitionMS)
-	cycleDuration := ds + dt
-	cycles := float32(timeMS) / cycleDuration
-	baseIndex := int(cycles)
-	lp := len(l.Patterns)
+	lp := uint32(len(l.Patterns))
 	if lp == 0 {
 		return
 	}
-	a := l.Patterns[baseIndex%lp]
-	a.NextFrame(pixels, timeMS)
-	// [0, 1[
-	delta := (cycles - float32(baseIndex))
-	offset := delta * cycleDuration
-	if offset <= ds {
+	cycleDuration := l.DurationShowMS + l.DurationTransitionMS
+	if cycleDuration == 0 {
+		l.Patterns[0].NextFrame(pixels, timeMS)
 		return
 	}
-	b := l.Patterns[(baseIndex+1)%lp]
-	// ]0, 1[
-	intensity := 1. - (offset-ds)/dt
-	// TODO(maruel): Add lateral animation and others.
+	l.buf.reset(len(pixels))
+	cycleNumber := timeMS / cycleDuration
+	a := l.Patterns[cycleNumber%lp]
+	a.NextFrame(pixels, timeMS)
+	cycleOffset := cycleNumber * cycleDuration
+	if cycleOffset <= l.DurationShowMS {
+		return
+	}
+	b := l.Patterns[(cycleNumber+1)%lp]
 	b.NextFrame(l.buf, timeMS)
-	pixels.Mix(l.buf, FloatToUint8(255.*l.Curve.Scale(intensity)))
+	intensity := uint16((cycleOffset - l.DurationShowMS) * 65535 / l.DurationTransitionMS)
+	pixels.Mix(l.buf, l.Curve.Scale8(intensity))
 }
 
 // Rotate rotates a pattern that can also cycle either way.

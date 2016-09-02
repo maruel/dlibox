@@ -6,7 +6,9 @@
 
 package anim1d
 
-// Curve models visually pleasing curves between 0 and 1.
+import "github.com/maruel/fastbezier"
+
+// Curve models visually pleasing curves.
 //
 // They are modeled against CSS transitions.
 // https://www.w3.org/TR/web-animations/#scaling-using-a-cubic-bezier-curve
@@ -23,43 +25,54 @@ const (
 	StepEnd    Curve = "steps(1,end)"
 )
 
-// Scale scales input [0, 1] to output [0, 1] using the transformation curve
+var lutCache map[Curve]fastbezier.LUT
+
+func setupCache() map[Curve]fastbezier.LUT {
+	cache := map[Curve]fastbezier.LUT{
+		Ease:      fastbezier.Make(0.25, 0.1, 0.25, 1, 18),
+		EaseIn:    fastbezier.Make(0.42, 0, 1, 1, 18),
+		EaseInOut: fastbezier.Make(0.42, 0, 0.58, 1, 18),
+		EaseOut:   fastbezier.Make(0, 0, 0.58, 1, 18),
+	}
+	cache[""] = cache[EaseOut]
+	return cache
+}
+
+func init() {
+	lutCache = setupCache()
+}
+
+// Scale scales input [0, 65535] to output [0, 65535] using the curve
 // requested.
-//
-// TODO(maruel): Implement a version that is integer based.
-func (c Curve) Scale(intensity float32) float32 {
-	// TODO(maruel): Add support for arbitrary cubic-bezier().
-	// TODO(maruel): Map ease-* to cubic-bezier().
-	// TODO(maruel): Add support for steps() which is pretty cool.
+func (c Curve) Scale(intensity uint16) uint16 {
 	switch c {
-	case Ease:
-		return cubicBezier(0.25, 0.1, 0.25, 1, intensity)
-	case EaseIn:
-		return cubicBezier(0.42, 0, 1, 1, intensity)
-	case EaseInOut:
-		return cubicBezier(0.42, 0, 0.58, 1, intensity)
-	case EaseOut, "":
-		fallthrough
+	case Ease, EaseIn, EaseInOut, EaseOut, "":
+		return lutCache[c].Eval(intensity)
 	default:
-		return cubicBezier(0, 0, 0.58, 1, intensity)
+		return lutCache[""].Eval(intensity)
 	case Direct:
 		return intensity
 	case StepStart:
-		if intensity < 0.+epsilon {
+		if intensity < 256 {
 			return 0
 		}
-		return 1
+		return 65535
 	case StepMiddle:
-		if intensity < 0.5 {
+		if intensity < 32768 {
 			return 0
 		}
-		return 1
+		return 65535
 	case StepEnd:
-		if intensity > 1.-epsilon {
-			return 1
+		if intensity >= 65535-256 {
+			return 65535
 		}
 		return 0
 	}
+}
+
+// Scale8 saves on casting.
+func (c Curve) Scale8(intensity uint16) uint8 {
+	return uint8(c.Scale(intensity) >> 8)
 }
 
 // Interpolation specifies a way to scales a pixel strip.
@@ -69,11 +82,12 @@ const (
 	NearestSkip Interpolation = "nearestskip" // Selects the nearest pixel but when upscaling, skips on missing pixels.
 	Nearest     Interpolation = "nearest"     // Selects the nearest pixel, gives a blocky view.
 	Linear      Interpolation = "linear"      // Linear interpolation, recommended and default value.
-	Bilinear    Interpolation = "bilinear"    // Bilinear interpolation, usually overkill for 1D.
+	//Bilinear    Interpolation = "bilinear"    // Bilinear interpolation, usually overkill for 1D.
 )
 
+// Scale interpolates a frame into another using integers as much as possible
+// for reasonable performance.
 func (i Interpolation) Scale(in, out Frame) {
-	// Use integer operations as much as possible for reasonable performance.
 	li := len(in)
 	lo := len(out)
 	if li == 0 || lo == 0 {
@@ -88,22 +102,28 @@ func (i Interpolation) Scale(in, out Frame) {
 			}
 			return
 		}
+		// When the destination is smaller than the source, Nearest and NearestSkip
+		// have the same behavior.
 		fallthrough
-	case Nearest, Linear, Bilinear, "":
+	case Nearest, "":
 		fallthrough
 	default:
 		for i := range out {
 			out[i] = in[(i*li+li/2)/lo]
 		}
-		/*
-			case Linear:
-				for i := range out {
-					x := (i*li + li/2) / lo
-					c := in[x]
-					c.Add(in[x+1])
-					out[i] = c
-				}
-		*/
+	case Linear:
+		for i := range out {
+			x := (i*li + li/2) / lo
+			c := in[x]
+			if x < li-1 {
+				gradient := uint8(127)
+				c.Mix(in[x+1], gradient)
+			}
+			out[i] = c
+			//a := in[(i*li+li/2)/lo]
+			//b := in[(i*li+li/2)/lo]
+			//out[i] = (a + b) / 2
+		}
 	}
 }
 

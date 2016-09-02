@@ -11,7 +11,6 @@ import (
 	"image/color"
 	"image/color/palette"
 	"image/gif"
-	"math"
 	"sync"
 )
 
@@ -62,7 +61,7 @@ func (t *ThumbnailsCache) GIF(serialized []byte) ([]byte, error) {
 		Config:          image.Config{pal, t.NumberLEDs, 1},
 		BackgroundIndex: 1,
 	}
-	frameDuration := int(math.Floor(100./float64(t.ThumbnailHz) + 0.5))
+	frameDuration := (100 + t.ThumbnailHz>>1) / t.ThumbnailHz
 	for frame := 0; frame < nbImg; frame++ {
 		since := uint32(1000 * frame / t.ThumbnailHz)
 		pat.NextFrame(pixels[frame&1], since)

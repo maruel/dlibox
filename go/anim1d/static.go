@@ -113,6 +113,7 @@ func (r *Rainbow) NextFrame(pixels Frame, timeMS uint32) {
 		const start = 380
 		const end = 781
 		const delta = end - start
+		// TODO(maruel): Use integer arithmetic.
 		scale := logn(2)
 		step := 1. / float32(len(pixels))
 		for i := range pixels {
