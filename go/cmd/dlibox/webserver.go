@@ -11,9 +11,11 @@ import (
 	"html/template"
 	"log"
 	"mime"
+	"net"
 	"net/http"
 	"os"
 	"path"
+	"time"
 
 	"github.com/maruel/dlibox/go/anim1d"
 )
@@ -35,10 +37,12 @@ type webServer struct {
 	painter *anim1d.Painter
 	cache   anim1d.ThumbnailsCache
 	config  *Config
+	ln      net.Listener
+	server  http.Server
 }
 
-func startWebServer(port int, painter *anim1d.Painter, config *Config) *webServer {
-	ws := &webServer{
+func startWebServer(port int, painter *anim1d.Painter, config *Config) (*webServer, error) {
+	s := &webServer{
 		painter: painter,
 		cache: anim1d.ThumbnailsCache{
 			NumberLEDs:       100,
@@ -49,15 +53,34 @@ func startWebServer(port int, painter *anim1d.Painter, config *Config) *webServe
 	}
 	mux := http.NewServeMux()
 	// Static replies.
-	mux.HandleFunc("/", ws.rootHandler)
-	mux.HandleFunc("/favicon.ico", ws.faviconHandler)
-	mux.HandleFunc("/static/", ws.staticHandler)
+	mux.HandleFunc("/", s.rootHandler)
+	mux.HandleFunc("/favicon.ico", s.faviconHandler)
+	mux.HandleFunc("/static/", s.staticHandler)
 	// Dynamic replies.
-	mux.HandleFunc("/config", ws.configHandler)
-	mux.HandleFunc("/switch", ws.switchHandler)
-	mux.HandleFunc("/thumbnail/", ws.thumbnailHandler)
-	go http.ListenAndServe(fmt.Sprintf(":%d", port), loggingHandler{mux})
-	return ws
+	mux.HandleFunc("/config", s.configHandler)
+	mux.HandleFunc("/switch", s.switchHandler)
+	mux.HandleFunc("/thumbnail/", s.thumbnailHandler)
+
+	var err error
+	s.ln, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return nil, err
+	}
+	s.server = http.Server{
+		Addr:           s.ln.Addr().String(),
+		Handler:        loggingHandler{mux},
+		ReadTimeout:    60 * time.Second,
+		WriteTimeout:   60 * time.Second,
+		MaxHeaderBytes: 1 << 16,
+	}
+	go s.server.Serve(s.ln)
+	return s, nil
+}
+
+func (s *webServer) Close() error {
+	err := s.ln.Close()
+	s.ln = nil
+	return err
 }
 
 func (s *webServer) rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -122,36 +145,41 @@ func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
 		return
 	}
-	b := r.PostFormValue("pattern")
-	if len(b) == 0 {
+	rawEncoded := r.PostFormValue("pattern")
+	if len(rawEncoded) == 0 {
 		http.Error(w, "pattern is required", http.StatusBadRequest)
 		return
 	}
-	p, err := base64.URLEncoding.DecodeString(b)
+	raw, err := base64.URLEncoding.DecodeString(rawEncoded)
+	if len(raw) == 0 {
+		http.Error(w, "pattern content is required", http.StatusBadRequest)
+		return
+	}
 	if err != nil {
 		http.Error(w, "pattern is not base64", http.StatusBadRequest)
 		return
 	}
-	p2 := string(p)
-	log.Printf("pattern = %q", p2)
-	if err := s.painter.SetPattern(p2); err != nil {
+	// Reformat the pattern in canonical format.
+	// TODO(maruel): Change SetPattern() to accept a anim1d.Pattern.
+	var p anim1d.SPattern
+	if err := json.Unmarshal(raw, &p); err != nil {
 		http.Error(w, "invalid JSON pattern", http.StatusBadRequest)
+		return
+	}
+	b, err := p.MarshalJSON()
+	if err != nil {
+		http.Error(w, "internal error", http.StatusBadRequest)
+		return
+	}
+	pattern := string(b)
+	log.Printf("pattern = %q", pattern)
+	if err := s.painter.SetPattern(pattern); err != nil {
+		http.Error(w, "invalid JSON pattern", http.StatusBadRequest)
+		return
 	}
 
-	// Move the pattern at the top.
-	for i, p3 := range s.config.Patterns {
-		if p3 == p2 {
-			copy(s.config.Patterns[i:], s.config.Patterns[i+1:])
-			s.config.Patterns = s.config.Patterns[:len(s.config.Patterns)-1]
-			break
-		}
-	}
-	s.config.Patterns = append(s.config.Patterns, "")
-	copy(s.config.Patterns[1:], s.config.Patterns)
-	s.config.Patterns[0] = p2
-	if len(s.config.Patterns) > 25 {
-		s.config.Patterns = s.config.Patterns[:25]
-	}
+	s.config.Inject(pattern)
+	_, _ = w.Write([]byte("success"))
 }
 
 func (s *webServer) thumbnailHandler(w http.ResponseWriter, r *http.Request) {

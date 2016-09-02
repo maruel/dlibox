@@ -119,6 +119,22 @@ func (c *Config) Save(n string) error {
 	return err
 }
 
+// Inject moves the pattern at the top of LRU cache.
+func (c *Config) Inject(pattern string) {
+	for i, old := range c.Patterns {
+		if old == pattern {
+			copy(c.Patterns[i:], c.Patterns[i+1:])
+			c.Patterns = c.Patterns[:len(c.Patterns)-1]
+			break
+		}
+	}
+	if len(c.Patterns) < 25 {
+		c.Patterns = append(c.Patterns, "")
+	}
+	copy(c.Patterns[1:], c.Patterns)
+	c.Patterns[0] = pattern
+}
+
 // check verifies that the pattern can be decoded, reencoded and that the
 // format is the canonical one.
 func check(s string) error {

@@ -10,8 +10,14 @@ import (
 	"github.com/maruel/ut"
 )
 
-func TestConfig(t *testing.T) {
-	c := Config{}
-	c.ResetDefault()
-	ut.AssertEqual(t, nil, c.verify())
+func TestInject(t *testing.T) {
+	var config Config
+	config.Patterns = []string{"first", "second", "third"}
+	prev := make([]string, len(config.Patterns))
+	copy(prev, config.Patterns)
+	config.Inject("new")
+	ut.AssertEqual(t, []string{"new", "first", "second", "third"}, config.Patterns)
+
+	config.Inject("second")
+	ut.AssertEqual(t, []string{"second", "new", "first", "third"}, config.Patterns)
 }
