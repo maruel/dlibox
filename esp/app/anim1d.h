@@ -106,7 +106,7 @@ struct Repeated : public IPattern {
 // Cycle cycles between multiple patterns. It can be used as an animatable
 // looping frame.
 //
-// TODO(maruel): Blend between frames with TransitionType, defaults to step.
+// TODO(maruel): Blend between frames with Curve, defaults to step.
 // TODO(maruel): Merge with Loop.
 struct Cycle : public IPattern {
   IPattern **children;

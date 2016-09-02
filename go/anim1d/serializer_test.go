@@ -69,14 +69,14 @@ func TestJSON(t *testing.T) {
 				After:      SPattern{&Color{255, 255, 255}},
 				OffsetMS:   600000,
 				DurationMS: 600000,
-				Transition: TransitionLinear,
+				Curve:      Direct,
 			},
 		},
 		After:      SPattern{&Color{}},
 		OffsetMS:   30 * 60000,
 		DurationMS: 600000,
-		Transition: TransitionLinear,
+		Curve:      Direct,
 	}
-	expected := `{"After":"#000000","Before":{"After":"#ffffff","Before":{},"DurationMS":600000,"OffsetMS":600000,"Transition":"linear","_type":"Transition"},"DurationMS":600000,"OffsetMS":1800000,"Transition":"linear","_type":"Transition"}`
+	expected := `{"After":"#000000","Before":{"After":"#ffffff","Before":{},"Curve":"direct","DurationMS":600000,"OffsetMS":600000,"_type":"Transition"},"Curve":"direct","DurationMS":600000,"OffsetMS":1800000,"_type":"Transition"}`
 	serialize(t, p, expected)
 }

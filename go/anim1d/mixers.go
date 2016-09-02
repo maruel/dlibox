@@ -12,10 +12,10 @@ package anim1d
 //
 // TODO(maruel): Support N colors at M positions.
 type Gradient struct {
-	Left       SPattern
-	Right      SPattern
-	Transition TransitionType
-	buf        Frame
+	Left  SPattern
+	Right SPattern
+	Curve Curve
+	buf   Frame
 }
 
 func (g *Gradient) NextFrame(pixels Frame, timeMS uint32) {
@@ -27,14 +27,14 @@ func (g *Gradient) NextFrame(pixels Frame, timeMS uint32) {
 	g.Left.NextFrame(pixels, timeMS)
 	g.Right.NextFrame(g.buf, timeMS)
 	if l == 0 {
-		pixels.Mix(g.buf, FloatToUint8(255.*g.Transition.scale(0.5)))
+		pixels.Mix(g.buf, FloatToUint8(255.*g.Curve.Scale(0.5)))
 	} else {
 		// TODO(maruel): Convert to integer calculation.
 		max := float32(len(pixels) - 1)
 		for i := range pixels {
 			// [0, 1]
 			intensity := float32(i) / max
-			pixels[i].Mix(g.buf[i], FloatToUint8(255.*g.Transition.scale(intensity)))
+			pixels[i].Mix(g.buf[i], FloatToUint8(255.*g.Curve.Scale(intensity)))
 		}
 	}
 }
@@ -43,11 +43,11 @@ func (g *Gradient) NextFrame(pixels Frame, timeMS uint32) {
 //
 // In gets timeMS that is subtracted by OffsetMS.
 type Transition struct {
-	Before     SPattern       // Old pattern that is disappearing
-	After      SPattern       // New pattern to show
-	OffsetMS   uint32         // Offset at which the transiton from Before->In starts
-	DurationMS uint32         // Duration of the transition while both are rendered
-	Transition TransitionType // Type of transition, defaults to EaseOut if not set
+	Before     SPattern // Old pattern that is disappearing
+	After      SPattern // New pattern to show
+	OffsetMS   uint32   // Offset at which the transiton from Before->In starts
+	DurationMS uint32   // Duration of the transition while both are rendered
+	Curve      Curve    // Type of transition, defaults to EaseOut if not set
 	buf        Frame
 }
 
@@ -73,13 +73,13 @@ func (t *Transition) NextFrame(pixels Frame, timeMS uint32) {
 	if t.Before.Pattern != nil {
 		t.Before.NextFrame(t.buf, timeMS)
 	}
-	pixels.Mix(t.buf, 255.-FloatToUint8(255.*t.Transition.scale(float32(timeMS-t.OffsetMS)/float32(t.DurationMS))))
+	pixels.Mix(t.buf, 255.-FloatToUint8(255.*t.Curve.Scale(float32(timeMS-t.OffsetMS)/float32(t.DurationMS))))
 }
 
 // Cycle cycles between multiple patterns. It can be used as an animatable
 // looping frame.
 //
-// TODO(maruel): Blend between frames with TransitionType, defaults to step.
+// TODO(maruel): Blend between frames with Curve, defaults to step.
 // TODO(maruel): Merge with Loop.
 type Cycle struct {
 	Frames          []SPattern
@@ -100,9 +100,9 @@ func (c *Cycle) NextFrame(pixels Frame, timeMS uint32) {
 // behind.
 type Loop struct {
 	Patterns             []SPattern
-	DurationShowMS       uint32         // Duration for each pattern to be shown as pure
-	DurationTransitionMS uint32         // Duration of the transition between two patterns
-	Transition           TransitionType // Type of transition, defaults to EaseOut if not set
+	DurationShowMS       uint32 // Duration for each pattern to be shown as pure
+	DurationTransitionMS uint32 // Duration of the transition between two patterns
+	Curve                Curve  // Type of transition, defaults to EaseOut if not set
 	buf                  Frame
 }
 
@@ -130,7 +130,7 @@ func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
 	intensity := 1. - (offset-ds)/dt
 	// TODO(maruel): Add lateral animation and others.
 	b.NextFrame(l.buf, timeMS)
-	pixels.Mix(l.buf, FloatToUint8(255.*l.Transition.scale(intensity)))
+	pixels.Mix(l.buf, FloatToUint8(255.*l.Curve.Scale(intensity)))
 }
 
 // Rotate rotates a pattern that can also cycle either way.
@@ -205,7 +205,7 @@ func (r *Chronometer) NextFrame(pixels Frame, timeMS uint32) {
 // The trail can be a Frame or a dynamic pattern.
 //
 // To get smoothed movement, use Scale{} with a 5x factor or so.
-// TODO(maruel): That's a bit inefficient, enable ScalingType here.
+// TODO(maruel): That's a bit inefficient, enable Interpolation here.
 type PingPong struct {
 	Child SPattern // [0] is the front pixel so the pixels are effectively drawn in reverse order.
 	// TODO(maruel): PerMoveMS uint32
@@ -233,7 +233,7 @@ func (p *PingPong) NextFrame(pixels Frame, timeMS uint32) {
 	//   move == 13 -> "d0123456"
 	//   move 14 -> move 0; "2*(8-1)"
 	cycle := 2 * (len(pixels) - 1)
-	// TODO(maruel): Smoothing with TransitionType, defaults to Step.
+	// TODO(maruel): Smoothing with Curve, defaults to Step.
 	// TODO(maruel): Convert to uint32.
 	pos := int(float32(timeMS)*0.001*p.MovesPerSec) % cycle
 
@@ -327,11 +327,11 @@ func (m *Mixer) NextFrame(pixels Frame, timeMS uint32) {
 //
 // This is useful to create smoother animations or scale down images.
 type Scale struct {
-	Child  SPattern
-	Scale  ScalingType // Defaults to ScalingLinear
-	Length int         // A buffer of this length will be provided to Child and will be scaled to the actual pixels length
-	Ratio  float32     // Scaling ratio to use, <1 means smaller, >1 means larger. Only one of Length or Ratio can be used
-	buf    Frame
+	Child         SPattern
+	Interpolation Interpolation // Defaults to Linear
+	Length        int           // A buffer of this length will be provided to Child and will be scaled to the actual pixels length
+	Ratio         float32       // Scaling ratio to use, <1 means smaller, >1 means larger. Only one of Length or Ratio can be used
+	buf           Frame
 }
 
 func (s *Scale) NextFrame(pixels Frame, timeMS uint32) {
@@ -344,5 +344,5 @@ func (s *Scale) NextFrame(pixels Frame, timeMS uint32) {
 	}
 	s.buf.reset(l)
 	s.Child.NextFrame(s.buf, timeMS)
-	s.Scale.scale(s.buf, pixels)
+	s.Interpolation.Scale(s.buf, pixels)
 }

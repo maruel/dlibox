@@ -40,7 +40,7 @@ func (c *Config) ResetDefault() {
 				Hour:    6,
 				Minute:  55,
 				Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-				Pattern: "\"#FFFFFF\"",
+				Pattern: "\"#ffffff\"",
 			},
 			{
 				Enabled: true,
@@ -64,18 +64,18 @@ func (c *Config) ResetDefault() {
 		},
 		Patterns: []string{
 			"{\"_type\":\"Aurore\"}",
-			"{\"MovesPerSec\":6,\"Child\":{\"Frame\":\"Lff0000ff0000ff0000ff0000ff0000ffffffffffffffffffffffffffffff\",\"_type\":\"Repeated\"},\"_type\":\"Rotate\"}",
+			"{\"Child\":{\"Frame\":\"Lff0000ff0000ff0000ff0000ff0000ffffffffffffffffffffffffffffff\",\"_type\":\"Repeated\"},\"MovesPerSec\":6,\"_type\":\"Rotate\"}",
 			"{\"Patterns\":[{\"_type\":\"Aurore\"},{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"Weights\":[1,1,1],\"_type\":\"Mixer\"}",
-			"{\"DurationShowMS\":1000000,\"DurationTransitionMS\":1000000,\"Patterns\":[\"#ff0000\",\"#00ff00\",\"#0000ff\"],\"Transition\":\"easeinout\",\"_type\":\"Loop\"}",
-			"{\"Left\":\"#000000\",\"Right\":\"#0000ff\",\"Transition\":\"linear\",\"_type\":\"Gradient\"}",
-			"{\"Left\":\"#000000\",\"Right\":\"#ff0000\",\"Transition\":\"linear\",\"_type\":\"Gradient\"}",
-			"{\"Left\":\"#000000\",\"Right\":\"#00ff00\",\"Transition\":\"linear\",\"_type\":\"Gradient\"}",
-			"{\"Left\":\"#000000\",\"Right\":\"#ffffff\",\"Transition\":\"linear\",\"_type\":\"Gradient\"}",
+			"{\"Curve\":\"easeinout\",\"DurationShowMS\":1000000,\"DurationTransitionMS\":1000000,\"Patterns\":[\"#ff0000\",\"#00ff00\",\"#0000ff\"],\"_type\":\"Loop\"}",
+			"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#0000ff\",\"_type\":\"Gradient\"}",
+			"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#ff0000\",\"_type\":\"Gradient\"}",
+			"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#00ff00\",\"_type\":\"Gradient\"}",
+			"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#ffffff\",\"_type\":\"Gradient\"}",
 			"{\"Child\":\"Lff0000ff0000ee0000dd0000cc0000bb0000aa0000990000880000770000660000550000440000330000220000110000\",\"MovesPerSec\":30,\"_type\":\"PingPong\"}",
-			"{\"Duration\":600000000000,\"After\":\"#000000\",\"Offset\":1800000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ffffff\",\"Offset\":600000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ff7f00\",\"Offset\":0,\"Before\":\"#000000\",\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"}",
+			"{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\",\"Before\":{\"After\":\"#ff7f00\",\"Before\":\"#000000\",\"Curve\":\"direct\",\"DurationMS\":0,\"OffsetMS\":0,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":0,\"OffsetMS\":0,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":0,\"OffsetMS\":0,\"_type\":\"Transition\"}",
 			"\"#000000\"",
 			"{\"Child\":\"Lffffff\",\"MovesPerSec\":30,\"_type\":\"PingPong\"}",
-			"{\"DurationShowMS\":1000000,\"DurationTransitionMS\":10000000,\"Patterns\":[\"#ff0000\",\"#ff7f00\",\"#ffff00\",\"#00ff00\",\"#0000ff\",\"#4b0082\",\"#8b00ff\"],\"Transition\":\"easeinout\",\"_type\":\"Loop\"}",
+			"{\"Curve\":\"easeinout\",\"DurationShowMS\":1000000,\"DurationTransitionMS\":10000000,\"Patterns\":[\"#ff0000\",\"#ff7f00\",\"#ffff00\",\"#00ff00\",\"#0000ff\",\"#4b0082\",\"#8b00ff\"],\"_type\":\"Loop\"}",
 			"\"Rainbow\"",
 			"{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"}",
 		},
@@ -117,18 +117,34 @@ func (c *Config) Save(n string) error {
 	return err
 }
 
-func (c *Config) verify() error {
+// check verifies that the pattern can be decoded, reencoded and that the
+// format is the canonical one.
+func check(s string) error {
 	var p anim1d.SPattern
-	if err := json.Unmarshal([]byte(c.APA102.StartupPattern), &p); err != nil {
+	if err := json.Unmarshal([]byte(s), &p); err != nil {
+		return err
+	}
+	b, err := p.MarshalJSON()
+	if err != nil {
+		return err
+	}
+	if string(b) != s {
+		return fmt.Errorf("pattern not in canonical format: expected %v; got %v", string(b), s)
+	}
+	return nil
+}
+
+func (c *Config) verify() error {
+	if err := check(c.APA102.StartupPattern); err != nil {
 		return errors.Wrap(err, "can't load startup pattern")
 	}
 	for _, a := range c.Alarms {
-		if err := json.Unmarshal([]byte(a.Pattern), &p); err != nil {
+		if err := check(a.Pattern); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("can't load pattern for alarm %s", a))
 		}
 	}
 	for i, s := range c.Patterns {
-		if err := json.Unmarshal([]byte(s), &p); err != nil {
+		if err := check(s); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("can't load recent pattern %d", i))
 		}
 	}

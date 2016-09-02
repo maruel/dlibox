@@ -10,56 +10,56 @@ import (
 	"github.com/maruel/ut"
 )
 
-func TestTransitionType(t *testing.T) {
-	for _, v := range []TransitionType{TransitionType(""), TransitionEase, TransitionEaseIn, TransitionEaseInOut, TransitionEaseOut, TransitionLinear} {
-		ut.AssertEqual(t, float32(0.), v.scale(0.))
-		ut.AssertEqual(t, float32(1.), v.scale(1.))
+func TestCurve(t *testing.T) {
+	for _, v := range []Curve{Curve(""), Ease, EaseIn, EaseInOut, EaseOut, Direct} {
+		ut.AssertEqual(t, float32(0.), v.Scale(0.))
+		ut.AssertEqual(t, float32(1.), v.Scale(1.))
 	}
 
 	data := []struct {
-		t        TransitionType
+		t        Curve
 		i        float32
 		expected float32
 	}{
-		{TransitionEase, 0.5, 0.8024033904075623},
-		{TransitionEaseIn, 0.5, 0.3153568208217621},
-		{TransitionEaseInOut, 0.5, 0.5},
-		{TransitionEaseOut, 0.5, 0.6846432685852051},
-		{TransitionType(""), 0.5, 0.6846432685852051},
-		{TransitionLinear, 0.5, 0.5},
+		{Ease, 0.5, 0.8024033904075623},
+		{EaseIn, 0.5, 0.3153568208217621},
+		{EaseInOut, 0.5, 0.5},
+		{EaseOut, 0.5, 0.6846432685852051},
+		{Curve(""), 0.5, 0.6846432685852051},
+		{Direct, 0.5, 0.5},
 	}
 	for i, line := range data {
 		// TODO(maruel): Round a bit.
-		ut.AssertEqualIndex(t, i, line.expected, line.t.scale(line.i))
+		ut.AssertEqualIndex(t, i, line.expected, line.t.Scale(line.i))
 	}
 }
 
-func TestScalingType(t *testing.T) {
+func TestInterpolation(t *testing.T) {
 	b := make(Frame, 1)
-	for _, v := range []ScalingType{ScalingType(""), ScalingNearestSkip, ScalingNearest, ScalingLinear, ScalingBilinear} {
-		v.scale(nil, nil)
-		v.scale(nil, b)
-		v.scale(b, nil)
+	for _, v := range []Interpolation{Interpolation(""), NearestSkip, Nearest, Linear, Bilinear} {
+		v.Scale(nil, nil)
+		v.Scale(nil, b)
+		v.Scale(b, nil)
 	}
 
 	// TODO(maruel): Add actual tests.
 	red := Color{0xFF, 0x00, 0x00}
 	blue := Color{0x00, 0x00, 0xFF}
 	data := []struct {
-		s        ScalingType
+		s        Interpolation
 		i        Frame
 		expected Frame
 	}{
-		{ScalingNearestSkip, Frame{red, blue}, Frame{red, blue}},
-		{ScalingNearest, Frame{red, blue}, Frame{red, blue}},
-		{ScalingLinear, Frame{red, blue}, Frame{red, blue}},
-		{ScalingType(""), Frame{red, blue}, Frame{red, blue}},
-		{ScalingBilinear, Frame{red, blue}, Frame{red, blue}},
+		{NearestSkip, Frame{red, blue}, Frame{red, blue}},
+		{Nearest, Frame{red, blue}, Frame{red, blue}},
+		{Linear, Frame{red, blue}, Frame{red, blue}},
+		{Interpolation(""), Frame{red, blue}, Frame{red, blue}},
+		{Bilinear, Frame{red, blue}, Frame{red, blue}},
 	}
 	for i, line := range data {
 		// TODO(maruel): Round a bit.
 		out := make(Frame, len(line.expected))
-		line.s.scale(line.i, out)
+		line.s.Scale(line.i, out)
 		ut.AssertEqualIndex(t, i, line.expected, out)
 	}
 }

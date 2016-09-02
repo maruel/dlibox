@@ -96,7 +96,7 @@ func (p *Painter) runPattern(cGen, cWrite chan Frame) {
 		Before:     SPattern{black},
 		After:      SPattern{black},
 		DurationMS: 500,
-		Transition: TransitionEaseOut,
+		Curve:      EaseOut,
 	}
 	var since time.Duration
 	for {

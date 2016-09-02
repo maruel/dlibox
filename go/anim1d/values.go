@@ -6,54 +6,55 @@
 
 package anim1d
 
-// TransitionType models visually pleasing transitions.
+// Curve models visually pleasing curves between 0 and 1.
 //
 // They are modeled against CSS transitions.
 // https://www.w3.org/TR/web-animations/#scaling-using-a-cubic-bezier-curve
-type TransitionType string
+type Curve string
 
 const (
-	TransitionEase       TransitionType = "ease"
-	TransitionEaseIn     TransitionType = "ease-in"
-	TransitionEaseInOut  TransitionType = "ease-in-out"
-	TransitionEaseOut    TransitionType = "ease-out" // Recommended and default value.
-	TransitionLinear     TransitionType = "linear"
-	TransitionStepStart  TransitionType = "steps(1,start)"
-	TransitionStepMiddle TransitionType = "steps(1,middle)"
-	TransitionStepEnd    TransitionType = "steps(1,end)"
+	Ease       Curve = "ease"
+	EaseIn     Curve = "ease-in"
+	EaseInOut  Curve = "ease-in-out"
+	EaseOut    Curve = "ease-out" // Recommended and default value.
+	Direct     Curve = "direct"   // linear mapping
+	StepStart  Curve = "steps(1,start)"
+	StepMiddle Curve = "steps(1,middle)"
+	StepEnd    Curve = "steps(1,end)"
 )
 
-// scale scales input [0, 1] to output [0, 1] using the transition requested.
+// Scale scales input [0, 1] to output [0, 1] using the transformation curve
+// requested.
 //
 // TODO(maruel): Implement a version that is integer based.
-func (t TransitionType) scale(intensity float32) float32 {
+func (c Curve) Scale(intensity float32) float32 {
 	// TODO(maruel): Add support for arbitrary cubic-bezier().
 	// TODO(maruel): Map ease-* to cubic-bezier().
 	// TODO(maruel): Add support for steps() which is pretty cool.
-	switch t {
-	case TransitionEase:
+	switch c {
+	case Ease:
 		return cubicBezier(0.25, 0.1, 0.25, 1, intensity)
-	case TransitionEaseIn:
+	case EaseIn:
 		return cubicBezier(0.42, 0, 1, 1, intensity)
-	case TransitionEaseInOut:
+	case EaseInOut:
 		return cubicBezier(0.42, 0, 0.58, 1, intensity)
-	case TransitionEaseOut, "":
+	case EaseOut, "":
 		fallthrough
 	default:
 		return cubicBezier(0, 0, 0.58, 1, intensity)
-	case TransitionLinear:
+	case Direct:
 		return intensity
-	case TransitionStepStart:
+	case StepStart:
 		if intensity < 0.+epsilon {
 			return 0
 		}
 		return 1
-	case TransitionStepMiddle:
+	case StepMiddle:
 		if intensity < 0.5 {
 			return 0
 		}
 		return 1
-	case TransitionStepEnd:
+	case StepEnd:
 		if intensity > 1.-epsilon {
 			return 1
 		}
@@ -61,25 +62,25 @@ func (t TransitionType) scale(intensity float32) float32 {
 	}
 }
 
-// ScalingType specifies a way to scales a pixel strip.
-type ScalingType string
+// Interpolation specifies a way to scales a pixel strip.
+type Interpolation string
 
 const (
-	ScalingNearestSkip ScalingType = "nearestskip" // Selects the nearest pixel but when upscaling, skips on missing pixels.
-	ScalingNearest     ScalingType = "nearest"     // Selects the nearest pixel, gives a blocky view.
-	ScalingLinear      ScalingType = "linear"      // Linear interpolation, recommended and default value.
-	ScalingBilinear    ScalingType = "bilinear"    // Bilinear interpolation, usually overkill for 1D.
+	NearestSkip Interpolation = "nearestskip" // Selects the nearest pixel but when upscaling, skips on missing pixels.
+	Nearest     Interpolation = "nearest"     // Selects the nearest pixel, gives a blocky view.
+	Linear      Interpolation = "linear"      // Linear interpolation, recommended and default value.
+	Bilinear    Interpolation = "bilinear"    // Bilinear interpolation, usually overkill for 1D.
 )
 
-func (s ScalingType) scale(in, out Frame) {
+func (i Interpolation) Scale(in, out Frame) {
 	// Use integer operations as much as possible for reasonable performance.
 	li := len(in)
 	lo := len(out)
 	if li == 0 || lo == 0 {
 		return
 	}
-	switch s {
-	case ScalingNearestSkip:
+	switch i {
+	case NearestSkip:
 		if li < lo {
 			// Do not touch skipped pixels.
 			for i, p := range in {
@@ -88,14 +89,14 @@ func (s ScalingType) scale(in, out Frame) {
 			return
 		}
 		fallthrough
-	case ScalingNearest, ScalingLinear, ScalingBilinear, "":
+	case Nearest, Linear, Bilinear, "":
 		fallthrough
 	default:
 		for i := range out {
 			out[i] = in[(i*li+li/2)/lo]
 		}
 		/*
-			case ScalingLinear:
+			case Linear:
 				for i := range out {
 					x := (i*li + li/2) / lo
 					c := in[x]
