@@ -31,16 +31,17 @@ type Config struct {
 	Patterns []string // List of recent patterns. The first is the oldest.
 }
 
+const morning = "{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\",\"Before\":{\"After\":\"#ff7f00\",\"Before\":\"#000000\",\"Curve\":\"direct\",\"DurationMS\":6000000,\"OffsetMS\":0,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":6000000,\"OffsetMS\":6000000,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":600000,\"OffsetMS\":18000000,\"_type\":\"Transition\"}"
+
 func (c *Config) ResetDefault() {
 	*c = Config{
-		//"{\"Duration\":600000000000,\"After\":\"#00000000\",\"Offset\":1800000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ffffffff\",\"Offset\":600000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ff7f00ff\",\"Offset\":0,\"Before\":\"#00000000\",\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"},\"Transition\":\"linear\",\"_type\":\"Transition\"}",
 		Alarms: Alarms{
 			{
 				Enabled: true,
 				Hour:    6,
-				Minute:  55,
+				Minute:  35,
 				Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-				Pattern: "\"#ffffff\"",
+				Pattern: morning,
 			},
 			{
 				Enabled: true,
@@ -78,6 +79,7 @@ func (c *Config) ResetDefault() {
 			"{\"Curve\":\"easeinout\",\"DurationShowMS\":1000000,\"DurationTransitionMS\":10000000,\"Patterns\":[\"#ff0000\",\"#ff7f00\",\"#ffff00\",\"#00ff00\",\"#0000ff\",\"#4b0082\",\"#8b00ff\"],\"_type\":\"Loop\"}",
 			"\"Rainbow\"",
 			"{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"}",
+			morning,
 		},
 	}
 }
