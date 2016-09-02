@@ -53,9 +53,7 @@ void loadConfig() {
   //config.display.enabled = 0;
 
   // Set default hostname.
-  if (!config.has_host || !config.host.has_name || !config.host.name[0]) {
-    config.has_host = true;
-    config.host.has_name = true;
+  if (!config.host.name[0]) {
     sprintf(config.host.name, "dlibox-%s", chipID);
   }
 }

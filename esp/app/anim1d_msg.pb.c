@@ -12,12 +12,12 @@ const uint32_t MColor_color_default = 0u;
 
 
 const pb_field_t MColor_fields[2] = {
-    PB_FIELD(  1, UINT32  , OPTIONAL, STATIC  , FIRST, MColor, color, color, &MColor_color_default),
+    PB_FIELD(  1, UINT32  , REQUIRED, STATIC  , FIRST, MColor, color, color, &MColor_color_default),
     PB_LAST_FIELD
 };
 
 const pb_field_t MFrame_fields[2] = {
-    PB_FIELD(  1, UINT32  , REPEATED, CALLBACK, FIRST, MFrame, colors, colors, 0),
+    PB_FIELD(  1, BYTES   , REQUIRED, CALLBACK, FIRST, MFrame, colors, colors, 0),
     PB_LAST_FIELD
 };
 
@@ -26,7 +26,7 @@ const pb_field_t MRainbow_fields[1] = {
 };
 
 const pb_field_t MRepeated_fields[2] = {
-    PB_FIELD(  1, MESSAGE , OPTIONAL, STATIC  , FIRST, MRepeated, frame, frame, &MFrame_fields),
+    PB_FIELD(  1, MESSAGE , REQUIRED, STATIC  , FIRST, MRepeated, frame, frame, &MFrame_fields),
     PB_LAST_FIELD
 };
 

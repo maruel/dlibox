@@ -26,13 +26,11 @@ typedef struct _MRainbow {
 } MRainbow;
 
 typedef struct _MColor {
-    bool has_color;
     uint32_t color;
 /* @@protoc_insertion_point(struct:MColor) */
 } MColor;
 
 typedef struct _MRepeated {
-    bool has_frame;
     MFrame frame;
 /* @@protoc_insertion_point(struct:MRepeated) */
 } MRepeated;
@@ -53,15 +51,15 @@ typedef struct _MPattern {
 extern const uint32_t MColor_color_default;
 
 /* Initializer values for message structs */
-#define MColor_init_default                      {false, 0u}
+#define MColor_init_default                      {0u}
 #define MFrame_init_default                      {{{NULL}, NULL}}
 #define MRainbow_init_default                    {0}
-#define MRepeated_init_default                   {false, MFrame_init_default}
+#define MRepeated_init_default                   {MFrame_init_default}
 #define MPattern_init_default                    {false, MColor_init_default, false, MFrame_init_default, false, MRainbow_init_default, false, MRepeated_init_default}
-#define MColor_init_zero                         {false, 0}
+#define MColor_init_zero                         {0}
 #define MFrame_init_zero                         {{{NULL}, NULL}}
 #define MRainbow_init_zero                       {0}
-#define MRepeated_init_zero                      {false, MFrame_init_zero}
+#define MRepeated_init_zero                      {MFrame_init_zero}
 #define MPattern_init_zero                       {false, MColor_init_zero, false, MFrame_init_zero, false, MRainbow_init_zero, false, MRepeated_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */

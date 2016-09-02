@@ -13,60 +13,62 @@ const char Wifi_password_default[64] = "";
 const uint16_t APA102_frameRate_default = 30u;
 const uint16_t APA102_numLights_default = 0u;
 const uint32_t APA102_SPIspeed_default = 8000000u;
-const bool DisplaySettings_enabled_default = false;
 const uint32_t DisplaySettings_I2Cspeed_default = 4000000u;
+const bool DisplaySettings_enabled_default = false;
 const char Host_name_default[32] = "";
 const bool Host_highSpeed_default = true;
 const bool Host_verbose_default = false;
-const char MQTT_host_default[32] = "";
 const uint16_t MQTT_port_default = 1883u;
+const char MQTT_host_default[32] = "";
 const char MQTT_username_default[32] = "";
 const char MQTT_password_default[32] = "";
 const char Config_romURL_default[128] = "";
 
 
 const pb_field_t Wifi_fields[3] = {
-    PB_FIELD(  1, STRING  , OPTIONAL, STATIC  , FIRST, Wifi, ssid, ssid, &Wifi_ssid_default),
-    PB_FIELD(  2, STRING  , OPTIONAL, STATIC  , OTHER, Wifi, password, ssid, &Wifi_password_default),
+    PB_FIELD(  1, STRING  , REQUIRED, STATIC  , FIRST, Wifi, ssid, ssid, &Wifi_ssid_default),
+    PB_FIELD(  2, STRING  , REQUIRED, STATIC  , OTHER, Wifi, password, ssid, &Wifi_password_default),
     PB_LAST_FIELD
 };
 
-const pb_field_t APA102_fields[4] = {
-    PB_FIELD(  1, UINT32  , OPTIONAL, STATIC  , FIRST, APA102, frameRate, frameRate, &APA102_frameRate_default),
-    PB_FIELD(  2, UINT32  , OPTIONAL, STATIC  , OTHER, APA102, numLights, frameRate, &APA102_numLights_default),
-    PB_FIELD(  3, UINT32  , OPTIONAL, STATIC  , OTHER, APA102, SPIspeed, numLights, &APA102_SPIspeed_default),
+const pb_field_t APA102_fields[6] = {
+    PB_FIELD(  1, UINT32  , REQUIRED, STATIC  , FIRST, APA102, frameRate, frameRate, &APA102_frameRate_default),
+    PB_FIELD(  2, UINT32  , REQUIRED, STATIC  , OTHER, APA102, numLights, frameRate, &APA102_numLights_default),
+    PB_FIELD(  3, UINT32  , REQUIRED, STATIC  , OTHER, APA102, SPIspeed, numLights, &APA102_SPIspeed_default),
+    PB_FIELD(  4, MESSAGE , REQUIRED, STATIC  , OTHER, APA102, startup, SPIspeed, &MPattern_fields),
+    PB_FIELD(  5, MESSAGE , REPEATED, CALLBACK, OTHER, APA102, recentPatterns, startup, &MPattern_fields),
     PB_LAST_FIELD
 };
 
 const pb_field_t DisplaySettings_fields[3] = {
-    PB_FIELD(  1, BOOL    , OPTIONAL, STATIC  , FIRST, DisplaySettings, enabled, enabled, &DisplaySettings_enabled_default),
-    PB_FIELD(  2, UINT32  , OPTIONAL, STATIC  , OTHER, DisplaySettings, I2Cspeed, enabled, &DisplaySettings_I2Cspeed_default),
+    PB_FIELD(  1, UINT32  , REQUIRED, STATIC  , FIRST, DisplaySettings, I2Cspeed, I2Cspeed, &DisplaySettings_I2Cspeed_default),
+    PB_FIELD(  2, BOOL    , REQUIRED, STATIC  , OTHER, DisplaySettings, enabled, I2Cspeed, &DisplaySettings_enabled_default),
     PB_LAST_FIELD
 };
 
 const pb_field_t Host_fields[4] = {
-    PB_FIELD(  1, STRING  , OPTIONAL, STATIC  , FIRST, Host, name, name, &Host_name_default),
-    PB_FIELD(  2, BOOL    , OPTIONAL, STATIC  , OTHER, Host, highSpeed, name, &Host_highSpeed_default),
-    PB_FIELD(  3, BOOL    , OPTIONAL, STATIC  , OTHER, Host, verbose, highSpeed, &Host_verbose_default),
+    PB_FIELD(  1, STRING  , REQUIRED, STATIC  , FIRST, Host, name, name, &Host_name_default),
+    PB_FIELD(  2, BOOL    , REQUIRED, STATIC  , OTHER, Host, highSpeed, name, &Host_highSpeed_default),
+    PB_FIELD(  3, BOOL    , REQUIRED, STATIC  , OTHER, Host, verbose, highSpeed, &Host_verbose_default),
     PB_LAST_FIELD
 };
 
 const pb_field_t MQTT_fields[5] = {
-    PB_FIELD(  1, STRING  , OPTIONAL, STATIC  , FIRST, MQTT, host, host, &MQTT_host_default),
-    PB_FIELD(  2, UINT32  , OPTIONAL, STATIC  , OTHER, MQTT, port, host, &MQTT_port_default),
-    PB_FIELD(  3, STRING  , OPTIONAL, STATIC  , OTHER, MQTT, username, port, &MQTT_username_default),
-    PB_FIELD(  4, STRING  , OPTIONAL, STATIC  , OTHER, MQTT, password, username, &MQTT_password_default),
+    PB_FIELD(  1, UINT32  , REQUIRED, STATIC  , FIRST, MQTT, port, port, &MQTT_port_default),
+    PB_FIELD(  2, STRING  , REQUIRED, STATIC  , OTHER, MQTT, host, port, &MQTT_host_default),
+    PB_FIELD(  3, STRING  , REQUIRED, STATIC  , OTHER, MQTT, username, host, &MQTT_username_default),
+    PB_FIELD(  4, STRING  , REQUIRED, STATIC  , OTHER, MQTT, password, username, &MQTT_password_default),
     PB_LAST_FIELD
 };
 
 const pb_field_t Config_fields[8] = {
-    PB_FIELD(  1, MESSAGE , OPTIONAL, STATIC  , FIRST, Config, wifiClient, wifiClient, &Wifi_fields),
-    PB_FIELD(  2, MESSAGE , OPTIONAL, STATIC  , OTHER, Config, wifiAP, wifiClient, &Wifi_fields),
-    PB_FIELD(  3, MESSAGE , OPTIONAL, STATIC  , OTHER, Config, apa102, wifiAP, &APA102_fields),
-    PB_FIELD(  4, MESSAGE , OPTIONAL, STATIC  , OTHER, Config, host, apa102, &Host_fields),
-    PB_FIELD(  5, MESSAGE , OPTIONAL, STATIC  , OTHER, Config, display, host, &DisplaySettings_fields),
-    PB_FIELD(  6, STRING  , OPTIONAL, STATIC  , OTHER, Config, romURL, display, &Config_romURL_default),
-    PB_FIELD(  7, MESSAGE , OPTIONAL, STATIC  , OTHER, Config, mqtt, romURL, &MQTT_fields),
+    PB_FIELD(  1, MESSAGE , REQUIRED, STATIC  , FIRST, Config, wifiClient, wifiClient, &Wifi_fields),
+    PB_FIELD(  2, MESSAGE , REQUIRED, STATIC  , OTHER, Config, wifiAP, wifiClient, &Wifi_fields),
+    PB_FIELD(  3, MESSAGE , REQUIRED, STATIC  , OTHER, Config, apa102, wifiAP, &APA102_fields),
+    PB_FIELD(  4, MESSAGE , REQUIRED, STATIC  , OTHER, Config, host, apa102, &Host_fields),
+    PB_FIELD(  5, MESSAGE , REQUIRED, STATIC  , OTHER, Config, display, host, &DisplaySettings_fields),
+    PB_FIELD(  6, STRING  , REQUIRED, STATIC  , OTHER, Config, romURL, display, &Config_romURL_default),
+    PB_FIELD(  7, MESSAGE , REQUIRED, STATIC  , OTHER, Config, mqtt, romURL, &MQTT_fields),
     PB_LAST_FIELD
 };
 
@@ -80,7 +82,7 @@ const pb_field_t Config_fields[8] = {
  * numbers or field sizes that are larger than what can fit in 8 or 16 bit
  * field descriptors.
  */
-PB_STATIC_ASSERT((pb_membersize(Config, wifiClient) < 65536 && pb_membersize(Config, wifiAP) < 65536 && pb_membersize(Config, apa102) < 65536 && pb_membersize(Config, host) < 65536 && pb_membersize(Config, display) < 65536 && pb_membersize(Config, mqtt) < 65536), YOU_MUST_DEFINE_PB_FIELD_32BIT_FOR_MESSAGES_Wifi_APA102_DisplaySettings_Host_MQTT_Config)
+PB_STATIC_ASSERT((pb_membersize(APA102, startup) < 65536 && pb_membersize(APA102, recentPatterns) < 65536 && pb_membersize(Config, wifiClient) < 65536 && pb_membersize(Config, wifiAP) < 65536 && pb_membersize(Config, apa102) < 65536 && pb_membersize(Config, host) < 65536 && pb_membersize(Config, display) < 65536 && pb_membersize(Config, mqtt) < 65536), YOU_MUST_DEFINE_PB_FIELD_32BIT_FOR_MESSAGES_Wifi_APA102_DisplaySettings_Host_MQTT_Config)
 #endif
 
 #if !defined(PB_FIELD_16BIT) && !defined(PB_FIELD_32BIT)
@@ -91,7 +93,7 @@ PB_STATIC_ASSERT((pb_membersize(Config, wifiClient) < 65536 && pb_membersize(Con
  * numbers or field sizes that are larger than what can fit in the default
  * 8 bit descriptors.
  */
-PB_STATIC_ASSERT((pb_membersize(Config, wifiClient) < 256 && pb_membersize(Config, wifiAP) < 256 && pb_membersize(Config, apa102) < 256 && pb_membersize(Config, host) < 256 && pb_membersize(Config, display) < 256 && pb_membersize(Config, mqtt) < 256), YOU_MUST_DEFINE_PB_FIELD_16BIT_FOR_MESSAGES_Wifi_APA102_DisplaySettings_Host_MQTT_Config)
+PB_STATIC_ASSERT((pb_membersize(APA102, startup) < 256 && pb_membersize(APA102, recentPatterns) < 256 && pb_membersize(Config, wifiClient) < 256 && pb_membersize(Config, wifiAP) < 256 && pb_membersize(Config, apa102) < 256 && pb_membersize(Config, host) < 256 && pb_membersize(Config, display) < 256 && pb_membersize(Config, mqtt) < 256), YOU_MUST_DEFINE_PB_FIELD_16BIT_FOR_MESSAGES_Wifi_APA102_DisplaySettings_Host_MQTT_Config)
 #endif
 
 

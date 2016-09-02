@@ -4,64 +4,69 @@
 
 syntax = "proto2";
 
+import "anim1d_msg.proto";
 import "nanopb.proto";
 
 
 message Wifi {
   // It's actually 32 but some only accepts 31, yet include terminating null
   // character.
-  optional string ssid     = 1 [(nanopb).max_size = 33, default = ""];
+  required string ssid     = 1 [(nanopb).max_size = 33, default = ""];
   // Password maximum length is 63 characters.
-  optional string password = 2 [(nanopb).max_size = 64, default = ""];
+  required string password = 2 [(nanopb).max_size = 64, default = ""];
 }
 
 message APA102 {
   // Frame rate to use for display.
-  optional uint32 frameRate  = 1 [(nanopb).int_size = IS_16, default = 30];
+  required uint32 frameRate  = 1 [(nanopb).int_size = IS_16, default = 30];
   // Number of lights to send data to. Generally a multiple of 144 or 150.
-  optional uint32 numLights = 2 [(nanopb).int_size = IS_16, default = 0];
+  required uint32 numLights = 2 [(nanopb).int_size = IS_16, default = 0];
   // SPI bus speed in Hz. Default of 8Mhz is relatively fast.
-  optional uint32 SPIspeed  = 3 [default = 8000000];
+  required uint32 SPIspeed  = 3 [default = 8000000];
+  // Pattern to use at startup. Defaults to black.
+  required MPattern startup = 4;
+  // Last recently used patterns. First is most recent.
+  repeated MPattern recentPatterns = 5;
 }
 
 message DisplaySettings {
-  // Assume there is no display by default.
-  optional bool enabled    = 1 [default = false];
   // Defaults the I²C bus speed to 400khz since the protocol is not efficient.
   // Espressif says it's probably better to default to 100khz.
-  optional uint32 I2Cspeed = 2 [default = 4000000];
+  required uint32 I2Cspeed = 1 [default = 4000000];
+  // Assume there is no display by default.
+  required bool enabled    = 2 [default = false];
 }
 
 message Host {
   // We could support more but 31 chars is already very long. That's the display
   // name of the device.
-  optional string name       = 1 [(nanopb).max_size = 32, default = ""];
+  required string name       = 1 [(nanopb).max_size = 32, default = ""];
   // If set, tries to run at high speed.
-  optional bool highSpeed    = 2 [default = true];
+  required bool highSpeed    = 2 [default = true];
   // Logs over serial port.
-  optional bool verbose      = 3 [default = false];
+  required bool verbose      = 3 [default = false];
 }
 
 message MQTT {
-  optional string host     = 1 [(nanopb).max_size = 32, default = ""];
-  optional uint32 port     = 2 [(nanopb).int_size = IS_16, default = 1883];
-  optional string username = 3 [(nanopb).max_size = 32, default = ""];
-  optional string password = 4 [(nanopb).max_size = 32, default = ""];
+  required uint32 port     = 1 [(nanopb).int_size = IS_16, default = 1883];
+  required string host     = 2 [(nanopb).max_size = 32, default = ""];
+  required string username = 3 [(nanopb).max_size = 32, default = ""];
+  required string password = 4 [(nanopb).max_size = 32, default = ""];
 }
 
 message Config {
   // Access point to connect to as a client.
-  optional Wifi wifiClient         = 1;
+  required Wifi wifiClient         = 1;
   // Set if the user want to run in permanent AP mode.
-  optional Wifi wifiAP             = 2;
+  required Wifi wifiAP             = 2;
   // LED strip configuration.
-  optional APA102 apa102           = 3;
+  required APA102 apa102           = 3;
   // Host configuration.
-  optional Host host               = 4;
+  required Host host               = 4;
   // OLED display configuration.
-  optional DisplaySettings display = 5;
+  required DisplaySettings display = 5;
   // TODO(maruel): Make it work with dynamically allocated memory.
   // Should look like: "http://host:8010/rom0.bin"
-  optional string romURL           = 6 [(nanopb).max_size = 128, default = ""];
-  optional MQTT mqtt               = 7;
+  required string romURL           = 6 [(nanopb).max_size = 128, default = ""];
+  required MQTT mqtt               = 7;
 }

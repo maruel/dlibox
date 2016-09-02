@@ -10,20 +10,19 @@ import "nanopb.proto";
 
 message MColor {
   // It's actually 24 bits.
-  optional uint32 color = 1 [default = 0];
+  required uint32 color = 1 [default = 0];
 }
 
 message MFrame {
-  // It's actually a series of Color but it's more efficient to encode as
-  // uint32.
-  repeated uint32 colors = 1 [packed=true];
+  // Series of Color in RGB format.
+  required bytes colors = 1;
 }
 
 message MRainbow {
 }
 
 message MRepeated {
-  optional MFrame frame = 1;
+  required MFrame frame = 1;
 }
 
 message MPattern {
