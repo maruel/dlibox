@@ -13,11 +13,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"text/template"
 )
-
-var contents map[string]string
 
 var tmpl = template.Must(template.New("tmpl").Parse(`// Automatically generated file. Do not edit!
 // Generated with "go run package/main.go"
@@ -38,12 +37,24 @@ func read(name string) []byte {
 }
 
 var staticFiles = map[string]string{
-{{range $key, $value := .}}	{{$key}}: {{$value}},
+{{range .}}	{{.Name}}: {{.Content}},
 {{end}}}
 `))
 
+type file struct {
+	Name    string
+	Content string
+}
+
+type files []file
+
+func (f files) Len() int           { return len(f) }
+func (f files) Less(i, j int) bool { return f[i].Name < f[j].Name }
+func (f files) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
+
 type context struct {
 	basePath string
+	files    files
 }
 
 func (c *context) walk(path string, info os.FileInfo, err error) error {
@@ -66,7 +77,7 @@ func (c *context) walk(path string, info os.FileInfo, err error) error {
 		return err
 	}
 	p := path[len(c.basePath)+1:]
-	contents[strconv.Quote(p)] = strconv.Quote(string(data))
+	c.files = append(c.files, file{strconv.Quote(p), strconv.Quote(string(data))})
 	return nil
 }
 
@@ -76,13 +87,13 @@ func mainImpl() error {
 	if flag.NArg() == 0 {
 		return errors.New("Usage: package -out [output file] [input dir ...]")
 	}
-	contents = map[string]string{}
+	c := &context{}
 	for _, inputDir := range flag.Args() {
 		inputDir, err := filepath.Abs(inputDir)
 		if err != nil {
 			return err
 		}
-		c := &context{inputDir}
+		c.basePath = inputDir
 		if err := filepath.Walk(inputDir, c.walk); err != nil {
 			return err
 		}
@@ -92,7 +103,8 @@ func mainImpl() error {
 		return err
 	}
 	defer f.Close()
-	return tmpl.Execute(f, contents)
+	sort.Sort(c.files)
+	return tmpl.Execute(f, c.files)
 }
 
 func main() {
