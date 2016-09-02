@@ -2,6 +2,8 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// static is for patterns that do not change over time.
+
 package anim1d
 
 // Color shows a single color on all lights. It knows how to renders itself
