@@ -11,27 +11,32 @@ import (
 	"image/color"
 	"image/color/palette"
 	"image/gif"
+	"runtime"
 	"sync"
 )
 
 // ThumbnailsCache is a cache of animated GIF thumbnails for each pattern.
 type ThumbnailsCache struct {
-	NumberLEDs       int               // Must be set before calling Thumbnail().
-	ThumbnailHz      int               // Must be set before calling Thumbnail().
-	ThumbnailSeconds int               // Must be set before calling Thumbnail().
-	cache            map[string][]byte // Thumbnail as GIF. The key is the JSON serialized form encoded as a string.
-	lock             sync.Mutex
+	NumberLEDs       int // Must be set before calling Thumbnail().
+	ThumbnailHz      int // Must be set before calling Thumbnail().
+	ThumbnailSeconds int // Must be set before calling Thumbnail().
+
+	lock  sync.Mutex
+	c     chan struct{}     // Limits the number of concurrent GIF animation to number of CPU core.
+	cache map[string][]byte // Thumbnail as GIF. The key is the JSON serialized form encoded as a string.
 }
 
 // GIF returns a serialized animated GIF for a JSON serialized pattern.
 func (t *ThumbnailsCache) GIF(serialized []byte) ([]byte, error) {
-	// TODO(maruel): Store it on disk? Some animations are CPU intensive and a
-	// lot of thumbnails are created at once on startup.
-
 	k := string(serialized)
 
 	t.lock.Lock()
 	if t.cache == nil {
+		// Fresh object, initialize it.
+		t.c = make(chan struct{}, runtime.NumCPU())
+		for n := 0; n < cap(t.c); n++ {
+			t.c <- struct{}{}
+		}
 		t.cache = make(map[string][]byte)
 	}
 	img, ok := t.cache[k]
@@ -40,6 +45,14 @@ func (t *ThumbnailsCache) GIF(serialized []byte) ([]byte, error) {
 	if ok {
 		return img, nil
 	}
+
+	// Limit number of operations to number of CPU cores. Particularly important
+	// on slower platform.
+	<-t.c
+	defer func() {
+		t.c <- struct{}{}
+	}()
+
 	// Unmarshal the string to recreate the Pattern object.
 	var pat SPattern
 	if err := json.Unmarshal(serialized, &pat); err != nil {

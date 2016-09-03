@@ -79,6 +79,7 @@ func (c *Config) ResetDefault() {
 			"{\"Curve\":\"easeinout\",\"DurationShowMS\":1000000,\"DurationTransitionMS\":10000000,\"Patterns\":[\"#ff0000\",\"#ff7f00\",\"#ffff00\",\"#00ff00\",\"#0000ff\",\"#4b0082\",\"#8b00ff\"],\"_type\":\"Loop\"}",
 			"\"Rainbow\"",
 			"{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"}",
+			"{\"Child\":\"L010001ff000000ff000000ff\",\"_type\":\"Chronometer\"}",
 			morning,
 		},
 	}
