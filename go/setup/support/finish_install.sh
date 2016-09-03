@@ -13,6 +13,11 @@
 set -eu
 cd "$(dirname $0)"
 
+if [ "${USER:=root}" != "root" ]; then
+  echo "This script must be run as root."
+  exit 1
+fi
+
 echo "- Changing hostname"
 ./set_hostname.sh
 
@@ -29,7 +34,9 @@ echo "- Setting up automated apt cron job"
 ./schedule_apt.sh
 
 echo "- Installing ancillary utilities"
-go get github.com/maruel/dlibox/go/cmd/... github.com/maruel/dlibox/go/pio/cmd/...
+sudo -i -u pi /bin/sh <<'EOF'
+go get -v github.com/maruel/dlibox/go/cmd/... github.com/maruel/dlibox/go/pio/cmd/...
+EOF
 
 echo "- User specific installation"
 ./user_config.sh
