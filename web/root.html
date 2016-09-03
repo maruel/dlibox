@@ -70,36 +70,16 @@
   </style>
   <script>
     "use strict";
-
-    var patterns = {
-      "Aurores": "{\"_type\":\"Aurore\"}",
-      "Canne de Noël": "{\"MovesPerSec\":6,\"Child\":{\"Frame\":\"Lff0000ff0000ff0000ff0000ff0000ffffffffffffffffffffffffffffff\",\"_type\":\"Repeated\"},\"_type\":\"Rotate\"}",
-      "Ciel étoilé": "{\"Patterns\":[{\"_type\":\"Aurore\"},{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"Weights\":[1,1,1],\"_type\":\"Mixer\"}",
-      "Cycle RGB": "{\"DurationShowMS\":1000000,\"DurationTransitionMS\":1000000,\"Patterns\":[\"#ff0000\",\"#00ff00\",\"#0000ff\"],\"Curve\":\"easeinout\",\"_type\":\"Loop\"}",
-      "Dégradé bleu": "{\"Left\":\"#000000\",\"Right\":\"#0000ff\",\"Curve\":\"direct\",\"_type\":\"Gradient\"}",
-      "Dégradé rouge": "{\"Left\":\"#000000\",\"Right\":\"#ff0000\",\"Curve\":\"direct\",\"_type\":\"Gradient\"}",
-      "Dégradé vert": "{\"Left\":\"#000000\",\"Right\":\"#00ff00\",\"Curve\":\"direct\",\"_type\":\"Gradient\"}",
-      "Dégradé": "{\"Left\":\"#000000\",\"Right\":\"#ffffff\",\"Curve\":\"direct\",\"_type\":\"Gradient\"}",
-      "K2000": "{\"Child\":\"Lff0000ff0000ee0000dd0000cc0000bb0000aa0000990000880000770000660000550000440000330000220000110000\",\"MovesPerSec\":30,\"_type\":\"PingPong\"}",
-      "Morning alarm":
-        "{\"Duration\":600000000000,\"After\":\"#000000\",\"Offset\":1800000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ffffff\",\"Offset\":600000000000,\"Before\":{\"Duration\":600000000000,\"After\":\"#ff7f00\",\"Offset\":0,\"Before\":\"#000000\",\"Curve\":\"direct\",\"_type\":\"Transition\"},\"Curve\":\"direct\",\"_type\":\"Transition\"},\"Curve\":\"direct\",\"_type\":\"Transition\"}",
-      "Noir": "\"#000000\"",
-      "Ping pong": "{\"Child\":\"Lffffff\",\"MovesPerSec\":30,\"_type\":\"PingPong\"}",
-      "Rainbow cycle": "{\"DurationShowMS\":1000000,\"DurationTransitionMS\":10000000,\"Patterns\":[\"#ff0000\",\"#ff7f00\",\"#ffff00\",\"#00ff00\",\"#0000ff\",\"#4b0082\",\"#8b00ff\"],\"Curve\":\"easeinout\",\"_type\":\"Loop\"}",
-      "Rainbow static": "\"Rainbow\"",
-      "Étoiles cintillantes": "{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"}",
-      "Chronometer": "{\"Child\":{\"Frame\":\"L000000ff000000ff000000ff\",\"_type\":\"Repeated\"},\"_type\":\"Chronometer\"}",
-    };
-
+    var config = {};
 
     function onload() {
+      fetchConfig();
       // Set background.
       var text = '';
       for (var i=0; i<50; i++) {
         text += '🐉🐢🐇🌴';
       }
       document.getElementById('background').innerText = text;
-      loadButtons();
 
       // http://www.daviddurman.com/flexi-color-picker/
       ColorPicker.fixIndicators(
@@ -123,17 +103,17 @@
     }
 
     function loadButtons() {
-      // Create buttons.
       var styles = [
         "btn-primary", "btn-info", "btn-warning", "btn-danger", "btn-success",
         "btn-default",
       ];
       var j = 0;
       var dst = document.getElementById('boutons');
-      for (var k in patterns) {
+      dst.innerHTML = '';
+      for (var k in config.Patterns) {
         var node = document.createElement('button');
         node.type = 'button';
-        var v = patterns[k];
+        var v = config.Patterns[k];
         node.id = 'button-' + k;
         node.className = 'btn btn-lg ' + styles[j];
         node.attributes['data-mode'] = v;
@@ -152,11 +132,33 @@
       setPattern();
     }
 
+    function fetchConfig() {
+      var oReq = new XMLHttpRequest();
+      oReq.open('get', '/config', true);
+      oReq.responseType = 'json';
+      oReq.onreadystatechange = function () {
+        if (oReq.readyState === XMLHttpRequest.DONE && oReq.status === 200) {
+          config = oReq.response;
+          loadButtons();
+        }
+        // TODO(maruel): Handle failure.
+      };
+      oReq.send();
+    }
+
     function setPattern() {
       document.getElementById("pattern").value = JSON.stringify(
           JSON.parse(document.getElementById("pattern").value), null, 2);
       var oReq = new XMLHttpRequest();
       oReq.open('post', '/switch', true);
+      oReq.responseType = 'json';
+      oReq.onreadystatechange = function () {
+        if (oReq.readyState === XMLHttpRequest.DONE && oReq.status === 200) {
+          config.Patterns = oReq.response;
+          loadButtons();
+        }
+        // TODO(maruel): Handle failure.
+      };
       oReq.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
       oReq.send("pattern=" + btoa(JSON.stringify(JSON.parse(document.getElementById("pattern").value))));
       return false;

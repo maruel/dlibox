@@ -11,7 +11,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -24,6 +23,7 @@ import (
 	"github.com/maruel/dlibox/go/bw2d"
 	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
 	"github.com/maruel/dlibox/go/pio/buses/i2c"
+	"github.com/maruel/dlibox/go/pio/buses/ir"
 	"github.com/maruel/dlibox/go/pio/buses/spi"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
@@ -33,32 +33,40 @@ import (
 	"github.com/maruel/interrupt"
 )
 
-func initDisplay() error {
+func initDisplay() (devices.Display, error) {
 	i2cBus, err := i2c.Make(1)
 	display, err := ssd1306.MakeI2C(i2cBus, 128, 64, false)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	f12, err := psf.Load("Terminus12x6")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	f20, err := psf.Load("Terminus20x10")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// TODO(maruel): Leverage bme280 while at it but don't fail if not
 	// connected.
 	img, err := bw2d.Make(display.W, display.H)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	f20.Draw(img, 0, 0, bw2d.On, nil, "dlibox!")
 	f12.Draw(img, 0, display.H-f12.H-1, bw2d.On, nil, "is awesome")
 	if _, err = display.Write(img.Buf); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return display, nil
+}
+
+func initIR() (*ir.Bus, error) {
+	// Verify the pinout is as expected.
+	//if bcm283x.IR_OUT != bcm283x.GPIO5 || bcm283x.IR_IN != bcm283x.GPIO13 {
+	//	return errors.New("configure lirc for out=5, in=13")
+	//}
+	return nil, nil
 }
 
 func mainImpl() error {
@@ -120,16 +128,13 @@ func mainImpl() error {
 	var leds devices.Display
 	if *fake {
 		// Hardcode to 100 characters when using a terminal output.
+		// TODO(maruel): Query the terminal and use its width.
 		leds = screen.Make(100)
 		defer os.Stdout.Write([]byte("\033[0m\n"))
 		// Use lower refresh rate too.
 		fps = 30
 		properties = append(properties, "fake=1")
 	} else {
-		// Verify the pinout is as expected.
-		if bcm283x.IR_OUT != bcm283x.GPIO5 || bcm283x.IR_IN != bcm283x.GPIO13 {
-			return errors.New("configure lirc for out=5, in=13")
-		}
 		spiBus, err := spi.Make(0, 0, config.APA102.SPIspeed)
 		if err != nil {
 			return err
@@ -139,7 +144,16 @@ func mainImpl() error {
 			return err
 		}
 		properties = append(properties, fmt.Sprintf("APA102=%d", config.APA102.NumberLights))
-		_ = initDisplay()
+	}
+
+	// Try to initialize the display.
+	if _, err = initDisplay(); err != nil {
+		log.Printf("Display not connected")
+	}
+
+	// Try to initialize the IR.
+	if _, err = initIR(); err != nil {
+		log.Printf("IR not connected")
 	}
 
 	// Painter.

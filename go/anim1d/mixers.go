@@ -160,6 +160,8 @@ func (r *Rotate) NextFrame(pixels Frame, timeMS uint32) {
 
 // Chronometer moves 3 lights to the right, each indicating second, minute, and
 // hour passed since the start.
+//
+// Child has 4 pixels used in this order: [default, second, minute, hour].
 type Chronometer struct {
 	Child SPattern
 	buf   Frame

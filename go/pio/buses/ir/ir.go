@@ -65,7 +65,8 @@ func (b *Bus) Next() (string, int, error) {
 // Pins queries the kernel module to determine which GPIO pins are taken by
 // the driver.
 //
-// The return values can be converted to rpi.Pin. Return -1, -1 on failure.
+// The return values can be converted to bcm238x.Pin. Return (-1, -1) on
+// failure.
 func Pins() (int, int) {
 	// This is configured in /boot/config.txt as:
 	// dtoverlay=gpio_in_pin=23,gpio_out_pin=22

@@ -177,9 +177,12 @@ func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid JSON pattern", http.StatusBadRequest)
 		return
 	}
-
-	s.config.Inject(pattern)
-	_, _ = w.Write([]byte("success"))
+	if c, ok := p.Pattern.(*anim1d.Color); !ok || (c.R == 0 && c.G == 0 && c.B == 0) {
+		s.config.Inject(pattern)
+	}
+	data, _ := json.Marshal(s.config.Patterns)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
 }
 
 func (s *webServer) thumbnailHandler(w http.ResponseWriter, r *http.Request) {

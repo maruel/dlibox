@@ -19,8 +19,10 @@ import (
 )
 
 func TestWeb(t *testing.T) {
+	t.Parallel()
 	var config Config
 	config.ResetDefault()
+	config.Patterns = []string{"\"#010101\"", "\"#020202\""}
 	d := &fakes.Display{image.NewNRGBA(image.Rect(0, 0, 128, 1))}
 	painter := anim1d.MakePainter(d, 60)
 	defer painter.Close()
@@ -28,9 +30,11 @@ func TestWeb(t *testing.T) {
 	defer s.Close()
 	ut.AssertEqual(t, nil, err)
 	base := fmt.Sprintf("http://%s/", s.server.Addr)
-	resp, err := http.PostForm(base+"switch", url.Values{"pattern": {base64.URLEncoding.EncodeToString([]byte("\"#010203\""))}})
+	// Only Frame are injected in the config, colors (other than black) are
+	// ignored.
+	resp, err := http.PostForm(base+"switch", url.Values{"pattern": {base64.URLEncoding.EncodeToString([]byte("\"L030303\""))}})
 	ut.AssertEqual(t, nil, err)
 	raw, err := ioutil.ReadAll(resp.Body)
 	ut.AssertEqual(t, nil, err)
-	ut.AssertEqual(t, "success", string(raw))
+	ut.AssertEqual(t, "[\"\\\"L030303\\\"\",\"\\\"#010101\\\"\",\"\\\"#020202\\\"\"]", string(raw))
 }

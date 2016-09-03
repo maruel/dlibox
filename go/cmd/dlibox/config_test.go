@@ -10,7 +10,14 @@ import (
 	"github.com/maruel/ut"
 )
 
+func Test(t *testing.T) {
+	var config Config
+	config.ResetDefault()
+	ut.AssertEqual(t, nil, config.verify())
+}
+
 func TestInject(t *testing.T) {
+	t.Parallel()
 	var config Config
 	config.Patterns = []string{"first", "second", "third"}
 	prev := make([]string, len(config.Patterns))
