@@ -7,7 +7,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -137,9 +136,9 @@ func mainImpl() error {
 	}
 
 	if useIR {
-		irBus := ir.Make()
-		if irBus == nil {
-			return errors.New("failed to open lirc")
+		irBus, err := ir.Make()
+		if err != nil {
+			return err
 		}
 		go irLoop(irBus, keys)
 	}
@@ -195,15 +194,15 @@ func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-
 	}
 }
 
-func irLoop(irBus *ir.Bus, keys chan<- string) {
-	for !interrupt.IsSet() {
-		s, _, err := irBus.Next()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("IR: %s", s)
-		if err == nil {
-			keys <- s
+func irLoop(irBus buses.IR, keys chan<- string) {
+	c := irBus.Channel()
+	for {
+		select {
+		case <-interrupt.Channel:
+			break
+		case msg := <-c:
+			log.Printf("IR: %#v", msg)
+			keys <- msg.Button
 		}
 	}
 }
