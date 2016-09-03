@@ -16,5 +16,6 @@ HOST="$1"
 
 cd "$NAME"
 GOOS=linux GOARCH=arm go build .
-scp "$NAME" "$HOST:."
+scp "$NAME" "$HOST:bin/${NAME}2"
+ssh "$HOST" "mv bin/${NAME}2 bin/$NAME"
 rm "$NAME"

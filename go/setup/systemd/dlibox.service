@@ -27,7 +27,7 @@ Restart=always
 # 80. This means access to SPI (and optionally Pi-blaster) still need to be
 # configured accordingly.
 ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/pi/bin/dlibox
-ExecStart=/bin/su - pi -c "/home/pi/bin/dlibox -port 80"
+ExecStart=/bin/su - pi -c "/home/pi/bin/dlibox -port 80 -verbose"
 
 # 2) You may just run as root, which is sad but not a big deal if you don't
 # anything personal on it.

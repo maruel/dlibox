@@ -1,13 +1,19 @@
 # Setup
 
-## Software
+## As a fresh image
+
+The simplest is to create a fresh Raspbian Jessie Lite image using `flash.sh`.
+You just put the card in your Raspberry Pi and it will initializes itself on
+first boot.
 
 - Make sure you have an ssh key configured.
 - Insert a SDCard and note the device path, e.g. /dev/sdX where X is a letter.
 - Run `flash.sh /dev/sdX <wifi ssid>`
 
+This script generates an image that leaves 390Mb free on a 2Gb SDCard.
 
-### To simplify your life
+
+### SSH key
 
 - Make sure your `.ssh/config` has the proper config to push to the account on
   which you want the service to run on. For example:
@@ -17,7 +23,7 @@
         User pi
 
 
-### Automated
+## On existing installation
 
 Configure your Raspberry Pi with everything necessary and start dlibox:
 
@@ -79,6 +85,8 @@ is a Google Chrome app to debug messages on a MQTT server.
 Look at the logs on the dlibox server:
 
     sudo journalctl -u dlibox
+    # For streaming:
+    sudo journalctl -f -u dlibox
 
 
 ### InfraRed receiver
