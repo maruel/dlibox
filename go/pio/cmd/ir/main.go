@@ -39,15 +39,28 @@ func mainImpl() error {
 	ctrlC := make(chan os.Signal)
 	signal.Notify(ctrlC, os.Interrupt)
 
+	first := true
+	defer os.Stdout.Write([]byte("\n"))
 	for {
 		select {
-		case msg := <-c:
-			fmt.Printf("%s %d %s\n", msg.Device, msg.Repeat, msg.Button)
+		case msg, ok := <-c:
+			if !ok {
+				return nil
+			}
+			if msg.Repeat {
+				os.Stdout.Write([]byte("*"))
+			} else {
+				if first {
+					first = false
+				} else {
+					os.Stdout.Write([]byte("\n"))
+				}
+				fmt.Printf("%s %s ", msg.Device, msg.Button)
+			}
 		case <-ctrlC:
-			break
+			return nil
 		}
 	}
-	return nil
 }
 
 func main() {

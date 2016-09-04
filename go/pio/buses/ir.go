@@ -5,9 +5,9 @@
 package buses
 
 type Message struct {
-	Button string
-	Repeat int
-	Device string
+	Button string // button key name
+	Device string // device remote name
+	Repeat bool   // true if the button press is a repeated key press; i.e. the user holds the button
 }
 
 // IR defines an infrared receiver and emitter.

@@ -116,8 +116,8 @@ func (b *Bus) loop(r *bufio.Reader) {
 			} else {
 				if i, err2 := strconv.Atoi(parts[1]); err2 != nil {
 					log.Printf("ir: corrupted line: #v", line)
-				} else {
-					b.c <- buses.Message{parts[2], i + 1, parts[3]}
+				} else if len(parts[2]) != 0 && len(parts[3]) != 0 {
+					b.c <- buses.Message{parts[2], parts[3], i != 0}
 				}
 			}
 		}
