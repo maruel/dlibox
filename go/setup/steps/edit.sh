@@ -37,8 +37,7 @@ echo "- / mounted as $ROOT"
 # Skip this if you don't use a small display.
 # Strictly speaking, you won't need a monitor at all since ssh will be up and
 # running and the device will connect to the SSID provided.
-if [ true ]; then
-  echo "- Mounting 'boot' partition on the SDCard for modification"
+if [ false ]; then
   echo "- Enabling 5\" display support (optional)"
   ./enable_5inch.sh $BOOT
 fi

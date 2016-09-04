@@ -8,6 +8,14 @@
 set -eu
 
 
+echo "- Injecting history in .bash_history"
+cat >> /home/pi/.bash_history <<'EOF'
+sudo systemctl stop dlibox
+sudo journalctl -f -u dlibox
+tail -f /var/log/dlibox_firstboot.log
+EOF
+
+
 echo "- Installing git"
 # apt-get update must be done right away, since the old packages are likely not
 # on the mirrors anymore.
