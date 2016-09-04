@@ -2,6 +2,13 @@
    Use of this source code is governed under the Apache License, Version 2.0
    that can be found in the LICENSE file. */
 
+/* Keep all the offsets of "5rem" in sync.
+ * The h2 one is to account for the fixed navbar when using anchor links.
+ * The content one is to offset the top of the page.
+ *
+ * The items below are roughly in order of which they appear on the page.
+ */
+
 #background {
   position: absolute;
   top: 0;
@@ -14,27 +21,82 @@
   font-size: 128px;
 }
 
+.navbar {
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  border-top: 1px solid #eee;
+  display: block;
+  height: 5rem;
+  left: 0;
+  position: fixed;
+  text-align: center;
+  top: 0;
+  width: 100%;
+  z-index: 99;
+}
+.navbar ul {
+  display: inline-block;
+  list-style: none;
+  margin-bottom: 0;
+}
+.navbar ul li {
+  float: left;
+  margin-bottom: 0;
+  position: relative;
+}
+.navbar a {
+  color: #222;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .2rem;
+  line-height: 5rem;
+  margin-right: 35px;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.navbar a:hover {
+  color: #33C3F0;
+}
+
+.content {
+  position: relative;
+  top: 5rem;
+}
+
+/* They are created on the fly */
+#boutons button {
+  width: 80%;
+}
+#boutons button img {
+  width: 100%;
+}
+
+#patternBox {
+  height: auto;
+  width: 100%;
+}
+
 #picker-wrapper {
-    width: 200px;
-    height: 200px;
-    position: relative;
+  height: 200px;
+  position: relative;
+  width: 200px;
 }
 #slider-wrapper {
-    width: 30px;
-    height: 200px;
-    position: relative;
+  height: 200px;
+  position: relative;
+  width: 30px;
 }
 #picker-indicator {
-    width: 3px;
-    height: 3px;
-    position: absolute;
-    border: 1px solid white;
+  border: 1px solid white;
+  height: 3px;
+  position: absolute;
+  width: 3px;
 }
 #slider-indicator {
-    width: 100%;
-    height: 10px;
-    position: absolute;
-    border: 1px solid black;
+  border: 1px solid black;
+  height: 10px;
+  position: absolute;
+  width: 100%;
 }
 /*
 #picker {
@@ -47,59 +109,7 @@
 }
 */
 
-.navbar + .docs-section {
-  border-top-width: 0;
-}
-.navbar, .navbar-spacer {
-  display: block;
-  width: 100%;
-  height: 6.5rem;
-  background: #fff;
-  z-index: 99;
-  border-top: 1px solid #eee;
-  border-bottom: 1px solid #eee;
-}
-.navbar-spacer {
-  display: none;
-}
-.navbar > .container {
-  width: 100%;
-}
-.navbar-list {
-  list-style: none;
-  margin-bottom: 0;
-}
-.navbar-item {
-  position: relative;
-  float: left;
-  margin-bottom: 0;
-}
-.navbar-link {
-  text-transform: uppercase;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .2rem;
-  margin-right: 35px;
-  text-decoration: none;
-  line-height: 6.5rem;
-  color: #222;
-}
-.navbar-link.active {
-  color: #33C3F0;
-}
-.navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-}
-.navbar-spacer {
-  display: block;
-}
-/* Re-overiding the width 100% declaration to match size of % based container */
-.navbar > .container {
-  width: 80%;
-}
-
+/* General stuff */
 
 button, input[type="submit"], input[type="reset"], input[type="button"] {
   background-color: #CCC;
@@ -112,4 +122,9 @@ input[type="reset"]:focus, input[type="button"]:focus {
   background-color: #888;
   border-color: #666;
   color: #FFF;
+}
+
+h2 {
+  padding-top: 5rem;
+  margin-top: -5rem;
 }

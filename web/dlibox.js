@@ -47,11 +47,10 @@ function loadButtons() {
   dst.innerHTML = '';
   for (var k in patterns) {
     var node = document.createElement('button');
-    //node.type = 'button';
     var v = patterns[k];
     node.id = 'button-' + k;
     node.attributes['data-mode'] = v;
-    node.innerHTML = '<img height=5px src="/thumbnail/' + encodeURI(btoa(v)) + '" /> ' + k;
+    node.innerHTML = '<img src="/thumbnail/' + encodeURI(btoa(v)) + '" /> ' + k;
     node.addEventListener('click', function (event) {
       updatePattern(this.attributes['data-mode']);
     });
@@ -62,7 +61,7 @@ function loadButtons() {
 
 // Updates the textarea and set the new pattern.
 function updatePattern(data) {
-  document.getElementById("pattern").value = data;
+  document.getElementById('patternBox').value = data;
   setPattern();
 }
 
@@ -89,8 +88,8 @@ function fetchSettings() {
 }
 
 function setPattern() {
-  document.getElementById("pattern").value = JSON.stringify(
-      JSON.parse(document.getElementById("pattern").value), null, 2);
+  document.getElementById('patternBox').value = JSON.stringify(
+      JSON.parse(document.getElementById('patternBox').value), null, 2);
   var oReq = new XMLHttpRequest();
   oReq.open('post', '/switch', true);
   oReq.responseType = 'json';
@@ -102,7 +101,7 @@ function setPattern() {
     // TODO(maruel): Handle failure.
   };
   oReq.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-  oReq.send("pattern=" + btoa(JSON.stringify(JSON.parse(document.getElementById("pattern").value))));
+  oReq.send('pattern=' + btoa(JSON.stringify(JSON.parse(document.getElementById('patternBox').value))));
   return false;
 }
 

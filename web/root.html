@@ -28,27 +28,26 @@
 </head>
 <body role="document" onload="onload()">
   <div id="background"></div>
-  <div class="container">
-    <div class="navbar-spacer"></div>
-    <nav class="navbar">
-      <div class="container">
-        <ul class="navbar-list">
-          <li class="navbar-item"><a class="navbar-link" href="#patterns">Patterns</a></li>
-          <li class="navbar-item"><a class="navbar-link" href="#color">Color</a></li>
-          <li class="navbar-item"><a class="navbar-link" href="#configuration">Configuration</a></li>
-        </ul>
-      </div>
-    </nav>
+  <div class="navbar">
+    <ul>
+      <li><a href="#patterns">Patterns</a></li>
+      <li><a href="#color">Color</a></li>
+      <li><a href="#configuration">Configuration</a></li>
+    </ul>
+  </div>
+  <div class="container content">
     <div class="row">
-      <h1>dlibox - {{.Host}}</h1>
-      <h2 id="patterns">Choix d'animations</h2>
+      <div class="column">
+        <h1>dlibox - {{.Host}}</h1>
+        <h2 id="patterns">Choix d'animations</h2>
+      </div>
     </div>
     <div class="row">
       <div id="boutons"></div>
     </div>
     <div class="row">
       <h2>Custom</h2>
-      <textarea id="pattern" name="pattern" cols="80" rows="10">"#000000"</textarea>
+      <textarea id="patternBox" name="pattern" rows="10">"#000000"</textarea>
       <br>
       <button onclick="setPattern()">Set</button>
     </div>
