@@ -200,94 +200,6 @@ func (p Pin) Function() Function {
 	return Function((gpioMemory32[p/10] >> ((p % 10) * 3)) & 7)
 }
 
-// isClock returns true if the pin is owned an output clock.
-func (p Pin) isClock() bool {
-	// https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
-	// Page 105.
-	// TODO(maruel): Add code to generate clocks.
-	switch p {
-	case INVALID:
-		return false
-	case GPCLK0, GPCLK1, GPCLK2:
-		return true
-	default:
-		return false
-	}
-}
-
-// isI2C returns true if the pin is owned by the I2C driver.
-func (p Pin) isI2C() bool {
-	switch p {
-	case INVALID:
-		return false
-	case I2C_SCL0, I2C_SDA0, I2C_SCL1, I2C_SDA1:
-		return true
-	default:
-		return false
-	}
-}
-
-// isI2S returns true if the pin is owned by the I2S driver.
-func (p Pin) isI2S() bool {
-	switch p {
-	case INVALID:
-		return false
-	case PCM_CLK, PCM_FS, PCM_DIN, PCM_DOUT:
-		return true
-	default:
-		return false
-	}
-}
-
-// isIR returns true if the pin is owned by the LIRC driver.
-func (p Pin) isIR() bool {
-	switch p {
-	case INVALID:
-		return false
-	case IR_IN, IR_OUT:
-		return true
-	default:
-		return false
-	}
-}
-
-// isPWM returns true if the pin is owned by the PWM driver. By default used
-// for audio output.
-func (p Pin) isPWM() bool {
-	switch p {
-	case INVALID:
-		return false
-	case PWM0_OUT, PWM1_OUT:
-		return true
-	default:
-		return false
-	}
-}
-
-// isSPI returns true if the pin is owned by the SPI driver.
-func (p Pin) isSPI() bool {
-	switch p {
-	case INVALID:
-		return false
-	case SPI0_CE0, SPI0_CE1, SPI0_CLK, SPI0_MISO, SPI0_MOSI, SPI1_CE0, SPI1_CE1, SPI1_CE2, SPI1_CLK, SPI1_MISO, SPI1_MOSI:
-		return true
-	default:
-		return false
-	}
-}
-
-// isUART returns true if the pin is owned by the UART driver.
-func (p Pin) isUART() bool {
-	switch p {
-	case INVALID:
-		return false
-	case UART_RXD0, UART_TXD0, UART_CTS0, UART_RTS0, UART_RXD1, UART_TXD1, UART_CTS1, UART_RTS1:
-		return true
-	default:
-		return false
-	}
-}
-
 // In setups a pin as an input and implements buses.Pin.
 //
 // Specifying a value for pull other than buses.PullNoChange causes this
@@ -304,6 +216,9 @@ func (p Pin) isUART() bool {
 //
 // Will fail if requesting to change a pin that is set to special functionality.
 func (p Pin) In(pull buses.Pull, edge buses.Edge) error {
+	if gpioMemory32 == nil {
+		return globalError
+	}
 	if !p.setFunction(In) {
 		return errors.New("failed to change pin mode")
 	}
@@ -334,6 +249,9 @@ func (p Pin) In(pull buses.Pull, edge buses.Edge) error {
 //
 // This function is very fast. It works even if the pin is set as output.
 func (p Pin) ReadInstant() buses.Level {
+	if gpioMemory32 == nil {
+		return buses.Low
+	}
 	// 0x34    R    GPIO Pin Level 0 (GPIO0-31)
 	// 0x38    R    GPIO Pin Level 1 (GPIO32-53)
 	return buses.Level((gpioMemory32[13+p/32] & (1 << (p & 31))) != 0)
@@ -344,6 +262,9 @@ func (p Pin) ReadInstant() buses.Level {
 //
 // Will fail if requesting to change a pin that is set to special functionality.
 func (p Pin) Out() error {
+	if gpioMemory32 == nil {
+		return globalError
+	}
 	// Enables ReadEdge() to behave correctly.
 	p.setEdge(buses.EdgeNone)
 	if !p.setFunction(In) {
@@ -357,9 +278,11 @@ func (p Pin) Out() error {
 //
 // This function is very fast.
 func (p Pin) SetLow() {
-	// 0x28    W    GPIO Pin Output Clear 0 (GPIO0-31)
-	// 0x2C    W    GPIO Pin Output Clear 1 (GPIO32-53)
-	gpioMemory32[10+p/32] = 1 << (p & 31)
+	if gpioMemory32 != nil {
+		// 0x28    W    GPIO Pin Output Clear 0 (GPIO0-31)
+		// 0x2C    W    GPIO Pin Output Clear 1 (GPIO32-53)
+		gpioMemory32[10+p/32] = 1 << (p & 31)
+	}
 }
 
 // SetHigh sets a pin already set for output as buses.High and implements
@@ -367,9 +290,11 @@ func (p Pin) SetLow() {
 //
 // This function is very fast.
 func (p Pin) SetHigh() {
-	// 0x1C    W    GPIO Pin Output Set 0 (GPIO0-31)
-	// 0x20    W    GPIO Pin Output Set 1 (GPIO32-53)
-	gpioMemory32[7+p/32] = 1 << (p & 31)
+	if gpioMemory32 == nil {
+		// 0x1C    W    GPIO Pin Output Set 0 (GPIO0-31)
+		// 0x20    W    GPIO Pin Output Set 1 (GPIO32-53)
+		gpioMemory32[7+p/32] = 1 << (p & 31)
+	}
 }
 
 // setFunction changes the GPIO pin function.

@@ -1,247 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Compatibility stuff -->
   <meta http-equiv="Content-type" content="text/html; charset=UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
 
+  <!-- Metadata -->
   <title>dlibox - {{.Host}}</title>
+  <meta name="description" content="dlibox web UI">
+  <meta name="author" content="Marc-Antoine Ruel">
 
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+  <!-- Resources -->
+  <link rel="icon" type="image/png" href="favicon.ico">
+  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="static/normalize.css">
+  <link rel="stylesheet" href="static/skeleton.css">
+  <link rel="stylesheet" href="static/dlibox.css">
+  <script type="text/javascript" src="static/dlibox.js"></script>
 
   <!--
   https://github.com/DavidDurman/FlexiColorPicker
   -->
-  <script type="text/javascript" src="/static/colorpicker.js"></script>
-  <!--
-  <link rel="stylesheet" href="/src/themes.css">
-  -->
-
-  <style>
-    #background {
-      position: absolute;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      right: 0;
-      z-index: -1;
-      overflow: hidden;
-      color: #dddddd;
-      font-size: 128px;
-    }
-
-    #picker-wrapper {
-        width: 200px;
-        height: 200px;
-        position: relative;
-    }
-    #slider-wrapper {
-        width: 30px;
-        height: 200px;
-        position: relative;
-    }
-    #picker-indicator {
-        width: 3px;
-        height: 3px;
-        position: absolute;
-        border: 1px solid white;
-    }
-    #slider-indicator {
-        width: 100%;
-        height: 10px;
-        position: absolute;
-        border: 1px solid black;
-    }
-/*
-    #picker {
-      height: 200px;
-      width: 200px;
-    }
-    #slider {
-      height: 200px;
-      width: 30px;
-    }
-*/
-  </style>
-  <script>
-    "use strict";
-    var patterns = [];
-    var settings = {};
-
-    function onload() {
-      fetchPatterns();
-      fetchSettings();
-      // Set background.
-      var text = '';
-      for (var i=0; i<50; i++) {
-        text += '🐉🐢🐇🌴';
-      }
-      document.getElementById('background').innerText = text;
-
-      // http://www.daviddurman.com/flexi-color-picker/
-      ColorPicker.fixIndicators(
-          document.getElementById('slider-indicator'),
-          document.getElementById('picker-indicator'));
-      ColorPicker(
-          document.getElementById('slider'),
-          document.getElementById('picker'),
-          //document.getElementById('fancy'),
-          function(hex, hsv, rgb, pickerCoordinate, sliderCoordinate) {
-            ColorPicker.positionIndicators(
-                document.getElementById('slider-indicator'),
-                document.getElementById('picker-indicator'),
-                sliderCoordinate, pickerCoordinate);
-            document.body.style.backgroundColor = hex;
-            document.getElementById('rgb_r').value = rgb.r;
-            document.getElementById('rgb_g').value = rgb.g;
-            document.getElementById('rgb_b').value = rgb.b;
-            updatePattern('"' + hex + '"');
-          });
-    }
-
-    function loadButtons() {
-      var styles = [
-        "btn-primary", "btn-info", "btn-warning", "btn-danger", "btn-success",
-        "btn-default",
-      ];
-      var j = 0;
-      var dst = document.getElementById('boutons');
-      dst.innerHTML = '';
-      for (var k in patterns) {
-        var node = document.createElement('button');
-        node.type = 'button';
-        var v = patterns[k];
-        node.id = 'button-' + k;
-        node.className = 'btn btn-lg ' + styles[j];
-        node.attributes['data-mode'] = v;
-        node.innerHTML = '<img height=5px src="/thumbnail/' + encodeURI(btoa(v)) + '" /> ' + k;
-        node.addEventListener('click', function (event) {
-          updatePattern(this.attributes['data-mode']);
-        });
-        dst.appendChild(node);
-        dst.appendChild(document.createElement('br'));
-        j = (j + 1) % styles.length;
-      }
-    }
-
-    function updatePattern(data) {
-      document.getElementById("pattern").value = data;
-      setPattern();
-    }
-
-    function fetchPatterns() {
-      var oReq = new XMLHttpRequest();
-      oReq.open('get', '/api/patterns', true);
-      oReq.responseType = 'json';
-      oReq.onreadystatechange = function () {
-        if (oReq.readyState === XMLHttpRequest.DONE && oReq.status === 200) {
-          patterns = oReq.response;
-          loadButtons();
-        }
-        // TODO(maruel): Handle failure.
-      };
-      oReq.send();
-    }
-
-    function fetchSettings() {
-      var oReq = new XMLHttpRequest();
-      oReq.open('get', '/api/settings', true);
-      oReq.responseType = 'json';
-      oReq.onreadystatechange = function () {
-        if (oReq.readyState === XMLHttpRequest.DONE && oReq.status === 200) {
-          settings = oReq.response;
-        }
-        // TODO(maruel): Handle failure.
-      };
-      oReq.send();
-    }
-
-    function setPattern() {
-      document.getElementById("pattern").value = JSON.stringify(
-          JSON.parse(document.getElementById("pattern").value), null, 2);
-      var oReq = new XMLHttpRequest();
-      oReq.open('post', '/switch', true);
-      oReq.responseType = 'json';
-      oReq.onreadystatechange = function () {
-        if (oReq.readyState === XMLHttpRequest.DONE && oReq.status === 200) {
-          patterns = oReq.response;
-          loadButtons();
-        }
-        // TODO(maruel): Handle failure.
-      };
-      oReq.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-      oReq.send("pattern=" + btoa(JSON.stringify(JSON.parse(document.getElementById("pattern").value))));
-      return false;
-    }
-
-    function patternKeyDown() {
-      if (event.keyCode == 13) {
-        setPattern();
-      }
-      return false;
-    }
-  </script>
+  <script type="text/javascript" src="static/colorpicker.js"></script>
 </head>
 <body role="document" onload="onload()">
   <div id="background"></div>
-
-  <h1>dlibox - {{.Host}}</h1>
-  <!--
-    - Button with thumbnail in it. Use nearestneiborhood resize?
-    - Checkbox to add it to the button based loop. Changing takes effect
-      immediately.
-    - Settings:
-      - Nombre de LEDs.
-      - Upload
-      - Draw
-      - Delete
-      - Alarm: HH:MM / Jours (DLMMJVS)
-      - Wake up: 20 / 40 min
-      - Bonne nuit: 20 min.
-  -->
-  <div class="page-header"><h2>Choix d'animations</h2></div>
-  <div id="boutons"></div>
-
-
-  <div class="page-header"><h2>Custom</h2></div>
-  <textarea id="pattern" name="pattern" cols=80 rows=10>"#000000"</textarea>
-  <input type=button value="Set" onclick="setPattern()" />
-
-  <div class="page-header"><h2>Couleur manuelle</h2></div>
-
-  <!--
-  <div id="picker"></div> <div id="slider"></div>
-  -->
-  <div style="display:inline">
-    <div id="picker-wrapper">
-      <div id="picker"></div>
-      <div id="picker-indicator"></div>
+  <div class="container">
+    <div class="navbar-spacer"></div>
+    <nav class="navbar">
+      <div class="container">
+        <ul class="navbar-list">
+          <li class="navbar-item"><a class="navbar-link" href="#patterns">Patterns</a></li>
+          <li class="navbar-item"><a class="navbar-link" href="#color">Color</a></li>
+          <li class="navbar-item"><a class="navbar-link" href="#configuration">Configuration</a></li>
+        </ul>
+      </div>
+    </nav>
+    <div class="row">
+      <h1>dlibox - {{.Host}}</h1>
+      <h2 id="patterns">Choix d'animations</h2>
     </div>
-    <div id="slider-wrapper">
-      <div id="slider"></div>
-      <div id="slider-indicator"></div>
+    <div class="row">
+      <div id="boutons"></div>
     </div>
-    <!--
-    <div id="fancy" class="cp cp-fancy"></div>
-    -->
+    <div class="row">
+      <h2>Custom</h2>
+      <textarea id="pattern" name="pattern" cols="80" rows="10">"#000000"</textarea>
+      <br>
+      <button onclick="setPattern()">Set</button>
+    </div>
+    <div class="row">
+      <h2 id="color">Manual Color</h2>
 
-    <span id="rgb_css"></span>
-    <label>R:</label>
-    <input id="rgb_r" type="number" value="" />
-    <label>G:</label>
-    <input id="rgb_g" type="number" value="" />
-    <label>B:</label>
-    <input id="rgb_b" type="number" value="" />
+      <!--
+      <div id="picker"></div> <div id="slider"></div>
+      -->
+      <div style="display:inline">
+        <div id="picker-wrapper">
+          <div id="picker"></div>
+          <div id="picker-indicator"></div>
+        </div>
+        <div id="slider-wrapper">
+          <div id="slider"></div>
+          <div id="slider-indicator"></div>
+        </div>
+        <!--
+        <div id="fancy" class="cp cp-fancy"></div>
+        -->
+
+        <span id="rgb_css"></span>
+        <label>R:</label>
+        <input id="rgb_r" type="number" value="" />
+        <label>G:</label>
+        <input id="rgb_g" type="number" value="" />
+        <label>B:</label>
+        <input id="rgb_b" type="number" value="" />
+      </div>
+    </div>
+    <div class="row">
+      <h2 id="configuration">Configuration</h2>
+      <div id="settings" class="settings">
+        <p>TODO.</p>
+      <!--
+        - Button with thumbnail in it. Use nearestneiborhood resize?
+        - Checkbox to add it to the button based loop. Changing takes effect
+          immediately.
+        - Settings:
+          - Nombre de LEDs.
+          - Upload
+          - Draw
+          - Delete
+          - Alarm: HH:MM / Jours (DLMMJVS)
+          - Wake up: 20 / 40 min
+          - Bonne nuit: 20 min.
+      -->
+      </div>
+    </div>
   </div>
-  <br>
-  <h2>Configuration</h2>
-  TODO(maruel): Add alarms here.
-  <p>
-
 </body>
 </html>

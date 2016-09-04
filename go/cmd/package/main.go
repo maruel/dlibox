@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -24,6 +25,8 @@ var tmpl = template.Must(template.New("tmpl").Parse(`// Automatically generated 
 // +build !debug
 
 package main
+
+const cacheControl = "Cache-Control:public, max-age=2592000" // 30d
 
 func mustRead(name string) []byte {
 	return []byte(staticFiles[name])
@@ -104,7 +107,10 @@ func mainImpl() error {
 	}
 	defer f.Close()
 	sort.Sort(c.files)
-	return tmpl.Execute(f, c.files)
+	if err := tmpl.Execute(f, c.files); err != nil {
+		return err
+	}
+	return exec.Command("gofmt", "-w", "-s", *outputFile).Run()
 }
 
 func main() {

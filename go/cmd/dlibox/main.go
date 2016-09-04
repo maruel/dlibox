@@ -3,7 +3,7 @@
 // that can be found in the LICENSE file.
 
 // Packages the static files in a .go file.
-//go:generate go run ../package/main.go -out static_files_gen.go images ../../../web
+//go:generate go run ../package/main.go -out static_files_gen.go ../../../web
 
 // dlibox drives the dlibox LED strip on a Raspberry Pi. It runs a web server
 // for remote control.
@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"runtime/pprof"
 
 	"github.com/kardianos/osext"
@@ -159,7 +160,7 @@ func mainImpl() error {
 	log.Printf("Config:\n%s", string(b))
 
 	fps := 60
-	if bcm283x.MaxSpeed < 900000 {
+	if bcm283x.MaxSpeed < 900000 || runtime.NumCPU() < 4 {
 		// Use 30Hz on slower devices because it is too slow.
 		fps = 30
 	}

@@ -94,7 +94,7 @@ func (s *webServer) rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")
-	//w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
+	w.Header().Set("Cache-Control", cacheControl)
 	keys := struct {
 		Host string
 	}{
@@ -111,7 +111,7 @@ func (s *webServer) faviconHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
+	w.Header().Set("Cache-Control", cacheControl)
 	w.Write(mustRead("favicon.ico"))
 }
 
@@ -122,9 +122,9 @@ func (s *webServer) staticHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	p := r.URL.Path[len("/static/"):]
 	w.Header().Set("Content-Type", mime.TypeByExtension(path.Ext(p)))
-	//w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
+	w.Header().Set("Cache-Control", cacheControl)
 	if content := read(p); content != nil {
-		w.Write(content)
+		_, _ = w.Write(content)
 		return
 	}
 	http.Error(w, "Not Found", http.StatusNotFound)
@@ -136,6 +136,7 @@ func (s *webServer) patternsHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		data, _ := json.Marshal(s.config.Patterns)
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
 		w.Write(data)
 	case "POST":
 		// TODO(maruel): Switch goes here.
@@ -150,6 +151,7 @@ func (s *webServer) settingsHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		data, _ := json.Marshal(s.config.Settings)
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
 		w.Write(data)
 	case "POST":
 		// TODO(maruel): Update settings.
@@ -221,8 +223,7 @@ func (s *webServer) thumbnailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "image/gif")
-	// TODO(maruel): Add once we stop changing algorithms.
-	//w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
+	w.Header().Set("Cache-Control", cacheControl)
 	_, _ = w.Write(data)
 }
 

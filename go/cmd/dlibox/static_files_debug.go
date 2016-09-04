@@ -2,6 +2,9 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// To use this file without having to constantly run go generate, use:
+//    go install -tags debug
+
 // +build debug
 
 package main
@@ -13,6 +16,8 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+const cacheControl = "Cache-Control:no-cache, no-store"
 
 func mustRead(name string) []byte {
 	if content := read(name); content != nil {

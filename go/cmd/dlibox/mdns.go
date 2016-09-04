@@ -284,3 +284,14 @@ func (m *mDNS) lookup() {
 	}
 	_ = mdns.Query(&params)
 }
+
+//
+
+/*
+// When avahi-daemon is running, leverage it to publish metadata.
+func avahiPublish(properties ...string) error {
+	// Requires package avahi-utils.
+	c := exec.Command("avahi-publish-service", "dlibox", "_dlibox._tcp", 80, properties...)
+	return c.Run()
+}
+*/
