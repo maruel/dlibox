@@ -35,6 +35,9 @@ import (
 
 func initDisplay() (devices.Display, error) {
 	i2cBus, err := i2c.Make(1)
+	if err != nil {
+		return nil, err
+	}
 	display, err := ssd1306.MakeI2C(i2cBus, 128, 64, false)
 	if err != nil {
 		return nil, err
@@ -135,15 +138,15 @@ func mainImpl() error {
 		fps = 30
 		properties = append(properties, "fake=1")
 	} else {
-		spiBus, err := spi.Make(0, 0, config.APA102.SPIspeed)
+		spiBus, err := spi.Make(0, 0, config.Settings.APA102.SPIspeed)
 		if err != nil {
 			return err
 		}
 		defer spiBus.Close()
-		if leds, err = apa102.Make(spiBus, config.APA102.NumberLights, 255, 6500); err != nil {
+		if leds, err = apa102.Make(spiBus, config.Settings.APA102.NumberLights, 255, 6500); err != nil {
 			return err
 		}
-		properties = append(properties, fmt.Sprintf("APA102=%d", config.APA102.NumberLights))
+		properties = append(properties, fmt.Sprintf("APA102=%d", config.Settings.APA102.NumberLights))
 	}
 
 	// Try to initialize the display.

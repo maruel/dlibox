@@ -394,6 +394,128 @@ func (p Pin) setFunction(f Function) bool {
 	return true
 }
 
+// GetPin returns a pin from its name.
+func GetPin(name string) Pin {
+	switch name {
+	case "GPIO0":
+		return GPIO0
+	case "GPIO1":
+		return GPIO1
+	case "GPIO2":
+		return GPIO2
+	case "GPIO3":
+		return GPIO3
+	case "GPIO4":
+		return GPIO4
+	case "GPIO5":
+		return GPIO5
+	case "GPIO6":
+		return GPIO6
+	case "GPIO7":
+		return GPIO7
+	case "GPIO8":
+		return GPIO8
+	case "GPIO9":
+		return GPIO9
+	case "GPIO10":
+		return GPIO10
+	case "GPIO11":
+		return GPIO11
+	case "GPIO12":
+		return GPIO12
+	case "GPIO13":
+		return GPIO13
+	case "GPIO14":
+		return GPIO14
+	case "GPIO15":
+		return GPIO15
+	case "GPIO16":
+		return GPIO16
+	case "GPIO17":
+		return GPIO17
+	case "GPIO18":
+		return GPIO18
+	case "GPIO19":
+		return GPIO19
+	case "GPIO20":
+		return GPIO20
+	case "GPIO21":
+		return GPIO21
+	case "GPIO22":
+		return GPIO22
+	case "GPIO23":
+		return GPIO23
+	case "GPIO24":
+		return GPIO24
+	case "GPIO25":
+		return GPIO25
+	case "GPIO26":
+		return GPIO26
+	case "GPIO27":
+		return GPIO27
+	case "GPIO28":
+		return GPIO28
+	case "GPIO29":
+		return GPIO29
+	case "GPIO30":
+		return GPIO30
+	case "GPIO31":
+		return GPIO31
+	case "GPIO32":
+		return GPIO32
+	case "GPIO33":
+		return GPIO33
+	case "GPIO34":
+		return GPIO34
+	case "GPIO35":
+		return GPIO35
+	case "GPIO36":
+		return GPIO36
+	case "GPIO37":
+		return GPIO37
+	case "GPIO38":
+		return GPIO38
+	case "GPIO39":
+		return GPIO39
+	case "GPIO40":
+		return GPIO40
+	case "GPIO41":
+		return GPIO41
+	case "GPIO42":
+		return GPIO42
+	case "GPIO43":
+		return GPIO43
+	case "GPIO44":
+		return GPIO44
+	case "GPIO45":
+		return GPIO45
+	case "GPIO46":
+		return GPIO46
+	case "GPIO47":
+		return GPIO47
+	case "GPIO48":
+		return GPIO48
+	case "GPIO49":
+		return GPIO49
+	case "GPIO50":
+		return GPIO50
+	case "GPIO51":
+		return GPIO51
+	case "GPIO52":
+		return GPIO52
+	case "GPIO53":
+		return GPIO53
+	case "GROUND":
+		return GROUND
+	case "V3_3":
+		return V3_3
+	case "V5":
+		return V5
+	default:
+		return INVALID
+	}
+}
+
 /*
 // Close the handle implicitly open by this package.
 //

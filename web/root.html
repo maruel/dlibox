@@ -70,10 +70,12 @@
   </style>
   <script>
     "use strict";
-    var config = {};
+    var patterns = [];
+    var settings = {};
 
     function onload() {
-      fetchConfig();
+      fetchPatterns();
+      fetchSettings();
       // Set background.
       var text = '';
       for (var i=0; i<50; i++) {
@@ -110,10 +112,10 @@
       var j = 0;
       var dst = document.getElementById('boutons');
       dst.innerHTML = '';
-      for (var k in config.Patterns) {
+      for (var k in patterns) {
         var node = document.createElement('button');
         node.type = 'button';
-        var v = config.Patterns[k];
+        var v = patterns[k];
         node.id = 'button-' + k;
         node.className = 'btn btn-lg ' + styles[j];
         node.attributes['data-mode'] = v;
@@ -132,14 +134,27 @@
       setPattern();
     }
 
-    function fetchConfig() {
+    function fetchPatterns() {
       var oReq = new XMLHttpRequest();
-      oReq.open('get', '/config', true);
+      oReq.open('get', '/api/patterns', true);
       oReq.responseType = 'json';
       oReq.onreadystatechange = function () {
         if (oReq.readyState === XMLHttpRequest.DONE && oReq.status === 200) {
-          config = oReq.response;
+          patterns = oReq.response;
           loadButtons();
+        }
+        // TODO(maruel): Handle failure.
+      };
+      oReq.send();
+    }
+
+    function fetchSettings() {
+      var oReq = new XMLHttpRequest();
+      oReq.open('get', '/api/settings', true);
+      oReq.responseType = 'json';
+      oReq.onreadystatechange = function () {
+        if (oReq.readyState === XMLHttpRequest.DONE && oReq.status === 200) {
+          settings = oReq.response;
         }
         // TODO(maruel): Handle failure.
       };
@@ -154,7 +169,7 @@
       oReq.responseType = 'json';
       oReq.onreadystatechange = function () {
         if (oReq.readyState === XMLHttpRequest.DONE && oReq.status === 200) {
-          config.Patterns = oReq.response;
+          patterns = oReq.response;
           loadButtons();
         }
         // TODO(maruel): Handle failure.

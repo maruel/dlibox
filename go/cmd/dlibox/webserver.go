@@ -57,7 +57,8 @@ func startWebServer(port int, painter *anim1d.Painter, config *Config) (*webServ
 	mux.HandleFunc("/favicon.ico", s.faviconHandler)
 	mux.HandleFunc("/static/", s.staticHandler)
 	// Dynamic replies.
-	mux.HandleFunc("/config", s.configHandler)
+	mux.HandleFunc("/api/patterns", s.patternsHandler)
+	mux.HandleFunc("/api/settings", s.settingsHandler)
 	mux.HandleFunc("/switch", s.switchHandler)
 	mux.HandleFunc("/thumbnail/", s.thumbnailHandler)
 
@@ -129,15 +130,30 @@ func (s *webServer) staticHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not Found", http.StatusNotFound)
 }
 
-func (s *webServer) configHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
+func (s *webServer) patternsHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		data, _ := json.Marshal(s.config.Patterns)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	case "POST":
+		// TODO(maruel): Switch goes here.
+	default:
 		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
-		return
 	}
+}
 
-	data, _ := json.Marshal(s.config)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+func (s *webServer) settingsHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		data, _ := json.Marshal(s.config.Settings)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	case "POST":
+		// TODO(maruel): Update settings.
+	default:
+		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
+	}
 }
 
 func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
@@ -178,7 +194,7 @@ func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if c, ok := p.Pattern.(*anim1d.Color); !ok || (c.R == 0 && c.G == 0 && c.B == 0) {
-		s.config.Inject(pattern)
+		s.config.Patterns.Inject(pattern)
 	}
 	data, _ := json.Marshal(s.config.Patterns)
 	w.Header().Set("Content-Type", "application/json")

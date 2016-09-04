@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/anim1d"
+	"github.com/pkg/errors"
 )
 
 type WeekdayBit int
@@ -47,7 +48,7 @@ type Alarm struct {
 	Hour    int
 	Minute  int
 	Days    WeekdayBit
-	Pattern string // JSON serialized pattern.
+	Pattern Pattern
 	timer   *time.Timer
 }
 
@@ -83,7 +84,7 @@ func (a *Alarm) Reset(p *anim1d.Painter) error {
 	now := time.Now()
 	if next := a.Next(now); !next.IsZero() {
 		a.timer = time.AfterFunc(next.Sub(now), func() {
-			if err := p.SetPattern(a.Pattern); err != nil {
+			if err := p.SetPattern(string(a.Pattern)); err != nil {
 				log.Printf("failed to unmarshal pattern %q", a.Pattern)
 			}
 			a.Reset(p)
@@ -110,4 +111,39 @@ func (a Alarms) Reset(p *anim1d.Painter) error {
 		}
 	}
 	return err
+}
+
+func (a *Alarms) ResetDefault() {
+	*a = Alarms{
+		{
+			Enabled: true,
+			Hour:    6,
+			Minute:  35,
+			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
+			Pattern: morning,
+		},
+		{
+			Enabled: true,
+			Hour:    6,
+			Minute:  55,
+			Days:    Saturday | Sunday,
+			Pattern: "\"#000000\"",
+		},
+		{
+			Enabled: true,
+			Hour:    19,
+			Minute:  00,
+			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
+			Pattern: "\"#010001\"",
+		},
+	}
+}
+
+func (a Alarms) Validate() error {
+	for _, alarm := range a {
+		if err := alarm.Pattern.Validate(); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("can't load pattern for alarm %s", a))
+		}
+	}
+	return nil
 }

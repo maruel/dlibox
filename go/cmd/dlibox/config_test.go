@@ -13,18 +13,18 @@ import (
 func Test(t *testing.T) {
 	var config Config
 	config.ResetDefault()
-	ut.AssertEqual(t, nil, config.verify())
+	ut.AssertEqual(t, nil, config.Validate())
 }
 
 func TestInject(t *testing.T) {
 	t.Parallel()
 	var config Config
-	config.Patterns = []string{"first", "second", "third"}
-	prev := make([]string, len(config.Patterns))
+	config.Patterns = Patterns{"first", "second", "third"}
+	prev := make(Patterns, len(config.Patterns))
 	copy(prev, config.Patterns)
-	config.Inject("new")
-	ut.AssertEqual(t, []string{"new", "first", "second", "third"}, config.Patterns)
+	config.Patterns.Inject("new")
+	ut.AssertEqual(t, Patterns{"new", "first", "second", "third"}, config.Patterns)
 
-	config.Inject("second")
-	ut.AssertEqual(t, []string{"second", "new", "first", "third"}, config.Patterns)
+	config.Patterns.Inject("second")
+	ut.AssertEqual(t, Patterns{"second", "new", "first", "third"}, config.Patterns)
 }
