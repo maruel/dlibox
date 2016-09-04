@@ -55,7 +55,7 @@ func mainImpl() error {
 				} else {
 					os.Stdout.Write([]byte("\n"))
 				}
-				fmt.Printf("%s %s ", msg.Device, msg.Button)
+				fmt.Printf("%s %s ", msg.RemoteType, msg.Key)
 			}
 		case <-ctrlC:
 			return nil

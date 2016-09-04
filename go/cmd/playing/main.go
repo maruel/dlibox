@@ -63,7 +63,7 @@ func mainImpl() error {
 
 	button := make(chan bool)
 	motion := make(chan bool)
-	keys := make(chan string)
+	keys := make(chan buses.Key)
 	bme := make(chan env)
 
 	f8, err := psf.Load("VGA8")
@@ -149,7 +149,7 @@ func mainImpl() error {
 	return nil
 }
 
-func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-chan bool, bme <-chan env, keys <-chan string) {
+func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-chan bool, bme <-chan env, keys <-chan buses.Key) {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
 	for {
@@ -176,7 +176,7 @@ func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-
 			f.Draw(img, 0, f.H*3, bw2d.On, bw2d.Off, fmt.Sprintf("%.2f%% ", t.h))
 
 		case s := <-keys:
-			f.Draw(img, 0, f.H*6, bw2d.On, bw2d.Off, s)
+			f.Draw(img, 0, f.H*6, bw2d.On, bw2d.Off, string(s))
 			draw = true
 
 		case <-tick.C:
@@ -194,7 +194,7 @@ func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-
 	}
 }
 
-func irLoop(irBus buses.IR, keys chan<- string) {
+func irLoop(irBus buses.IR, keys chan<- buses.Key) {
 	c := irBus.Channel()
 	for {
 		select {
@@ -202,7 +202,7 @@ func irLoop(irBus buses.IR, keys chan<- string) {
 			break
 		case msg := <-c:
 			log.Printf("IR: %#v", msg)
-			keys <- msg.Button
+			keys <- msg.Key
 		}
 	}
 }

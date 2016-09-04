@@ -63,7 +63,7 @@ func Make() (*Bus, error) {
 		return nil, err
 	}
 	b := &Bus{w: w, c: make(chan buses.Message), list: map[string][]string{}}
-	// Inconditionally retrieve the list of all known buttons at start.
+	// Inconditionally retrieve the list of all known keys at start.
 	if _, err := w.Write([]byte("LIST\n")); err != nil {
 		w.Close()
 		return nil, err
@@ -79,9 +79,9 @@ func (b *Bus) Close() error {
 }
 
 // Emit implements buses.IR.
-func (b *Bus) Emit(remote, button string) error {
+func (b *Bus) Emit(remote string, key buses.Key) error {
 	// http://www.lirc.org/html/lircd.html#lbAH
-	_, err := fmt.Fprintf(b.w, "SEND_ONCE %s %s", remote, button)
+	_, err := fmt.Fprintf(b.w, "SEND_ONCE %s %s", remote, key)
 	return err
 }
 
@@ -117,7 +117,7 @@ func (b *Bus) loop(r *bufio.Reader) {
 				if i, err2 := strconv.Atoi(parts[1]); err2 != nil {
 					log.Printf("ir: corrupted line: #v", line)
 				} else if len(parts[2]) != 0 && len(parts[3]) != 0 {
-					b.c <- buses.Message{parts[2], parts[3], i != 0}
+					b.c <- buses.Message{Key: buses.Key(parts[2]), RemoteType: parts[3], Repeat: i != 0}
 				}
 			}
 		}
