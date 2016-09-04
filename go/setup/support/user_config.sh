@@ -16,5 +16,8 @@ sudo -i -u pi /bin/sh <<'EOF'
 cd
 git clone --recurse https://github.com/maruel/bin_pub bin/bin_pub
 bin/bin_pub/setup_scripts/update_config.py
-go get -v golang.org/x/tools/cmd/goimports github.com/maruel/panicparse/cmd/pp
+go get -v \
+  github.com/FiloSottile/gorebuild \
+  github.com/maruel/panicparse/cmd/pp \
+  golang.org/x/tools/cmd/goimports
 EOF
