@@ -131,6 +131,7 @@ func (s *webServer) staticHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *webServer) patternsHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO(maruel): Locking for config access.
 	switch r.Method {
 	case "GET":
 		data, _ := json.Marshal(s.config.Patterns)
@@ -144,6 +145,7 @@ func (s *webServer) patternsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *webServer) settingsHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO(maruel): Locking for config access.
 	switch r.Method {
 	case "GET":
 		data, _ := json.Marshal(s.config.Settings)
@@ -157,6 +159,7 @@ func (s *webServer) settingsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO(maruel): Locking for config access.
 	if r.Method != "POST" {
 		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
 		return
@@ -218,6 +221,7 @@ func (s *webServer) thumbnailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "image/gif")
+	// TODO(maruel): Add once we stop changing algorithms.
 	//w.Header().Set("Cache-Control", "Cache-Control:public, max-age=2592000") // 30d
 	_, _ = w.Write(data)
 }

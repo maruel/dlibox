@@ -21,6 +21,7 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/bw2d"
+	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
 	"github.com/maruel/dlibox/go/pio/buses/i2c"
 	"github.com/maruel/dlibox/go/pio/buses/ir"
@@ -64,12 +65,48 @@ func initDisplay() (devices.Display, error) {
 	return display, nil
 }
 
-func initIR() (*ir.Bus, error) {
-	// Verify the pinout is as expected.
-	//if bcm283x.IR_OUT != bcm283x.GPIO5 || bcm283x.IR_IN != bcm283x.GPIO13 {
-	//	return errors.New("configure lirc for out=5, in=13")
-	//}
-	return nil, nil
+func initIR(painter *anim1d.Painter, config *IR) error {
+	bus, err := ir.Make()
+	if err != nil {
+		return err
+	}
+	go func() {
+		c := bus.Channel()
+		for {
+			select {
+			case msg, ok := <-c:
+				if !ok {
+					break
+				}
+				if !msg.Repeat {
+					// TODO(maruel): Locking.
+					if pat := config.Mapping[msg.Key]; len(pat) != 0 {
+						painter.SetPattern(string(pat))
+					}
+				}
+			}
+		}
+	}()
+	return nil
+}
+
+func initPIR(painter *anim1d.Painter, config *PIR) error {
+	// TODO(maruel): Cleaner.
+	pin := bcm283x.GetPin(config.Pin)
+	if pin.String() == "INVALID" {
+		return nil
+	}
+	if err := pin.In(buses.Down, buses.Rising); err != nil {
+		return err
+	}
+	go func() {
+		for {
+			pin.ReadEdge()
+			// TODO(maruel): Locking.
+			painter.SetPattern(string(config.Pattern))
+		}
+	}()
+	return nil
 }
 
 func mainImpl() error {
@@ -154,11 +191,6 @@ func mainImpl() error {
 		log.Printf("Display not connected")
 	}
 
-	// Try to initialize the IR.
-	if _, err = initIR(); err != nil {
-		log.Printf("IR not connected")
-	}
-
 	// Painter.
 	p := anim1d.MakePainter(leds, fps)
 	if err := config.Init(p); err != nil {
@@ -166,11 +198,21 @@ func mainImpl() error {
 	}
 	startWebServer(*port, p, &config.Config)
 
-	service, err := initmDNS(*port, properties)
-	if err != nil {
-		return err
+	if err = initIR(p, &config.Settings.IR); err != nil {
+		log.Printf("IR not connected")
 	}
-	defer service.Close()
+
+	if err = initPIR(p, &config.Settings.PIR); err != nil {
+		log.Printf("PIR not connected")
+	}
+
+	/*
+		service, err := initmDNS(*port, properties)
+		if err != nil {
+			return err
+		}
+		defer service.Close()
+	*/
 
 	return watchFile(thisFile)
 }
