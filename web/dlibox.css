@@ -72,6 +72,7 @@
 }
 
 #patternBox {
+  font-family: monospace;
   height: auto;
   width: 100%;
 }
@@ -134,6 +135,12 @@
 
 .colorRGB label, .colorRGB input {
   display: inline-block;
+}
+
+#settingsBox {
+  font-family: monospace;
+  height: 200rem;
+  width: 100%;
 }
 
 

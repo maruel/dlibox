@@ -69,41 +69,28 @@
         <div class="colorRGB">
           <div>
             <label>RGB</label>
-            <input id="rgb" type="text" value="#FFFFFF" />
+            <input id="rgb" type="text" value="#FFFFFF" onchange="updateFromHEX()" />
           </div>
           <div>
             <label>R:</label>
-            <input id="rgb_r" type="number" value="255" />
+            <input id="rgb_r" type="number" value="255" onchange="updateFromRGB()" />
           </div>
           <div>
             <label>G:</label>
-            <input id="rgb_g" type="number" value="255" />
+            <input id="rgb_g" type="number" value="255" onchange="updateFromRGB()" />
           </div>
           <div>
             <label>B:</label>
-            <input id="rgb_b" type="number" value="255" />
+            <input id="rgb_b" type="number" value="255" onchange="updateFromRGB()" />
           </div>
         </div>
       </div>
     </div>
     <div class="row">
       <h2 id="configuration">Configuration</h2>
-      <div id="settings" class="settings">
-        <p>TODO.</p>
-      <!--
-        - Button with thumbnail in it. Use nearestneiborhood resize?
-        - Checkbox to add it to the button based loop. Changing takes effect
-          immediately.
-        - Settings:
-          - Nombre de LEDs.
-          - Upload
-          - Draw
-          - Delete
-          - Alarm: HH:MM / Jours (DLMMJVS)
-          - Wake up: 20 / 40 min
-          - Bonne nuit: 20 min.
-      -->
-      </div>
+      <textarea id="settingsBox" name="settings" rows="10"></textarea>
+      <br>
+      <button onclick="setSettings()">Set</button>
     </div>
   </div>
 </body>

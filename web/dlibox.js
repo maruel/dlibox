@@ -25,12 +25,7 @@ function onload() {
       document.getElementById('picker'),
       function(hex, hsv, rgb, pickerCoordinate, slideCoordinate) {
         ColorPicker.positionIndicators(slideInd, pickerInd, slideCoordinate, pickerCoordinate);
-        document.body.style.backgroundColor = hex;
-        document.getElementById('rgb_r').value = rgb.r;
-        document.getElementById('rgb_g').value = rgb.g;
-        document.getElementById('rgb_b').value = rgb.b;
-        document.getElementById('rgb').value = hex;
-        updatePattern('"' + hex + '"');
+        updateColor(rgb.r, rgb.g, rgb.b);
       });
 }
 
@@ -60,6 +55,36 @@ function updatePattern(data) {
   setPattern();
 }
 
+function componentToHex(c) {
+  var hex = c.toString(16);
+  return hex.length == 1 ? "0" + hex : hex;
+}
+
+function updateColor(r, g, b) {
+  var hex = "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+  document.body.style.backgroundColor = hex;
+  document.getElementById('rgb_r').value = r;
+  document.getElementById('rgb_g').value = g;
+  document.getElementById('rgb_b').value = b;
+  document.getElementById('rgb').value = hex;
+  updatePattern('"' + hex + '"');
+}
+
+function updateFromHEX() {
+  var hex = document.getElementById('rgb').value;
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (result) {
+    updateColor(parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16));
+  }
+}
+
+function updateFromRGB() {
+  updateColor(
+      parseInt(document.getElementById('rgb_r').value, 10),
+      parseInt(document.getElementById('rgb_g').value, 10),
+      parseInt(document.getElementById('rgb_b').value, 10));
+}
+
 function patternKeyDown() {
   if (event.keyCode == 13) {
     setPattern();
@@ -79,6 +104,7 @@ function fetchPatterns() {
 function fetchSettings() {
   getJSON('/api/settings', function(data) {
     settings = data;
+    document.getElementById('settingsBox').value = JSON.stringify(data, null, 2);
   })
 }
 
@@ -97,6 +123,19 @@ function setPattern() {
   };
   oReq.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
   oReq.send('pattern=' + btoa(JSON.stringify(JSON.parse(document.getElementById('patternBox').value))));
+  return false;
+}
+
+function setSettings() {
+  document.getElementById('settingsBox').value = JSON.stringify(
+      JSON.parse(document.getElementById('settingsBox').value), null, 2);
+  /* TODO
+  var oReq = new XMLHttpRequest();
+  oReq.open('post', '/api/settings', true);
+  oReq.responseType = 'json';
+  oReq.setRequestHeader('Content-type', 'application/json');
+  oReq.send(document.getElementById('settingsBox').value);
+  */
   return false;
 }
 
