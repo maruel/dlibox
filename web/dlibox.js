@@ -18,23 +18,18 @@ function onload() {
   }
   document.getElementById('background').innerText = text;
 
-  // http://www.daviddurman.com/flexi-color-picker/
-  ColorPicker.fixIndicators(
-      document.getElementById('slider-indicator'),
-      document.getElementById('picker-indicator'));
+  var slideInd = document.getElementById('slide-indicator');
+  var pickerInd = document.getElementById('picker-indicator');
   ColorPicker(
-      document.getElementById('slider'),
+      document.getElementById('slide'),
       document.getElementById('picker'),
-      //document.getElementById('fancy'),
-      function(hex, hsv, rgb, pickerCoordinate, sliderCoordinate) {
-        ColorPicker.positionIndicators(
-            document.getElementById('slider-indicator'),
-            document.getElementById('picker-indicator'),
-            sliderCoordinate, pickerCoordinate);
+      function(hex, hsv, rgb, pickerCoordinate, slideCoordinate) {
+        ColorPicker.positionIndicators(slideInd, pickerInd, slideCoordinate, pickerCoordinate);
         document.body.style.backgroundColor = hex;
         document.getElementById('rgb_r').value = rgb.r;
         document.getElementById('rgb_g').value = rgb.g;
         document.getElementById('rgb_b').value = rgb.b;
+        document.getElementById('rgb').value = hex;
         updatePattern('"' + hex + '"');
       });
 }
@@ -115,7 +110,7 @@ function getJSON(url, onGET) {
     if (oReq.readyState === XMLHttpRequest.DONE && oReq.status === 200) {
       onGET(oReq.response);
     }
-    // TODO(maruel): Handle failure.
+    // TODO(maruel): Handle failure by adding a red X at top right.
   };
   oReq.send();
 }

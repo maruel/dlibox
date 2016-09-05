@@ -47,36 +47,39 @@
     </div>
     <div class="row">
       <h2>Custom</h2>
-      <textarea id="patternBox" name="pattern" rows="10">"#000000"</textarea>
+      <textarea id="patternBox" name="pattern" rows="10"></textarea>
       <br>
       <button onclick="setPattern()">Set</button>
     </div>
     <div class="row">
       <h2 id="color">Manual Color</h2>
-
-      <!--
-      <div id="picker"></div> <div id="slider"></div>
-      -->
-      <div style="display:inline">
-        <div id="picker-wrapper">
-          <div id="picker"></div>
-          <div id="picker-indicator"></div>
+      <div class="colorpicker">
+        <div id="picker-wrapper" class="picker-wrapper">
+          <div id="picker" class="picker"></div>
+          <div id="picker-indicator" class="picker-indicator"></div>
         </div>
-        <div id="slider-wrapper">
-          <div id="slider"></div>
-          <div id="slider-indicator"></div>
+        <div id="slide-wrapper" class="slide-wrapper">
+          <div id="slide" class="slide"></div>
+          <div id="slide-indicator" class="slide-indicator"></div>
         </div>
-        <!--
-        <div id="fancy" class="cp cp-fancy"></div>
-        -->
-
-        <span id="rgb_css"></span>
-        <label>R:</label>
-        <input id="rgb_r" type="number" value="" />
-        <label>G:</label>
-        <input id="rgb_g" type="number" value="" />
-        <label>B:</label>
-        <input id="rgb_b" type="number" value="" />
+      </div>
+      <div class="colorRGB">
+        <div>
+          <label>RGB</label>
+          <input id="rgb" type="text" value="#FFFFFF" />
+        </div>
+        <div>
+          <label>R:</label>
+          <input id="rgb_r" type="number" value="255" />
+        </div>
+        <div>
+          <label>G:</label>
+          <input id="rgb_g" type="number" value="255" />
+        </div>
+        <div>
+          <label>B:</label>
+          <input id="rgb_b" type="number" value="255" />
+        </div>
       </div>
     </div>
     <div class="row">
