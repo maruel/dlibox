@@ -13,6 +13,7 @@
 
 # All the flags in the following help pages apply:
 # - https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+# - https://www.freedesktop.org/software/systemd/man/systemd.kill.html
 # - https://www.freedesktop.org/software/systemd/man/systemd.service.html
 # - https://www.freedesktop.org/software/systemd/man/systemd.unit.html
 
@@ -22,6 +23,8 @@ After=auditd.service
 
 [Service]
 Restart=always
+KillMode=mixed
+TimeoutStopSec=20s
 
 # 1) One way is to run it as user and use capabilities to let it bind to port
 # 80. This means access to SPI (and optionally Pi-blaster) still need to be

@@ -14,3 +14,7 @@ systemctl daemon-reload
 systemctl enable dlibox.service
 #systemctl enable dlibox_update.service
 systemctl enable dlibox_update.timer
+
+# Comment this out if you need the display; mostly for debugging purpose since
+# it's in console mode.
+systemctl enable disable_hdmi.service

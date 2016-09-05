@@ -1,0 +1,29 @@
+# Copyright 2016 Marc-Antoine Ruel. All rights reserved.
+# Use of this source code is governed under the Apache License, Version 2.0
+# that can be found in the LICENSE file.
+
+# Copy to /etc/systemd/system/disable_hdmi.service
+# Then run:
+#   systemctl daemon-reload
+#   systemctl enable disable_hdmi.service
+#   systemctl start disable_hdmi.service
+#
+# To view logs:
+#   journalctl -u disable_hdmi.service
+
+# All the flags in the following help pages apply:
+# - https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+# - https://www.freedesktop.org/software/systemd/man/systemd.service.html
+# - https://www.freedesktop.org/software/systemd/man/systemd.unit.html
+
+[Unit]
+Description=Disable HDMI output to lower overall power consumption
+After=auditd.service
+
+[Service]
+Type=oneshot
+Restart=no
+ExecStart=/opt/vc/bin/tvservice -o
+
+[Install]
+WantedBy=multi-user.target

@@ -16,8 +16,10 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/signal"
 	"runtime"
 	"runtime/pprof"
+	"syscall"
 
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/anim1d"
@@ -131,6 +133,12 @@ func mainImpl() error {
 
 	interrupt.HandleCtrlC()
 	defer interrupt.Set()
+	chanSignal := make(chan os.Signal)
+	go func() {
+		<-chanSignal
+		interrupt.Set()
+	}()
+	signal.Notify(chanSignal, syscall.SIGTERM)
 
 	var properties []string
 	if *cpuprofile != "" {
