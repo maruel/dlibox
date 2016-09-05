@@ -95,8 +95,9 @@
   border-radius: 15px;
   box-shadow: 0 0 40px #000;
   float: left;
-  padding: 12px;
+  margin-bottom: 3rem;
   margin-right: 3rem;
+  padding: 12px;
 }
 .colorpicker .picker {
   height: 200px;
