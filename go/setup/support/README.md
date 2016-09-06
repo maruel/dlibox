@@ -21,3 +21,12 @@ If you get a blank screen, mount the card on a host and edit
 with
 
     ExecStart=/opt/vc/bin/tvservice -p
+
+
+### Using X
+
+The image used doesn't have X installed but if you use Jessie instead of Jessie
+Lite, X won't start because `install_dependencies.sh` reduces the GPU reserved
+memory down to 16Mb so X can't start. Undo with:
+
+    raspi-config nonint do_memory_split 64
