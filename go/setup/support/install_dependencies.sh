@@ -17,6 +17,10 @@ raspi-config nonint do_i2c 0
 raspi-config nonint do_memory_split 16
 
 
+# avahi-utils is not installed on armbian but is on Raspbian
+
+apt-get -y install avahi-utils
+
 ## lirc
 
 apt-get -y install lirc
