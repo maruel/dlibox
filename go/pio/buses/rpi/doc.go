@@ -101,4 +101,9 @@
 //     dtparam=uart0=off
 // UART1 can be enabled with:
 //     dtoverlay=uart1
+//
+// Physical
+//
+// The physical pin out is based on http://www.raspberrypi.org information but
+// http://pinout.xyz/ has a nice interactive web page.
 package rpi
