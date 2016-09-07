@@ -7,16 +7,13 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
-	"sync"
-	"time"
-
-	"github.com/hashicorp/mdns"
 )
 
 func getInterfaces() ([]net.Interface, error) {
@@ -36,50 +33,51 @@ func getInterfaces() ([]net.Interface, error) {
 
 // query prints out all the mDNS hosts advertized on the local network.
 func query() error {
-	var wgI sync.WaitGroup
-	var wgE sync.WaitGroup
-	const timeout = 5 * time.Second
-	ifs, err := getInterfaces()
-	if err != nil {
-		return nil
-	}
+	return errors.New("implement me")
+	//var wgI sync.WaitGroup
+	//var wgE sync.WaitGroup
+	//const timeout = 5 * time.Second
+	//ifs, err := getInterfaces()
+	//if err != nil {
+	//	return nil
+	//}
 
-	entries := make(chan *mdns.ServiceEntry)
-	wgE.Add(1)
-	go func() {
-		defer wgE.Done()
-		for e := range entries {
-			fmt.Printf("%-40s  %-15s  %s  %-5d\n", e.Name, e.AddrV4, e.AddrV6, e.Port)
-			for _, i := range e.InfoFields {
-				fmt.Printf("  - %s\n", i)
-			}
-		}
-	}()
+	//entries := make(chan *mdns.ServiceEntry)
+	//wgE.Add(1)
+	//go func() {
+	//	defer wgE.Done()
+	//	for e := range entries {
+	//		fmt.Printf("%-40s  %-15s  %s  %-5d\n", e.Name, e.AddrV4, e.AddrV6, e.Port)
+	//		for _, i := range e.InfoFields {
+	//			fmt.Printf("  - %s\n", i)
+	//		}
+	//	}
+	//}()
 
-	errs := make([]error, len(ifs))
-	for i := range ifs {
-		wgI.Add(1)
-		go func(i int) {
-			defer wgI.Done()
-			params := mdns.QueryParam{
-				Service:   "_dlibox._tcp",
-				Domain:    "local",
-				Timeout:   timeout,
-				Interface: &ifs[i],
-				Entries:   entries,
-			}
-			errs[i] = mdns.Query(&params)
-		}(i)
-	}
-	wgI.Wait()
-	close(entries)
-	wgE.Wait()
-	for _, err := range errs {
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	//errs := make([]error, len(ifs))
+	//for i := range ifs {
+	//	wgI.Add(1)
+	//	go func(i int) {
+	//		defer wgI.Done()
+	//		params := mdns.QueryParam{
+	//			Service:   "_dlibox._tcp",
+	//			Domain:    "local",
+	//			Timeout:   timeout,
+	//			Interface: &ifs[i],
+	//			Entries:   entries,
+	//		}
+	//		errs[i] = mdns.Query(&params)
+	//	}(i)
+	//}
+	//wgI.Wait()
+	//close(entries)
+	//wgE.Wait()
+	//for _, err := range errs {
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
+	//return nil
 }
 
 func mainImpl() error {
