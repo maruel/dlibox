@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"image"
 	"io/ioutil"
 	"log"
 	"os"
@@ -32,6 +33,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
+	"github.com/maruel/dlibox/go/pio/fakes"
 	"github.com/maruel/dlibox/go/pio/fakes/screen"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
@@ -157,7 +159,7 @@ func mainImpl() error {
 	config := ConfigMgr{}
 	config.ResetDefault()
 	if err := config.Load(); err != nil {
-		return err
+		log.Printf("Loading config failed: %v", err)
 	}
 	defer config.Close()
 
@@ -186,13 +188,15 @@ func mainImpl() error {
 	} else {
 		spiBus, err := spi.Make(0, 0, config.Settings.APA102.SPIspeed)
 		if err != nil {
-			return err
+			log.Printf("SPI failed: %v", err)
+			leds = &fakes.Display{image.NewNRGBA(image.Rect(0, 0, config.Settings.APA102.NumberLights, 1))}
+		} else {
+			defer spiBus.Close()
+			if leds, err = apa102.Make(spiBus, config.Settings.APA102.NumberLights, 255, 6500); err != nil {
+				return err
+			}
+			properties = append(properties, fmt.Sprintf("APA102=%d", config.Settings.APA102.NumberLights))
 		}
-		defer spiBus.Close()
-		if leds, err = apa102.Make(spiBus, config.Settings.APA102.NumberLights, 255, 6500); err != nil {
-			return err
-		}
-		properties = append(properties, fmt.Sprintf("APA102=%d", config.Settings.APA102.NumberLights))
 	}
 
 	// Try to initialize the display.
@@ -208,11 +212,11 @@ func mainImpl() error {
 	startWebServer(*port, p, &config.Config)
 
 	if err = initIR(p, &config.Settings.IR); err != nil {
-		log.Printf("IR not connected")
+		log.Printf("IR not connected: %v", err)
 	}
 
 	if err = initPIR(p, &config.Settings.PIR); err != nil {
-		log.Printf("PIR not connected")
+		log.Printf("PIR not connected: %v", err)
 	}
 
 	/*
