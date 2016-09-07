@@ -10,5 +10,7 @@
 
 set -eu
 
-SERIAL=$(cat /proc/cpuinfo | grep Serial | cut -d ":" -f 2 | sed 's/^ 0\+//')
+SERIAL="$(cat /proc/cpuinfo | grep Serial | cut -d ':' -f 2 | sed 's/^ 0\+//')"
+if [ "$SERIAL" == "" ]; then
+  SERIAL="$(hostnamectl status | grep 'Machine ID' | cut -d ':' -f 2 | cut -c 2- | cut -c -8)"
 echo "dlibox-$SERIAL"
