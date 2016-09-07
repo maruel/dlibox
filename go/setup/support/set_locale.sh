@@ -7,12 +7,15 @@
 
 set -eu
 
-# Use the us keyboard layout.
-sed -i 's/XKBLAYOUT="gb"/XKBLAYOUT="us"/' /etc/default/keyboard
 # Use "timedatectl list-timezones" to list the values.
 timedatectl set-timezone America/Toronto
-# Switch to en_US.
-locale-gen --purge en_US.UTF-8
 sed -i s/en_GB/en_US/ /etc/default/locale
-# Fix Wifi country settings for Canada.
-raspi-config nonint do_wifi_country CA
+
+if [ "$(grep 'ID=' /etc/os-release)" == "ID=raspbian" ]; then
+  # Use the us keyboard layout.
+  sed -i 's/XKBLAYOUT="gb"/XKBLAYOUT="us"/' /etc/default/keyboard
+  # Fix Wifi country settings for Canada.
+  raspi-config nonint do_wifi_country CA
+  # Switch to en_US.
+  locale-gen --purge en_US.UTF-8
+fi

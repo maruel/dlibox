@@ -9,13 +9,14 @@
 set -eu
 cd "$(dirname $0)"
 
-# https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
-# 0 means enabled.
-raspi-config nonint do_spi 0
-raspi-config nonint do_i2c 0
-# Lowers GPU memory from 64Mb to 16Mb. Doing so means goodbye to startx.
-raspi-config nonint do_memory_split 16
-
+if [ "$(grep 'ID=' /etc/os-release)" == "ID=raspbian" ]; then
+  # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
+  # 0 means enabled.
+  raspi-config nonint do_spi 0
+  raspi-config nonint do_i2c 0
+  # Lowers GPU memory from 64Mb to 16Mb. Doing so means goodbye to startx.
+  raspi-config nonint do_memory_split 16
+fi
 
 # avahi-utils is not installed on armbian but is on Raspbian
 

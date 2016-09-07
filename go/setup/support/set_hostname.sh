@@ -17,7 +17,11 @@ cd "$(dirname $0)"
 
 HOST="$(./gen_hostname.sh)"
 echo "- New hostname is: $HOST"
-raspi-config nonint do_hostname $HOST
+if [ "$(grep 'ID=' /etc/os-release)" == "ID=raspbian" ]; then
+  raspi-config nonint do_hostname $HOST
+else
+  hostnamectl set-hostname $HOST
+fi
 
 echo "- Changing MOTD"
 echo "Welcome to $HOST" > /etc/motd
