@@ -134,7 +134,7 @@ func (s *webServer) patternsHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(maruel): Locking for config access.
 	switch r.Method {
 	case "GET":
-		data, _ := json.Marshal(s.config.Patterns)
+		data, _ := json.Marshal(s.config.LRU.Patterns)
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
 		w.Write(data)
@@ -199,9 +199,10 @@ func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if c, ok := p.Pattern.(*anim1d.Color); !ok || (c.R == 0 && c.G == 0 && c.B == 0) {
-		s.config.Patterns.Inject(pattern)
+		s.config.LRU.Inject(pattern)
 	}
-	data, _ := json.Marshal(s.config.Patterns)
+	s.config.Settings.PatternSettings.Last = Pattern(pattern)
+	data, _ := json.Marshal(s.config.LRU.Patterns)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }

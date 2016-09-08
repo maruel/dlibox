@@ -84,6 +84,7 @@ func (a *Alarm) Reset(p *anim1d.Painter) error {
 	now := time.Now()
 	if next := a.Next(now); !next.IsZero() {
 		a.timer = time.AfterFunc(next.Sub(now), func() {
+			// Do not update PatternSettings.Last.
 			if err := p.SetPattern(string(a.Pattern)); err != nil {
 				log.Printf("failed to unmarshal pattern %q", a.Pattern)
 			}

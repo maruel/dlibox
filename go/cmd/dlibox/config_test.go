@@ -19,12 +19,12 @@ func Test(t *testing.T) {
 func TestInject(t *testing.T) {
 	t.Parallel()
 	var config Config
-	config.Patterns = Patterns{"first", "second", "third"}
-	prev := make(Patterns, len(config.Patterns))
-	copy(prev, config.Patterns)
-	config.Patterns.Inject("new")
-	ut.AssertEqual(t, Patterns{"new", "first", "second", "third"}, config.Patterns)
+	config.LRU = LRU{Max: 3, Patterns: []Pattern{"first", "second", "third"}}
+	prev := make([]Pattern, len(config.LRU.Patterns))
+	copy(prev, config.LRU.Patterns)
+	config.LRU.Inject("new")
+	ut.AssertEqual(t, []Pattern{"new", "first", "second"}, config.LRU.Patterns)
 
-	config.Patterns.Inject("second")
-	ut.AssertEqual(t, Patterns{"second", "new", "first", "third"}, config.Patterns)
+	config.LRU.Inject("second")
+	ut.AssertEqual(t, []Pattern{"second", "new", "first"}, config.LRU.Patterns)
 }

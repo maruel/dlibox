@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"sync"
 
 	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/pio/host"
@@ -35,33 +36,39 @@ func (p Pattern) Validate() error {
 
 const morning Pattern = "{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\",\"Before\":{\"After\":\"#ff7f00\",\"Before\":\"#000000\",\"Curve\":\"direct\",\"DurationMS\":6000000,\"OffsetMS\":0,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":6000000,\"OffsetMS\":6000000,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":600000,\"OffsetMS\":18000000,\"_type\":\"Transition\"}"
 
-// Patterns is the list of recent patterns. The first is the oldest.
-type Patterns []Pattern
+// LRU is the list of recent patterns. The first is the oldest.
+type LRU struct {
+	Max      int
+	Patterns []Pattern
+}
 
-func (p *Patterns) ResetDefault() {
-	*p = Patterns{
-		"{\"_type\":\"Aurore\"}",
-		"{\"Child\":{\"Frame\":\"Lff0000ff0000ff0000ff0000ff0000ffffffffffffffffffffffffffffff\",\"_type\":\"Repeated\"},\"MovesPerSec\":6,\"_type\":\"Rotate\"}",
-		"{\"Patterns\":[{\"_type\":\"Aurore\"},{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"Weights\":[1,1,1],\"_type\":\"Mixer\"}",
-		"{\"Curve\":\"easeinout\",\"DurationShowMS\":1000000,\"DurationTransitionMS\":1000000,\"Patterns\":[\"#ff0000\",\"#00ff00\",\"#0000ff\"],\"_type\":\"Loop\"}",
-		"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#0000ff\",\"_type\":\"Gradient\"}",
-		"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#ff0000\",\"_type\":\"Gradient\"}",
-		"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#00ff00\",\"_type\":\"Gradient\"}",
-		"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#ffffff\",\"_type\":\"Gradient\"}",
-		"{\"Child\":\"Lff0000ff0000ee0000dd0000cc0000bb0000aa0000990000880000770000660000550000440000330000220000110000\",\"MovesPerSec\":30,\"_type\":\"PingPong\"}",
-		"{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\",\"Before\":{\"After\":\"#ff7f00\",\"Before\":\"#000000\",\"Curve\":\"direct\",\"DurationMS\":0,\"OffsetMS\":0,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":0,\"OffsetMS\":0,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":0,\"OffsetMS\":0,\"_type\":\"Transition\"}",
-		"\"#000000\"",
-		"{\"Child\":\"Lffffff\",\"MovesPerSec\":30,\"_type\":\"PingPong\"}",
-		"{\"Curve\":\"easeinout\",\"DurationShowMS\":1000000,\"DurationTransitionMS\":10000000,\"Patterns\":[\"#ff0000\",\"#ff7f00\",\"#ffff00\",\"#00ff00\",\"#0000ff\",\"#4b0082\",\"#8b00ff\"],\"_type\":\"Loop\"}",
-		"\"Rainbow\"",
-		"{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"}",
-		"{\"Child\":\"L010001ff000000ff000000ff\",\"_type\":\"Chronometer\"}",
-		morning,
+func (l *LRU) ResetDefault() {
+	*l = LRU{
+		Max: 25,
+		Patterns: []Pattern{
+			"{\"_type\":\"Aurore\"}",
+			"{\"Child\":{\"Frame\":\"Lff0000ff0000ff0000ff0000ff0000ffffffffffffffffffffffffffffff\",\"_type\":\"Repeated\"},\"MovesPerSec\":6,\"_type\":\"Rotate\"}",
+			"{\"Patterns\":[{\"_type\":\"Aurore\"},{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"Weights\":[1,1,1],\"_type\":\"Mixer\"}",
+			"{\"Curve\":\"easeinout\",\"DurationShowMS\":1000000,\"DurationTransitionMS\":1000000,\"Patterns\":[\"#ff0000\",\"#00ff00\",\"#0000ff\"],\"_type\":\"Loop\"}",
+			"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#0000ff\",\"_type\":\"Gradient\"}",
+			"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#ff0000\",\"_type\":\"Gradient\"}",
+			"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#00ff00\",\"_type\":\"Gradient\"}",
+			"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#ffffff\",\"_type\":\"Gradient\"}",
+			"{\"Child\":\"Lff0000ff0000ee0000dd0000cc0000bb0000aa0000990000880000770000660000550000440000330000220000110000\",\"MovesPerSec\":30,\"_type\":\"PingPong\"}",
+			"{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\",\"Before\":{\"After\":\"#ff7f00\",\"Before\":\"#000000\",\"Curve\":\"direct\",\"DurationMS\":0,\"OffsetMS\":0,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":0,\"OffsetMS\":0,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":0,\"OffsetMS\":0,\"_type\":\"Transition\"}",
+			"\"#000000\"",
+			"{\"Child\":\"Lffffff\",\"MovesPerSec\":30,\"_type\":\"PingPong\"}",
+			"{\"Curve\":\"easeinout\",\"DurationShowMS\":1000000,\"DurationTransitionMS\":10000000,\"Patterns\":[\"#ff0000\",\"#ff7f00\",\"#ffff00\",\"#00ff00\",\"#0000ff\",\"#4b0082\",\"#8b00ff\"],\"_type\":\"Loop\"}",
+			"\"Rainbow\"",
+			"{\"Seed\":0,\"Stars\":null,\"_type\":\"NightStars\"}",
+			"{\"Child\":\"L010001ff000000ff000000ff\",\"_type\":\"Chronometer\"}",
+			morning,
+		},
 	}
 }
 
-func (p Patterns) Validate() error {
-	for i, s := range p {
+func (l *LRU) Validate() error {
+	for i, s := range l.Patterns {
 		if err := s.Validate(); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("can't load recent pattern %d", i))
 		}
@@ -70,19 +77,19 @@ func (p Patterns) Validate() error {
 }
 
 // Inject moves the pattern at the top of LRU cache.
-func (p *Patterns) Inject(pattern string) {
-	for i, old := range *p {
+func (l *LRU) Inject(pattern string) {
+	for i, old := range l.Patterns {
 		if old == Pattern(pattern) {
-			copy((*p)[i:], (*p)[i+1:])
-			*p = (*p)[:len(*p)-1]
+			copy(l.Patterns[i:], l.Patterns[i+1:])
+			l.Patterns = l.Patterns[:len(l.Patterns)-1]
 			break
 		}
 	}
-	if len(*p) < 25 {
-		*p = append(*p, "")
+	if len(l.Patterns) < l.Max {
+		l.Patterns = append(l.Patterns, "")
 	}
-	copy((*p)[1:], *p)
-	(*p)[0] = Pattern(pattern)
+	copy(l.Patterns[1:], l.Patterns)
+	l.Patterns[0] = Pattern(pattern)
 }
 
 //
@@ -94,35 +101,65 @@ type APA102 struct {
 	// Number of lights controlled by this device. If lower than the actual
 	// number of lights, the remaining lights will flash oddly.
 	NumberLights int
-	// Pattern when the host starts up.
-	StartupPattern Pattern
 }
 
 // IR contains InfraRed remote information.
 type IR struct {
-	Mapping map[host.Key]Pattern
+	Mapping map[host.Key]Pattern // TODO(maruel): We may actually do something more complex than just set a pattern.
 }
 
 // PIR contains a motion detection behavior.
 type PIR struct {
 	Pin     string
-	Pattern Pattern
+	Pattern Pattern // TODO(maruel): We may actually do something more complex than just set a pattern.
+}
+
+// PatternSettings contains settings about patterns.
+type PatternSettings struct {
+	Named   map[string]Pattern // Patterns that are 'named'.
+	Startup Pattern            // Startup pattern to use. If not set, use Last.
+	Last    Pattern            // Last pattern used.
+}
+
+func (p *PatternSettings) ResetDefault() {
+	*p = PatternSettings{
+		Named:   map[string]Pattern{},
+		Startup: "\"#010001\"",
+		Last:    "\"#010001\"",
+	}
+}
+
+func (p *PatternSettings) Validate() error {
+	for k, v := range p.Named {
+		if err := v.Validate(); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("can't load pattern %s", k))
+		}
+	}
+	if len(p.Startup) != 0 {
+		if err := p.Startup.Validate(); err != nil {
+			return errors.Wrap(err, "can't load pattern for Last")
+		}
+	}
+	if len(p.Last) != 0 {
+		return p.Last.Validate()
+	}
+	return nil
 }
 
 // Settings is all the host settings.
 type Settings struct {
-	Alarms Alarms
-	APA102 APA102
-	IR     IR
-	PIR    PIR
+	Alarms          Alarms
+	APA102          APA102
+	IR              IR
+	PIR             PIR
+	PatternSettings PatternSettings
 }
 
 func (s *Settings) ResetDefault() {
 	s.Alarms.ResetDefault()
 	s.APA102 = APA102{
-		SPIspeed:       10000000,
-		NumberLights:   150,
-		StartupPattern: "\"#000001\"",
+		SPIspeed:     10000000,
+		NumberLights: 150,
 	}
 	s.PIR = PIR{
 		Pin:     "GPIO4",
@@ -134,14 +171,12 @@ func (s *Settings) ResetDefault() {
 			host.Key100Plus:  "\"#ffffff\"",
 		},
 	}
+	s.PatternSettings.ResetDefault()
 }
 
 func (s *Settings) Validate() error {
 	if err := s.Alarms.Validate(); err != nil {
 		return err
-	}
-	if err := s.APA102.StartupPattern.Validate(); err != nil {
-		return errors.Wrap(err, "can't load startup pattern")
 	}
 	for k, v := range s.IR.Mapping {
 		if err := v.Validate(); err != nil {
@@ -151,25 +186,26 @@ func (s *Settings) Validate() error {
 	if err := s.PIR.Pattern.Validate(); err != nil {
 		return errors.Wrap(err, "can't load pattern for PIR")
 	}
-	return nil
+	return s.PatternSettings.Validate()
 }
 
 // Config contains all the configuration for this specific host.
 type Config struct {
+	lock     sync.Mutex
 	Settings Settings
-	Patterns Patterns
+	LRU      LRU
 }
 
 func (c *Config) ResetDefault() {
 	c.Settings.ResetDefault()
-	c.Patterns.ResetDefault()
+	c.LRU.ResetDefault()
 }
 
 func (c *Config) Validate() error {
 	if err := c.Settings.Validate(); err != nil {
 		return err
 	}
-	return c.Patterns.Validate()
+	return c.LRU.Validate()
 }
 
 func (c *Config) Load(n string) error {
@@ -225,7 +261,13 @@ func (c *ConfigMgr) Init(p *anim1d.Painter) error {
 	if err := c.Settings.Alarms.Reset(p); err != nil {
 		return nil
 	}
-	return p.SetPattern(string(c.Settings.APA102.StartupPattern))
+	if len(c.Settings.PatternSettings.Startup) != 0 {
+		return p.SetPattern(string(c.Settings.PatternSettings.Startup))
+	}
+	if len(c.Settings.PatternSettings.Last) != 0 {
+		return p.SetPattern(string(c.Settings.PatternSettings.Last))
+	}
+	return nil
 }
 
 func (c *ConfigMgr) Close() error {

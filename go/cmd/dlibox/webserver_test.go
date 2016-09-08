@@ -22,7 +22,7 @@ func TestWeb(t *testing.T) {
 	t.Parallel()
 	var config Config
 	config.ResetDefault()
-	config.Patterns = Patterns{"\"#010101\"", "\"#020202\""}
+	config.LRU.Patterns = []Pattern{"\"#010101\"", "\"#020202\""}
 	d := &fakes.Display{image.NewNRGBA(image.Rect(0, 0, 128, 1))}
 	painter := anim1d.MakePainter(d, 60)
 	defer painter.Close()
