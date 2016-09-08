@@ -13,9 +13,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/buses/sysfs/i2c"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
+	"github.com/maruel/dlibox/go/pio/host/sysfs/i2c"
 )
 
 func read(e devices.Environmental, loop bool) error {

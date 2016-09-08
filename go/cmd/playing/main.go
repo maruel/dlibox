@@ -19,12 +19,12 @@ import (
 	_ "image/png"
 
 	"github.com/maruel/dlibox/go/bw2d"
-	"github.com/maruel/dlibox/go/pio/buses"
-	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
-	"github.com/maruel/dlibox/go/pio/buses/ir"
-	"github.com/maruel/dlibox/go/pio/buses/sysfs/i2c"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
+	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/bcm283x"
+	"github.com/maruel/dlibox/go/pio/host/ir"
+	"github.com/maruel/dlibox/go/pio/host/sysfs/i2c"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
 )
@@ -63,7 +63,7 @@ func mainImpl() error {
 
 	button := make(chan bool)
 	motion := make(chan bool)
-	keys := make(chan buses.Key)
+	keys := make(chan host.Key)
 	bme := make(chan env)
 
 	f8, err := psf.Load("VGA8")
@@ -110,7 +110,7 @@ func mainImpl() error {
 	}
 
 	if useButton {
-		if err := bcm283x.GPIO24.In(buses.Up, buses.EdgeBoth); err != nil {
+		if err := bcm283x.GPIO24.In(host.Up, host.EdgeBoth); err != nil {
 			return err
 		}
 		go buttonLoop(bcm283x.GPIO24, button)
@@ -129,7 +129,7 @@ func mainImpl() error {
 	*/
 
 	if usePir {
-		if err := bcm283x.GPIO19.In(buses.Down, buses.EdgeBoth); err != nil {
+		if err := bcm283x.GPIO19.In(host.Down, host.EdgeBoth); err != nil {
 			return err
 		}
 		go pirLoop(bcm283x.GPIO19, motion)
@@ -149,7 +149,7 @@ func mainImpl() error {
 	return nil
 }
 
-func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-chan bool, bme <-chan env, keys <-chan buses.Key) {
+func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-chan bool, bme <-chan env, keys <-chan host.Key) {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
 	for {
@@ -194,7 +194,7 @@ func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-
 	}
 }
 
-func irLoop(irBus buses.IR, keys chan<- buses.Key) {
+func irLoop(irBus host.IR, keys chan<- host.Key) {
 	c := irBus.Channel()
 	for {
 		select {
@@ -207,19 +207,19 @@ func irLoop(irBus buses.IR, keys chan<- buses.Key) {
 	}
 }
 
-func buttonLoop(p buses.Pin, c chan<- bool) {
+func buttonLoop(p host.Pin, c chan<- bool) {
 	for !interrupt.IsSet() {
 		l := p.ReadEdge()
 		log.Printf("Bouton: %s", l)
-		c <- l == buses.Low
+		c <- l == host.Low
 	}
 }
 
-func pirLoop(p buses.Pin, c chan<- bool) {
+func pirLoop(p host.Pin, c chan<- bool) {
 	for !interrupt.IsSet() {
 		l := p.ReadEdge()
 		log.Printf("PIR: %s", l)
-		c <- l == buses.High
+		c <- l == host.High
 	}
 }
 

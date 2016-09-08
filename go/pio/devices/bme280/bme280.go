@@ -12,8 +12,8 @@ package bme280
 import (
 	"errors"
 
-	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/dlibox/go/pio/devices"
+	"github.com/maruel/dlibox/go/pio/host"
 )
 
 // Oversampling affects how much time is taken to measure each of temperature,
@@ -65,7 +65,7 @@ const (
 )
 
 type Dev struct {
-	d buses.Dev
+	d host.Dev
 	c calibration
 }
 
@@ -103,8 +103,8 @@ func (d *Dev) Stop() error {
 //
 // It is recommended to call Stop() when done with the device so it stops
 // sampling.
-func Make(i buses.I2C, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
-	d := &Dev{d: buses.Dev{i, 0x76}}
+func Make(i host.I2C, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
+	d := &Dev{d: host.Dev{i, 0x76}}
 
 	config := []byte{
 		// ctrl_meas; put it to sleep otherwise the config update may be ignored.
@@ -124,18 +124,18 @@ func Make(i buses.I2C, temperature, pressure, humidity Oversampling, standby Sta
 	chipId := [1]byte{}
 	tph := [0xA2 - 0x88]byte{}
 	h := [0xE8 - 0xE1]byte{}
-	ios := []buses.IO{
+	ios := []host.IO{
 		// Read register 0xD0 to read the chip id.
-		{buses.Write, []byte{0xD0}},
-		{buses.ReadStop, chipId[:]},
+		{host.Write, []byte{0xD0}},
+		{host.ReadStop, chipId[:]},
 		// Read calibration data t1~3, p1~9, 8bits padding, h1.
-		{buses.Write, []byte{0x88}},
-		{buses.ReadStop, tph[:]},
+		{host.Write, []byte{0x88}},
+		{host.ReadStop, tph[:]},
 		// Read calibration data  h2~6
-		{buses.Write, []byte{0xE1}},
-		{buses.ReadStop, h[:]},
+		{host.Write, []byte{0xE1}},
+		{host.ReadStop, h[:]},
 		// Write config and start it.
-		{buses.WriteStop, config},
+		{host.WriteStop, config},
 	}
 	if err := d.d.Tx(ios); err != nil {
 		return nil, err

@@ -10,15 +10,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/maruel/dlibox/go/pio/buses"
-	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
-	"github.com/maruel/dlibox/go/pio/buses/cpu"
-	"github.com/maruel/dlibox/go/pio/buses/rpi"
+	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/bcm283x"
+	"github.com/maruel/dlibox/go/pio/host/cpu"
+	"github.com/maruel/dlibox/go/pio/host/rpi"
 )
 
 func makeMapping() ([]string, int) {
 	m := make([]string, 256)
-	doFunctionalPins(func(name string, p buses.Pin) {
+	doFunctionalPins(func(name string, p host.Pin) {
 		p2 := p.(bcm283x.Pin)
 		m[p2] = name
 	})
@@ -35,7 +35,7 @@ func makeMapping() ([]string, int) {
 	return m, max
 }
 
-func doFunctionalPins(pin func(name string, value buses.Pin)) {
+func doFunctionalPins(pin func(name string, value host.Pin)) {
 	pin("GPCLK0", bcm283x.GPCLK0)
 	pin("GPCLK1", bcm283x.GPCLK1)
 	pin("GPCLK2", bcm283x.GPCLK2)
@@ -73,7 +73,7 @@ func doFunctionalPins(pin func(name string, value buses.Pin)) {
 }
 
 func printFunc(invalid bool) {
-	doFunctionalPins(func(name string, value buses.Pin) {
+	doFunctionalPins(func(name string, value host.Pin) {
 		p := value.(bcm283x.Pin)
 		if invalid || (p != bcm283x.INVALID && rpi.IsConnected(p)) {
 			fmt.Printf("%-9s: %s\n", name, value)

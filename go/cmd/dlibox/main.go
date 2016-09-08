@@ -25,17 +25,17 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/bw2d"
-	"github.com/maruel/dlibox/go/pio/buses"
-	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
-	"github.com/maruel/dlibox/go/pio/buses/cpu"
-	"github.com/maruel/dlibox/go/pio/buses/ir"
-	"github.com/maruel/dlibox/go/pio/buses/sysfs/i2c"
-	"github.com/maruel/dlibox/go/pio/buses/sysfs/spi"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/fakes"
 	"github.com/maruel/dlibox/go/pio/fakes/screen"
+	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/bcm283x"
+	"github.com/maruel/dlibox/go/pio/host/cpu"
+	"github.com/maruel/dlibox/go/pio/host/ir"
+	"github.com/maruel/dlibox/go/pio/host/sysfs/i2c"
+	"github.com/maruel/dlibox/go/pio/host/sysfs/spi"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
 )
@@ -102,7 +102,7 @@ func initPIR(painter *anim1d.Painter, config *PIR) error {
 	if pin.String() == "INVALID" {
 		return nil
 	}
-	if err := pin.In(buses.Down, buses.Rising); err != nil {
+	if err := pin.In(host.Down, host.Rising); err != nil {
 		return err
 	}
 	go func() {

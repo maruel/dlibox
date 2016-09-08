@@ -7,18 +7,18 @@ package fakes
 import (
 	"errors"
 
-	"github.com/maruel/dlibox/go/pio/buses"
+	"github.com/maruel/dlibox/go/pio/host"
 )
 
-// I2C implements buses.I2C. It registers everything written to it.
+// I2C implements host.I2C. It registers everything written to it.
 type I2C struct {
-	IO []buses.IOFull
+	IO []host.IOFull
 }
 
 // Tx currently only support writes.
-func (i *I2C) Tx(ios []buses.IOFull) error {
+func (i *I2C) Tx(ios []host.IOFull) error {
 	for i := range ios {
-		if o := ios[i].Op; o != buses.Write && o != buses.WriteStop {
+		if o := ios[i].Op; o != host.Write && o != host.WriteStop {
 			return errors.New("not implemented")
 		}
 	}
@@ -26,4 +26,4 @@ func (i *I2C) Tx(ios []buses.IOFull) error {
 	return nil
 }
 
-var _ buses.I2C = &I2C{}
+var _ host.I2C = &I2C{}

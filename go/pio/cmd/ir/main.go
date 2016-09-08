@@ -17,7 +17,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/maruel/dlibox/go/pio/buses/ir"
+	"github.com/maruel/dlibox/go/pio/host/ir"
 )
 
 func mainImpl() error {

@@ -15,8 +15,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/pio/buses"
-	"github.com/maruel/dlibox/go/pio/buses/sysfs/i2c"
+	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/sysfs/i2c"
 )
 
 func mainImpl() error {
@@ -68,7 +68,7 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	d := buses.Dev{i, uint16(*addr)}
+	d := host.Dev{i, uint16(*addr)}
 	if *write {
 		_, err = d.Write(buf)
 	} else {

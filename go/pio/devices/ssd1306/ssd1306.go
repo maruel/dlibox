@@ -24,8 +24,8 @@ import (
 	"image/color"
 	"io"
 
-	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/dlibox/go/pio/devices"
+	"github.com/maruel/dlibox/go/pio/host"
 )
 
 // FrameRate determines scrolling speed.
@@ -69,8 +69,8 @@ type Dev struct {
 // to SCLK.
 //
 // As per datasheet, maximum clock speed is 1/100ns = 10MHz.
-func MakeSPI(s buses.SPI, w, h int, rotated bool) (*Dev, error) {
-	if err := s.Configure(buses.Mode3, 8); err != nil {
+func MakeSPI(s host.SPI, w, h int, rotated bool) (*Dev, error) {
+	if err := s.Configure(host.Mode3, 8); err != nil {
 		return nil, err
 	}
 	return makeDev(s, w, h, rotated)
@@ -83,8 +83,8 @@ func MakeSPI(s buses.SPI, w, h int, rotated bool) (*Dev, error) {
 //
 // As per datasheet, maximum clock speed is 1/2.5µs = 400KHz. It's worth
 // bumping up from default bus speed of 100KHz if possible.
-func MakeI2C(i buses.I2C, w, h int, rotated bool) (*Dev, error) {
-	return makeDev(&buses.Dev{i, 0x3C}, w, h, rotated)
+func MakeI2C(i host.I2C, w, h int, rotated bool) (*Dev, error) {
+	return makeDev(&host.Dev{i, 0x3C}, w, h, rotated)
 }
 
 // makeDev is the common initialization code that is independent of the bus
@@ -221,10 +221,10 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 	start := []byte{
 		0x40, // Pixel data
 	}
-	ios := []buses.IO{
-		{buses.WriteStop, hdr},
-		{buses.Write, start},
-		{buses.WriteStop, pixels},
+	ios := []host.IO{
+		{host.WriteStop, hdr},
+		{host.Write, start},
+		{host.WriteStop, pixels},
 	}
 	if err := d.w.Tx(ios); err != nil {
 		return 0, err

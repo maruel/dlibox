@@ -23,7 +23,7 @@ then running:
     sudo systemctl disable hciuart
 
 For more information for enabling functional pins, see
-[![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio/buses/rpi?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio/buses/rpi).
+[![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio/host/rpi?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio/host/rpi).
 
 
 ### Functional
@@ -89,7 +89,7 @@ Print the pins per GPIO number:
 
 Print the pins per their hardware location on the headers. This uses an
 internal lookup table then query each pin. Here's an example on a host with two
-SPI buses and lirc enabled:
+SPI host and lirc enabled:
 
     $ ./pins -h
     Header    Func  Name  Pos Pos  Name   Func

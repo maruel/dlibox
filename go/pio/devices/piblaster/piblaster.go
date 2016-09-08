@@ -21,7 +21,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
+	"github.com/maruel/dlibox/go/pio/host/bcm283x"
 )
 
 // SetPWM enables and sets the PWM duty on a GPIO output pin via piblaster.

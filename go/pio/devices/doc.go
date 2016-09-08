@@ -4,5 +4,5 @@
 
 // Package devices contains concrete devices implementations.
 //
-// The concrete types accept buses interfaces, e.g. I2C or SPI.
+// The concrete types accept host interfaces, e.g. I2C or SPI.
 package devices

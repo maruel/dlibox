@@ -9,8 +9,8 @@ import (
 	"image"
 	"image/color"
 
-	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/dlibox/go/pio/devices"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/temperature"
 )
 
@@ -219,7 +219,7 @@ func ToRGB(p []color.NRGBA) []byte {
 type Dev struct {
 	Intensity   uint8  // Set an intensity between 0 (off) and 255 (full brightness).
 	Temperature uint16 // In Kelvin.
-	s           buses.SPI
+	s           host.SPI
 	l           lut // Updated at each .Write() call.
 	numLights   int
 	buf         []byte
@@ -278,8 +278,8 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 // As per APA102-C spec, the chip's max refresh rate is 400hz.
 // https://en.wikipedia.org/wiki/Flicker_fusion_threshold is a recommended
 // reading.
-func Make(s buses.SPI, numLights int, intensity uint8, temperature uint16) (*Dev, error) {
-	if err := s.Configure(buses.Mode3, 8); err != nil {
+func Make(s host.SPI, numLights int, intensity uint8, temperature uint16) (*Dev, error) {
+	if err := s.Configure(host.Mode3, 8); err != nil {
 		return nil, err
 	}
 	// End frames are needed to be able to push enough SPI clock signals due to

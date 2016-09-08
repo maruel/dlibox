@@ -8,10 +8,10 @@ import (
 	"errors"
 	"io"
 
-	"github.com/maruel/dlibox/go/pio/buses"
+	"github.com/maruel/dlibox/go/pio/host"
 )
 
-// SPI implements buses.SPI. It registers everything written to it.
+// SPI implements host.SPI. It registers everything written to it.
 type SPI struct {
 	W io.Writer
 }
@@ -22,7 +22,7 @@ func (s *SPI) Close() error {
 }
 
 // Configure is a no-op.
-func (s *SPI) Configure(mode buses.Mode, bits int) error {
+func (s *SPI) Configure(mode host.Mode, bits int) error {
 	return nil
 }
 
@@ -36,4 +36,4 @@ func (s *SPI) Tx(w, r []byte) error {
 	return errors.New("not implemented")
 }
 
-var _ buses.SPI = &SPI{}
+var _ host.SPI = &SPI{}

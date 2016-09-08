@@ -7,31 +7,31 @@ package fakes
 import (
 	"errors"
 
-	"github.com/maruel/dlibox/go/pio/buses"
+	"github.com/maruel/dlibox/go/pio/host"
 )
 
-// Pin implements buses.Pin.
+// Pin implements host.Pin.
 type Pin struct {
-	L buses.Level
+	L host.Level
 }
 
-func (p *Pin) In(pull buses.Pull, edge buses.Edge) error {
-	if pull == buses.Down {
-		p.L = buses.Low
-	} else if pull == buses.Up {
-		p.L = buses.High
+func (p *Pin) In(pull host.Pull, edge host.Edge) error {
+	if pull == host.Down {
+		p.L = host.Low
+	} else if pull == host.Up {
+		p.L = host.High
 	}
-	if edge != buses.EdgeNone {
+	if edge != host.EdgeNone {
 		return errors.New("not implemented")
 	}
 	return nil
 }
 
-func (p *Pin) ReadInstant() buses.Level {
+func (p *Pin) ReadInstant() host.Level {
 	return p.L
 }
 
-func (p *Pin) ReadEdge() buses.Level {
+func (p *Pin) ReadEdge() host.Level {
 	return p.L
 }
 
@@ -40,11 +40,11 @@ func (p *Pin) Out() error {
 }
 
 func (p *Pin) SetLow() {
-	p.L = buses.Low
+	p.L = host.Low
 }
 
 func (p *Pin) SetHigh() {
-	p.L = buses.High
+	p.L = host.High
 }
 
-var _ buses.Pin = &Pin{}
+var _ host.Pin = &Pin{}

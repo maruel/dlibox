@@ -21,12 +21,12 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/pio/buses"
-	"github.com/maruel/dlibox/go/pio/buses/sysfs/spi"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/fakes"
 	"github.com/maruel/dlibox/go/pio/fakes/screen"
+	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/sysfs/spi"
 	"github.com/nfnt/resize"
 )
 
@@ -128,7 +128,7 @@ func mainImpl() error {
 		display = screen.Make(*numLights)
 		defer os.Stdout.Write([]byte("\033[0m\n"))
 	} else {
-		var spiBus buses.SPI
+		var spiBus host.SPI
 		if *bus == -1 {
 			spiBus = &fakes.SPI{W: os.Stdout}
 		} else {
