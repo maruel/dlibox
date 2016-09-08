@@ -9,15 +9,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
-	"reflect"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
-	"unsafe"
 
 	"github.com/maruel/dlibox/go/pio/buses"
+	"github.com/maruel/dlibox/go/pio/buses/internal/gpiomem"
 	"github.com/maruel/dlibox/go/pio/buses/ir"
 )
 
@@ -544,11 +541,12 @@ func setIfAlt(p Pin, special0 *Pin, special1 *Pin, special2 *Pin, special3 *Pin,
 }
 
 func init() {
-	gpioMemory8, globalError = openGPIOMem()
+	var mem *gpiomem.Mem
+	mem, globalError = gpiomem.Open()
 	if globalError != nil {
 		return
 	}
-	gpioMemory32 = unsafeRemap(gpioMemory8)
+	gpioMemory32 = mem.Uint32
 
 	// https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 	// Page 102.
@@ -616,34 +614,4 @@ func init() {
 	} else {
 		log.Printf("Failed to read scaling_max_freq: %v", err)
 	}
-}
-
-func openGPIOMem() ([]uint8, error) {
-	f, err := os.OpenFile("/dev/gpiomem", os.O_RDWR|os.O_SYNC, 0)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	// TODO(maruel): Map PWM, CLK, PADS, TIMER for more functionality.
-	return syscall.Mmap(int(f.Fd()), 0, 4096, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
-}
-
-func unsafeRemap(i []byte) []uint32 {
-	// I/O needs to happen as 32 bits operation, so remap accordingly.
-	header := *(*reflect.SliceHeader)(unsafe.Pointer(&i))
-	header.Len /= 4
-	header.Cap /= 4
-	return *(*[]uint32)(unsafe.Pointer(&header))
-}
-
-// closeGPIOMem unmaps /dev/gpiomem. Not sure why someone would want to do that since the handle is closed at process shutdown.
-func closeGPIOMem() error {
-	if gpioMemory8 != nil {
-		m := gpioMemory8
-		gpioMemory8 = nil
-		gpioMemory32 = nil
-		return syscall.Munmap(m)
-	}
-	return nil
 }
