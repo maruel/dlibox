@@ -75,8 +75,7 @@ type PinIn interface {
 
 // PinOut is an output GPIO pin.
 type PinOut interface {
-	// Out sets a pin as output. The caller should immediately call SetLow() or
-	// SetHigh() afterward.
+	// Out sets a pin as output. The caller should immediately call Set() after.
 	Out() error
 	// Set sets a pin already set for output as High or Low.
 	//
