@@ -167,22 +167,13 @@ func (p Pin) Function() Function {
 	return Function((gpioMemory32[p/10] >> ((p % 10) * 3)) & 7)
 }
 
-// In setups a pin as an input and implements host.Pin.
+// In setups a pin as an input and implements host.PinIn.
 //
 // Specifying a value for pull other than host.PullNoChange causes this
-// function to be slightly slower (after 1ms).
-//
-// Specify host.EdgeNone unless you actively plan to use edge detection as this
-// requires opening a gpio sysfs file handle. Make sure the user is member of
-// group 'gpio'. The pin will be "exported" at /sys/class/gpio/gpio*/. Note
-// that the pin will not be unexported at shutdown.
-//
-// For edge detection, the processor samples the input at its CPU clock rate
-// and looks for '011' to rising and '100' for falling detection to avoid
-// glitches. Because gpio sysfs is used, the latency is unpredictable.
+// function to be slightly slower (about 1ms).
 //
 // Will fail if requesting to change a pin that is set to special functionality.
-func (p Pin) In(pull host.Pull, edge host.Edge) error {
+func (p Pin) In(pull host.Pull) error {
 	if gpioMemory32 == nil {
 		return globalError
 	}
@@ -209,13 +200,13 @@ func (p Pin) In(pull host.Pull, edge host.Edge) error {
 		gpioMemory32[37] = 0
 		gpioMemory32[offset] = 0
 	}
-	return p.setEdge(edge)
+	return nil
 }
 
-// ReadInstant return the current pin level and implements host.Pin.
+// Read return the current pin level and implements host.PinIn.
 //
 // This function is very fast. It works even if the pin is set as output.
-func (p Pin) ReadInstant() host.Level {
+func (p Pin) Read() host.Level {
 	if gpioMemory32 == nil {
 		return host.Low
 	}
@@ -224,7 +215,7 @@ func (p Pin) ReadInstant() host.Level {
 	return host.Level((gpioMemory32[13+p/32] & (1 << (p & 31))) != 0)
 }
 
-// Out sets a pin as output and implements host.Pin. The caller should
+// Out sets a pin as output and implements host.PinOut. The caller should
 // immediately call SetLow() or SetHigh() afterward.
 //
 // Will fail if requesting to change a pin that is set to special functionality.
@@ -232,35 +223,28 @@ func (p Pin) Out() error {
 	if gpioMemory32 == nil {
 		return globalError
 	}
-	// Enables ReadEdge() to behave correctly.
-	p.setEdge(host.EdgeNone)
+	// TODO(maruel): Ensure any Edges() loop is canceled.
 	if !p.setFunction(In) {
 		return errors.New("failed to change pin mode")
 	}
 	return nil
 }
 
-// SetLow sets a pin already set for output as host.Low and implements
-// host.Pin.
+// Set sets a pin already set for output as host.High or host.Low and implements
+// host.PinOut.
 //
 // This function is very fast.
-func (p Pin) SetLow() {
+func (p Pin) Set(l host.Level) {
 	if gpioMemory32 != nil {
-		// 0x28    W    GPIO Pin Output Clear 0 (GPIO0-31)
-		// 0x2C    W    GPIO Pin Output Clear 1 (GPIO32-53)
-		gpioMemory32[10+p/32] = 1 << (p & 31)
-	}
-}
-
-// SetHigh sets a pin already set for output as host.High and implements
-// host.Pin.
-//
-// This function is very fast.
-func (p Pin) SetHigh() {
-	if gpioMemory32 == nil {
 		// 0x1C    W    GPIO Pin Output Set 0 (GPIO0-31)
 		// 0x20    W    GPIO Pin Output Set 1 (GPIO32-53)
-		gpioMemory32[7+p/32] = 1 << (p & 31)
+		base := 7 + p/32
+		if l == host.Low {
+			// 0x28    W    GPIO Pin Output Clear 0 (GPIO0-31)
+			// 0x2C    W    GPIO Pin Output Clear 1 (GPIO32-53)
+			base += 3
+		}
+		gpioMemory32[base] = 1 << (p & 31)
 	}
 }
 

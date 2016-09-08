@@ -23,28 +23,6 @@ func (l Level) String() string {
 	return "High"
 }
 
-// Edge specifies the processor to generate an interrupt based on edge
-// detection.
-type Edge uint8
-
-const (
-	EdgeNone Edge = Edge(0)
-	Rising   Edge = Edge(1)
-	Falling  Edge = Edge(2)
-	EdgeBoth Edge = Edge(3)
-)
-
-const edgeName = "NoneRisingFallingBoth"
-
-var edgeIndex = [...]uint8{0, 4, 10, 17, 21}
-
-func (i Edge) String() string {
-	if i >= Edge(len(edgeIndex)-1) {
-		return fmt.Sprintf("Edge(%d)", i)
-	}
-	return edgeName[edgeIndex[i]:edgeIndex[i+1]]
-}
-
 // Pull specifies the internal pull-up or pull-down for a pin set as input.
 //
 // The pull resistor stays set even after the processor shuts down. It is not
@@ -78,16 +56,21 @@ type Pin interface {
 // PinIn is an input GPIO pin.
 type PinIn interface {
 	// In setups a pin as an input.
-	In(pull Pull, edge Edge) error
-	// ReadInstant return the current pin level.
+	In(pull Pull) error
+	// Read return the current pin level.
 	//
-	// Behavior is undefined if pin is set as Output.
-	ReadInstant() Level
-	// ReadEdge waits until a edge detection occured and returns the pin level
-	// read.
+	// Behavior is undefined if In() wasn't used before.
+	Read() Level
+	// Edges returns a channel that sends level changes.
 	//
-	// Behavior is undefined if pin is set as Output or as EdgeNone.
-	ReadEdge() Level
+	// It is important to stop the querying loop by sending a Low to the channel
+	// to stop it. The channel will then immediately be closed.
+	//
+	// If interrupt based edge detection is not supported, it will be emulated
+	// via a query loop.
+	//
+	// Behavior is undefined if In() wasn't used before.
+	Edges() (chan Level, error)
 }
 
 // PinOut is an output GPIO pin.
@@ -95,12 +78,8 @@ type PinOut interface {
 	// Out sets a pin as output. The caller should immediately call SetLow() or
 	// SetHigh() afterward.
 	Out() error
-	// SetLow sets a pin already set for output as Low.
+	// Set sets a pin already set for output as High or Low.
 	//
 	// Behavior is undefined if Out() wasn't used before.
-	SetLow()
-	// SetHigh sets a pin already set for output as High.
-	//
-	// Behavior is undefined if Out() wasn't used before.
-	SetHigh()
+	Set(l Level)
 }

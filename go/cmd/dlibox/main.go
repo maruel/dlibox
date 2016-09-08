@@ -98,18 +98,23 @@ func initIR(painter *anim1d.Painter, config *IR) error {
 
 func initPIR(painter *anim1d.Painter, config *PIR) error {
 	// TODO(maruel): Cleaner.
-	pin := bcm283x.GetPin(config.Pin)
-	if pin.String() == "INVALID" {
+	p := bcm283x.GetPin(config.Pin)
+	if p.String() == "INVALID" {
 		return nil
 	}
-	if err := pin.In(host.Down, host.Rising); err != nil {
+	if err := p.In(host.Down); err != nil {
+		return err
+	}
+	c, err := p.Edges()
+	if err != nil {
 		return err
 	}
 	go func() {
 		for {
-			pin.ReadEdge()
-			// TODO(maruel): Locking.
-			painter.SetPattern(string(config.Pattern))
+			if l := <-c; l == host.High {
+				// TODO(maruel): Locking.
+				painter.SetPattern(string(config.Pattern))
+			}
 		}
 	}()
 	return nil

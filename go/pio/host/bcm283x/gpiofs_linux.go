@@ -30,37 +30,45 @@ import (
 	"github.com/maruel/dlibox/go/pio/host"
 )
 
-// ReadEdge waits until a edge detection occured and returns the pin level read.
+// Edges creates a edge detection loop and implements host.PinIn.
 //
-// When Pin.In(..., host.EdgeNone) was used or if the pin is not set as input,
-// behaves the same as ReadInstant().
-func (p Pin) ReadEdge() host.Level {
-	if !gpios[p].usingEdge {
-		return p.ReadInstant()
+// This requires opening a gpio sysfs file handle. Make sure the user is member
+// of group 'gpio'. The pin will be "exported" at /sys/class/gpio/gpio*/. Note
+// that the pin will not be unexported at shutdown.
+//
+// For edge detection, the processor samples the input at its CPU clock rate
+// and looks for '011' to rising and '100' for falling detection to avoid
+// glitches. Because gpio sysfs is used, the latency is unpredictable.
+func (p Pin) Edges() (chan host.Level, error) {
+	if err := p.setEdge(true); err != nil {
+		return nil, err
 	}
-	var b [1]byte
-	l := host.Low
-	if err := gpios[p].readPoll(b[:]); err != nil {
-		// In case of error or unknown value, returns low. The file handle was
-		// already opened so the chance of this happening is low.
-		log.Printf("%s: error reading edge: %v", p, err)
-	} else if b[0] == '1' {
-		l = host.High
-	}
-	return l
+	c := make(chan host.Level)
+	go func() {
+		defer p.setEdge(false)
+		var b [1]byte
+		for {
+			l := host.Low
+			if err := gpios[p].readPoll(b[:]); err != nil {
+				// In case of error or unknown value, returns low. The file handle was
+				// already opened so the chance of this happening is low.
+				log.Printf("%s: error reading edge: %v", p, err)
+			} else if b[0] == '1' {
+				l = host.High
+			}
+			c <- l
+		}
+	}()
+	return c, nil
 }
-
-var edgeNone = []byte("none")
-var edgeRising = []byte("rising")
-var edgeFalling = []byte("falling")
-var edgeBoth = []byte("both")
 
 // setEdge changes the edge detection setting for the pin.
 //
 // It is the function that opens the gpio sysfs file handle.
-func (p Pin) setEdge(edge host.Edge) error {
-	if edge == host.EdgeNone {
+func (p Pin) setEdge(enable bool) error {
+	if !enable {
 		// Do not close the handles.
+		return gpios[p].writeEdge([]byte("none"))
 		gpios[p].usingEdge = false
 		return nil
 	}
@@ -68,16 +76,7 @@ func (p Pin) setEdge(edge host.Edge) error {
 	if err := gpios[p].open(p); err != nil {
 		return err
 	}
-	b := edgeNone
-	if edge == host.Rising {
-		b = edgeRising
-	} else if edge == host.Falling {
-		b = edgeFalling
-	} else if edge == host.EdgeBoth {
-		b = edgeBoth
-	}
-	err := gpios[p].writeEdge(b)
-	return err
+	return gpios[p].writeEdge([]byte("both"))
 }
 
 // gpio is used for interrupt based edge detection.

@@ -110,10 +110,15 @@ func mainImpl() error {
 	}
 
 	if useButton {
-		if err := bcm283x.GPIO24.In(host.Up, host.EdgeBoth); err != nil {
+		p := bcm283x.GPIO24
+		if err := p.In(host.Up); err != nil {
 			return err
 		}
-		go buttonLoop(bcm283x.GPIO24, button)
+		c, err := p.Edges()
+		if err != nil {
+			return err
+		}
+		go buttonLoop(c, button)
 	}
 
 	/*
@@ -129,10 +134,15 @@ func mainImpl() error {
 	*/
 
 	if usePir {
-		if err := bcm283x.GPIO19.In(host.Down, host.EdgeBoth); err != nil {
+		p := bcm283x.GPIO19
+		if err := p.In(host.Down); err != nil {
 			return err
 		}
-		go pirLoop(bcm283x.GPIO19, motion)
+		c, err := p.Edges()
+		if err != nil {
+			return err
+		}
+		go pirLoop(c, motion)
 	}
 
 	if useIR {
@@ -207,19 +217,27 @@ func irLoop(irBus host.IR, keys chan<- host.Key) {
 	}
 }
 
-func buttonLoop(p host.Pin, c chan<- bool) {
-	for !interrupt.IsSet() {
-		l := p.ReadEdge()
-		log.Printf("Bouton: %s", l)
-		c <- l == host.Low
+func buttonLoop(b chan host.Level, c chan<- bool) {
+	for {
+		select {
+		case l := <-b:
+			log.Printf("Bouton: %s", l)
+			c <- l == host.Low
+		case <-interrupt.Channel:
+			break
+		}
 	}
 }
 
-func pirLoop(p host.Pin, c chan<- bool) {
-	for !interrupt.IsSet() {
-		l := p.ReadEdge()
-		log.Printf("PIR: %s", l)
-		c <- l == host.High
+func pirLoop(b chan host.Level, c chan<- bool) {
+	for {
+		select {
+		case l := <-b:
+			log.Printf("PIR: %s", l)
+			c <- l == host.High
+		case <-interrupt.Channel:
+			break
+		}
 	}
 }
 

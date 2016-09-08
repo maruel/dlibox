@@ -18,20 +18,19 @@ import (
 	"github.com/maruel/dlibox/go/pio/host/bcm283x"
 )
 
-func read(p host.Pin, edge host.Edge) {
-	if p.ReadEdge() == host.Low {
-		os.Stdout.Write([]byte{'0', '\n'})
-	} else {
-		os.Stdout.Write([]byte{'1', '\n'})
+func printLevel(l host.Level) error {
+	if l == host.Low {
+		_, err := os.Stdout.Write([]byte{'0', '\n'})
+		return err
 	}
+	_, err := os.Stdout.Write([]byte{'1', '\n'})
+	return err
 }
 
 func mainImpl() error {
 	pullUp := flag.Bool("u", false, "pull up")
 	pullDown := flag.Bool("d", false, "pull down")
-	edgeRising := flag.Bool("r", false, "wait for rising edge; can be used along -f")
-	edgeFalling := flag.Bool("f", false, "wait for falling edge; can be used along -r")
-	loop := flag.Bool("l", false, "loop")
+	edges := flag.Bool("e", false, "wait for edges")
 	verbose := flag.Bool("v", false, "enable verbose logs")
 	flag.Parse()
 
@@ -55,14 +54,6 @@ func mainImpl() error {
 		return errors.New("specify pin to read")
 	}
 
-	edge := host.EdgeNone
-	if *edgeRising {
-		edge |= host.Rising
-	}
-	if *edgeFalling {
-		edge |= host.Falling
-	}
-
 	pin, err := strconv.Atoi(flag.Args()[0])
 	if err != nil {
 		return err
@@ -72,12 +63,21 @@ func mainImpl() error {
 	}
 	p := bcm283x.Pin(pin)
 
-	if err = p.In(pull, edge); err != nil {
+	if err = p.In(pull); err != nil {
 		return err
 	}
-	read(p, edge)
-	for *loop {
-		read(p, edge)
+	if *edges {
+		c, err := p.Edges()
+		if err != nil {
+			return err
+		}
+		for {
+			if err = printLevel(<-c); err != nil {
+				return err
+			}
+		}
+	} else {
+		return printLevel(p.Read())
 	}
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/bcm283x"
 )
 
@@ -31,9 +32,9 @@ func mainImpl() error {
 	}
 	switch os.Args[2] {
 	case "0":
-		p.SetLow()
+		p.Set(host.Low)
 	case "1":
-		p.SetHigh()
+		p.Set(host.High)
 	default:
 		return errors.New("specify level as 0 or 1")
 	}

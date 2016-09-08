@@ -5,46 +5,54 @@
 package fakes
 
 import (
-	"errors"
+	"sync"
 
 	"github.com/maruel/dlibox/go/pio/host"
 )
 
 // Pin implements host.Pin.
 type Pin struct {
-	L host.Level
+	sync.Mutex
+	host.Level
+	EdgesChan chan host.Level
 }
 
-func (p *Pin) In(pull host.Pull, edge host.Edge) error {
+func (p *Pin) In(pull host.Pull) error {
+	p.Lock()
+	defer p.Unlock()
 	if pull == host.Down {
-		p.L = host.Low
+		p.Level = host.Low
 	} else if pull == host.Up {
-		p.L = host.High
-	}
-	if edge != host.EdgeNone {
-		return errors.New("not implemented")
+		p.Level = host.High
 	}
 	return nil
 }
 
-func (p *Pin) ReadInstant() host.Level {
-	return p.L
+func (p *Pin) Read() host.Level {
+	p.Lock()
+	defer p.Unlock()
+	return p.Level
 }
 
-func (p *Pin) ReadEdge() host.Level {
-	return p.L
+func (p *Pin) Edges() (chan host.Level, error) {
+	p.Lock()
+	defer p.Unlock()
+	if p.EdgesChan == nil {
+		p.EdgesChan = make(chan host.Level)
+	}
+	return p.EdgesChan, nil
 }
 
 func (p *Pin) Out() error {
+	p.Lock()
+	defer p.Unlock()
 	return nil
 }
 
-func (p *Pin) SetLow() {
-	p.L = host.Low
-}
-
-func (p *Pin) SetHigh() {
-	p.L = host.High
+func (p *Pin) Set(level host.Level) {
+	p.Lock()
+	defer p.Unlock()
+	p.Level = level
 }
 
 var _ host.Pin = &Pin{}

@@ -26,7 +26,7 @@ func makeMapping() ([]string, int) {
 	max := 0
 	for p := bcm283x.GPIO0; p <= bcm283x.GPIO53; p++ {
 		if len(m[p]) == 0 {
-			m[p] = fmt.Sprintf("%s/%s", p.Function(), p.ReadInstant())
+			m[p] = fmt.Sprintf("%s/%s", p.Function(), p.Read())
 		}
 		if len(m[p]) > max {
 			max = len(m[p])
