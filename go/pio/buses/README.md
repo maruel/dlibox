@@ -2,8 +2,13 @@
 
 Buses are connection points where devices can be connected on.
 
-* [bcm283x](bcm283x) exposes GPIO functionality as found on the CPU
-* [i2c](i2c) exposes an I²C bus via sysfs
+* [a64](a64) exposes GPIO functionality as found on Allwinner CPU
+* [bcm283x](bcm283x) exposes GPIO functionality as found on Broadcom CPU
 * [ir](ir) exposes infra red remote support via lircd
-* [rpi](rpi) exposes Raspberry Pi specific hardware functionality
-* [spi](spi) exposes a SPI bus via sysfs
+* [pine64](pine64) exposes [Pine64](https://www.pine64.org/) specific hardware
+  functionality, i.e.  headers pinout.
+* [rpi](rpi) exposes [Raspberry Pi](https://www.raspberrypi.org/) specific
+  hardware functionality, i.e. headers pinout.
+
+Please refer to
+[![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio/buses/sysfs?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio/buses/sysfs).

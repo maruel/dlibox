@@ -13,7 +13,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/buses/i2c"
+	"github.com/maruel/dlibox/go/pio/buses/sysfs/i2c"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 )

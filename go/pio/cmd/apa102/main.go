@@ -22,7 +22,7 @@ import (
 
 	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/pio/buses"
-	"github.com/maruel/dlibox/go/pio/buses/spi"
+	"github.com/maruel/dlibox/go/pio/buses/sysfs/spi"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/fakes"

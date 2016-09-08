@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/bw2d"
-	"github.com/maruel/dlibox/go/pio/buses/i2c"
-	"github.com/maruel/dlibox/go/pio/buses/spi"
+	"github.com/maruel/dlibox/go/pio/buses/sysfs/i2c"
+	"github.com/maruel/dlibox/go/pio/buses/sysfs/spi"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/nfnt/resize"
