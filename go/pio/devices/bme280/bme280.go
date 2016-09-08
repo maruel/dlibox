@@ -65,7 +65,7 @@ const (
 )
 
 type Dev struct {
-	d host.Dev
+	d devices.I2C
 	c calibration
 }
 
@@ -104,7 +104,7 @@ func (d *Dev) Stop() error {
 // It is recommended to call Stop() when done with the device so it stops
 // sampling.
 func Make(i host.I2C, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
-	d := &Dev{d: host.Dev{i, 0x76}}
+	d := &Dev{d: devices.I2C{i, 0x76}}
 
 	config := []byte{
 		// ctrl_meas; put it to sleep otherwise the config update may be ignored.
@@ -124,7 +124,7 @@ func Make(i host.I2C, temperature, pressure, humidity Oversampling, standby Stan
 	chipId := [1]byte{}
 	tph := [0xA2 - 0x88]byte{}
 	h := [0xE8 - 0xE1]byte{}
-	ios := []host.IO{
+	ios := []devices.IO{
 		// Read register 0xD0 to read the chip id.
 		{host.Write, []byte{0xD0}},
 		{host.ReadStop, chipId[:]},
