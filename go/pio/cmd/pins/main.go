@@ -12,6 +12,7 @@ import (
 
 	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
+	"github.com/maruel/dlibox/go/pio/buses/cpu"
 	"github.com/maruel/dlibox/go/pio/buses/rpi"
 )
 
@@ -146,7 +147,7 @@ func mainImpl() error {
 	}
 
 	if *info {
-		fmt.Printf("Version: %d  MaxSpeed: %dMhz\n", rpi.Version, bcm283x.MaxSpeed/1000000)
+		fmt.Printf("Version: %d  MaxSpeed: %dMhz\n", rpi.Version, cpu.MaxSpeed/1000000)
 	}
 	m, max := makeMapping()
 	if *fun {

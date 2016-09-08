@@ -27,6 +27,7 @@ import (
 	"github.com/maruel/dlibox/go/bw2d"
 	"github.com/maruel/dlibox/go/pio/buses"
 	"github.com/maruel/dlibox/go/pio/buses/bcm283x"
+	"github.com/maruel/dlibox/go/pio/buses/cpu"
 	"github.com/maruel/dlibox/go/pio/buses/ir"
 	"github.com/maruel/dlibox/go/pio/buses/sysfs/i2c"
 	"github.com/maruel/dlibox/go/pio/buses/sysfs/spi"
@@ -170,7 +171,7 @@ func mainImpl() error {
 	log.Printf("Config:\n%s", string(b))
 
 	fps := 60
-	if bcm283x.MaxSpeed < 900000 || runtime.NumCPU() < 4 {
+	if cpu.MaxSpeed < 900000 || runtime.NumCPU() < 4 {
 		// Use 30Hz on slower devices because it is too slow.
 		fps = 30
 	}

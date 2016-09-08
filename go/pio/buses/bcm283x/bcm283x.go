@@ -7,20 +7,13 @@ package bcm283x
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/buses"
+	"github.com/maruel/dlibox/go/pio/buses/cpu"
 	"github.com/maruel/dlibox/go/pio/buses/internal/gpiomem"
 	"github.com/maruel/dlibox/go/pio/buses/ir"
 )
-
-// MaxSpeed is the maximum speed for CPU0 in Hertz. The value is expected to be
-// in the range of 700Mhz to 1.2Ghz.
-var MaxSpeed int64
 
 // Function specifies the active functionality of a pin. The alternative
 // function is GPIO pin dependent.
@@ -162,6 +155,9 @@ var (
 
 // Function returns the current GPIO pin function.
 func (p Pin) Function() Function {
+	if gpioMemory32 == nil {
+		return Alt5
+	}
 	// 0x00    RW   GPIO Function Select 0 (GPIO0-9)
 	// 0x04    RW   GPIO Function Select 1 (GPIO10-19)
 	// 0x08    RW   GPIO Function Select 2 (GPIO20-29)
@@ -412,24 +408,7 @@ func GetPin(name string) Pin {
 	}
 }
 
-/*
-// Close the handle implicitly open by this package.
 //
-// It's not required to call it. It doesn't reset the GPIO pin either.
-func Close() error {
-	err1 := closeGPIOMem()
-	err2 := closeExport()
-	if err1 != nil {
-		return err1
-	}
-	return err2
-}
-*/
-
-//
-
-// Handle to /dev/gpiomem
-var gpioMemory8 []byte
 
 // Mapping as
 // https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
@@ -482,7 +461,7 @@ var gpioMemory32 []uint32
 var globalError error
 
 // Changing pull resistor require a 150 cycles sleep. Use 160 to be safe.
-var sleep160cycles time.Duration = 220 * time.Nanosecond
+var sleep160cycles time.Duration = time.Second * 160 / time.Duration(cpu.MaxSpeed)
 
 func setIfAlt0(p Pin, special *Pin) {
 	if p.Function() == Alt0 {
@@ -600,18 +579,5 @@ func init() {
 	}
 	if out != -1 {
 		IR_OUT = Pin(out)
-	}
-
-	if bytes, err := ioutil.ReadFile("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq"); err == nil {
-		s := strings.TrimSpace(string(bytes))
-		if i, err := strconv.ParseInt(s, 10, 64); err == nil {
-			// Weirdly, the speed is listed as khz. :(
-			MaxSpeed = i * 1000
-			sleep160cycles = time.Second * 160 / time.Duration(MaxSpeed)
-		} else {
-			log.Printf("Failed to parse scaling_max_freq: %s", s)
-		}
-	} else {
-		log.Printf("Failed to read scaling_max_freq: %v", err)
 	}
 }
