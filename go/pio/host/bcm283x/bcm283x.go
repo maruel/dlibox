@@ -111,46 +111,46 @@ const (
 // Special functions that can be assigned to a GPIO. The values are probed and
 // set at runtime. Changing the value of the variables has no effect.
 var (
-	GPCLK0    Pin = INVALID // GPIO4, GPIO20, GPIO32, GPIO34 (also named GPIO_GCLK)
-	GPCLK1    Pin = INVALID // GPIO5, GPIO21, GPIO42, GPIO44
-	GPCLK2    Pin = INVALID // GPIO6, GPIO43
-	I2C_SCL0  Pin = INVALID // GPIO1, GPIO29, GPIO45
-	I2C_SDA0  Pin = INVALID // GPIO0, GPIO28, GPIO44
-	I2C_SCL1  Pin = INVALID // GPIO3, GPIO45
-	I2C_SDA1  Pin = INVALID // GPIO2, GPIO44
-	IR_IN     Pin = INVALID // (any GPIO)
-	IR_OUT    Pin = INVALID // (any GPIO)
-	PCM_CLK   Pin = INVALID // GPIO18, GPIO28 (I2S)
-	PCM_FS    Pin = INVALID // GPIO19, GPIO29
-	PCM_DIN   Pin = INVALID // GPIO20, GPIO30
-	PCM_DOUT  Pin = INVALID // GPIO21, GPIO31
-	PWM0_OUT  Pin = INVALID // GPIO12, GPIO18, GPIO40
-	PWM1_OUT  Pin = INVALID // GPIO13, GPIO19, GPIO41, GPIO45
-	SPI0_CE0  Pin = INVALID // GPIO8,  GPIO36
-	SPI0_CE1  Pin = INVALID // GPIO7,  GPIO35
-	SPI0_CLK  Pin = INVALID // GPIO11, GPIO39
-	SPI0_MISO Pin = INVALID // GPIO9,  GPIO37
-	SPI0_MOSI Pin = INVALID // GPIO10, GPIO38
-	SPI1_CE0  Pin = INVALID // GPIO18
-	SPI1_CE1  Pin = INVALID // GPIO17
-	SPI1_CE2  Pin = INVALID // GPIO16
-	SPI1_CLK  Pin = INVALID // GPIO21
-	SPI1_MISO Pin = INVALID // GPIO19
-	SPI1_MOSI Pin = INVALID // GPIO20
-	SPI2_MISO Pin = INVALID // GPIO40
-	SPI2_MOSI Pin = INVALID // GPIO41
-	SPI2_CLK  Pin = INVALID // GPIO42
-	SPI2_CE0  Pin = INVALID // GPIO43
-	SPI2_CE1  Pin = INVALID // GPIO44
-	SPI2_CE2  Pin = INVALID // GPIO45
-	UART_RXD0 Pin = INVALID // GPIO15, GPIO33, GPIO37
-	UART_CTS0 Pin = INVALID // GPIO16, GPIO30, GPIO39
-	UART_CTS1 Pin = INVALID // GPIO16, GPIO30
-	UART_RTS0 Pin = INVALID // GPIO17, GPIO31, GPIO38
-	UART_RTS1 Pin = INVALID // GPIO17, GPIO31
-	UART_TXD0 Pin = INVALID // GPIO14, GPIO32, GPIO36
-	UART_RXD1 Pin = INVALID // GPIO15, GPIO33, GPIO41
-	UART_TXD1 Pin = INVALID // GPIO14, GPIO32, GPIO40
+	GPCLK0    host.Pin = INVALID // GPIO4, GPIO20, GPIO32, GPIO34 (also named GPIO_GCLK)
+	GPCLK1    host.Pin = INVALID // GPIO5, GPIO21, GPIO42, GPIO44
+	GPCLK2    host.Pin = INVALID // GPIO6, GPIO43
+	I2C_SCL0  host.Pin = INVALID // GPIO1, GPIO29, GPIO45
+	I2C_SDA0  host.Pin = INVALID // GPIO0, GPIO28, GPIO44
+	I2C_SCL1  host.Pin = INVALID // GPIO3, GPIO45
+	I2C_SDA1  host.Pin = INVALID // GPIO2, GPIO44
+	IR_IN     host.Pin = INVALID // (any GPIO)
+	IR_OUT    host.Pin = INVALID // (any GPIO)
+	PCM_CLK   host.Pin = INVALID // GPIO18, GPIO28 (I2S)
+	PCM_FS    host.Pin = INVALID // GPIO19, GPIO29
+	PCM_DIN   host.Pin = INVALID // GPIO20, GPIO30
+	PCM_DOUT  host.Pin = INVALID // GPIO21, GPIO31
+	PWM0_OUT  host.Pin = INVALID // GPIO12, GPIO18, GPIO40
+	PWM1_OUT  host.Pin = INVALID // GPIO13, GPIO19, GPIO41, GPIO45
+	SPI0_CE0  host.Pin = INVALID // GPIO8,  GPIO36
+	SPI0_CE1  host.Pin = INVALID // GPIO7,  GPIO35
+	SPI0_CLK  host.Pin = INVALID // GPIO11, GPIO39
+	SPI0_MISO host.Pin = INVALID // GPIO9,  GPIO37
+	SPI0_MOSI host.Pin = INVALID // GPIO10, GPIO38
+	SPI1_CE0  host.Pin = INVALID // GPIO18
+	SPI1_CE1  host.Pin = INVALID // GPIO17
+	SPI1_CE2  host.Pin = INVALID // GPIO16
+	SPI1_CLK  host.Pin = INVALID // GPIO21
+	SPI1_MISO host.Pin = INVALID // GPIO19
+	SPI1_MOSI host.Pin = INVALID // GPIO20
+	SPI2_MISO host.Pin = INVALID // GPIO40
+	SPI2_MOSI host.Pin = INVALID // GPIO41
+	SPI2_CLK  host.Pin = INVALID // GPIO42
+	SPI2_CE0  host.Pin = INVALID // GPIO43
+	SPI2_CE1  host.Pin = INVALID // GPIO44
+	SPI2_CE2  host.Pin = INVALID // GPIO45
+	UART_RXD0 host.Pin = INVALID // GPIO15, GPIO33, GPIO37
+	UART_CTS0 host.Pin = INVALID // GPIO16, GPIO30, GPIO39
+	UART_CTS1 host.Pin = INVALID // GPIO16, GPIO30
+	UART_RTS0 host.Pin = INVALID // GPIO17, GPIO31, GPIO38
+	UART_RTS1 host.Pin = INVALID // GPIO17, GPIO31
+	UART_TXD0 host.Pin = INVALID // GPIO14, GPIO32, GPIO36
+	UART_RXD1 host.Pin = INVALID // GPIO15, GPIO33, GPIO41
+	UART_TXD1 host.Pin = INVALID // GPIO14, GPIO32, GPIO40
 )
 
 // Number implements host.Pin
@@ -452,7 +452,7 @@ var globalError error
 // Changing pull resistor require a 150 cycles sleep. Use 160 to be safe.
 var sleep160cycles time.Duration = time.Second * 160 / time.Duration(cpu.MaxSpeed)
 
-func setIfAlt0(p Pin, special *Pin) {
+func setIfAlt0(p Pin, special *host.Pin) {
 	if p.Function() == Alt0 {
 		if *special != INVALID {
 			//fmt.Printf("%s and %s have same functionality\n", p, *special)
@@ -461,7 +461,7 @@ func setIfAlt0(p Pin, special *Pin) {
 	}
 }
 
-func setIfAlt(p Pin, special0 *Pin, special1 *Pin, special2 *Pin, special3 *Pin, special4 *Pin, special5 *Pin) {
+func setIfAlt(p Pin, special0 *host.Pin, special1 *host.Pin, special2 *host.Pin, special3 *host.Pin, special4 *host.Pin, special5 *host.Pin) {
 	switch p.Function() {
 	case Alt0:
 		if special0 != nil {
