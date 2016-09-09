@@ -153,6 +153,11 @@ var (
 	UART_TXD1 Pin = INVALID // GPIO14, GPIO32, GPIO40
 )
 
+// Number implements host.Pin
+func (p Pin) Number() int {
+	return int(p)
+}
+
 // Function returns the current GPIO pin function.
 func (p Pin) Function() Function {
 	if gpioMemory32 == nil {

@@ -14,7 +14,17 @@ import (
 type Pin struct {
 	sync.Mutex
 	host.Level
+	Name      string
+	Num       int
 	EdgesChan chan host.Level
+}
+
+func (p *Pin) String() string {
+	return p.Name
+}
+
+func (p *Pin) Number() int {
+	return p.Num
 }
 
 func (p *Pin) In(pull host.Pull) error {
