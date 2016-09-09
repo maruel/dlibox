@@ -15,7 +15,6 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/bcm283x"
 )
 
 func printLevel(l host.Level) error {
@@ -58,11 +57,10 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	if pin > 53 || pin < 0 {
-		return errors.New("specify pin between 0 and 53")
+	p := host.GetPinByNumber(pin)
+	if p == nil {
+		return errors.New("speficy a valid pin number")
 	}
-	p := bcm283x.Pin(pin)
-
 	if err = p.In(pull); err != nil {
 		return err
 	}

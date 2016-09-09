@@ -10,6 +10,7 @@ import (
 
 	"github.com/maruel/dlibox/go/pio/host/bcm283x"
 	"github.com/maruel/dlibox/go/pio/host/internal"
+	"github.com/maruel/dlibox/go/pio/host/pins"
 )
 
 func init() {
@@ -37,29 +38,29 @@ func init() {
 		// P2 and P3 are not useful.
 		// P6 has a RUN pin for reset but it's not available after Pi version 1.
 
-		P1_27 = bcm283x.INVALID
-		P1_28 = bcm283x.INVALID
-		P1_29 = bcm283x.INVALID
-		P1_30 = bcm283x.INVALID
-		P1_31 = bcm283x.INVALID
-		P1_32 = bcm283x.INVALID
-		P1_33 = bcm283x.INVALID
-		P1_34 = bcm283x.INVALID
-		P1_35 = bcm283x.INVALID
-		P1_36 = bcm283x.INVALID
-		P1_37 = bcm283x.INVALID
-		P1_38 = bcm283x.INVALID
-		P1_39 = bcm283x.INVALID
-		P1_40 = bcm283x.INVALID
+		P1_27 = pins.INVALID
+		P1_28 = pins.INVALID
+		P1_29 = pins.INVALID
+		P1_30 = pins.INVALID
+		P1_31 = pins.INVALID
+		P1_32 = pins.INVALID
+		P1_33 = pins.INVALID
+		P1_34 = pins.INVALID
+		P1_35 = pins.INVALID
+		P1_36 = pins.INVALID
+		P1_37 = pins.INVALID
+		P1_38 = pins.INVALID
+		P1_39 = pins.INVALID
+		P1_40 = pins.INVALID
 	} else {
-		P5_1 = bcm283x.INVALID
-		P5_2 = bcm283x.INVALID
-		P5_3 = bcm283x.INVALID
-		P5_4 = bcm283x.INVALID
-		P5_5 = bcm283x.INVALID
-		P5_6 = bcm283x.INVALID
-		P5_7 = bcm283x.INVALID
-		P5_8 = bcm283x.INVALID
+		P5_1 = pins.INVALID
+		P5_2 = pins.INVALID
+		P5_3 = pins.INVALID
+		P5_4 = pins.INVALID
+		P5_5 = pins.INVALID
+		P5_6 = pins.INVALID
+		P5_7 = pins.INVALID
+		P5_8 = pins.INVALID
 	}
 	if Version < 3 {
 		AUDIO_LEFT = bcm283x.GPIO45

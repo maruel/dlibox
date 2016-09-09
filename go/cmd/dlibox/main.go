@@ -31,7 +31,6 @@ import (
 	"github.com/maruel/dlibox/go/pio/fakes"
 	"github.com/maruel/dlibox/go/pio/fakes/screen"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/bcm283x"
 	"github.com/maruel/dlibox/go/pio/host/cpu"
 	"github.com/maruel/dlibox/go/pio/host/ir"
 	"github.com/maruel/dlibox/go/pio/host/sysfs/i2c"
@@ -97,9 +96,8 @@ func initIR(painter *anim1d.Painter, config *IR) error {
 }
 
 func initPIR(painter *anim1d.Painter, config *PIR) error {
-	// TODO(maruel): Cleaner.
-	p := bcm283x.GetPin(config.Pin)
-	if p.String() == "INVALID" {
+	p := host.GetPinByNumber(config.Pin)
+	if p == nil {
 		return nil
 	}
 	if err := p.In(host.Down); err != nil {

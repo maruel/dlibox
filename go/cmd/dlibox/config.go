@@ -110,7 +110,7 @@ type IR struct {
 
 // PIR contains a motion detection behavior.
 type PIR struct {
-	Pin     string
+	Pin     int
 	Pattern Pattern // TODO(maruel): We may actually do something more complex than just set a pattern.
 }
 
@@ -162,7 +162,7 @@ func (s *Settings) ResetDefault() {
 		NumberLights: 150,
 	}
 	s.PIR = PIR{
-		Pin:     "GPIO4",
+		Pin:     -1,
 		Pattern: "\"#ffffff\"",
 	}
 	s.IR = IR{

@@ -16,26 +16,27 @@ import (
 	"github.com/maruel/dlibox/go/pio/host/rpi"
 )
 
+// makeMapping returns a map between the pin name with its functionality and
+// the pin, by number.
 func makeMapping() ([]string, int) {
-	m := make([]string, 256)
-	doFunctionalPins(func(name string, p host.Pin) {
-		p2 := p.(bcm283x.Pin)
-		m[p2] = name
-	})
-	m[bcm283x.INVALID] = ""
+	m := make([]string, len(host.AllPins))
 	max := 0
-	for p := bcm283x.GPIO0; p <= bcm283x.GPIO53; p++ {
-		if len(m[p]) == 0 {
-			m[p] = fmt.Sprintf("%s/%s", p.Function(), p.Read())
+	for i, p := range host.AllPins {
+		if b, ok := p.(*bcm283x.Pin); ok {
+			// TODO(maruel): When function is Alt, should put the actual function.
+			m[i] = fmt.Sprintf("%s/%s", b.Function(), b.Read())
+		} else {
+			m[i] = p.String()
 		}
-		if len(m[p]) > max {
-			max = len(m[p])
+		if len(m[i]) > max {
+			max = len(m[i])
 		}
 	}
 	return m, max
 }
 
 func doFunctionalPins(pin func(name string, value host.Pin)) {
+	// TODO(maruel): Migrate this to host too.
 	pin("GPCLK0", bcm283x.GPCLK0)
 	pin("GPCLK1", bcm283x.GPCLK1)
 	pin("GPCLK2", bcm283x.GPCLK2)
@@ -74,53 +75,65 @@ func doFunctionalPins(pin func(name string, value host.Pin)) {
 
 func printFunc(invalid bool) {
 	doFunctionalPins(func(name string, value host.Pin) {
-		p := value.(bcm283x.Pin)
-		if invalid || (p != bcm283x.INVALID && rpi.IsConnected(p)) {
+		p, _ := value.(*bcm283x.Pin)
+		if invalid || (p != nil && rpi.IsConnected(p)) {
 			fmt.Printf("%-9s: %s\n", name, value)
 		}
 	})
 }
 
 func printGPIO(invalid bool, m []string, max int) {
-	for p := bcm283x.GPIO0; p <= bcm283x.GPIO53; p++ {
+	for i, p := range host.AllPins {
 		if rpi.IsConnected(p) {
-			fmt.Printf("%-6s: %s\n", p, m[p])
+			fmt.Printf("%-6s: %s\n", p, m[i])
 		} else if invalid {
-			fmt.Printf("%-6s: %-*s (not connected)\n", p, max, m[p])
+			fmt.Printf("%-6s: %-*s (not connected)\n", p, max, m[i])
 		}
 	}
 }
 
+func printPin(invalid bool, m []string, max int, hdr string, pos1 int, pin1, pin2 host.Pin) {
+	name1 := ""
+	if n := pin1.Number(); n >= 0 {
+		name1 = m[n]
+	}
+	name2 := ""
+	if n := pin2.Number(); n >= 0 {
+		name2 = m[n]
+	}
+	fmt.Printf("%3s %*s %6s %2d x x %2d  %-6s %s\n", hdr, max, name1, pin1, pos1, pos1+1, pin2, name2)
+}
+
 func printHardware(invalid bool, m []string, max int) {
 	fmt.Print("Header    Func  Name  Pos Pos  Name   Func\n")
-	fmt.Printf("P1: %*s %6s  1 x x 2  %-6s %s\n", max, m[rpi.P1_1.Number()], rpi.P1_1, rpi.P1_2, m[rpi.P1_2.Number()])
-	fmt.Printf("    %*s %6s  3 x x 4  %-6s %s\n", max, m[rpi.P1_3.Number()], rpi.P1_3, rpi.P1_4, m[rpi.P1_4.Number()])
-	fmt.Printf("    %*s %6s  5 x x 6  %-6s %s\n", max, m[rpi.P1_5.Number()], rpi.P1_5, rpi.P1_6, m[rpi.P1_6.Number()])
-	fmt.Printf("    %*s %6s  7 x x 8  %-6s %s\n", max, m[rpi.P1_7.Number()], rpi.P1_7, rpi.P1_8, m[rpi.P1_8.Number()])
-	fmt.Printf("    %*s %6s  9 x x 10 %-6s %s\n", max, m[rpi.P1_9.Number()], rpi.P1_9, rpi.P1_10, m[rpi.P1_10.Number()])
-	fmt.Printf("    %*s %6s 11 x x 12 %-6s %s\n", max, m[rpi.P1_11.Number()], rpi.P1_11, rpi.P1_12, m[rpi.P1_12.Number()])
-	fmt.Printf("    %*s %6s 13 x x 14 %-6s %s\n", max, m[rpi.P1_13.Number()], rpi.P1_13, rpi.P1_14, m[rpi.P1_14.Number()])
-	fmt.Printf("    %*s %6s 15 x x 16 %-6s %s\n", max, m[rpi.P1_15.Number()], rpi.P1_15, rpi.P1_16, m[rpi.P1_16.Number()])
-	fmt.Printf("    %*s %6s 17 x x 18 %-6s %s\n", max, m[rpi.P1_17.Number()], rpi.P1_17, rpi.P1_18, m[rpi.P1_18.Number()])
-	fmt.Printf("    %*s %6s 19 x x 20 %-6s %s\n", max, m[rpi.P1_19.Number()], rpi.P1_19, rpi.P1_20, m[rpi.P1_20.Number()])
-	fmt.Printf("    %*s %6s 21 x x 22 %-6s %s\n", max, m[rpi.P1_21.Number()], rpi.P1_21, rpi.P1_22, m[rpi.P1_22.Number()])
-	fmt.Printf("    %*s %6s 23 x x 24 %-6s %s\n", max, m[rpi.P1_23.Number()], rpi.P1_23, rpi.P1_24, m[rpi.P1_24.Number()])
-	fmt.Printf("    %*s %6s 25 x x 26 %-6s %s\n", max, m[rpi.P1_25.Number()], rpi.P1_25, rpi.P1_26, m[rpi.P1_26.Number()])
+	printPin(invalid, m, max, "P1:", 1, rpi.P1_1, rpi.P1_2)
+	printPin(invalid, m, max, "", 3, rpi.P1_3, rpi.P1_4)
+	printPin(invalid, m, max, "", 5, rpi.P1_5, rpi.P1_6)
+	printPin(invalid, m, max, "", 7, rpi.P1_7, rpi.P1_8)
+	printPin(invalid, m, max, "", 9, rpi.P1_9, rpi.P1_10)
+	printPin(invalid, m, max, "", 11, rpi.P1_11, rpi.P1_12)
+	printPin(invalid, m, max, "", 13, rpi.P1_13, rpi.P1_14)
+	printPin(invalid, m, max, "", 15, rpi.P1_15, rpi.P1_16)
+	printPin(invalid, m, max, "", 17, rpi.P1_17, rpi.P1_18)
+	printPin(invalid, m, max, "", 19, rpi.P1_19, rpi.P1_20)
+	printPin(invalid, m, max, "", 21, rpi.P1_21, rpi.P1_22)
+	printPin(invalid, m, max, "", 23, rpi.P1_23, rpi.P1_24)
+	printPin(invalid, m, max, "", 25, rpi.P1_25, rpi.P1_26)
 	if rpi.IsConnected(rpi.P1_27) || invalid {
-		fmt.Printf("    %*s %6s 27 x x 28 %-6s %s\n", max, m[rpi.P1_27.Number()], rpi.P1_27, rpi.P1_28, m[rpi.P1_28.Number()])
-		fmt.Printf("    %*s %6s 29 x x 30 %-6s %s\n", max, m[rpi.P1_29.Number()], rpi.P1_29, rpi.P1_30, m[rpi.P1_30.Number()])
-		fmt.Printf("    %*s %6s 31 x x 32 %-6s %s\n", max, m[rpi.P1_31.Number()], rpi.P1_31, rpi.P1_32, m[rpi.P1_32.Number()])
-		fmt.Printf("    %*s %6s 33 x x 34 %-6s %s\n", max, m[rpi.P1_33.Number()], rpi.P1_33, rpi.P1_34, m[rpi.P1_34.Number()])
-		fmt.Printf("    %*s %6s 35 x x 36 %-6s %s\n", max, m[rpi.P1_35.Number()], rpi.P1_35, rpi.P1_36, m[rpi.P1_36.Number()])
-		fmt.Printf("    %*s %6s 37 x x 38 %-6s %s\n", max, m[rpi.P1_37.Number()], rpi.P1_37, rpi.P1_38, m[rpi.P1_38.Number()])
-		fmt.Printf("    %*s %6s 39 x x 40 %-6s %s\n", max, m[rpi.P1_39.Number()], rpi.P1_39, rpi.P1_40, m[rpi.P1_40.Number()])
+		printPin(invalid, m, max, "", 27, rpi.P1_27, rpi.P1_28)
+		printPin(invalid, m, max, "", 29, rpi.P1_29, rpi.P1_30)
+		printPin(invalid, m, max, "", 31, rpi.P1_31, rpi.P1_32)
+		printPin(invalid, m, max, "", 33, rpi.P1_33, rpi.P1_34)
+		printPin(invalid, m, max, "", 35, rpi.P1_35, rpi.P1_36)
+		printPin(invalid, m, max, "", 37, rpi.P1_37, rpi.P1_38)
+		printPin(invalid, m, max, "", 39, rpi.P1_39, rpi.P1_40)
 	}
 	if rpi.IsConnected(rpi.P5_1) || invalid {
 		fmt.Print("\n")
-		fmt.Printf("P5: %*s %6s 1 x x 2 %-6s %s\n", max, m[rpi.P5_1.Number()], rpi.P5_2, rpi.P5_1, m[rpi.P5_2.Number()])
-		fmt.Printf("    %*s %6s 3 x x 4 %-6s %s\n", max, m[rpi.P5_3.Number()], rpi.P5_4, rpi.P5_3, m[rpi.P5_4.Number()])
-		fmt.Printf("    %*s %6s 5 x x 6 %-6s %s\n", max, m[rpi.P5_5.Number()], rpi.P5_6, rpi.P5_5, m[rpi.P5_6.Number()])
-		fmt.Printf("    %*s %6s 7 x x 8 %-6s %s\n", max, m[rpi.P5_7.Number()], rpi.P5_8, rpi.P5_7, m[rpi.P5_8.Number()])
+		printPin(invalid, m, max, "P5:", 1, rpi.P5_1, rpi.P5_2)
+		printPin(invalid, m, max, "", 3, rpi.P5_3, rpi.P5_4)
+		printPin(invalid, m, max, "", 5, rpi.P5_5, rpi.P5_6)
+		printPin(invalid, m, max, "", 7, rpi.P5_7, rpi.P5_8)
 	}
 	fmt.Print("\n")
 	fmt.Printf("AUDIO_LEFT  : %s\n", rpi.AUDIO_LEFT)

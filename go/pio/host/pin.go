@@ -120,3 +120,40 @@ type PinIO interface {
 	// Behavior is undefined if Out() wasn't used before.
 	Set(l Level)
 }
+
+// AllPins lists all the GPIO pins available on this host.
+//
+// This gets populated automatically on startup by the relevant child module,
+// if running on a relevant host.
+//
+// Pins must be in order of their number.
+//
+// This list excludes non-GPIO pins like GROUND, V3_3, etc.
+var AllPins []PinIO
+
+// GetPinByName returns a GPIO pin from its name.
+//
+// This excludes non-GPIO pins like GROUND, V3_3, etc.
+//
+// Returns nil in case of failure.
+func GetPinByName(name string) PinIO {
+	// TODO(maruel): Create a map on first use?
+	for _, p := range AllPins {
+		if p.String() == name {
+			return p
+		}
+	}
+	return nil
+}
+
+// GetPinByNumber returns a GPIO pin from its number.
+//
+// This excludes non-GPIO pins like GROUND, V3_3, etc.
+//
+// Returns nil in case of failure.
+func GetPinByNumber(number int) PinIO {
+	if number >= 0 && number < len(AllPins) {
+		return AllPins[number]
+	}
+	return nil
+}

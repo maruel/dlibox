@@ -15,7 +15,7 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/devices/tm1637"
-	"github.com/maruel/dlibox/go/pio/host/bcm283x"
+	"github.com/maruel/dlibox/go/pio/host"
 )
 
 func mainImpl() error {
@@ -70,8 +70,14 @@ func mainImpl() error {
 		}
 	}
 
-	pClk := bcm283x.GetPin(strconv.Itoa(*clk))
-	pData := bcm283x.GetPin(strconv.Itoa(*data))
+	pClk := host.GetPinByNumber(*clk)
+	if pClk == nil {
+		return errors.New("specify a valid pin for clock")
+	}
+	pData := host.GetPinByNumber(*data)
+	if pData == nil {
+		return errors.New("specify a valid pin for data")
+	}
 	d, err := tm1637.Make(pClk, pData)
 	if err != nil {
 		return err
