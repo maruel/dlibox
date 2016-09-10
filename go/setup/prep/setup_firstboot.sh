@@ -43,7 +43,7 @@ fi
 
 
 echo "- First boot setup script"
-sudo cp ../support/dlibox_firstboot.sh $ROOT_PATH/root
+sudo cp ../host/dlibox_firstboot.sh $ROOT_PATH/root
 sudo chmod +x $ROOT_PATH/root/dlibox_firstboot.sh
 # Skip this step to debug dlibox_firstboot.sh. Then login at the console and run
 # the script manually.

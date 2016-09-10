@@ -19,6 +19,7 @@ webfiles := $(wildcard cmd/dlibox/web/*)
 cmd/dlibox/static_files_gen.go: $(imgfiles) $(webfiles) cmd/package/main.go
 	go generate ./...
 
+
 # Use a trick to preinstall all imported packages. 'go build' doesn't permit
 # installing packages, only 'go install' or 'go test -i' can do. But 'go
 # install' would install an ARM binary, which is not what we want.
@@ -27,6 +28,7 @@ cmd/dlibox/static_files_gen.go: $(imgfiles) $(webfiles) cmd/package/main.go
 dlibox: $(gofiles) cmd/dlibox/static_files_gen.go
 	GOOS=linux GOARCH=arm go test -i ./cmd/dlibox
 	GOOS=linux GOARCH=arm go build ./cmd/dlibox
+
 
 # When an executable is running, it must be scp'ed aside then moved over.
 # dlibox will exit safely when it detects its binary changed.
@@ -45,19 +47,23 @@ run: $(gofiles) cmd/dlibox/static_files_gen.go
 setup: setup_internal push
 
 
+# Installs dlibox as systemd but do not install the anciliary services
+# disable_hdmi and dlibox_update.
 setup_internal:
-	ssh $(HOST) 'mkdir -p bin'
-	scp setup/dlibox.service $(HOST):.
+	ssh $(HOST) 'mkdir -p bin tmp'
+	scp setup/host/systemd/* $(HOST):tmp
 	# Replace 'pi' in dlibox.server by the actual remote user. To change the
 	# default user, modify your local .ssh/config.
-	ssh $(HOST) 'sed -i -e "s/pi/$$USER/g" dlibox.service && \
-	    sudo -S cp dlibox.service /etc/systemd/system/dlibox.service && \
+	ssh $(HOST) 'sed -i -e "s/pi/$$USER/g" tmp/* && \
+	    sudo -S cp tmp/* /etc/systemd/system/ && \
 	    sudo systemctl daemon-reload && \
 	    sudo systemctl enable dlibox.service && \
+	    sudo systemctl enable dlibox_update.timer && \
 	    sudo systemctl start dlibox.service && \
-	    rm dlibox.service'
+	    rm -rf tmp'
 
 
+# Get the logs from the remote host.
 log:
 	ssh $(HOST) 'sudo -S journalctl -u dlibox'
 

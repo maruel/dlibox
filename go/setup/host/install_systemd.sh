@@ -9,7 +9,7 @@
 set -eu
 cd "$(dirname $0)"
 
-cp ../systemd/* /etc/systemd/system
+cp ./systemd/* /etc/systemd/system
 systemctl daemon-reload
 systemctl enable dlibox.service
 #systemctl enable dlibox_update.service

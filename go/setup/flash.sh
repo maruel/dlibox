@@ -26,8 +26,8 @@ echo ""
 echo "This script has minimal use of 'sudo' for 'dd' and modifying the partitions"
 echo ""
 
-./steps/flash.sh $SDCARD
-./steps/edit.sh $SDCARD "$SSID"
+./prep/flash.sh $SDCARD
+./prep/edit.sh $SDCARD "$SSID"
 
 echo ""
 echo "You can now remove the SDCard safely and boot your Raspberry Pi"

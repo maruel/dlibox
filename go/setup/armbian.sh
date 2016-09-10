@@ -24,7 +24,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 
-# TODO(maruel): There are 3 things that are done via ./steps/setup_firstboot.sh
+# TODO(maruel): There are 3 things that are done via ./prep/setup_firstboot.sh
 # that needs to be done here:
 # - Setup ssh key
 # - Disable password based ssh authentication
@@ -39,7 +39,8 @@ scp ~/.ssh/authorized_keys root@$1:.ssh/
 # - Create 'pi' user
 # - Make sudo passwordless (which is crazy, so we should probably change
 #   Raspbian behavior instead).
-scp support/dlibox_firstboot.sh root@$1:.
+scp host/dlibox_firstboot.sh root@$1:.
 # TODO(maruel): Do not run apt-get update here since it was already done as part
-# of the initial boot. Overall it's just ~30s saving.
+# of the initial boot on Armbian (unlike Raspbian). Overall it's just ~30s
+# saving.
 ssh root@$1 "bash dlibox_firstboot.sh"

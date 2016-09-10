@@ -77,4 +77,4 @@ sudo -i -u pi /bin/sh -c "go get -v github.com/maruel/dlibox/go/cmd/dlibox"
 
 
 # At this point, defer control to the script in the repository.
-/home/pi/src/github.com/maruel/dlibox/go/setup/support/finish_install.sh
+/home/pi/src/github.com/maruel/dlibox/go/setup/host/finish_install.sh

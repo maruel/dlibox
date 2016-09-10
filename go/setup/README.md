@@ -1,6 +1,13 @@
 # Setup
 
+- [prep/](prep) contains the scripts to run on a workstation to prepare an
+  image.
+- [host/](host) contains the scripts to run on the host, the Raspberry Pi.
+
+
 ## As a fresh image
+
+### Raspberry Pi
 
 The simplest is to create a fresh Raspbian Jessie Lite image using `flash.sh`.
 You just put the card in your Raspberry Pi and it will initializes itself on
@@ -11,6 +18,18 @@ first boot.
 - Run `flash.sh /dev/sdX <wifi ssid>`
 
 This script generates an image that leaves 390Mb free on a 2Gb SDCard.
+
+
+### Orange Pi / Pine64 / Banana Pi
+
+Flash the image yourself with [Armbian](http://www.armbian.com/), chose Jessie
+Server.
+
+To initiate the bootstrapping process over ssh, run:
+
+    ./armbian.sh <hostname>
+
+Read the script for more details.
 
 
 ### SSH key
@@ -38,27 +57,10 @@ Push a new version:
 
 ### Manual
 
-This enables building dlibox from the rPi itself. It's a bit slow on a rPi 1
-but it's totally acceptable on a rPi 2 or rPi 3.
-
-_Note:_ Replace the URL below with the [latest version](https://golang.org/dl/).
-
-    cd
-    curl https://storage.googleapis.com/golang/go1.7.linux-armv6l.tar.gz | tar xz
-    echo 'export GOPATH=$HOME' >> $HOME/.profile
-    echo 'export GOROOT=$HOME/go' >> $HOME/.profile
-    echo 'export PATH="$GOPATH/bin:$GOROOT/bin:$PATH"' >> $HOME/.profile
-    source $HOME/.profile
-    go get github.com/maruel/dlibox/go/cmd/dlibox
-    # If you plan to do edit-compile, you can precompile all dependencies:
-    go test -i github.com/maruel/dlibox/go/cmd/dlibox
-    # Run apt-get install ...
-    sudo $GOPATH/src/github.com/maruel/dlibox/go/setup/support/install_dependencies.sh
-
-Set it up to auto-start on boot and auto-restart on scp:
-
-    sudo $GOPATH/src/github.com/maruel/dlibox/go/setup/support/install_systemd.sh
-    sudo service dlibox start
+Read the scripts and do the same. In short they do:
+- Install git and [Go](https://golang.org/dl/).
+- `go get github.com/maruel/dlibox/go/pio/cmd/... github.com/maruel/dlibox/go/cmd/...`
+- `sudo $GOPATH/src/github.com/maruel/dlibox/go/setup/host/install_systemd.sh`
 
 Anytime you `go install github.com/maruel/dlibox/go/cmd/dlibox`, systemd will
 restart dlibox automatically.
