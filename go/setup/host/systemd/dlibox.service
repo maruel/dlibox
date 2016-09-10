@@ -19,26 +19,18 @@
 
 [Unit]
 Description=Runs dlibox automatically upon boot
-After=auditd.service
+Wants=network-online.target
+After=network-online.target
 
 [Service]
-Restart=always
+User=pi
+Group=pi
+PermissionsStartOnly=true
 KillMode=mixed
+Restart=always
 TimeoutStopSec=20s
-
-# 1) One way is to run it as user and use capabilities to let it bind to port
-# 80. This means access to SPI (and optionally Pi-blaster) still need to be
-# configured accordingly.
 ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/pi/bin/dlibox
-ExecStart=/bin/su - pi -c "/home/pi/bin/dlibox -port 80 -verbose"
-
-# 2) You may just run as root, which is sad but not a big deal if you don't
-# anything personal on it.
-#ExecStart=/home/pi/bin/dlibox -port 80
-
-# 3) Another way is to run as user but use iptables instead of setcap.
-#ExecStartPre=iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 8080 && iptables -t nat -A OUTPUT -o lo -p tcp --dport 80 -j REDIRECT --to-port 8080
-#ExecStart=/bin/su - pi -c "/home/pi/bin/dlibox -port 80"
+ExecStart=/home/pi/bin/dlibox -port 80 -verbose
 
 [Install]
 WantedBy=multi-user.target

@@ -3,7 +3,7 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
-# Install dlibox Raspbian dependencies.
+# Install dlibox Armbian and Raspbian dependencies.
 # Change hardware settings to enable I²C, SPI and lower GPU memory usage.
 
 set -eu
@@ -18,9 +18,16 @@ if [ "$(grep 'ID=' /etc/os-release)" == "ID=raspbian" ]; then
   raspi-config nonint do_memory_split 16
 fi
 
+
+# Remove thd service, there's no keyboard connected.
+
+apt-get -y remove triggerhappy
+
+
 # avahi-utils is not installed on armbian but is on Raspbian
 
 apt-get -y install avahi-utils
+
 
 ## lirc
 
@@ -41,28 +48,3 @@ echo "# https://github.com/raspberrypi/firmware/blob/master/boot/overlays/README
 echo "dtoverlay=lirc-rpi,gpio_out_pin=5,gpio_in_pin=13,gpio_in_pull=high" >> /boot/config.txt
 echo "dtoverlay=spi1-1cs" >> /boot/config.txt
 echo "dtoverlay=pi3-disable-bt" >> /boot/config.txt
-
-
-## MQTT server
-
-apt-get -y install mosquitto
-
-# TODO(maruel): Create file in /etc/mosquitto/conf.d/ as per
-# https://mosquitto.org/man/mosquitto-conf-5.html
-# TODO(maruel): Create self-signed certificate and distribute to the devices.
-# For ESP8266, use library that supports certificates, e.g.
-# https://github.com/tuanpmt/esp_mqtt
-
-
-### OpenHAB
-
-# http://www.openhab.org/getting-started/downloads.html
-# TODO(maruel): Update.
-#OPENHAB_DISTRO=distribution-1.8.3
-#curl -O https://bintray.com/artifact/download/openhab/bin/$OPENHAB_DISTRO-runtime.zip
-#unzip $OPENHAB_DISTRO-runtime.zip
-#rm $OPENHAB_DISTRO-runtime.zip
-#curl -O https://bintray.com/artifact/download/openhab/bin/$OPENHAB_DISTRO-addons.zip
-#unzip $OPENHAB_DISTRO-addons.zip
-#rm $OPENHAB_DISTRO-addons.zip
-# TODO(maruel): Enable and configure.

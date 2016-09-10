@@ -23,7 +23,8 @@ After=auditd.service
 [Service]
 Type=oneshot
 Restart=no
-ExecStart=/opt/vc/bin/tvservice -o
+# It is only present on Raspbian. Make it a no-op on Armbian.
+ExecStart=/bin/sh -c '[ -f /opt/vc/bin/tvservice ] && /opt/vc/bin/tvservice -o || true'
 
 [Install]
 WantedBy=multi-user.target
