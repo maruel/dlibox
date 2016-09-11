@@ -261,11 +261,11 @@ func (c *ConfigMgr) Init(p *anim1d.Painter) error {
 	if err := c.Settings.Alarms.Reset(p); err != nil {
 		return nil
 	}
-	if len(c.Settings.PatternSettings.Startup) != 0 {
-		return p.SetPattern(string(c.Settings.PatternSettings.Startup))
-	}
 	if len(c.Settings.PatternSettings.Last) != 0 {
 		return p.SetPattern(string(c.Settings.PatternSettings.Last))
+	}
+	if len(c.Settings.PatternSettings.Startup) != 0 {
+		return p.SetPattern(string(c.Settings.PatternSettings.Startup))
 	}
 	return nil
 }
