@@ -29,8 +29,11 @@ through mDNS.
 
 ## Related projects
 
+### Rule engine
+
 In this summary, I'm only looking at open sources projects that can run in
-standalone mode without the need of internet connectivity.
+standalone mode without the need of internet connectivity. Otherwise you can use
+https://ifttt.com, https://firebase.google.com/, the trash from Apple, etc.
 
 - http://www.openhab.org/
   - Summary: by far the most popular and well supported rule engine. At the
@@ -74,3 +77,18 @@ standalone mode without the need of internet connectivity.
     - Has a [nice
       schema](https://github.com/marvinroger/homie/tree/master#device-properties)
       for devices.
+
+
+## Tools for video surveillance integration
+
+- [ZoneMinder](https://www.zoneminder.com/) is a complete solution
+  - It finally (!) added an API in 2016
+  - Android and iOS app: http://pliablepixels.github.io/
+  - Someone made a [docker](https://github.com/QuantumObject/docker-zoneminder)
+- [Restreamer](https://datarhei.github.io/restreamer/) reencodes video on the
+  fly for web viewing; for simpler solution
+- [Motion](http://www.lavrsen.dk/foswiki/bin/view/Motion/WebHome) is a bit
+  anticated
+  - Someone made a [docker](https://github.com/kfei/dockmotion)
+- RAW ffpmeg; not to be ignored, [it's always an
+  option](https://docs.google.com/presentation/d/1EvaSzUjQc4zUNJxDPMzsDFTwGt1HssSBUX1-jF_HsQc)
