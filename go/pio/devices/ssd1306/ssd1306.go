@@ -254,7 +254,7 @@ func (d *Dev) Scroll(o Orientation, rate FrameRate) error {
 //
 // It will only take effect after redrawing the ram.
 //
-// TODO(maruel): Doesn't work.
+// BUG(maruel): Doesn't work.
 func (d *Dev) StopScroll() error {
 	_, err := d.w.Write([]byte{0x2E})
 	return err
@@ -262,7 +262,7 @@ func (d *Dev) StopScroll() error {
 
 // SetContrast changes the screen contrast.
 //
-// TODO(maruel): Doesn't work.
+// BUG(maruel): Doesn't work.
 func (d *Dev) SetContrast(level byte) error {
 	_, err := d.w.Write([]byte{0x81, level})
 	return err
@@ -270,7 +270,7 @@ func (d *Dev) SetContrast(level byte) error {
 
 // Enable or disable the display.
 //
-// TODO(maruel): Doesn't work.
+// BUG(maruel): Doesn't work.
 func (d *Dev) Enable(on bool) error {
 	b := byte(0xAE)
 	if on {
