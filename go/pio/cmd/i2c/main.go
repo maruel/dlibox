@@ -15,7 +15,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/pio/devices"
+	"github.com/maruel/dlibox/go/pio/devices/i2cdev"
 	"github.com/maruel/dlibox/go/pio/host/sysfs/i2c"
 )
 
@@ -68,7 +68,7 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	d := devices.I2C{i, uint16(*addr)}
+	d := i2cdev.Dev{i, uint16(*addr)}
 	if *write {
 		_, err = d.Write(buf)
 	} else {

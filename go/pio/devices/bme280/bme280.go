@@ -13,6 +13,7 @@ import (
 	"errors"
 
 	"github.com/maruel/dlibox/go/pio/devices"
+	"github.com/maruel/dlibox/go/pio/devices/i2cdev"
 	"github.com/maruel/dlibox/go/pio/host"
 )
 
@@ -65,7 +66,7 @@ const (
 )
 
 type Dev struct {
-	d devices.I2C
+	d i2cdev.Dev
 	c calibration
 }
 
@@ -106,7 +107,7 @@ func (d *Dev) Stop() error {
 // It is recommended to call Stop() when done with the device so it stops
 // sampling.
 func Make(i host.I2C, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
-	d := &Dev{d: devices.I2C{i, 0x76}}
+	d := &Dev{d: i2cdev.Dev{i, 0x76}}
 
 	config := []byte{
 		// ctrl_meas; put it to sleep otherwise the config update may be ignored.
@@ -126,23 +127,21 @@ func Make(i host.I2C, temperature, pressure, humidity Oversampling, standby Stan
 	chipId := [1]byte{}
 	tph := [0xA2 - 0x88]byte{}
 	h := [0xE8 - 0xE1]byte{}
-	ios := []devices.IO{
-		// Read register 0xD0 to read the chip id.
-		{host.Write, []byte{0xD0}},
-		{host.ReadStop, chipId[:]},
-		// Read calibration data t1~3, p1~9, 8bits padding, h1.
-		{host.Write, []byte{0x88}},
-		{host.ReadStop, tph[:]},
-		// Read calibration data  h2~6
-		{host.Write, []byte{0xE1}},
-		{host.ReadStop, h[:]},
-		// Write config and start it.
-		{host.WriteStop, config},
-	}
-	if err := d.d.Tx(ios); err != nil {
+	// Read register 0xD0 to read the chip id.
+	if err := d.d.ReadReg(0xD0, chipId[:]); err != nil {
 		return nil, err
 	}
-
+	// Read calibration data t1~3, p1~9, 8bits padding, h1.
+	if err := d.d.ReadReg(0x88, tph[:]); err != nil {
+		return nil, err
+	}
+	// Read calibration data  h2~6
+	if err := d.d.ReadReg(0xE1, h[:]); err != nil {
+		return nil, err
+	}
+	if err := d.d.Tx(config[:], nil); err != nil {
+		return nil, err
+	}
 	if chipId[0] != 0x60 {
 		return nil, errors.New("unexpected chip id; is this a BME280?")
 	}

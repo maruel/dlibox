@@ -25,6 +25,7 @@ import (
 	"io"
 
 	"github.com/maruel/dlibox/go/pio/devices"
+	"github.com/maruel/dlibox/go/pio/devices/i2cdev"
 	"github.com/maruel/dlibox/go/pio/host"
 )
 
@@ -84,7 +85,7 @@ func MakeSPI(s host.SPI, w, h int, rotated bool) (*Dev, error) {
 // As per datasheet, maximum clock speed is 1/2.5µs = 400KHz. It's worth
 // bumping up from default bus speed of 100KHz if possible.
 func MakeI2C(i host.I2C, w, h int, rotated bool) (*Dev, error) {
-	return makeDev(&devices.I2C{i, 0x3C}, w, h, rotated)
+	return makeDev(&i2cdev.Dev{i, 0x3C}, w, h, rotated)
 }
 
 // makeDev is the common initialization code that is independent of the bus

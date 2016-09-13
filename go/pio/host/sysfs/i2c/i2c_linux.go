@@ -12,18 +12,15 @@ import (
 	"sync"
 	"syscall"
 	"unsafe"
-
-	"github.com/maruel/dlibox/go/pio/host"
 )
 
 // Bus is an open I²C bus.
 //
 // It can be used to communicate with multiple devices from multiple goroutines.
 type Bus struct {
-	f    *os.File
-	l    sync.Mutex // In theory the kernel probably has an internal lock but not taking any chance.
-	fn   functionality
-	addr uint16
+	f  *os.File
+	l  sync.Mutex // In theory the kernel probably has an internal lock but not taking any chance.
+	fn functionality
 }
 
 // Make opens an I²C bus via its sysfs interface as described at
@@ -43,7 +40,7 @@ func Make(bus int) (*Bus, error) {
 		}
 		return nil, fmt.Errorf("are you member of group 'plugdev'? please follow instructions at https://github.com/maruel/dlibox/tree/master/go/setup. %s", err)
 	}
-	b := &Bus{f: f, addr: 0xFFFF}
+	b := &Bus{f: f}
 
 	// TODO(maruel): Changing the speed is currently doing this for all devices.
 	// https://github.com/raspberrypi/linux/issues/215
@@ -67,104 +64,29 @@ func (b *Bus) Close() error {
 }
 
 // Tx execute a transaction as a single operation unit.
-func (b *Bus) Tx(ios []host.IOFull) error {
-	// Do a quick check first.
-	if len(ios) == 0 {
+func (b *Bus) Tx(addr uint16, w, r []byte) error {
+	if addr >= 0x400 || (addr >= 0x80 && b.fn&func10BIT_ADDR == 0) {
 		return nil
 	}
-	for i := range ios {
-		if ios[i].Addr >= 0x400 || (ios[i].Addr >= 0x80 && b.fn&func10BIT_ADDR == 0) {
-			return nil
-		}
-		if len(ios[i].Buf) == 0 {
-			return errors.New("buffer is empty")
-		}
-		if len(ios[i].Buf) > 65535 {
-			return errors.New("buffer too large")
-		}
-	}
-	op := ios[len(ios)-1].Op
-	if op != host.WriteStop && op != host.ReadStop {
-		return errors.New("last operation must be Stop")
-	}
-	return b.txFast(ios)
-}
 
-// txSlow sends and receives data as a single transaction by simply using a mutex.
-func (b *Bus) txSlow(ios []host.IOFull) error {
-	// A limitation of txSlow() only.
-	addr := ios[0].Addr
-	for i := 1; i < len(ios); i++ {
-		if addr != ios[i].Addr {
-			return errors.New("add operations must be on the same address")
-		}
-	}
-
-	b.l.Lock()
-	defer b.l.Unlock()
-	if err := b.setAddr(addr); err != nil {
-		return err
-	}
-	// TODO(maruel): Merge multiple operations together.
-	for i := 0; i < len(ios); i++ {
-		switch ios[i].Op {
-		case host.Write, host.WriteStop:
-			if _, err := b.f.Write(ios[i].Buf); err != nil {
-				return err
-			}
-		case host.Read, host.ReadStop:
-			if _, err := b.f.Read(ios[i].Buf); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// setAddr must be called with lock held.
-func (b *Bus) setAddr(addr uint16) error {
-	if b.addr != addr {
-		if err := b.ioctl(ioctlSlave, uintptr(addr)); err != nil {
-			return err
-		}
-		b.addr = addr
-	}
-	return nil
-}
-
-// txFast does a transaction as a single kernel call.
-//
-// Causes memory allocation but still less costly than doing multiple kernel
-// calls.
-func (b *Bus) txFast(ios []host.IOFull) error {
 	// Convert the messages to the internal format.
-	msgs := make([]i2cMsg, len(ios))
-	last := host.WriteStop
-	for i := range ios {
-		msgs[i].addr = ios[i].Addr
-		switch ios[i].Op {
-		case host.Write, host.WriteStop:
-			if last == host.Write {
-				msgs[i].flags = flagNOSTART
-			}
-		case host.Read, host.ReadStop:
-			if last == host.Read {
-				msgs[i].flags = flagRD | flagNOSTART
-			} else {
-				msgs[i].flags = flagRD
-			}
-		}
-		last = ios[i].Op
-		msgs[i].length = uint16(len(ios[i].Buf))
-		msgs[i].buf = uintptr(unsafe.Pointer(&ios[i].Buf[0]))
+	var buf [2]i2cMsg
+	msgs := buf[:1]
+	buf[0].addr = addr
+	buf[0].length = uint16(len(w))
+	buf[0].buf = uintptr(unsafe.Pointer(&w[0]))
+	if len(r) != 0 {
+		msgs = buf[:]
+		buf[1].addr = addr
+		buf[1].flags = flagRD
+		buf[1].length = uint16(len(r))
+		buf[1].buf = uintptr(unsafe.Pointer(&r[0]))
 	}
-	// Doesn't seem to work, need investigation.
 	p := rdwrIoctlData{
 		msgs:  uintptr(unsafe.Pointer(&msgs[0])),
 		nmsgs: uint32(len(msgs)),
 	}
 	pp := uintptr(unsafe.Pointer(&p))
-
 	b.l.Lock()
 	defer b.l.Unlock()
 	return b.ioctl(ioctlRdwr, pp)

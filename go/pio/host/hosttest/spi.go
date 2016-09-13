@@ -7,6 +7,7 @@ package hosttest
 import (
 	"errors"
 	"io"
+	"sync"
 
 	"github.com/maruel/dlibox/go/pio/host"
 )
@@ -15,27 +16,38 @@ import (
 //
 // BUG(maruel): SPI does not support reading yet.
 type SPI struct {
+	sync.Mutex
 	W io.Writer
 }
 
 // Close is a no-op.
 func (s *SPI) Close() error {
+	s.Lock()
+	defer s.Unlock()
 	return nil
 }
 
 // Configure is a no-op.
 func (s *SPI) Configure(mode host.Mode, bits int) error {
+	s.Lock()
+	defer s.Unlock()
 	return nil
 }
 
 // Write accumulates all the bytes written.
 func (s *SPI) Write(d []byte) (int, error) {
+	s.Lock()
+	defer s.Unlock()
 	return s.W.Write(d)
 }
 
-// Tx returns an error.
+// Tx only support writes.
 func (s *SPI) Tx(w, r []byte) error {
-	return errors.New("not implemented")
+	if len(r) != 0 {
+		return errors.New("not implemented")
+	}
+	_, err := s.Write(w)
+	return err
 }
 
 var _ host.SPI = &SPI{}

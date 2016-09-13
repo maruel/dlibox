@@ -6,25 +6,35 @@ package hosttest
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/maruel/dlibox/go/pio/host"
 )
+
+// I2CIO registers the I/O that happened on fake I2C.
+type I2CIO struct {
+	Addr  uint16
+	Write []byte
+}
 
 // I2C implements host.I2C. It registers everything written to it.
 //
 // BUG(maruel): I2C does not support reading yet.
 type I2C struct {
-	IO []host.IOFull
+	sync.Mutex
+	Writes []I2CIO
 }
 
 // Tx currently only support writes.
-func (i *I2C) Tx(ios []host.IOFull) error {
-	for i := range ios {
-		if o := ios[i].Op; o != host.Write && o != host.WriteStop {
-			return errors.New("not implemented")
-		}
+func (i *I2C) Tx(addr uint16, w, r []byte) error {
+	if len(r) != 0 {
+		return errors.New("not implemented")
 	}
-	i.IO = append(i.IO, ios...)
+	io := I2CIO{addr, make([]byte, len(w))}
+	copy(io.Write, w)
+	i.Lock()
+	defer i.Unlock()
+	i.Writes = append(i.Writes, io)
 	return nil
 }
 

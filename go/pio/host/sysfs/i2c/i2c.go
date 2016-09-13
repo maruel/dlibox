@@ -6,11 +6,7 @@
 
 package i2c
 
-import (
-	"errors"
-
-	"github.com/maruel/dlibox/go/pio/host"
-)
+import "errors"
 
 var err = errors.New("not implemented on non-linux OSes")
 
@@ -26,6 +22,6 @@ func (b *Bus) Close() error {
 	return err
 }
 
-func (b *Bus) Tx(ios []host.IOFull) error {
+func (b *Bus) Tx(addr uint16, w, r []byte) error {
 	return err
 }

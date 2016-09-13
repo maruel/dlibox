@@ -6,8 +6,6 @@
 
 package host
 
-import "io"
-
 // Mode determines how communication is done. The bits can be OR'ed to change
 // the polarity and phase used for communication.
 type Mode int
@@ -19,9 +17,8 @@ const (
 	Mode3 Mode = 0x3
 )
 
-// SPI defines the functions a contrete SPI driver must implement.
+// SPI defines the interface a concrete SPI driver must implement.
 type SPI interface {
-	io.Writer
+	Bus
 	Configure(mode Mode, bits int) error
-	Tx(r, w []byte) error
 }
