@@ -78,8 +78,10 @@ func (d *Dev) Read() (float32, float32, float32, error) {
 	if err := d.d.ReadReg(0xF7, buf[:]); err != nil {
 		return 0, 0, 0, err
 	}
+	// These values are 20 bits as per doc.
 	pRaw := int32(buf[0])<<12 | int32(buf[1])<<4 | int32(buf[2])>>4
 	tRaw := int32(buf[3])<<12 | int32(buf[4])<<4 | int32(buf[5])>>4
+	// This value is 16 bits as per doc.
 	hRaw := int32(buf[6])<<8 | int32(buf[7])
 	t, tFine := d.c.compensateTempFloat(tRaw)
 	p := d.c.compensatePressureFloat(pRaw, tFine)
@@ -222,42 +224,71 @@ type calibration struct {
 	h6                             int8
 }
 
-// compensateTempInt returns temperature in DegC, resolution is 0.01 DegC.
+// Page 23
+
+// compensateTempInt returns temperature in °C, resolution is 0.01 °C.
 // Output value of 5123 equals 51.23 C.
+//
+// raw has 20 bits of resolution.
 func (c *calibration) compensateTempInt(raw int32) (int32, int32) {
-	x := ((raw>>3 - int32(c.t1)<<1) * int32(c.t2)) >> 1
-	var2 := ((((raw>>4 - int32(c.t1)) * (raw>>4 - int32(c.t1))) >> 2) * int32(c.t3)) >> 14
-	tFine := x + var2
+	x := ((raw>>3 - int32(c.t1)<<1) * int32(c.t2)) >> 11
+	y := ((((raw>>4 - int32(c.t1)) * (raw>>4 - int32(c.t1))) >> 12) * int32(c.t3)) >> 14
+	tFine := x + y
 	return (tFine*5 + 128) >> 8, tFine
 }
 
-// compensatePressureInt returns pressure in Pa in Q24.8 format (24 integer bits
-// and 8 fractional bits). Output value of 24674867 represents 24674867/256 =
-// 96386.2 Pa = 963.862 hPa.
-func (c *calibration) compensatePressureInt(raw, tFine int32) uint32 {
+// compensatePressureInt64 returns pressure in Pa in Q24.8 format (24 integer
+// bits and 8 fractional bits). Output value of 24674867 represents
+// 24674867/256 = 96386.2 Pa = 963.862 hPa.
+//
+// raw has 20 bits of resolution.
+//
+// BUG(maruel): Output is incorrect.
+func (c *calibration) compensatePressureInt64(raw, tFine int32) uint32 {
 	x := int64(tFine) - 128000
 	y := x * x * int64(c.p6)
-	y += x * int64(c.p5) << 17
-	y += int64(c.p4) << 35
-	x = (x*x*int64(c.p3))>>8 + (x*int64(c.p2))<<12
-	x += 1 << 47
-	x *= int64(c.p1) >> 33
+	y += ((x * int64(c.p5)) << 17)
+	y += (int64(c.p4) << 35)
+	x = ((x * x * int64(c.p3)) >> 8) + ((x * int64(c.p2)) << 12)
+	x = (((1 << 47) + x) * (int64(c.p1)) >> 33)
 	if x == 0 {
 		return 0
 	}
 	p := ((int64(1048576-raw)<<31 - y) * 3125) / x
-	x = (int64(c.p9) * int64(p) >> 13 * int64(raw) >> 13) >> 25
+	x = (int64(c.p9) * (int64(p) >> 13) * (int64(raw) >> 13)) >> 25
 	y = (int64(c.p8) * p) >> 19
-	return uint32((p+x+y)>>8 + int64(c.p7)<<4)
+	return uint32(((p + x + y) >> 8) + (int64(c.p7) << 4))
 }
 
 // compensateHumidityInt returns humidity in %RH in Q22.10 format (22 integer
 // and 10 fractional bits). Output value of 47445 represents 47445/1024 =
 // 46.333%
+//
+// raw has 16 bits of resolution.
 func (c *calibration) compensateHumidityInt(raw, tFine int32) uint32 {
 	x := tFine - 76800
-	x = ((((raw<<14 - int32(c.h4)<<20 - int32(c.h5)*x) + 16384) >> 15) * ((((((x*int32(c.h6))>>10*(((x*int32(c.h3))>>11)+32768))>>10)+2097152)*int32(c.h2) + 8192) >> 14))
-	x = (((x >> 15 * x >> 15) >> 7) * int32(c.h1)) >> 4
+	/*
+		Yes, someone wrote the following in the datasheet unironically:
+		v_x1_u32r = (((((adc_H << 14) – (((BME280_S32_t)dig_H4) << 20) –
+		(((BME280_S32_t)dig_H5) * v_x1_u32r)) + ((BME280_S32_t)16384)) >> 15) *
+		(((((((v_x1_u32r * ((BME280_S32_t)dig_H6)) >> 10) * (((v_x1_u32r *
+		((BME280_S32_t)dig_H3)) >> 11) + ((BME280_S32_t)32768))) >> 10) +
+		((BME280_S32_t)2097152)) * ((BME280_S32_t)dig_H2) + 8192) >> 14));
+
+		v_x1_u32r = (v_x1_u32r – (((((v_x1_u32r >> 15) * (v_x1_u32r >> 15)) >> 7) * ((BME280_S32_t)dig_H1)) >> 4));
+		v_x1_u32r = (v_x1_u32r < 0 ? 0 : v_x1_u32r);
+		v_x1_u32r = (v_x1_u32r > 419430400 ? 419430400 : v_x1_u32r);
+	*/
+	// Here's a more "readable" version:
+	x1 := (raw << 14) - (int32(c.h4) << 20) - int32(c.h5)*x
+	x2 := (x1 + 16384) >> 15
+	x3 := (x * int32(c.h6)) >> 10
+	x4 := (x * int32(c.h3)) >> 11
+	x5 := (x3 * (x4 + 32768)) >> 10
+	x6 := ((x5+2097152)*int32(c.h2) + 8192) >> 14
+	x = x2 * x6
+
+	x = x - ((((x>>15)*(x>>15))>>7)*int32(c.h1))>>4
 	if x < 0 {
 		return 0
 	}
@@ -267,8 +298,42 @@ func (c *calibration) compensateHumidityInt(raw, tFine int32) uint32 {
 	return uint32(x >> 12)
 }
 
+// Page 50
+
+// compensatePressureInt32 returns pressure in Pa in Q24.8 format (24 integer
+// bits and 8 fractional bits). Output value of 24674867 represents
+// 24674867/256 = 96386.2 Pa = 963.862 hPa.
+//
+// raw has 20 bits of resolution.
+//
+// BUG(maruel): Output is incorrect.
+func (c *calibration) compensatePressureInt32(raw, tFine int32) uint32 {
+	x := (int32(tFine) >> 1) - 64000
+	y := (((x >> 2) * (x >> 2)) >> 11) * int32(c.p6)
+	y += (x * int32(c.p5)) << 1
+	y = (y >> 2) + (int32(c.p4) << 16)
+	x = (((int32(c.p3) * (((x >> 2) * (x >> 2)) >> 13)) >> 3) + ((int32(c.p2) * x) >> 1)) >> 18
+	x = ((32768 + x) * int32(c.p1)) >> 16
+	if x == 0 {
+		return 0
+	}
+	p := ((uint32(int32(1048576)-raw) - uint32(y>>12)) * 3125)
+	if p < 0x80000000 {
+		p = (p << 1) / uint32(x)
+	} else {
+		p = (p / uint32(x)) * 2
+	}
+	x = (int32(c.p9) * int32(((p>>3)*(p>>3))>>13)) >> 12
+	y = (int32(p>>2) * int32(c.p8)) >> 13
+	return uint32((int32(p) + ((x + y + int32(c.p7)) >> 4)))
+}
+
 // Page 49
 
+// compensateTempFloat returns temperature in °C. Output value of "51.23"
+// equals 51.23 °C.
+//
+// raw has 20 bits of resolution.
 func (c *calibration) compensateTempFloat(raw int32) (float32, int32) {
 	x := (float64(raw)/16384. - float64(c.t1)/1024.) * float64(c.t2)
 	y := (float64(raw)/131072. - float64(c.t1)/8192.) * float64(c.t3)
@@ -276,6 +341,10 @@ func (c *calibration) compensateTempFloat(raw int32) (float32, int32) {
 	return float32((x + y) / 5120.), tFine
 }
 
+// compensateHumidityFloat returns pressure in Pa. Output value of "96386.2"
+// equals 96386.2 Pa = 963.862 hPa.
+//
+// raw has 20 bits of resolution.
 func (c *calibration) compensatePressureFloat(raw, tFine int32) float32 {
 	x := float64(tFine)*0.5 - 64000.
 	y := x * x * float64(c.p6) / 32768.
@@ -293,6 +362,10 @@ func (c *calibration) compensatePressureFloat(raw, tFine int32) float32 {
 	return float32(p+(x+y+float64(c.p7))/16.) / 1000.
 }
 
+// compensateHumidityFloat returns humidity in %rH. Output value of "46.332"
+// represents 46.332 %rH.
+//
+// raw has 16 bits of resolution.
 func (c *calibration) compensateHumidityFloat(raw, tFine int32) float32 {
 	h := float64(tFine - 76800)
 	h = (float64(raw) - float64(c.h4)*64. + float64(c.h5)/16384.*h) * float64(c.h2) / 65536. * (1. + float64(c.h6)/67108864.*h*(1.+float64(c.h3)/67108864.*h))
