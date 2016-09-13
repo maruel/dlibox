@@ -23,9 +23,9 @@ import (
 	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
-	"github.com/maruel/dlibox/go/pio/fakes"
-	"github.com/maruel/dlibox/go/pio/fakes/screen"
+	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/hosttest"
 	"github.com/maruel/dlibox/go/pio/host/sysfs/spi"
 	"github.com/nfnt/resize"
 )
@@ -130,7 +130,7 @@ func mainImpl() error {
 	} else {
 		var spiBus host.SPI
 		if *bus == -1 {
-			spiBus = &fakes.SPI{W: os.Stdout}
+			spiBus = &hosttest.SPI{W: os.Stdout}
 		} else {
 			b, err := spi.Make(*bus, 0, int64(*speed))
 			if err != nil {

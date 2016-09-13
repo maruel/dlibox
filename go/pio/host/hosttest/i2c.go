@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package fakes
+package hosttest
 
 import (
 	"errors"
@@ -11,6 +11,8 @@ import (
 )
 
 // I2C implements host.I2C. It registers everything written to it.
+//
+// BUG(maruel): I2C does not support reading yet.
 type I2C struct {
 	IO []host.IOFull
 }

@@ -27,9 +27,9 @@ import (
 	"github.com/maruel/dlibox/go/bw2d"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
+	"github.com/maruel/dlibox/go/pio/devices/devicestest"
+	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
-	"github.com/maruel/dlibox/go/pio/fakes"
-	"github.com/maruel/dlibox/go/pio/fakes/screen"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/cpu"
 	"github.com/maruel/dlibox/go/pio/host/ir"
@@ -193,7 +193,7 @@ func mainImpl() error {
 		spiBus, err := spi.Make(0, 0, config.Settings.APA102.SPIspeed)
 		if err != nil {
 			log.Printf("SPI failed: %v", err)
-			leds = &fakes.Display{image.NewNRGBA(image.Rect(0, 0, config.Settings.APA102.NumberLights, 1))}
+			leds = &devicestest.Display{image.NewNRGBA(image.Rect(0, 0, config.Settings.APA102.NumberLights, 1))}
 		} else {
 			defer spiBus.Close()
 			if leds, err = apa102.Make(spiBus, config.Settings.APA102.NumberLights, 255, 6500); err != nil {

@@ -2,5 +2,6 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package fakes contains non-hardware host, devices implementations.
-package fakes
+// Package hosttest contains non-hardware host implementations for testing or
+// emulation purpose.
+package hosttest

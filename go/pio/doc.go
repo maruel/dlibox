@@ -3,7 +3,7 @@
 // that can be found in the LICENSE file.
 
 // Package pio is a peripheral I/O library. It contains host, devices, and
-// fakes.
+// test packages to emulate the hardware.
 //
 // (Temporary name, hopefully upstreamable)
 //
@@ -17,6 +17,4 @@
 //     buses that are exposed by the host onto which devices can be connected,
 //     i.e.  I²C, SPI, IR, GPIO, etc. 'host' contains the interfaces and
 //     subpackages contain contain concrete types.
-//   - pio/fakes contains non-hardware fakes, like a fake SPI bus, a fake
-//     APA102 LEDs strip, etc.
 package pio

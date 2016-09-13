@@ -14,7 +14,7 @@ import (
 	"testing"
 
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/pio/fakes"
+	"github.com/maruel/dlibox/go/pio/devices/devicestest"
 	"github.com/maruel/ut"
 )
 
@@ -23,7 +23,7 @@ func TestWeb(t *testing.T) {
 	var config Config
 	config.ResetDefault()
 	config.LRU.Patterns = []Pattern{"\"#010101\"", "\"#020202\""}
-	d := &fakes.Display{image.NewNRGBA(image.Rect(0, 0, 128, 1))}
+	d := &devicestest.Display{image.NewNRGBA(image.Rect(0, 0, 128, 1))}
 	painter := anim1d.MakePainter(d, 60)
 	defer painter.Close()
 	s, err := startWebServer(0, painter, &config)

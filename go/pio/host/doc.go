@@ -6,4 +6,6 @@
 //
 // Subpackages contain the concrete implementations. Devices accept interface,
 // constructors return concrete type.
+//
+// Subpackage hosttest contains fake implementations for testing.
 package host

@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package fakes
+package hosttest
 
 import (
 	"sync"
@@ -11,12 +11,15 @@ import (
 )
 
 // Pin implements host.Pin.
+//
+// Modify its members to simulate hardware events.
 type Pin struct {
-	sync.Mutex
-	host.Level
-	Name      string
-	Num       int
-	EdgesChan chan host.Level
+	Name string // Should be immutable.
+	Num  int    // Should be immutable.
+
+	sync.Mutex                 // Grab the Mutex before modifying the members to keep it concurrent safe.
+	host.Level                 // Used for both input and output.
+	EdgesChan  chan host.Level // Use it to fake edges.
 }
 
 func (p *Pin) String() string {
@@ -27,6 +30,7 @@ func (p *Pin) Number() int {
 	return p.Num
 }
 
+// In is concurrent safe.
 func (p *Pin) In(pull host.Pull) error {
 	p.Lock()
 	defer p.Unlock()
@@ -38,12 +42,14 @@ func (p *Pin) In(pull host.Pull) error {
 	return nil
 }
 
+// Read is concurrent safe.
 func (p *Pin) Read() host.Level {
 	p.Lock()
 	defer p.Unlock()
 	return p.Level
 }
 
+// Edges is concurrent safe.
 func (p *Pin) Edges() (chan host.Level, error) {
 	p.Lock()
 	defer p.Unlock()
@@ -53,12 +59,14 @@ func (p *Pin) Edges() (chan host.Level, error) {
 	return p.EdgesChan, nil
 }
 
+// Out is concurrent safe.
 func (p *Pin) Out() error {
 	p.Lock()
 	defer p.Unlock()
 	return nil
 }
 
+// Set is concurrent safe.
 func (p *Pin) Set(level host.Level) {
 	p.Lock()
 	defer p.Unlock()

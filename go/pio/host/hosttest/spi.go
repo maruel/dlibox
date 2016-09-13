@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package fakes
+package hosttest
 
 import (
 	"errors"
@@ -12,6 +12,8 @@ import (
 )
 
 // SPI implements host.SPI. It registers everything written to it.
+//
+// BUG(maruel): SPI does not support reading yet.
 type SPI struct {
 	W io.Writer
 }
