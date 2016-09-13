@@ -224,7 +224,7 @@ type calibration struct {
 	h6                             int8
 }
 
-// Page 23
+// Pages 23-24
 
 // compensateTempInt returns temperature in °C, resolution is 0.01 °C.
 // Output value of 5123 equals 51.23 C.
@@ -247,15 +247,15 @@ func (c *calibration) compensateTempInt(raw int32) (int32, int32) {
 func (c *calibration) compensatePressureInt64(raw, tFine int32) uint32 {
 	x := int64(tFine) - 128000
 	y := x * x * int64(c.p6)
-	y += ((x * int64(c.p5)) << 17)
-	y += (int64(c.p4) << 35)
-	x = ((x * x * int64(c.p3)) >> 8) + ((x * int64(c.p2)) << 12)
-	x = (((1 << 47) + x) * (int64(c.p1)) >> 33)
+	y += (x * int64(c.p5)) << 17
+	y += int64(c.p4) << 35
+	x = (x*x*int64(c.p3))>>8 + ((x * int64(c.p2)) << 12)
+	x = ((int64(1)<<47 + x) * int64(c.p1)) >> 33
 	if x == 0 {
 		return 0
 	}
-	p := ((int64(1048576-raw)<<31 - y) * 3125) / x
-	x = (int64(c.p9) * (int64(p) >> 13) * (int64(raw) >> 13)) >> 25
+	p := ((((1048576 - int64(raw)) << 31) - y) * 3125) / x
+	x = (int64(c.p9) * (p >> 13) * (p >> 13)) >> 25
 	y = (int64(c.p8) * p) >> 19
 	return uint32(((p + x + y) >> 8) + (int64(c.p7) << 4))
 }
@@ -280,7 +280,7 @@ func (c *calibration) compensateHumidityInt(raw, tFine int32) uint32 {
 		v_x1_u32r = (v_x1_u32r > 419430400 ? 419430400 : v_x1_u32r);
 	*/
 	// Here's a more "readable" version:
-	x1 := (raw << 14) - (int32(c.h4) << 20) - int32(c.h5)*x
+	x1 := raw<<14 - int32(c.h4)<<20 - int32(c.h5)*x
 	x2 := (x1 + 16384) >> 15
 	x3 := (x * int32(c.h6)) >> 10
 	x4 := (x * int32(c.h3)) >> 11
@@ -300,20 +300,22 @@ func (c *calibration) compensateHumidityInt(raw, tFine int32) uint32 {
 
 // Page 50
 
-// compensatePressureInt32 returns pressure in Pa in Q24.8 format (24 integer
-// bits and 8 fractional bits). Output value of 24674867 represents
-// 24674867/256 = 96386.2 Pa = 963.862 hPa.
+// compensatePressureInt32 returns pressure in Pa. Output value of "96386"
+// equals 96386 Pa = 963.86 hPa
+//
+// "Compensating the pressure value with 32 bit integer has an accuracy of
+// typically 1 Pa"
 //
 // raw has 20 bits of resolution.
 //
 // BUG(maruel): Output is incorrect.
 func (c *calibration) compensatePressureInt32(raw, tFine int32) uint32 {
-	x := (int32(tFine) >> 1) - 64000
+	x := tFine>>1 - 64000
 	y := (((x >> 2) * (x >> 2)) >> 11) * int32(c.p6)
 	y += (x * int32(c.p5)) << 1
-	y = (y >> 2) + (int32(c.p4) << 16)
+	y = y>>2 + int32(c.p4)<<16
 	x = (((int32(c.p3) * (((x >> 2) * (x >> 2)) >> 13)) >> 3) + ((int32(c.p2) * x) >> 1)) >> 18
-	x = ((32768 + x) * int32(c.p1)) >> 16
+	x = ((32768 + x) * int32(c.p1)) >> 15
 	if x == 0 {
 		return 0
 	}
@@ -325,7 +327,7 @@ func (c *calibration) compensatePressureInt32(raw, tFine int32) uint32 {
 	}
 	x = (int32(c.p9) * int32(((p>>3)*(p>>3))>>13)) >> 12
 	y = (int32(p>>2) * int32(c.p8)) >> 13
-	return uint32((int32(p) + ((x + y + int32(c.p7)) >> 4)))
+	return uint32(int32(p) + ((x + y + int32(c.p7)) >> 4))
 }
 
 // Page 49

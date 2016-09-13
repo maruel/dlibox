@@ -42,12 +42,15 @@ func TestCalibrationFloat(t *testing.T) {
 		t.Fatalf("tFine %d", tFine)
 	}
 	if !floatEqual(temp, 22.948120) {
+		// 22.95°C
 		t.Fatalf("temp %f", temp)
 	}
 	if !floatEqual(pres, 100.046074) {
+		// 100.046kPa
 		t.Fatalf("pressure %f", pres)
 	}
 	if !floatEqual(humi, 63.167889) {
+		// 63.17%
 		t.Fatalf("humidity %f", humi)
 	}
 }
@@ -66,21 +69,23 @@ func TestCalibrationInt(t *testing.T) {
 		t.Fatalf("tFine %d", tFine)
 	}
 	if temp != 2293 {
+		// 2293/100 = 22.93°C
 		// Delta is <0.02°C which is pretty good.
 		t.Fatalf("temp %d", temp)
 	}
-	if pres64 != 25291004 {
-		// TODO(maruel): The delta is huge.
-		// 25291004/256 = 98792.984
-		t.Fatalf("pressure %d", pres64)
+	if pres64 != 25611063 {
+		// 25611063/256/1000 = 100.043214844
+		// Delta is 3Pa which is ok.
+		t.Fatalf("pressure64 %d", pres64)
 	}
-	if pres32 != 201972 {
-		// TODO(maruel): The output is invalid.
-		t.Fatalf("pressure %d", pres32)
+	if pres32 != 100045 {
+		// 100045/1000 = 100.045kPa
+		// Delta is 1Pa which is pretty good.
+		t.Fatalf("pressure32 %d", pres32)
 	}
 	if humi != 64686 {
-		// 64686/1024 = 63.17
-		// Delta is 0.01% which is pretty good.
+		// 64686/1024 = 63.17%
+		// Delta is <0.01% which is pretty good.
 		t.Fatalf("humidity %d", humi)
 	}
 }
