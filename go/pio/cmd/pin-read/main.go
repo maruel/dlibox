@@ -15,6 +15,8 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	// TODO(maruel): Make this unneeded.
+	_ "github.com/maruel/dlibox/go/pio/host/bcm283x"
 )
 
 func printLevel(l host.Level) error {
@@ -59,7 +61,7 @@ func mainImpl() error {
 	}
 	p := host.GetPinByNumber(pin)
 	if p == nil {
-		return errors.New("speficy a valid pin number")
+		return errors.New("specify a valid pin number")
 	}
 	if err = p.In(pull); err != nil {
 		return err

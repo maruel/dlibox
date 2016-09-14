@@ -16,6 +16,8 @@ import (
 
 	"github.com/maruel/dlibox/go/pio/devices/tm1637"
 	"github.com/maruel/dlibox/go/pio/host"
+	// TODO(maruel): Make this unneeded.
+	_ "github.com/maruel/dlibox/go/pio/host/bcm283x"
 )
 
 func mainImpl() error {

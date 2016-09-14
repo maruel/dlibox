@@ -12,6 +12,8 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	// TODO(maruel): Make this unneeded.
+	_ "github.com/maruel/dlibox/go/pio/host/bcm283x"
 )
 
 func mainImpl() error {

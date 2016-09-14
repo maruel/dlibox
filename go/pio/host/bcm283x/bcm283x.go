@@ -288,7 +288,7 @@ func (p *Pin) Out() error {
 		return globalError
 	}
 	// TODO(maruel): Ensure any Edges() loop is canceled.
-	if !p.setFunction(In) {
+	if !p.setFunction(Out) {
 		return errors.New("failed to change pin mode")
 	}
 	return nil
