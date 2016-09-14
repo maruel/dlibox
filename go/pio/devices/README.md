@@ -19,7 +19,8 @@ Contains driver for the following devices:
 
 ![ssd1306](https://raw.githubusercontent.com/wiki/maruel/dlibox/ssd1306.jpg)
 
-* [tm1637](ssd1306) drives a small OLED display of 128x64 or less
+* [tm1637](ssd1306) drives a small segment based numerical display up to 6
+  digits
 
 ![tm1637](https://raw.githubusercontent.com/wiki/maruel/dlibox/tm1637.jpg)
 
