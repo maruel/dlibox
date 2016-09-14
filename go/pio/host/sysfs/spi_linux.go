@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package spi
+package sysfs
 
 import (
 	"errors"
@@ -22,12 +22,12 @@ const (
 	noCS      host.Mode = 0x40
 )
 
-// Bus is an open SPI bus.
-type Bus struct {
+// SPI is an open SPI bus.
+type SPI struct {
 	f *os.File
 }
 
-// Make opens a *Bus via its sysfs interface as described at
+// MakeSPI opens a *SPI via its sysfs interface as described at
 // https://www.kernel.org/doc/Documentation/spi/spidev.
 //
 // `speed` must be specified and should be in the high Khz or low Mhz range,
@@ -35,7 +35,7 @@ type Bus struct {
 // signal is good.
 //
 // Default configuration is Mode3 and 8 bits.
-func Make(bus, chipSelect int, speed int64) (*Bus, error) {
+func MakeSPI(bus, chipSelect int, speed int64) (*SPI, error) {
 	if bus < 0 || bus > 255 {
 		return nil, errors.New("invalid bus")
 	}
@@ -49,7 +49,7 @@ func Make(bus, chipSelect int, speed int64) (*Bus, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Bus{f: f}
+	s := &SPI{f: f}
 	if err := s.Configure(host.Mode3, 8); err != nil {
 		s.Close()
 		return nil, err
@@ -59,14 +59,14 @@ func Make(bus, chipSelect int, speed int64) (*Bus, error) {
 
 // Close closes the handle to the SPI driver. It is not a requirement to close
 // before process termination.
-func (s *Bus) Close() error {
+func (s *SPI) Close() error {
 	err := s.f.Close()
 	s.f = nil
 	return err
 }
 
 // Configure changes the communication parameters of the bus.
-func (s *Bus) Configure(mode host.Mode, bits int) error {
+func (s *SPI) Configure(mode host.Mode, bits int) error {
 	if bits < 1 || bits > 256 {
 		return errors.New("invalid bits")
 	}
@@ -77,12 +77,12 @@ func (s *Bus) Configure(mode host.Mode, bits int) error {
 }
 
 // Write writes to the SPI bus without reading.
-func (s *Bus) Write(b []byte) (int, error) {
+func (s *SPI) Write(b []byte) (int, error) {
 	return s.f.Write(b)
 }
 
 // Tx sends and receives data simultaneously.
-func (s *Bus) Tx(w, r []byte) error {
+func (s *SPI) Tx(w, r []byte) error {
 	p := spiIOCTransfer{
 		tx:          uint64(uintptr(unsafe.Pointer(&w[0]))),
 		rx:          uint64(uintptr(unsafe.Pointer(&r[0]))),
@@ -118,7 +118,7 @@ type spiIOCTransfer struct {
 	pad         uint16
 }
 
-func (s *Bus) setFlag(op uint, arg uint64) error {
+func (s *SPI) setFlag(op uint, arg uint64) error {
 	if err := s.ioctl(op|0x40000000, unsafe.Pointer(&arg)); err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (s *Bus) setFlag(op uint, arg uint64) error {
 	return nil
 }
 
-func (s *Bus) ioctl(op uint, arg unsafe.Pointer) error {
+func (s *SPI) ioctl(op uint, arg unsafe.Pointer) error {
 	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, s.f.Fd(), uintptr(op), uintptr(arg)); errno != 0 {
 		return fmt.Errorf("spi ioctl: %s", syscall.Errno(errno))
 	}

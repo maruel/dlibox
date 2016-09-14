@@ -4,24 +4,24 @@
 
 // +build !linux
 
-package i2c
+package sysfs
 
 import "errors"
 
 var err = errors.New("not implemented on non-linux OSes")
 
-// Bus is not implemented on non-linux OSes.
-type Bus struct{}
+// I2C is not implemented on non-linux OSes.
+type I2C struct{}
 
-// Make is not implemented on non-linux OSes.
-func Make(bus int) (*Bus, error) {
+// MakeI2C is not implemented on non-linux OSes.
+func MakeI2C(bus int) (*I2C, error) {
 	return nil, err
 }
 
-func (b *Bus) Close() error {
+func (i *I2C) Close() error {
 	return err
 }
 
-func (b *Bus) Tx(addr uint16, w, r []byte) error {
+func (i *I2C) Tx(addr uint16, w, r []byte) error {
 	return err
 }

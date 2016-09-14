@@ -33,14 +33,13 @@ import (
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/cpu"
 	"github.com/maruel/dlibox/go/pio/host/ir"
-	"github.com/maruel/dlibox/go/pio/host/sysfs/i2c"
-	"github.com/maruel/dlibox/go/pio/host/sysfs/spi"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
 )
 
 func initDisplay() (devices.Display, error) {
-	i2cBus, err := i2c.Make(1)
+	i2cBus, err := sysfs.MakeI2C(1)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +189,7 @@ func mainImpl() error {
 		fps = 30
 		properties = append(properties, "fake=1")
 	} else {
-		spiBus, err := spi.Make(0, 0, config.Settings.APA102.SPIspeed)
+		spiBus, err := sysfs.MakeSPI(0, 0, config.Settings.APA102.SPIspeed)
 		if err != nil {
 			log.Printf("SPI failed: %v", err)
 			leds = &devicestest.Display{image.NewNRGBA(image.Rect(0, 0, config.Settings.APA102.NumberLights, 1))}

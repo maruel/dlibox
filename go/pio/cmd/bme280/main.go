@@ -15,7 +15,7 @@ import (
 
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
-	"github.com/maruel/dlibox/go/pio/host/sysfs/i2c"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 )
 
 func read(e devices.Environmental, loop bool) error {
@@ -52,7 +52,7 @@ func mainImpl() error {
 	}
 	log.SetFlags(log.Lmicroseconds)
 
-	i, err := i2c.Make(*bus)
+	i, err := sysfs.MakeI2C(*bus)
 	if err != nil {
 		return err
 	}

@@ -16,7 +16,7 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/devices/i2cdev"
-	"github.com/maruel/dlibox/go/pio/host/sysfs/i2c"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 )
 
 func mainImpl() error {
@@ -64,7 +64,7 @@ func mainImpl() error {
 		buf = make([]byte, *l)
 	}
 
-	i, err := i2c.Make(*bus)
+	i, err := sysfs.MakeI2C(*bus)
 	if err != nil {
 		return err
 	}

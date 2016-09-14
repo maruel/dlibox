@@ -22,8 +22,7 @@ import (
 
 	"github.com/maruel/dlibox/go/bw2d"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
-	"github.com/maruel/dlibox/go/pio/host/sysfs/i2c"
-	"github.com/maruel/dlibox/go/pio/host/sysfs/spi"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/nfnt/resize"
 )
@@ -155,7 +154,7 @@ func mainImpl() error {
 	// Open the device on the right bus.
 	var s *ssd1306.Dev
 	if *i2cId >= 0 {
-		i2cBus, err := i2c.Make(*i2cId)
+		i2cBus, err := sysfs.MakeI2C(*i2cId)
 		if err != nil {
 			return err
 		}
@@ -164,7 +163,7 @@ func mainImpl() error {
 			return err
 		}
 	} else {
-		spiBus, err := spi.Make(*spiId, *csId, int64(*speed))
+		spiBus, err := sysfs.MakeSPI(*spiId, *csId, int64(*speed))
 		if err != nil {
 			return err
 		}

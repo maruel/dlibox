@@ -24,7 +24,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/bcm283x"
 	"github.com/maruel/dlibox/go/pio/host/ir"
-	"github.com/maruel/dlibox/go/pio/host/sysfs/i2c"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
 )
@@ -75,7 +75,7 @@ func mainImpl() error {
 		return err
 	}
 
-	i, err := i2c.Make(1)
+	i, err := sysfs.MakeI2C(1)
 	if err != nil {
 		return err
 	}

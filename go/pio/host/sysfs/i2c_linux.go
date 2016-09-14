@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package i2c
+package sysfs
 
 import (
 	"errors"
@@ -14,21 +14,21 @@ import (
 	"unsafe"
 )
 
-// Bus is an open I²C bus.
+// I2C is an open I²C bus via sysfs.
 //
 // It can be used to communicate with multiple devices from multiple goroutines.
-type Bus struct {
+type I2C struct {
 	f  *os.File
 	l  sync.Mutex // In theory the kernel probably has an internal lock but not taking any chance.
 	fn functionality
 }
 
-// Make opens an I²C bus via its sysfs interface as described at
+// MakeI2C opens an I²C bus via its sysfs interface as described at
 // https://www.kernel.org/doc/Documentation/i2c/dev-interface It is not
 // Raspberry Pi specific.
 //
 // The resulting object is safe for concurent use.
-func Make(bus int) (*Bus, error) {
+func MakeI2C(bus int) (*I2C, error) {
 	f, err := os.OpenFile(fmt.Sprintf("/dev/i2c-%d", bus), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
 		// Try to be helpful here. There are generally two cases:
@@ -40,32 +40,32 @@ func Make(bus int) (*Bus, error) {
 		}
 		return nil, fmt.Errorf("are you member of group 'plugdev'? please follow instructions at https://github.com/maruel/dlibox/tree/master/go/setup. %s", err)
 	}
-	b := &Bus{f: f}
+	i := &I2C{f: f}
 
 	// TODO(maruel): Changing the speed is currently doing this for all devices.
 	// https://github.com/raspberrypi/linux/issues/215
 	// Need to access /sys/module/i2c_bcm2708/parameters/baudrate
 
 	// Query to know if 10 bits addresses are supported.
-	if err = b.ioctl(ioctlFuncs, uintptr(unsafe.Pointer(&b.fn))); err != nil {
+	if err = i.ioctl(ioctlFuncs, uintptr(unsafe.Pointer(&i.fn))); err != nil {
 		return nil, err
 	}
-	return b, nil
+	return i, nil
 }
 
 // Close closes the handle to the I²C driver. It is not a requirement to close
 // before process termination.
-func (b *Bus) Close() error {
-	b.l.Lock()
-	defer b.l.Unlock()
-	err := b.f.Close()
-	b.f = nil
+func (i *I2C) Close() error {
+	i.l.Lock()
+	defer i.l.Unlock()
+	err := i.f.Close()
+	i.f = nil
 	return err
 }
 
 // Tx execute a transaction as a single operation unit.
-func (b *Bus) Tx(addr uint16, w, r []byte) error {
-	if addr >= 0x400 || (addr >= 0x80 && b.fn&func10BIT_ADDR == 0) {
+func (i *I2C) Tx(addr uint16, w, r []byte) error {
+	if addr >= 0x400 || (addr >= 0x80 && i.fn&func10BIT_ADDR == 0) {
 		return nil
 	}
 
@@ -87,13 +87,13 @@ func (b *Bus) Tx(addr uint16, w, r []byte) error {
 		nmsgs: uint32(len(msgs)),
 	}
 	pp := uintptr(unsafe.Pointer(&p))
-	b.l.Lock()
-	defer b.l.Unlock()
-	return b.ioctl(ioctlRdwr, pp)
+	i.l.Lock()
+	defer i.l.Unlock()
+	return i.ioctl(ioctlRdwr, pp)
 }
 
-func (b *Bus) ioctl(op uint, arg uintptr) error {
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, b.f.Fd(), uintptr(op), arg); errno != 0 {
+func (i *I2C) ioctl(op uint, arg uintptr) error {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, i.f.Fd(), uintptr(op), arg); errno != 0 {
 		return fmt.Errorf("i²c ioctl: %s", syscall.Errno(errno))
 	}
 	return nil

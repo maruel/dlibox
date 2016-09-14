@@ -4,7 +4,7 @@
 
 // +build !linux
 
-package spi
+package sysfs
 
 import (
 	"errors"
@@ -14,26 +14,26 @@ import (
 
 var err = errors.New("not implemented on non-linux OSes")
 
-// Bus is not implemented on non-linux OSes.
-type Bus struct{}
+// SPI is not implemented on non-linux OSes.
+type SPI struct{}
 
-// Make is not implemented on non-linux OSes.
-func Make(bus int) (*Bus, error) {
+// MakeSPI is not implemented on non-linux OSes.
+func MakeSPI(bus int) (*SPI, error) {
 	return nil, err
 }
 
-func (s *Bus) Close() error {
+func (s *SPI) Close() error {
 	return err
 }
 
-func (s *Bus) Configure(mode host.Mode, bits int) error {
+func (s *SPI) Configure(mode host.Mode, bits int) error {
 	return err
 }
 
-func (s *Bus) Write(b []byte) (int, error) {
+func (s *SPI) Write(b []byte) (int, error) {
 	return 0, err
 }
 
-func (s *Bus) Tx(w, r []byte) error {
+func (s *SPI) Tx(w, r []byte) error {
 	return err
 }

@@ -2,5 +2,6 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package spi implements a sane SPI sysfs library.
-package spi
+// Package sysfs implements a sane library to interact with sysfs provided
+// hardware access.
+package sysfs

@@ -26,7 +26,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/hosttest"
-	"github.com/maruel/dlibox/go/pio/host/sysfs/spi"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/nfnt/resize"
 )
 
@@ -132,7 +132,7 @@ func mainImpl() error {
 		if *bus == -1 {
 			spiBus = &hosttest.SPI{W: os.Stdout}
 		} else {
-			b, err := spi.Make(*bus, 0, int64(*speed))
+			b, err := sysfs.MakeSPI(*bus, 0, int64(*speed))
 			if err != nil {
 				return err
 			}
