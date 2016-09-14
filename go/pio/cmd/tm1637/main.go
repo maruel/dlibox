@@ -32,6 +32,9 @@ func mainImpl() error {
 	b13 := flag.Bool("b13", false, "set PWM to 13/16")
 	b14 := flag.Bool("b14", false, "set PWM to 14/16")
 	verbose := flag.Bool("v", false, "verbose mode")
+	asSeg := flag.Bool("s", false, "use hex encoded segments instead of numbers")
+	asTime := flag.Bool("t", false, "expect two numbers representing time")
+	showDot := flag.Bool("dot", false, "when -t is used, show dots")
 	flag.Parse()
 	if !*verbose {
 		log.SetOutput(ioutil.Discard)
@@ -64,11 +67,40 @@ func mainImpl() error {
 		// Turn it off
 		b = tm1637.Off
 	}
-	var err error
-	digits := make([]int, flag.NArg())
-	for i, d := range flag.Args() {
-		if digits[i], err = strconv.Atoi(d); err != nil {
+	var hour, minute int
+	var digits []int
+	var segments []byte
+	if *asTime {
+		if flag.NArg() != 2 {
+			return errors.New("provide hh and mm")
+		}
+		x, err := strconv.ParseUint(flag.Arg(0), 10, 8)
+		if err != nil {
 			return err
+		}
+		hour = int(x)
+		x, err = strconv.ParseUint(flag.Arg(1), 10, 8)
+		if err != nil {
+			return err
+		}
+		minute = int(x)
+	} else if *asSeg {
+		segments = make([]byte, flag.NArg())
+		for i, d := range flag.Args() {
+			x, err := strconv.ParseUint(d, 16, 8)
+			if err != nil {
+				return err
+			}
+			segments[i] = byte(x)
+		}
+	} else {
+		digits = make([]int, flag.NArg())
+		for i, d := range flag.Args() {
+			x, err := strconv.ParseUint(d, 16, 8)
+			if err != nil {
+				return err
+			}
+			digits[i] = int(x)
 		}
 	}
 
@@ -87,8 +119,12 @@ func mainImpl() error {
 	if err = d.SetBrightness(b); err != nil {
 		return err
 	}
-	if len(digits) != 0 {
+	if len(segments) != 0 {
+		return d.Segments(segments...)
+	} else if len(digits) != 0 {
 		return d.Digits(digits...)
+	} else if *asTime {
+		return d.Clock(hour, minute, *showDot)
 	}
 	return nil
 }

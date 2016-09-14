@@ -11,6 +11,8 @@ package tm1637
 
 import (
 	"errors"
+	"log"
+	"syscall"
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/host"
@@ -38,7 +40,10 @@ const (
 
 // Brightness changes the brightness and/or turns the display on and off.
 func (d *Dev) SetBrightness(b Brightness) error {
-	return d.writeBytes(byte(b))
+	d.start()
+	d.writeByte(byte(b))
+	d.stop()
+	return nil
 }
 
 // Segments writes raw segments.
@@ -55,8 +60,34 @@ func (d *Dev) Segments(seg ...byte) error {
 	}
 	// Use auto-incrementing address. It is possible to write to a single
 	// segment but there isn't much point.
-	return d.writeBytes(0x40, 0xC0)
-	return d.writeBytes(seg...)
+	d.start()
+	d.writeByte(0x40)
+	d.stop()
+	d.start()
+	d.writeByte(0xC0)
+	for i := 0; i < 6; i++ {
+		if len(seg) <= i {
+			d.writeByte(0)
+		} else {
+			d.writeByte(seg[i])
+		}
+	}
+
+	d.stop()
+	return nil
+}
+
+// Clock writes the time.
+func (d *Dev) Clock(hour, minute int, showDots bool) error {
+	var seg [4]byte
+	seg[0] = byte(digitToSegment[hour/10])
+	seg[1] = byte(digitToSegment[hour%10])
+	seg[2] = byte(digitToSegment[minute/10])
+	seg[3] = byte(digitToSegment[minute%10])
+	if showDots {
+		seg[1] |= 0x80
+	}
+	return d.Segments(seg[:]...)
 }
 
 // Digits writes hex numbers. Numbers outside the range [0, 15] are
@@ -69,68 +100,6 @@ func (d *Dev) Digits(n ...int) error {
 		}
 	}
 	return d.Segments(seg...)
-}
-
-// writeBytes sends a stream of bytes to the tm1637.
-//
-// The protocol is similar to I²C but there is no slave address. So this is
-// close to bit banging I²C.
-func (d *Dev) writeBytes(b ...byte) error {
-	// "When CLK is a high level and DIO changes from high to low level, data
-	// input starts."
-	d.data.Set(host.Low)
-	time.Sleep(clockHalfCycle)
-	// Write the bytes.
-	for _, c := range b {
-		_, err := d.writeByte(c)
-		if err != nil {
-			return err
-		}
-	}
-	// "When CLK is a high level and DIO changes from low level to high level,
-	// data input ends."
-	d.clk.Set(host.Low)
-	time.Sleep(clockHalfCycle)
-	d.clk.Set(host.High)
-	time.Sleep(clockHalfCycle)
-	d.data.Set(host.High)
-	time.Sleep(clockHalfCycle)
-	return nil
-}
-
-// writeByte starts with d.data low and d.clk high and ends with d.data low and
-// d.clk high.
-func (d *Dev) writeByte(b byte) (bool, error) {
-	for i := 0; i < 8; i++ {
-		// "When data is input, DIO signal should not change for high level CLK and
-		// DIO signal should change for low level CLK signal."
-		d.clk.Set(host.Low)
-		time.Sleep(clockQuarterCycle)
-		if b&1 != 0 {
-			d.data.Set(host.High)
-		} else {
-			d.data.Set(host.Low)
-		}
-		time.Sleep(clockQuarterCycle)
-		d.clk.Set(host.High)
-		time.Sleep(clockHalfCycle)
-		b >>= 1
-	}
-	// 9th clock is ACK.
-	d.clk.Set(host.Low)
-	time.Sleep(clockHalfCycle)
-	if err := d.data.In(host.Up); err != nil {
-		return false, err
-	}
-	d.clk.Set(host.High)
-	time.Sleep(clockQuarterCycle)
-	ack := d.data.Read() == host.Low
-	time.Sleep(clockQuarterCycle)
-	if err := d.data.Out(); err != nil {
-		return false, err
-	}
-	d.data.Set(host.Low)
-	return ack, nil
 }
 
 // Make returns an object that communicates over two pins to a TM1637.
@@ -152,9 +121,70 @@ func Make(clk host.PinOut, data host.PinIO) (*Dev, error) {
 
 // Page 10 states the max clock frequency is 500KHz but page 3 states 250KHz.
 const clockHalfCycle = time.Second / 250000 / 2
-const clockQuarterCycle = clockHalfCycle / 2
 
 // Hex digits from 0 to F.
 var digitToSegment = []byte{
 	0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f, 0x77, 0x7c, 0x39, 0x5e, 0x79, 0x71,
+}
+
+func (d *Dev) start() {
+	d.data.Set(host.Low)
+	d.sleepHalfCycle()
+	d.clk.Set(host.Low)
+}
+
+func (d *Dev) stop() {
+	d.sleepHalfCycle()
+	d.clk.Set(host.High)
+	d.sleepHalfCycle()
+	d.data.Set(host.High)
+	d.sleepHalfCycle()
+}
+
+// writeByte starts with d.data low and d.clk high and ends with d.data low and
+// d.clk high.
+func (d *Dev) writeByte(b byte) (bool, error) {
+	for i := 0; i < 8; i++ {
+		// LSB (!)
+		d.data.Set(b&(1<<byte(i)) != 0)
+		d.sleepHalfCycle()
+		d.clk.Set(host.High)
+		d.sleepHalfCycle()
+		d.clk.Set(host.Low)
+	}
+	// 9th clock is ACK.
+	d.data.Set(host.Low)
+	time.Sleep(clockHalfCycle)
+	// TODO(maruel): Add.
+	//if err := d.data.In(host.Up); err != nil {
+	//	return false, err
+	//}
+	d.clk.Set(host.High)
+	d.sleepHalfCycle()
+	//ack := d.data.Read() == host.Low
+	//d.sleepHalfCycle()
+	//if err := d.data.Out(); err != nil {
+	//	return false, err
+	//}
+	d.clk.Set(host.Low)
+	return true, nil
+}
+
+// sleep does a busy loop to act as fast as possible.
+func (d *Dev) sleepHalfCycle() {
+	// If time.Sleep() is used, we can expect roughly 5kHz or so. When getting in
+	// the 100kHz range, the sleep is 5µs. Another option is syscall.Nanosleep()
+	// or runtime.nanotime but the later is not exported. :(
+	//for start := time.Now(); time.Since(start) < clockHalfCycle; {
+	//}
+	time := syscall.NsecToTimespec(clockHalfCycle.Nanoseconds())
+	leftover := syscall.Timespec{}
+	for {
+		if err := syscall.Nanosleep(&time, &leftover); err != nil {
+			time = leftover
+			log.Printf("Nanosleep() -> %v: %v", leftover, err)
+			continue
+		}
+		break
+	}
 }
