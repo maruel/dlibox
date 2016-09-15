@@ -12,7 +12,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/host"
 )
 
-var err = errors.New("not implemented on non-linux OSes")
+var errNotImpl = errors.New("not implemented on non-linux OSes")
 
 // SPI is not implemented on non-linux OSes.
 type SPI struct{}
@@ -23,17 +23,17 @@ func MakeSPI(bus int) (*SPI, error) {
 }
 
 func (s *SPI) Close() error {
-	return err
+	return errNotImpl
 }
 
 func (s *SPI) Configure(mode host.Mode, bits int) error {
-	return err
+	return errNotImpl
 }
 
 func (s *SPI) Write(b []byte) (int, error) {
-	return 0, err
+	return 0, errNotImpl
 }
 
 func (s *SPI) Tx(w, r []byte) error {
-	return err
+	return errNotImpl
 }

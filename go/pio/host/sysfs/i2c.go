@@ -6,22 +6,18 @@
 
 package sysfs
 
-import "errors"
-
-var err = errors.New("not implemented on non-linux OSes")
-
 // I2C is not implemented on non-linux OSes.
 type I2C struct{}
 
 // MakeI2C is not implemented on non-linux OSes.
 func MakeI2C(bus int) (*I2C, error) {
-	return nil, err
+	return nil, errNotImpl
 }
 
 func (i *I2C) Close() error {
-	return err
+	return errNotImpl
 }
 
 func (i *I2C) Tx(addr uint16, w, r []byte) error {
-	return err
+	return errNotImpl
 }
