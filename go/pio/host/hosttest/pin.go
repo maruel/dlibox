@@ -14,12 +14,13 @@ import (
 //
 // Modify its members to simulate hardware events.
 type Pin struct {
-	Name string // Should be immutable.
-	Num  int    // Should be immutable.
+	Name string // Should be immutable
+	Num  int    // Should be immutable
+	Fn   string // Should be immutable
 
-	sync.Mutex                 // Grab the Mutex before modifying the members to keep it concurrent safe.
-	host.Level                 // Used for both input and output.
-	EdgesChan  chan host.Level // Use it to fake edges.
+	sync.Mutex                 // Grab the Mutex before modifying the members to keep it concurrent safe
+	host.Level                 // Used for both input and output
+	EdgesChan  chan host.Level // Use it to fake edges
 }
 
 func (p *Pin) String() string {
@@ -28,6 +29,10 @@ func (p *Pin) String() string {
 
 func (p *Pin) Number() int {
 	return p.Num
+}
+
+func (p *Pin) Function() string {
+	return p.Fn
 }
 
 // In is concurrent safe.

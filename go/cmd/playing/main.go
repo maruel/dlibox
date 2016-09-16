@@ -7,6 +7,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -22,8 +23,8 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/bcm283x"
 	"github.com/maruel/dlibox/go/pio/host/ir"
+	"github.com/maruel/dlibox/go/pio/host/pins"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
@@ -110,7 +111,10 @@ func mainImpl() error {
 	}
 
 	if useButton {
-		p := bcm283x.GPIO24
+		p := pins.ByNumber(24)
+		if p == nil {
+			return errors.New("no pin 24")
+		}
 		if err := p.In(host.Up); err != nil {
 			return err
 		}
@@ -123,18 +127,29 @@ func mainImpl() error {
 
 	/*
 		// Relays
-		if err := bcm283x.GPIO17.Out(); err != nil {
+		p := pins.ByNumber(17)
+		if p == nil {
+			return errors.New("no pin 17")
+		}
+		if err := .Out(); err != nil {
 			return err
 		}
-		bcm283x.GPIO17.SetLow()
-		if err := bcm283x.GPIO27.Out(); err != nil {
+		p.SetLow()
+		p = pins.ByNumber(27)
+		if p == nil {
+			return errors.New("no pin 27")
+		}
+		if err := p.Out(); err != nil {
 			return err
 		}
-		bcm283x.GPIO27.SetLow()
+		p.SetLow()
 	*/
 
 	if usePir {
-		p := bcm283x.GPIO19
+		p := pins.ByNumber(19)
+		if p == nil {
+			return errors.New("no pin 19")
+		}
 		if err := p.In(host.Down); err != nil {
 			return err
 		}

@@ -4,7 +4,10 @@
 
 package host
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // Level is the level of the pin: Low or High.
 type Level bool
@@ -54,6 +57,10 @@ type Pin interface {
 	// Number returns the logical pin number or a negative number if the pin is
 	// not a GPIO, e.g. GROUND, V3_3, etc.
 	Number() int
+	// Function returns a user readable string representation of what the pin is
+	// configured to do. Common case is In and Out but it can be bus specific pin
+	// name.
+	Function() string
 }
 
 // PinIn is an input GPIO pin.
@@ -121,39 +128,43 @@ type PinIO interface {
 	Set(l Level)
 }
 
-// AllPins lists all the GPIO pins available on this host.
-//
-// This gets populated automatically on startup by the relevant child module,
-// if running on a relevant host.
-//
-// Pins must be in order of their number.
-//
-// This list excludes non-GPIO pins like GROUND, V3_3, etc.
-var AllPins []PinIO
+// invalidPinErr is returned when trying to use INVALID.
+var invalidPinErr = errors.New("invalid pin")
 
-// GetPinByName returns a GPIO pin from its name.
-//
-// This excludes non-GPIO pins like GROUND, V3_3, etc.
-//
-// Returns nil in case of failure.
-func GetPinByName(name string) PinIO {
-	// TODO(maruel): Create a map on first use?
-	for _, p := range AllPins {
-		if p.String() == name {
-			return p
-		}
-	}
-	return nil
+// INVALID implements PinIO for compability but fails on all access.
+var INVALID invalidPin
+
+// invalidPin implements PinIO for compability but fails on all access.
+type invalidPin struct {
 }
 
-// GetPinByNumber returns a GPIO pin from its number.
-//
-// This excludes non-GPIO pins like GROUND, V3_3, etc.
-//
-// Returns nil in case of failure.
-func GetPinByNumber(number int) PinIO {
-	if number >= 0 && number < len(AllPins) {
-		return AllPins[number]
-	}
-	return nil
+func (invalidPin) Number() int {
+	return -1
+}
+
+func (invalidPin) String() string {
+	return "INVALID"
+}
+
+func (invalidPin) Function() string {
+	return "INVALID"
+}
+
+func (invalidPin) In(Pull) error {
+	return invalidPinErr
+}
+
+func (invalidPin) Read() Level {
+	return Low
+}
+
+func (invalidPin) Edges() (chan Level, error) {
+	return nil, invalidPinErr
+}
+
+func (invalidPin) Out() error {
+	return invalidPinErr
+}
+
+func (invalidPin) Set(Level) {
 }

@@ -15,9 +15,7 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/devices/tm1637"
-	"github.com/maruel/dlibox/go/pio/host"
-	// TODO(maruel): Make this unneeded.
-	_ "github.com/maruel/dlibox/go/pio/host/bcm283x"
+	"github.com/maruel/dlibox/go/pio/host/pins"
 )
 
 func mainImpl() error {
@@ -104,11 +102,11 @@ func mainImpl() error {
 		}
 	}
 
-	pClk := host.GetPinByNumber(*clk)
+	pClk := pins.ByNumber(*clk)
 	if pClk == nil {
 		return errors.New("specify a valid pin for clock")
 	}
-	pData := host.GetPinByNumber(*data)
+	pData := pins.ByNumber(*data)
 	if pData == nil {
 		return errors.New("specify a valid pin for data")
 	}

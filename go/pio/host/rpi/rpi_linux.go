@@ -8,12 +8,14 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/pio/host/bcm283x"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/internal"
-	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/host/internal/bcm283x"
 )
 
 func init() {
+	// TODO(maruel): Do not run this code when running from non BCM CPU.
+
 	// Initialize Version. This function is not futureproof, it will return 0 on
 	// a Raspberry Pi 4 whenever it comes out.
 	rev, _ := internal.CPUInfo["Revision"]
@@ -38,29 +40,29 @@ func init() {
 		// P2 and P3 are not useful.
 		// P6 has a RUN pin for reset but it's not available after Pi version 1.
 
-		P1_27 = pins.INVALID
-		P1_28 = pins.INVALID
-		P1_29 = pins.INVALID
-		P1_30 = pins.INVALID
-		P1_31 = pins.INVALID
-		P1_32 = pins.INVALID
-		P1_33 = pins.INVALID
-		P1_34 = pins.INVALID
-		P1_35 = pins.INVALID
-		P1_36 = pins.INVALID
-		P1_37 = pins.INVALID
-		P1_38 = pins.INVALID
-		P1_39 = pins.INVALID
-		P1_40 = pins.INVALID
+		P1_27 = host.INVALID
+		P1_28 = host.INVALID
+		P1_29 = host.INVALID
+		P1_30 = host.INVALID
+		P1_31 = host.INVALID
+		P1_32 = host.INVALID
+		P1_33 = host.INVALID
+		P1_34 = host.INVALID
+		P1_35 = host.INVALID
+		P1_36 = host.INVALID
+		P1_37 = host.INVALID
+		P1_38 = host.INVALID
+		P1_39 = host.INVALID
+		P1_40 = host.INVALID
 	} else {
-		P5_1 = pins.INVALID
-		P5_2 = pins.INVALID
-		P5_3 = pins.INVALID
-		P5_4 = pins.INVALID
-		P5_5 = pins.INVALID
-		P5_6 = pins.INVALID
-		P5_7 = pins.INVALID
-		P5_8 = pins.INVALID
+		P5_1 = host.INVALID
+		P5_2 = host.INVALID
+		P5_3 = host.INVALID
+		P5_4 = host.INVALID
+		P5_5 = host.INVALID
+		P5_6 = host.INVALID
+		P5_7 = host.INVALID
+		P5_8 = host.INVALID
 	}
 	if Version < 3 {
 		AUDIO_LEFT = bcm283x.GPIO45

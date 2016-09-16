@@ -4,7 +4,7 @@
 
 package a64
 
-import "github.com/maruel/dlibox/go/pio/host"
+var Pins []Pin
 
 // Page 23~24
 // Each pin supports 6 functions.
@@ -140,7 +140,7 @@ func (p Pin) Number() int {
 	return int(p)
 }
 
-func init() {
-	// TODO(maruel): Add all pins here.
-	host.AllPins = []host.PinIO{}
+func (p Pin) Function() string {
+	// TODO(maruel): Add.
+	return ""
 }

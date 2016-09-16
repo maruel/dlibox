@@ -87,7 +87,7 @@ var (
 	EULER_30 host.Pin = a64.PB9          //
 	EULER_31 host.Pin = pins.EAROUTP     //
 	EULER_32 host.Pin = pins.EAROUT_N    //
-	EULER_33 host.Pin = pins.INVALID     //
+	EULER_33 host.Pin = host.INVALID     //
 	EULER_34 host.Pin = pins.GROUND      //
 
 	EXP_1  host.Pin = pins.V3_3        //
@@ -128,6 +128,6 @@ var (
 	WIFI_BT_25 host.Pin = pins.VCC      //
 	WIFI_BT_26 host.Pin = pins.IOVCC    //
 
-	AUDIO_LEFT  host.Pin = pins.INVALID // TODO(maruel): Figure out, is that EAROUT?
-	AUDIO_RIGHT host.Pin = pins.INVALID //
+	AUDIO_LEFT  host.Pin = host.INVALID // TODO(maruel): Figure out, is that EAROUT?
+	AUDIO_RIGHT host.Pin = host.INVALID //
 )

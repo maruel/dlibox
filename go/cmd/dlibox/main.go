@@ -33,6 +33,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/cpu"
 	"github.com/maruel/dlibox/go/pio/host/ir"
+	"github.com/maruel/dlibox/go/pio/host/pins"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
@@ -95,7 +96,7 @@ func initIR(painter *anim1d.Painter, config *IR) error {
 }
 
 func initPIR(painter *anim1d.Painter, config *PIR) error {
-	p := host.GetPinByNumber(config.Pin)
+	p := pins.ByNumber(config.Pin)
 	if p == nil {
 		return nil
 	}

@@ -6,46 +6,14 @@ package bcm283x
 
 import (
 	"errors"
-	"fmt"
-	"os"
-	"strconv"
-	"sync"
-	"syscall"
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/cpu"
 	"github.com/maruel/dlibox/go/pio/host/internal/gpiomem"
+	"github.com/maruel/dlibox/go/pio/host/internal/sysfs"
 	"github.com/maruel/dlibox/go/pio/host/ir"
-	"github.com/maruel/dlibox/go/pio/host/pins"
 )
-
-// Function specifies the active functionality of a pin. The alternative
-// function is GPIO pin dependent.
-type Function uint8
-
-// Each pin can have one of 7 functions.
-const (
-	In   Function = 0
-	Out  Function = 1
-	Alt0 Function = 4
-	Alt1 Function = 5
-	Alt2 Function = 6
-	Alt3 Function = 7
-	Alt4 Function = 3
-	Alt5 Function = 2
-)
-
-const functionName = "InOutAlt5Alt4Alt0Alt1Alt2Alt3"
-
-var functionIndex = [...]uint8{0, 2, 5, 9, 13, 17, 21, 25, 29}
-
-func (i Function) String() string {
-	if i >= Function(len(functionIndex)-1) {
-		return fmt.Sprintf("Function(%d)", i)
-	}
-	return functionName[functionIndex[i]:functionIndex[i+1]]
-}
 
 // Pin is a GPIO number (GPIOnn) on BCM238(5|6|7).
 //
@@ -54,17 +22,10 @@ func (i Function) String() string {
 //
 // Pin implements host.PinIO.
 type Pin struct {
-	// Immutable.
 	number      int
 	name        string
 	defaultPull host.Pull
-
-	// Mutable
-	lock      sync.Mutex
-	valueFile *os.File // handle to /sys/class/gpio/gpio*/value.
-	edgeFile  *os.File
-	event     [1]syscall.EpollEvent
-	epollFd   int // Only thing that actually changes when Edges() is disabled.
+	edge        *sysfs.Pin // Mutable, set once, then never set back to nil
 }
 
 var (
@@ -181,6 +142,30 @@ func (p *Pin) String() string {
 	return p.name
 }
 
+// Function implements host.Pin
+func (p *Pin) Function() string {
+	switch f := p.function(); f {
+	case in:
+		return "In/" + p.Read().String()
+	case out:
+		return "Out/" + p.Read().String()
+	case alt0:
+		return mapping[p.number][0]
+	case alt1:
+		return mapping[p.number][1]
+	case alt2:
+		return mapping[p.number][2]
+	case alt3:
+		return mapping[p.number][3]
+	case alt4:
+		return mapping[p.number][4]
+	case alt5:
+		return mapping[p.number][5]
+	default:
+		return "<Unknown>"
+	}
+}
+
 // In setups a pin as an input and implements host.PinIn.
 //
 // Specifying a value for pull other than host.PullNoChange causes this
@@ -189,9 +174,9 @@ func (p *Pin) String() string {
 // Will fail if requesting to change a pin that is set to special functionality.
 func (p *Pin) In(pull host.Pull) error {
 	if gpioMemory32 == nil {
-		return globalError
+		return errors.New("subsystem not initialized")
 	}
-	if !p.setFunction(In) {
+	if !p.setFunction(in) {
 		return errors.New("failed to change pin mode")
 	}
 	if pull != host.PullNoChange {
@@ -221,9 +206,6 @@ func (p *Pin) In(pull host.Pull) error {
 //
 // This function is very fast. It works even if the pin is set as output.
 func (p *Pin) Read() host.Level {
-	if gpioMemory32 == nil {
-		return host.Low
-	}
 	// 0x34    R    GPIO Pin Level 0 (GPIO0-31)
 	// 0x38    R    GPIO Pin Level 1 (GPIO32-53)
 	return host.Level((gpioMemory32[13+p.number/32] & (1 << uint(p.number&31))) != 0)
@@ -239,44 +221,16 @@ func (p *Pin) Read() host.Level {
 // and looks for '011' to rising and '100' for falling detection to avoid
 // glitches. Because gpio sysfs is used, the latency is unpredictable.
 func (p *Pin) Edges() (chan host.Level, error) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	if err := p.setEdge(true); err != nil {
-		return nil, err
-	}
-	c := make(chan host.Level)
-	go func() {
-		defer close(c)
-		var b [1]byte
-		for {
-			if _, err := p.valueFile.Seek(0, 0); err != nil {
-				return
-			}
-			for {
-				p.lock.Lock()
-				ep := p.epollFd
-				p.lock.Unlock()
-				if ep == 0 {
-					return
-				}
-				if nr, err := syscall.EpollWait(ep, p.event[:], -1); err != nil {
-					return
-				} else if nr < 1 {
-					continue
-				}
-				if _, err := p.valueFile.Read(b[:]); err != nil {
-					return
-				}
-				break
-			}
-			if b[0] == '1' {
-				c <- host.High
-			} else {
-				c <- host.Low
-			}
+	// This is a race condition but this is fine; at worst GetPin() is called
+	// twice but it is guaranteed to return the same value. p.edge is never set
+	// to nil.
+	if p.edge == nil {
+		var err error
+		if p.edge, err = sysfs.GetPin(p.Number()); err != nil {
+			return nil, err
 		}
-	}()
-	return c, nil
+	}
+	return p.edge.Edges()
 }
 
 // Out sets a pin as output and implements host.PinOut. The caller should
@@ -285,10 +239,9 @@ func (p *Pin) Edges() (chan host.Level, error) {
 // Will fail if requesting to change a pin that is set to special functionality.
 func (p *Pin) Out() error {
 	if gpioMemory32 == nil {
-		return globalError
+		return errors.New("subsystem not initialized")
 	}
-	// TODO(maruel): Ensure any Edges() loop is canceled.
-	if !p.setFunction(Out) {
+	if !p.setFunction(out) {
 		return errors.New("failed to change pin mode")
 	}
 	return nil
@@ -299,25 +252,23 @@ func (p *Pin) Out() error {
 //
 // This function is very fast.
 func (p *Pin) Set(l host.Level) {
-	if gpioMemory32 != nil {
-		// 0x1C    W    GPIO Pin Output Set 0 (GPIO0-31)
-		// 0x20    W    GPIO Pin Output Set 1 (GPIO32-53)
-		base := 7 + p.number/32
-		if l == host.Low {
-			// 0x28    W    GPIO Pin Output Clear 0 (GPIO0-31)
-			// 0x2C    W    GPIO Pin Output Clear 1 (GPIO32-53)
-			base += 3
-		}
-		gpioMemory32[base] = 1 << uint(p.number&31)
+	// 0x1C    W    GPIO Pin Output Set 0 (GPIO0-31)
+	// 0x20    W    GPIO Pin Output Set 1 (GPIO32-53)
+	base := 7 + p.number/32
+	if l == host.Low {
+		// 0x28    W    GPIO Pin Output Clear 0 (GPIO0-31)
+		// 0x2C    W    GPIO Pin Output Clear 1 (GPIO32-53)
+		base += 3
 	}
+	gpioMemory32[base] = 1 << uint(p.number&31)
 }
 
 // Special functionality.
 
-// Function returns the current GPIO pin function.
-func (p *Pin) Function() Function {
+// function returns the current GPIO pin function.
+func (p *Pin) function() function {
 	if gpioMemory32 == nil {
-		return Alt5
+		return alt5
 	}
 	// 0x00    RW   GPIO Function Select 0 (GPIO0-9)
 	// 0x04    RW   GPIO Function Select 1 (GPIO10-19)
@@ -325,7 +276,7 @@ func (p *Pin) Function() Function {
 	// 0x0C    RW   GPIO Function Select 3 (GPIO30-39)
 	// 0x10    RW   GPIO Function Select 4 (GPIO40-49)
 	// 0x14    RW   GPIO Function Select 5 (GPIO50-53)
-	return Function((gpioMemory32[p.number/10] >> uint((p.number%10)*3)) & 7)
+	return function((gpioMemory32[p.number/10] >> uint((p.number%10)*3)) & 7)
 }
 
 // DefaultPull returns the default pull for the function.
@@ -337,81 +288,17 @@ func (p *Pin) DefaultPull() host.Pull {
 
 // Internal code.
 
-// setEdge changes the edge detection setting for the pin.
-//
-// It is the function that opens the gpio sysfs file handle.
-func (p *Pin) setEdge(enable bool) error {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	if !enable {
-		if p.epollFd == 0 {
-			// Disabling twice is fine.
-			return nil
-		}
-		_ = syscall.Close(p.epollFd)
-		p.epollFd = 0
-		// Do not close the handles, just disable the interrupts.
-		_, err := p.edgeFile.Write([]byte("none"))
-		return err
-	}
-	if p.epollFd != 0 {
-		// Enabling while already enabled is bad.
-		return errors.New("already enabled")
-	}
-	if err := p.open(); err != nil {
-		return err
-	}
-	_, err := p.edgeFile.Write([]byte("both"))
-	return err
-}
-
-// open opens the gpio sysfs handles. Assumes lock is held.
-func (p *Pin) open() error {
-	var err error
-	if p.valueFile == nil {
-		// Assume the pin is exported first. The reason is that exporting a pin that
-		// is already exported causes a write failure, which is difficult to
-		// differentiate from other errors.
-		// On the other hand, accessing /sys/class/gpio/gpio*/value when it is not
-		// exported returns a permission denied error. :/
-		if p.valueFile, err = os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/value", p), os.O_RDONLY, 0600); err != nil {
-			// Export the pin.
-			if err = openExport(); err == nil {
-				if _, err = exportHandle.Write([]byte(strconv.Itoa(p.number))); err == nil {
-					p.valueFile, err = os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/value", p), os.O_RDONLY, 0600)
-				}
-			}
-		}
-	}
-	if p.edgeFile == nil && err == nil {
-		// TODO(maruel): Figure out the problem or better use the register instead
-		// of the file.
-		for i := 0; i < 30 && p.edgeFile == nil; i++ {
-			p.edgeFile, err = os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/edge", p), os.O_WRONLY, 0600)
-			// TODO(maruel): Figure out what the hell.
-			time.Sleep(time.Millisecond)
-		}
-	}
-	if p.epollFd == 0 && err == nil {
-		if p.epollFd, err = syscall.EpollCreate(1); err == nil {
-			const EPOLLPRI = 2
-			const EPOLL_CTL_ADD = 1
-			p.event[0].Events = EPOLLPRI
-			p.event[0].Fd = int32(p.valueFile.Fd())
-			err = syscall.EpollCtl(p.epollFd, EPOLL_CTL_ADD, int(p.valueFile.Fd()), &p.event[0])
-		}
-	}
-	return err
-}
-
 // setFunction changes the GPIO pin function.
 //
-// Returns false if the pin was in AltN. Only accepts In and Out
-func (p *Pin) setFunction(f Function) bool {
-	if f != In && f != Out {
+// Returns false if the pin was in AltN. Only accepts in and out
+func (p *Pin) setFunction(f function) bool {
+	if f != in && f != out {
 		return false
 	}
-	if actual := p.Function(); actual != In && actual != Out {
+	if f == in && p.edge != nil {
+		p.edge.DisableEdge()
+	}
+	if actual := p.function(); actual != in && actual != out {
 		return false
 	}
 	// 0x00    RW   GPIO Function Select 0 (GPIO0-9)
@@ -427,6 +314,22 @@ func (p *Pin) setFunction(f Function) bool {
 }
 
 //
+
+// function specifies the active functionality of a pin. The alternative
+// function is GPIO pin dependent.
+type function uint8
+
+// Each pin can have one of 7 functions.
+const (
+	in   function = 0
+	out  function = 1
+	alt0 function = 4
+	alt1 function = 5
+	alt2 function = 6
+	alt3 function = 7
+	alt4 function = 3
+	alt5 function = 2
+)
 
 // Mapping as
 // https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
@@ -476,13 +379,11 @@ func (p *Pin) setFunction(f Function) bool {
 // 0xB0    -    Test (byte)
 var gpioMemory32 []uint32
 
-var globalError error
-
 // Changing pull resistor require a 150 cycles sleep. Use 160 to be safe.
 var sleep160cycles time.Duration = time.Second * 160 / time.Duration(cpu.MaxSpeed)
 
 func setIfAlt0(p *Pin, special *host.Pin) {
-	if p.Function() == Alt0 {
+	if p.function() == alt0 {
 		if (*special).String() != "INVALID" {
 			//fmt.Printf("%s and %s have same functionality\n", p, *special)
 		}
@@ -491,43 +392,43 @@ func setIfAlt0(p *Pin, special *host.Pin) {
 }
 
 func setIfAlt(p *Pin, special0 *host.Pin, special1 *host.Pin, special2 *host.Pin, special3 *host.Pin, special4 *host.Pin, special5 *host.Pin) {
-	switch p.Function() {
-	case Alt0:
+	switch p.function() {
+	case alt0:
 		if special0 != nil {
 			if (*special0).String() != "INVALID" {
 				//fmt.Printf("%s and %s have same functionality\n", p, *special0)
 			}
 			*special0 = p
 		}
-	case Alt1:
+	case alt1:
 		if special1 != nil {
 			if (*special1).String() != "INVALID" {
 				//fmt.Printf("%s and %s have same functionality\n", p, *special1)
 			}
 			*special1 = p
 		}
-	case Alt2:
+	case alt2:
 		if special2 != nil {
 			if (*special2).String() != "INVALID" {
 				//log.Printf("%s and %s have same functionality\n", p, *special2)
 			}
 			*special2 = p
 		}
-	case Alt3:
+	case alt3:
 		if special3 != nil {
 			if (*special3).String() != "INVALID" {
 				//log.Printf("%s and %s have same functionality\n", p, *special3)
 			}
 			*special3 = p
 		}
-	case Alt4:
+	case alt4:
 		if special4 != nil {
 			if (*special4).String() != "INVALID" {
 				//log.Printf("%s and %s have same functionality\n", p, *special4)
 			}
 			*special4 = p
 		}
-	case Alt5:
+	case alt5:
 		if special5 != nil {
 			if (*special5).String() != "INVALID" {
 				//log.Printf("%s and %s have same functionality\n", p, *special5)
@@ -537,115 +438,216 @@ func setIfAlt(p *Pin, special0 *host.Pin, special1 *host.Pin, special2 *host.Pin
 	}
 }
 
+// Pins is all the supported pins. The bcm 283x exports continuously numbered
+// pins.
+var Pins = [54]Pin{
+	{number: 0, name: "GPIO0", defaultPull: host.Up},
+	{number: 1, name: "GPIO1", defaultPull: host.Up},
+	{number: 2, name: "GPIO2", defaultPull: host.Up},
+	{number: 3, name: "GPIO3", defaultPull: host.Up},
+	{number: 4, name: "GPIO4", defaultPull: host.Up},
+	{number: 5, name: "GPIO5", defaultPull: host.Up},
+	{number: 6, name: "GPIO6", defaultPull: host.Up},
+	{number: 7, name: "GPIO7", defaultPull: host.Up},
+	{number: 8, name: "GPIO8", defaultPull: host.Up},
+	{number: 9, name: "GPIO9", defaultPull: host.Down},
+	{number: 10, name: "GPIO10", defaultPull: host.Down},
+	{number: 11, name: "GPIO11", defaultPull: host.Down},
+	{number: 12, name: "GPIO12", defaultPull: host.Down},
+	{number: 13, name: "GPIO13", defaultPull: host.Down},
+	{number: 14, name: "GPIO14", defaultPull: host.Down},
+	{number: 15, name: "GPIO15", defaultPull: host.Down},
+	{number: 16, name: "GPIO16", defaultPull: host.Down},
+	{number: 17, name: "GPIO17", defaultPull: host.Down},
+	{number: 18, name: "GPIO18", defaultPull: host.Down},
+	{number: 19, name: "GPIO19", defaultPull: host.Down},
+	{number: 20, name: "GPIO20", defaultPull: host.Down},
+	{number: 21, name: "GPIO21", defaultPull: host.Down},
+	{number: 22, name: "GPIO22", defaultPull: host.Down},
+	{number: 23, name: "GPIO23", defaultPull: host.Down},
+	{number: 24, name: "GPIO24", defaultPull: host.Down},
+	{number: 25, name: "GPIO25", defaultPull: host.Down},
+	{number: 26, name: "GPIO26", defaultPull: host.Down},
+	{number: 27, name: "GPIO27", defaultPull: host.Down},
+	{number: 28, name: "GPIO28", defaultPull: host.Float},
+	{number: 29, name: "GPIO29", defaultPull: host.Float},
+	{number: 30, name: "GPIO30", defaultPull: host.Down},
+	{number: 31, name: "GPIO31", defaultPull: host.Down},
+	{number: 32, name: "GPIO32", defaultPull: host.Down},
+	{number: 33, name: "GPIO33", defaultPull: host.Down},
+	{number: 34, name: "GPIO34", defaultPull: host.Up},
+	{number: 35, name: "GPIO35", defaultPull: host.Up},
+	{number: 36, name: "GPIO36", defaultPull: host.Up},
+	{number: 37, name: "GPIO37", defaultPull: host.Down},
+	{number: 38, name: "GPIO38", defaultPull: host.Down},
+	{number: 39, name: "GPIO39", defaultPull: host.Down},
+	{number: 40, name: "GPIO40", defaultPull: host.Down},
+	{number: 41, name: "GPIO41", defaultPull: host.Down},
+	{number: 42, name: "GPIO42", defaultPull: host.Down},
+	{number: 43, name: "GPIO43", defaultPull: host.Down},
+	{number: 44, name: "GPIO44", defaultPull: host.Float},
+	{number: 45, name: "GPIO45", defaultPull: host.Float},
+	{number: 46, name: "GPIO46", defaultPull: host.Up},
+	{number: 47, name: "GPIO47", defaultPull: host.Up},
+	{number: 48, name: "GPIO48", defaultPull: host.Up},
+	{number: 49, name: "GPIO49", defaultPull: host.Up},
+	{number: 50, name: "GPIO50", defaultPull: host.Up},
+	{number: 51, name: "GPIO51", defaultPull: host.Up},
+	{number: 52, name: "GPIO52", defaultPull: host.Up},
+	{number: 53, name: "GPIO53", defaultPull: host.Up},
+}
+
+var mapping = [54][6]string{
+	{"I2C_SDA0"},
+	{"I2C_SCL0"},
+	{"I2C_SDA1"},
+	{"I2C_SCL1"},
+	{"GPCLK0"},
+	{"GPCLK1"},
+	{"GPCLK2"},
+	{"SPI0_CE1"},
+	{"SPI0_CE0"},
+	{"SPI0_MISO"},
+	{"SPI0_MOSI"},
+	{"SPI0_CLK"},
+	{"PWM0_OUT"},
+	{"PWM1_OUT"},
+	{"UART_TXD0", "", "", "", "", "UART_TXD1"},
+	{"UART_RXD0", "", "", "", "", "UART_RXD1"},
+	{"", "", "", "UART_CTS0", "SPI1_CE2", "UART_CTS1"},
+	{"", "", "", "UART_RTS0", "SPI1_CE1", "UART_RTS1"},
+	{"PCM_CLK", "", "", "", "SPI1_CE0", "PWM0_OUT"},
+	{"PCM_FS", "", "", "", "SPI1_MISO", "PWM1_OUT"},
+	{"PCM_DIN", "", "", "", "SPI1_MOSI", "GPCLK0"},
+	{"PCM_DOUT", "", "", "", "SPI1_CLK", "GPCLK1"},
+	{},
+	{},
+	{},
+	{},
+	{},
+	{},
+	{"I2C_SDA0", "", "PCM_CLK", "", "", ""},
+	{"I2C_SCL0", "", "PCM_FS", "", "", ""},
+	{"", "", "PCM_DIN", "UART_CTS0", "", "UART_CTS1"},
+	{"", "", "PCM_DOUT", "UART_RTS0", "", "UART_RTS"},
+	{"GPCLK0", "", "", "UART_TXD0", "", "UART_TXD1"},
+	{"", "", "", "UART_RXD0", "", "UART_RXD1"},
+	{"GPCLK0"},
+	{"SPI0_CE1"},
+	{"SPI0_CE0", "", "UART_TXD0", "", "", ""},
+	{"SPI0_MISO", "", "UART_RXD0", "", "", ""},
+	{"SPI0_MOSI", "", "UART_RTS0", "", "", ""},
+	{"SPI0_CLK", "", "UART_CTS0", "", "", ""},
+	{"PWM0_OUT", "", "", "", "SPI2_MISO", "UART_TXD1"},
+	{"PWM1_OUT", "", "", "", "SPI2_MOSI", "UART_RXD1"},
+	{"GPCLK1", "", "", "", "SPI2_CLK", "UART_RTS1"},
+	{"GPCLK2", "", "", "", "SPI2_CE0", "UART_CTS1"},
+	{"GPCLK1", "I2C_SDA0", "I2C_SDA1", "", "SPI2_CE1", ""},
+	{"PWM1_OUT", "I2C_SCL0", "I2C_SCL1", "", "SPI2_CE2", ""},
+}
+
 func init() {
-	GPIO0 = &Pin{number: 0, name: "GPIO0", defaultPull: host.Up}
-	GPIO1 = &Pin{number: 1, name: "GPIO1", defaultPull: host.Up}
-	GPIO2 = &Pin{number: 2, name: "GPIO2", defaultPull: host.Up}
-	GPIO3 = &Pin{number: 3, name: "GPIO3", defaultPull: host.Up}
-	GPIO4 = &Pin{number: 4, name: "GPIO4", defaultPull: host.Up}
-	GPIO5 = &Pin{number: 5, name: "GPIO5", defaultPull: host.Up}
-	GPIO6 = &Pin{number: 6, name: "GPIO6", defaultPull: host.Up}
-	GPIO7 = &Pin{number: 7, name: "GPIO7", defaultPull: host.Up}
-	GPIO8 = &Pin{number: 8, name: "GPIO8", defaultPull: host.Up}
-	GPIO9 = &Pin{number: 9, name: "GPIO9", defaultPull: host.Down}
-	GPIO10 = &Pin{number: 10, name: "GPIO10", defaultPull: host.Down}
-	GPIO11 = &Pin{number: 11, name: "GPIO11", defaultPull: host.Down}
-	GPIO12 = &Pin{number: 12, name: "GPIO12", defaultPull: host.Down}
-	GPIO13 = &Pin{number: 13, name: "GPIO13", defaultPull: host.Down}
-	GPIO14 = &Pin{number: 14, name: "GPIO14", defaultPull: host.Down}
-	GPIO15 = &Pin{number: 15, name: "GPIO15", defaultPull: host.Down}
-	GPIO16 = &Pin{number: 16, name: "GPIO16", defaultPull: host.Down}
-	GPIO17 = &Pin{number: 17, name: "GPIO17", defaultPull: host.Down}
-	GPIO18 = &Pin{number: 18, name: "GPIO18", defaultPull: host.Down}
-	GPIO19 = &Pin{number: 19, name: "GPIO19", defaultPull: host.Down}
-	GPIO20 = &Pin{number: 20, name: "GPIO20", defaultPull: host.Down}
-	GPIO21 = &Pin{number: 21, name: "GPIO21", defaultPull: host.Down}
-	GPIO22 = &Pin{number: 22, name: "GPIO22", defaultPull: host.Down}
-	GPIO23 = &Pin{number: 23, name: "GPIO23", defaultPull: host.Down}
-	GPIO24 = &Pin{number: 24, name: "GPIO24", defaultPull: host.Down}
-	GPIO25 = &Pin{number: 25, name: "GPIO25", defaultPull: host.Down}
-	GPIO26 = &Pin{number: 26, name: "GPIO26", defaultPull: host.Down}
-	GPIO27 = &Pin{number: 27, name: "GPIO27", defaultPull: host.Down}
-	GPIO28 = &Pin{number: 28, name: "GPIO28", defaultPull: host.Float}
-	GPIO29 = &Pin{number: 29, name: "GPIO29", defaultPull: host.Float}
-	GPIO30 = &Pin{number: 30, name: "GPIO30", defaultPull: host.Down}
-	GPIO31 = &Pin{number: 31, name: "GPIO31", defaultPull: host.Down}
-	GPIO32 = &Pin{number: 32, name: "GPIO32", defaultPull: host.Down}
-	GPIO33 = &Pin{number: 33, name: "GPIO33", defaultPull: host.Down}
-	GPIO34 = &Pin{number: 34, name: "GPIO34", defaultPull: host.Up}
-	GPIO35 = &Pin{number: 35, name: "GPIO35", defaultPull: host.Up}
-	GPIO36 = &Pin{number: 36, name: "GPIO36", defaultPull: host.Up}
-	GPIO37 = &Pin{number: 37, name: "GPIO37", defaultPull: host.Down}
-	GPIO38 = &Pin{number: 38, name: "GPIO38", defaultPull: host.Down}
-	GPIO39 = &Pin{number: 39, name: "GPIO39", defaultPull: host.Down}
-	GPIO40 = &Pin{number: 40, name: "GPIO40", defaultPull: host.Down}
-	GPIO41 = &Pin{number: 41, name: "GPIO41", defaultPull: host.Down}
-	GPIO42 = &Pin{number: 42, name: "GPIO42", defaultPull: host.Down}
-	GPIO43 = &Pin{number: 43, name: "GPIO43", defaultPull: host.Down}
-	GPIO44 = &Pin{number: 44, name: "GPIO44", defaultPull: host.Float}
-	GPIO45 = &Pin{number: 45, name: "GPIO45", defaultPull: host.Float}
-	GPIO46 = &Pin{number: 46, name: "GPIO46", defaultPull: host.Up}
-	GPIO47 = &Pin{number: 47, name: "GPIO47", defaultPull: host.Up}
-	GPIO48 = &Pin{number: 48, name: "GPIO48", defaultPull: host.Up}
-	GPIO49 = &Pin{number: 49, name: "GPIO49", defaultPull: host.Up}
-	GPIO50 = &Pin{number: 50, name: "GPIO50", defaultPull: host.Up}
-	GPIO51 = &Pin{number: 51, name: "GPIO51", defaultPull: host.Up}
-	GPIO52 = &Pin{number: 52, name: "GPIO52", defaultPull: host.Up}
-	GPIO53 = &Pin{number: 53, name: "GPIO53", defaultPull: host.Up}
-	host.AllPins = []host.PinIO{
-		GPIO0, GPIO1, GPIO2, GPIO3, GPIO4, GPIO5, GPIO6, GPIO7, GPIO8, GPIO9,
-		GPIO10, GPIO11, GPIO12, GPIO13, GPIO14, GPIO15, GPIO16, GPIO17, GPIO18,
-		GPIO19, GPIO20, GPIO21, GPIO22, GPIO23, GPIO24, GPIO25, GPIO26, GPIO27,
-		GPIO28, GPIO29, GPIO30, GPIO31, GPIO32, GPIO33, GPIO34, GPIO35, GPIO36,
-		GPIO37, GPIO38, GPIO39, GPIO40, GPIO41, GPIO42, GPIO43, GPIO44, GPIO45,
-		GPIO46, GPIO47, GPIO48, GPIO49, GPIO50, GPIO51, GPIO52, GPIO53,
-	}
+	GPIO0 = &Pins[0]
+	GPIO1 = &Pins[1]
+	GPIO2 = &Pins[2]
+	GPIO3 = &Pins[3]
+	GPIO4 = &Pins[4]
+	GPIO5 = &Pins[5]
+	GPIO6 = &Pins[6]
+	GPIO7 = &Pins[7]
+	GPIO8 = &Pins[8]
+	GPIO9 = &Pins[9]
+	GPIO10 = &Pins[10]
+	GPIO11 = &Pins[11]
+	GPIO12 = &Pins[12]
+	GPIO13 = &Pins[13]
+	GPIO14 = &Pins[14]
+	GPIO15 = &Pins[15]
+	GPIO16 = &Pins[16]
+	GPIO17 = &Pins[17]
+	GPIO18 = &Pins[18]
+	GPIO19 = &Pins[19]
+	GPIO20 = &Pins[20]
+	GPIO21 = &Pins[21]
+	GPIO22 = &Pins[22]
+	GPIO23 = &Pins[23]
+	GPIO24 = &Pins[24]
+	GPIO25 = &Pins[25]
+	GPIO26 = &Pins[26]
+	GPIO27 = &Pins[27]
+	GPIO28 = &Pins[28]
+	GPIO29 = &Pins[29]
+	GPIO30 = &Pins[30]
+	GPIO31 = &Pins[31]
+	GPIO32 = &Pins[32]
+	GPIO33 = &Pins[33]
+	GPIO34 = &Pins[34]
+	GPIO35 = &Pins[35]
+	GPIO36 = &Pins[36]
+	GPIO37 = &Pins[37]
+	GPIO38 = &Pins[38]
+	GPIO39 = &Pins[39]
+	GPIO40 = &Pins[40]
+	GPIO41 = &Pins[41]
+	GPIO42 = &Pins[42]
+	GPIO43 = &Pins[43]
+	GPIO44 = &Pins[44]
+	GPIO45 = &Pins[45]
+	GPIO46 = &Pins[46]
+	GPIO47 = &Pins[47]
+	GPIO48 = &Pins[48]
+	GPIO49 = &Pins[49]
+	GPIO50 = &Pins[50]
+	GPIO51 = &Pins[51]
+	GPIO52 = &Pins[52]
+	GPIO53 = &Pins[53]
 
-	GPCLK0 = pins.INVALID
-	GPCLK1 = pins.INVALID
-	GPCLK2 = pins.INVALID
-	I2C_SCL0 = pins.INVALID
-	I2C_SDA0 = pins.INVALID
-	I2C_SCL1 = pins.INVALID
-	I2C_SDA1 = pins.INVALID
-	IR_IN = pins.INVALID
-	IR_OUT = pins.INVALID
-	PCM_CLK = pins.INVALID
-	PCM_FS = pins.INVALID
-	PCM_DIN = pins.INVALID
-	PCM_DOUT = pins.INVALID
-	PWM0_OUT = pins.INVALID
-	PWM1_OUT = pins.INVALID
-	SPI0_CE0 = pins.INVALID
-	SPI0_CE1 = pins.INVALID
-	SPI0_CLK = pins.INVALID
-	SPI0_MISO = pins.INVALID
-	SPI0_MOSI = pins.INVALID
-	SPI1_CE0 = pins.INVALID
-	SPI1_CE1 = pins.INVALID
-	SPI1_CE2 = pins.INVALID
-	SPI1_CLK = pins.INVALID
-	SPI1_MISO = pins.INVALID
-	SPI1_MOSI = pins.INVALID
-	SPI2_MISO = pins.INVALID
-	SPI2_MOSI = pins.INVALID
-	SPI2_CLK = pins.INVALID
-	SPI2_CE0 = pins.INVALID
-	SPI2_CE1 = pins.INVALID
-	SPI2_CE2 = pins.INVALID
-	UART_RXD0 = pins.INVALID
-	UART_CTS0 = pins.INVALID
-	UART_CTS1 = pins.INVALID
-	UART_RTS0 = pins.INVALID
-	UART_RTS1 = pins.INVALID
-	UART_TXD0 = pins.INVALID
-	UART_RXD1 = pins.INVALID
-	UART_TXD1 = pins.INVALID
+	GPCLK0 = host.INVALID
+	GPCLK1 = host.INVALID
+	GPCLK2 = host.INVALID
+	I2C_SCL0 = host.INVALID
+	I2C_SDA0 = host.INVALID
+	I2C_SCL1 = host.INVALID
+	I2C_SDA1 = host.INVALID
+	IR_IN = host.INVALID
+	IR_OUT = host.INVALID
+	PCM_CLK = host.INVALID
+	PCM_FS = host.INVALID
+	PCM_DIN = host.INVALID
+	PCM_DOUT = host.INVALID
+	PWM0_OUT = host.INVALID
+	PWM1_OUT = host.INVALID
+	SPI0_CE0 = host.INVALID
+	SPI0_CE1 = host.INVALID
+	SPI0_CLK = host.INVALID
+	SPI0_MISO = host.INVALID
+	SPI0_MOSI = host.INVALID
+	SPI1_CE0 = host.INVALID
+	SPI1_CE1 = host.INVALID
+	SPI1_CE2 = host.INVALID
+	SPI1_CLK = host.INVALID
+	SPI1_MISO = host.INVALID
+	SPI1_MOSI = host.INVALID
+	SPI2_MISO = host.INVALID
+	SPI2_MOSI = host.INVALID
+	SPI2_CLK = host.INVALID
+	SPI2_CE0 = host.INVALID
+	SPI2_CE1 = host.INVALID
+	SPI2_CE2 = host.INVALID
+	UART_RXD0 = host.INVALID
+	UART_CTS0 = host.INVALID
+	UART_CTS1 = host.INVALID
+	UART_RTS0 = host.INVALID
+	UART_RTS1 = host.INVALID
+	UART_TXD0 = host.INVALID
+	UART_RXD1 = host.INVALID
+	UART_TXD1 = host.INVALID
+}
 
-	var mem *gpiomem.Mem
-	mem, globalError = gpiomem.Open()
-	if globalError != nil {
-		return
+func Init() error {
+	mem, err := gpiomem.Open()
+	if err != nil {
+		return err
 	}
 	gpioMemory32 = mem.Uint32
 
@@ -697,9 +699,10 @@ func init() {
 
 	in, out := ir.Pins()
 	if in != -1 {
-		IR_IN = host.GetPinByNumber(in)
+		IR_IN = &Pins[in]
 	}
 	if out != -1 {
-		IR_OUT = host.GetPinByNumber(out)
+		IR_OUT = &Pins[out]
 	}
+	return nil
 }
