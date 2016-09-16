@@ -6,7 +6,7 @@ package pine64
 
 import (
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/a64"
+	"github.com/maruel/dlibox/go/pio/host/internal/a64"
 	"github.com/maruel/dlibox/go/pio/host/pins"
 )
 
