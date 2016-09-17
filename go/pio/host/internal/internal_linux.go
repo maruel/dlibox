@@ -6,25 +6,49 @@ package internal
 
 import (
 	"io/ioutil"
-	"log"
+	"strconv"
 	"strings"
 )
 
-func init() {
-	CPUInfo = map[string]string{}
+func readAndSplit(path string) map[string]string {
 	bytes, err := ioutil.ReadFile("/proc/cpuinfo")
 	if err != nil {
-		log.Printf("Failed to read /proc/cpuinfo: %s", err)
+		return nil
 	}
+	out := map[string]string{}
 	for _, line := range strings.Split(string(bytes), "\n") {
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) != 2 {
 			continue
 		}
 		key := strings.TrimSpace(parts[0])
-		// Ignore information for other processors than the #0.
-		if len(CPUInfo[key]) == 0 {
-			CPUInfo[key] = strings.TrimSpace(parts[1])
+		if len(key) == 0 || key[0] == '#' {
+			continue
 		}
+		// Ignore duplicate keys
+		if len(out[key]) == 0 {
+			s := strings.TrimSpace(parts[1])
+			if len(s) > 2 && s[0] == '"' && s[len(s)-1] == '"' {
+				// Not exactly 100% right but #closeenough. See for more details
+				// https://www.freedesktop.org/software/systemd/man/os-release.html
+				s, err = strconv.Unquote(s[1 : len(s)-2])
+				if err != nil {
+					continue
+				}
+			}
+			out[key] = s
+		}
+	}
+	return out
+}
+
+func init() {
+	// Technically speaking, cpuinfo doesn't contain quotes and os-release
+	// doesn't contain duplicate keys. Make it more strictly correct if needed.
+	if m := readAndSplit("/proc/cpuinfo"); m != nil {
+		CPUInfo = m
+	}
+	if m := readAndSplit("/etc/os-release"); m != nil {
+		OSRelease = m
 	}
 }

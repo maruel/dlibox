@@ -57,11 +57,17 @@ func (p *pin) Function() string {
 // This list excludes non-GPIO pins like GROUND, V3_3, etc.
 var All map[int]host.PinIO
 
+// Functional lists all pins implementing hardware provided special
+// functionality, like I²C, SPI, ADC.
+var Functional map[string]host.Pin
+
 // ByName returns a GPIO pin from its name.
 //
 // This excludes non-GPIO pins like GROUND, V3_3, etc.
 //
 // Returns nil in case of failure.
+//
+// TODO(maruel): Remove?
 func ByName(name string) host.PinIO {
 	// TODO(maruel): Create a map on first use?
 	if Init() != nil {
@@ -104,6 +110,7 @@ func Init() error {
 		for i := range bcm283x.Pins {
 			All[i] = &bcm283x.Pins[i]
 		}
+		Functional = bcm283x.Functional
 		return nil
 	}
 	if ok && strings.HasPrefix(hardware, "sun") {
@@ -116,6 +123,7 @@ func Init() error {
 		for i := range a64.Pins {
 			All[i] = &a64.Pins[i]
 		}
+		Functional = bcm283x.Functional
 		return nil
 		*/
 	}
@@ -128,6 +136,7 @@ func Init() error {
 	for id, p := range sysfs.Pins {
 		All[id] = p
 	}
+	// Functional cannot be populated.
 	return nil
 }
 

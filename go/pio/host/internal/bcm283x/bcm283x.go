@@ -15,6 +15,50 @@ import (
 	"github.com/maruel/dlibox/go/pio/host/ir"
 )
 
+// Functional is pins.Functional on this CPU.
+var Functional = map[string]host.Pin{
+	"GPCLK0":    host.INVALID,
+	"GPCLK1":    host.INVALID,
+	"GPCLK2":    host.INVALID,
+	"I2C_SCL0":  host.INVALID,
+	"I2C_SDA0":  host.INVALID,
+	"I2C_SCL1":  host.INVALID,
+	"I2C_SDA1":  host.INVALID,
+	"IR_IN":     host.INVALID,
+	"IR_OUT":    host.INVALID,
+	"PCM_CLK":   host.INVALID,
+	"PCM_FS":    host.INVALID,
+	"PCM_DIN":   host.INVALID,
+	"PCM_DOUT":  host.INVALID,
+	"PWM0_OUT":  host.INVALID,
+	"PWM1_OUT":  host.INVALID,
+	"SPI0_CE0":  host.INVALID,
+	"SPI0_CE1":  host.INVALID,
+	"SPI0_CLK":  host.INVALID,
+	"SPI0_MISO": host.INVALID,
+	"SPI0_MOSI": host.INVALID,
+	"SPI1_CE0":  host.INVALID,
+	"SPI1_CE1":  host.INVALID,
+	"SPI1_CE2":  host.INVALID,
+	"SPI1_CLK":  host.INVALID,
+	"SPI1_MISO": host.INVALID,
+	"SPI1_MOSI": host.INVALID,
+	"SPI2_MISO": host.INVALID,
+	"SPI2_MOSI": host.INVALID,
+	"SPI2_CLK":  host.INVALID,
+	"SPI2_CE0":  host.INVALID,
+	"SPI2_CE1":  host.INVALID,
+	"SPI2_CE2":  host.INVALID,
+	"UART_RXD0": host.INVALID,
+	"UART_CTS0": host.INVALID,
+	"UART_CTS1": host.INVALID,
+	"UART_RTS0": host.INVALID,
+	"UART_RTS1": host.INVALID,
+	"UART_TXD0": host.INVALID,
+	"UART_RXD1": host.INVALID,
+	"UART_TXD1": host.INVALID,
+}
+
 // Pin is a GPIO number (GPIOnn) on BCM238(5|6|7).
 //
 // If you search for pin per their position on the P1 header, look at ../rpi
@@ -498,7 +542,7 @@ var Pins = [54]Pin{
 }
 
 var mapping = [54][6]string{
-	{"I2C_SDA0"},
+	{"I2C_SDA0"}, // 0
 	{"I2C_SCL0"},
 	{"I2C_SDA1"},
 	{"I2C_SCL1"},
@@ -508,7 +552,7 @@ var mapping = [54][6]string{
 	{"SPI0_CE1"},
 	{"SPI0_CE0"},
 	{"SPI0_MISO"},
-	{"SPI0_MOSI"},
+	{"SPI0_MOSI"}, // 10
 	{"SPI0_CLK"},
 	{"PWM0_OUT"},
 	{"PWM1_OUT"},
@@ -518,7 +562,7 @@ var mapping = [54][6]string{
 	{"", "", "", "UART_RTS0", "SPI1_CE1", "UART_RTS1"},
 	{"PCM_CLK", "", "", "", "SPI1_CE0", "PWM0_OUT"},
 	{"PCM_FS", "", "", "", "SPI1_MISO", "PWM1_OUT"},
-	{"PCM_DIN", "", "", "", "SPI1_MOSI", "GPCLK0"},
+	{"PCM_DIN", "", "", "", "SPI1_MOSI", "GPCLK0"}, // 20
 	{"PCM_DOUT", "", "", "", "SPI1_CLK", "GPCLK1"},
 	{},
 	{},
@@ -528,7 +572,7 @@ var mapping = [54][6]string{
 	{},
 	{"I2C_SDA0", "", "PCM_CLK", "", "", ""},
 	{"I2C_SCL0", "", "PCM_FS", "", "", ""},
-	{"", "", "PCM_DIN", "UART_CTS0", "", "UART_CTS1"},
+	{"", "", "PCM_DIN", "UART_CTS0", "", "UART_CTS1"}, // 30
 	{"", "", "PCM_DOUT", "UART_RTS0", "", "UART_RTS"},
 	{"GPCLK0", "", "", "UART_TXD0", "", "UART_TXD1"},
 	{"", "", "", "UART_RXD0", "", "UART_RXD1"},
@@ -538,7 +582,7 @@ var mapping = [54][6]string{
 	{"SPI0_MISO", "", "UART_RXD0", "", "", ""},
 	{"SPI0_MOSI", "", "UART_RTS0", "", "", ""},
 	{"SPI0_CLK", "", "UART_CTS0", "", "", ""},
-	{"PWM0_OUT", "", "", "", "SPI2_MISO", "UART_TXD1"},
+	{"PWM0_OUT", "", "", "", "SPI2_MISO", "UART_TXD1"}, // 40
 	{"PWM1_OUT", "", "", "", "SPI2_MOSI", "UART_RXD1"},
 	{"GPCLK1", "", "", "", "SPI2_CLK", "UART_RTS1"},
 	{"GPCLK2", "", "", "", "SPI2_CE0", "UART_CTS1"},
@@ -696,6 +740,16 @@ func Init() error {
 	setIfAlt(GPIO45, &PWM1_OUT, &I2C_SCL0, &I2C_SCL1, nil, &SPI2_CE2, nil)
 	// GPIO46 doesn't have interesting alternate function.
 	// GPIO47-GPIO53 are connected to the SDCard.
+
+	// TODO(maruel): Remove all the functional variables.
+	for i := range Pins {
+		if i == 45 {
+			break
+		}
+		if f := Pins[i].Function(); len(f) < 3 || (f[:2] != "In" && f[:3] != "Out") {
+			Functional[f] = &Pins[i]
+		}
+	}
 
 	in, out := ir.Pins()
 	if in != -1 {

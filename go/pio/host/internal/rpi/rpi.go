@@ -85,21 +85,5 @@ var (
 	HDMI_HOTPLUG_DETECT host.Pin = bcm283x.GPIO46 // High,
 )
 
-// IsConnected returns true if the pin is phyisically connected.
-func IsConnected(p host.Pin) bool {
-	// TODO(maruel): A bit slow, create a lookup table.
-	bcm, ok := p.(host.Pin)
-	if !ok {
-		return false
-	}
-	switch bcm {
-	case P1_1, P1_2, P1_3, P1_4, P1_5, P1_6, P1_7, P1_8, P1_9, P1_10,
-		P1_11, P1_12, P1_13, P1_14, P1_15, P1_16, P1_17, P1_18, P1_19, P1_20,
-		P1_21, P1_22, P1_23, P1_24, P1_25, P1_26, P1_27, P1_28, P1_29, P1_30,
-		P1_31, P1_32, P1_33, P1_34, P1_35, P1_36, P1_37, P1_38, P1_39, P1_40,
-		P5_1, P5_2, P5_3, P5_4, P5_5, P5_6, P5_7, P5_8, AUDIO_LEFT, AUDIO_RIGHT, HDMI_HOTPLUG_DETECT:
-		return true
-	default:
-		return false
-	}
-}
+// See headers.Headers for more info.
+var Headers = map[string][][]host.Pin{}

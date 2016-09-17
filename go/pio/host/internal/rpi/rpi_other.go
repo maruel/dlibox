@@ -61,5 +61,4 @@ func init() {
 	AUDIO_LEFT = host.INVALID
 	AUDIO_RIGHT = host.INVALID
 	HDMI_HOTPLUG_DETECT = host.INVALID
-
 }

@@ -4,4 +4,5 @@
 
 package internal
 
-var CPUInfo map[string]string
+var CPUInfo = map[string]string{}
+var OSRelease = map[string]string{}
