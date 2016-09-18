@@ -6,6 +6,7 @@ package internal
 
 import (
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -51,4 +52,48 @@ func init() {
 	if m := readAndSplit("/etc/os-release"); m != nil {
 		OSRelease = m
 	}
+}
+
+// OS
+
+func IsArmbian() bool {
+	// This is iffy at best.
+	// Armbian presents itself as debian in /etc/os-release.
+	_, err := os.Stat("/etc/armbian.txt")
+	return err == nil
+}
+
+func IsRaspbian() bool {
+	id, _ := OSRelease["ID"]
+	return id == "raspbian"
+}
+
+// CPU
+
+func IsBCM283x() bool {
+	//_, err := os.Stat("/sys/bus/platform/drivers/bcm2835_thermal")
+	//return err == nil
+	hardware, ok := CPUInfo["Hardware"]
+	return ok && strings.HasPrefix(hardware, "BCM")
+}
+
+func IsAllWinner() bool {
+	// TODO(maruel): This is too vague.
+	hardware, ok := CPUInfo["Hardware"]
+	return ok && strings.HasPrefix(hardware, "sun")
+	// /sys/class/sunxi_info/sys_info
+}
+
+// Board
+
+func IsRaspberryPi() bool {
+	// This is iffy at best.
+	_, err := os.Stat("/sys/bus/platform/drivers/raspberrypi-firmware")
+	return err == nil
+}
+
+func IsPine64() bool {
+	// This is iffy at best.
+	_, err := os.Stat("/boot/pine64.dtb")
+	return err == nil
 }

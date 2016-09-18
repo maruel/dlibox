@@ -6,10 +6,11 @@
 package pins
 
 import (
-	"strings"
+	"sync"
 
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/internal"
+	"github.com/maruel/dlibox/go/pio/host/internal/allwinner"
 	"github.com/maruel/dlibox/go/pio/host/internal/bcm283x"
 	"github.com/maruel/dlibox/go/pio/host/internal/sysfs"
 )
@@ -61,26 +62,6 @@ var All map[int]host.PinIO
 // functionality, like I²C, SPI, ADC.
 var Functional map[string]host.Pin
 
-// ByName returns a GPIO pin from its name.
-//
-// This excludes non-GPIO pins like GROUND, V3_3, etc.
-//
-// Returns nil in case of failure.
-//
-// TODO(maruel): Remove?
-func ByName(name string) host.PinIO {
-	// TODO(maruel): Create a map on first use?
-	if Init() != nil {
-		return nil
-	}
-	for _, p := range All {
-		if p.String() == name {
-			return p
-		}
-	}
-	return nil
-}
-
 // ByNumber returns a GPIO pin from its number.
 //
 // This excludes non-GPIO pins like GROUND, V3_3, etc.
@@ -95,37 +76,30 @@ func ByNumber(number int) host.PinIO {
 }
 
 func Init() error {
-	// TODO(maruel): concurrency safety.
+	lock.Lock()
+	defer lock.Unlock()
 	if All != nil {
 		return nil
 	}
-	// Try to detect the CPU and use the right runtime module.
-	hardware, ok := internal.CPUInfo["Hardware"]
-	if ok && strings.HasPrefix(hardware, "BCM") {
-		if err := bcm283x.Init(); err != nil {
-			// TODO(maruel): Fallback to sysfs.
-			return err
+	if internal.IsBCM283x() {
+		if err := bcm283x.Init(); err == nil {
+			All = make(map[int]host.PinIO, len(bcm283x.Pins))
+			for i := range bcm283x.Pins {
+				All[i] = &bcm283x.Pins[i]
+			}
+			Functional = bcm283x.Functional
+			return nil
 		}
-		All = make(map[int]host.PinIO, len(bcm283x.Pins))
-		for i := range bcm283x.Pins {
-			All[i] = &bcm283x.Pins[i]
-		}
-		Functional = bcm283x.Functional
-		return nil
 	}
-	if ok && strings.HasPrefix(hardware, "sun") {
-		/* TODO(maruel): Implement
-		if err := a64.Init(); err != nil {
-			// TODO(maruel): Fallback to sysfs.
-			return err
+	if internal.IsAllWinner() {
+		if err := allwinner.Init(); err == nil {
+			All = make(map[int]host.PinIO, len(allwinner.Pins))
+			for i := range allwinner.Pins {
+				All[i] = &allwinner.Pins[i]
+			}
+			Functional = allwinner.Functional
+			return nil
 		}
-		All = make([]host.PinIO, len(a64.Pins))
-		for i := range a64.Pins {
-			All[i] = &a64.Pins[i]
-		}
-		Functional = bcm283x.Functional
-		return nil
-		*/
 	}
 
 	// Fallback to sysfs gpio.
@@ -141,6 +115,8 @@ func Init() error {
 }
 
 //
+
+var lock sync.Mutex
 
 func init() {
 	GROUND = &pin{"GROUND"}

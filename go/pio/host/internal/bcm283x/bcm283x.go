@@ -6,6 +6,11 @@ package bcm283x
 
 import (
 	"errors"
+	"io/ioutil"
+	"os"
+	"path"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/host"
@@ -541,6 +546,7 @@ var Pins = [54]Pin{
 	{number: 53, name: "GPIO53", defaultPull: host.Up},
 }
 
+// This excludes the functions in and out.
 var mapping = [54][6]string{
 	{"I2C_SDA0"}, // 0
 	{"I2C_SCL0"},
@@ -588,6 +594,28 @@ var mapping = [54][6]string{
 	{"GPCLK2", "", "", "", "SPI2_CE0", "UART_CTS1"},
 	{"GPCLK1", "I2C_SDA0", "I2C_SDA1", "", "SPI2_CE1", ""},
 	{"PWM1_OUT", "I2C_SCL0", "I2C_SCL1", "", "SPI2_CE2", ""},
+}
+
+// getBaseAddress queries the virtual file system to retrieve the base address
+// of the GPIO registers.
+//
+// Defaults to 0x3F200000 as per datasheet if could query the file system.
+func getBaseAddress() uint64 {
+	items, _ := ioutil.ReadDir("/sys/bus/platform/drivers/pinctrl-bcm2835/")
+	for _, item := range items {
+		if item.Mode()&os.ModeSymlink != 0 {
+			parts := strings.SplitN(path.Base(item.Name()), ".", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			base, err := strconv.ParseUint(parts[0], 16, 64)
+			if err != nil {
+				continue
+			}
+			return base
+		}
+	}
+	return 0x3F200000
 }
 
 func init() {
@@ -689,9 +717,13 @@ func init() {
 }
 
 func Init() error {
-	mem, err := gpiomem.Open()
+	mem, err := gpiomem.OpenGPIO()
 	if err != nil {
-		return err
+		// Try without /dev/gpiomem.
+		mem, err = gpiomem.OpenMem(getBaseAddress())
+		if err != nil {
+			return err
+		}
 	}
 	gpioMemory32 = mem.Uint32
 

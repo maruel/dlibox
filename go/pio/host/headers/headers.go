@@ -10,6 +10,8 @@ import (
 	"sync"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/internal"
+	"github.com/maruel/dlibox/go/pio/host/internal/pine64"
 	"github.com/maruel/dlibox/go/pio/host/internal/rpi"
 )
 
@@ -43,7 +45,9 @@ func IsConnected(p host.Pin) bool {
 }
 
 func init() {
-	// TODO(maruel): Detect if running on a Raspberry Pi, Pine64 or something
-	// else.
-	All = rpi.Headers
+	if internal.IsRaspberryPi() {
+		All = pine64.Headers
+	} else if internal.IsPine64() {
+		All = rpi.Headers
+	}
 }
