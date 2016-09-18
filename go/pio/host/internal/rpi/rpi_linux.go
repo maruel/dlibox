@@ -21,7 +21,7 @@ func init() {
 
 	// Initialize Version. This function is not futureproof, it will return 0 on
 	// a Raspberry Pi 4 whenever it comes out.
-	rev, _ := internal.CPUInfo["Revision"]
+	rev, _ := internal.CPUInfo()["Revision"]
 	if i, err := strconv.ParseInt(rev, 16, 32); err == nil {
 		// Ignore the overclock bit.
 		i &= 0xFFFFFF

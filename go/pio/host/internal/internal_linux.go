@@ -9,6 +9,89 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
+)
+
+// OS
+
+func IsArmbian() bool {
+	// This is iffy at best.
+	// Armbian presents itself as debian in /etc/os-release.
+	_, err := os.Stat("/etc/armbian.txt")
+	return err == nil
+}
+
+func IsRaspbian() bool {
+	id, _ := OSRelease()["ID"]
+	return id == "raspbian"
+}
+
+// CPU
+
+func IsBCM283x() bool {
+	//_, err := os.Stat("/sys/bus/platform/drivers/bcm2835_thermal")
+	//return err == nil
+	hardware, ok := CPUInfo()["Hardware"]
+	return ok && strings.HasPrefix(hardware, "BCM")
+}
+
+func IsAllWinner() bool {
+	// TODO(maruel): This is too vague.
+	hardware, ok := CPUInfo()["Hardware"]
+	return ok && strings.HasPrefix(hardware, "sun")
+	// /sys/class/sunxi_info/sys_info
+}
+
+// Board
+
+func IsRaspberryPi() bool {
+	// This is iffy at best.
+	_, err := os.Stat("/sys/bus/platform/drivers/raspberrypi-firmware")
+	return err == nil
+}
+
+func IsPine64() bool {
+	// This is iffy at best.
+	_, err := os.Stat("/boot/pine64.dtb")
+	return err == nil
+}
+
+func CPUInfo() map[string]string {
+	lock.Lock()
+	defer lock.Unlock()
+	if cpuInfo == nil {
+		// Technically speaking, cpuinfo doesn't contain quotes and os-release
+		// doesn't contain duplicate keys. Make it more strictly correct if needed.
+		if m := readAndSplit("/proc/cpuinfo"); m != nil {
+			cpuInfo = m
+		} else {
+			cpuInfo = map[string]string{}
+		}
+	}
+	return cpuInfo
+}
+
+func OSRelease() map[string]string {
+	lock.Lock()
+	defer lock.Unlock()
+	if osRelease == nil {
+		// Technically speaking, cpuinfo doesn't contain quotes and os-release
+		// doesn't contain duplicate keys. Make it more strictly correct if needed.
+		if m := readAndSplit("/etc/os-release"); m != nil {
+			osRelease = m
+		} else {
+			osRelease = map[string]string{}
+		}
+	}
+	return osRelease
+}
+
+//
+
+var (
+	lock      sync.Mutex
+	cpuInfo   map[string]string
+	osRelease map[string]string
 )
 
 func readAndSplit(path string) map[string]string {
@@ -41,59 +124,4 @@ func readAndSplit(path string) map[string]string {
 		}
 	}
 	return out
-}
-
-func init() {
-	// Technically speaking, cpuinfo doesn't contain quotes and os-release
-	// doesn't contain duplicate keys. Make it more strictly correct if needed.
-	if m := readAndSplit("/proc/cpuinfo"); m != nil {
-		CPUInfo = m
-	}
-	if m := readAndSplit("/etc/os-release"); m != nil {
-		OSRelease = m
-	}
-}
-
-// OS
-
-func IsArmbian() bool {
-	// This is iffy at best.
-	// Armbian presents itself as debian in /etc/os-release.
-	_, err := os.Stat("/etc/armbian.txt")
-	return err == nil
-}
-
-func IsRaspbian() bool {
-	id, _ := OSRelease["ID"]
-	return id == "raspbian"
-}
-
-// CPU
-
-func IsBCM283x() bool {
-	//_, err := os.Stat("/sys/bus/platform/drivers/bcm2835_thermal")
-	//return err == nil
-	hardware, ok := CPUInfo["Hardware"]
-	return ok && strings.HasPrefix(hardware, "BCM")
-}
-
-func IsAllWinner() bool {
-	// TODO(maruel): This is too vague.
-	hardware, ok := CPUInfo["Hardware"]
-	return ok && strings.HasPrefix(hardware, "sun")
-	// /sys/class/sunxi_info/sys_info
-}
-
-// Board
-
-func IsRaspberryPi() bool {
-	// This is iffy at best.
-	_, err := os.Stat("/sys/bus/platform/drivers/raspberrypi-firmware")
-	return err == nil
-}
-
-func IsPine64() bool {
-	// This is iffy at best.
-	_, err := os.Stat("/boot/pine64.dtb")
-	return err == nil
 }

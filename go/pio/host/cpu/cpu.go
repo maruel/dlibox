@@ -4,6 +4,3 @@
 
 // package cpu exposes generic information like CPU maximum speed.
 package cpu
-
-// MaxSpeed is the maximum speed for CPU0 in Hertz.
-var MaxSpeed int64

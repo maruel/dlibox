@@ -19,12 +19,12 @@ import (
 // All contains all the on-board headers on a micro computer. The map key is
 // the header name, e.g. "P1" or "EULER" and the value is a slice of slice of
 // pins. For a 2x20 header, it's going to be a slice of [20][2]host.Pin.
-var All map[string][][]host.Pin
-
-var (
-	lock    sync.Mutex
-	reverse map[string]bool
-)
+func All() map[string][][]host.Pin {
+	lock.Lock()
+	defer lock.Unlock()
+	initAll()
+	return all
+}
 
 // IsConnected returns true if the pin is on a header.
 func IsConnected(p host.Pin) bool {
@@ -32,8 +32,9 @@ func IsConnected(p host.Pin) bool {
 	defer lock.Unlock()
 	// Populate the map on first use.
 	if reverse == nil {
+		initAll()
 		reverse = map[string]bool{}
-		for name, header := range All {
+		for name, header := range all {
 			for i, line := range header {
 				for j, item := range line {
 					if item == nil || len(item.String()) == 0 {
@@ -48,10 +49,22 @@ func IsConnected(p host.Pin) bool {
 	return b
 }
 
-func init() {
-	if internal.IsRaspberryPi() {
-		All = rpi.Headers
-	} else if internal.IsPine64() {
-		All = pine64.Headers
+//
+
+var (
+	lock    sync.Mutex
+	all     map[string][][]host.Pin
+	reverse map[string]bool
+)
+
+func initAll() {
+	if all == nil {
+		if internal.IsRaspberryPi() {
+			all = rpi.Headers
+		} else if internal.IsPine64() {
+			all = pine64.Headers
+		} else {
+			all = map[string][][]host.Pin{}
+		}
 	}
 }

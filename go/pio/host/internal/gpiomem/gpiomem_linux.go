@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"syscall"
 	"unsafe"
+
+	"github.com/pkg/errors"
 )
 
 // OpenGPIO returns a CPU specific memory mapping of the CPU I/O registers using
@@ -36,16 +38,17 @@ func OpenGPIO() (*Mem, error) {
 // OpenMem returns a memory mapped view of arbitrary kernel memory range using
 // /dev/mem.
 func OpenMem(base uint64) (*Mem, error) {
-	f, err := os.OpenFile("/dev/mem/dev	", os.O_RDWR|os.O_SYNC, 0)
+	f, err := os.OpenFile("/dev/mem", os.O_RDWR|os.O_SYNC, 0)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	i, err := syscall.Mmap(int(f.Fd()), int64(base), 4096, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
+	// Align at 4Kb then offset the returned uint32 array.
+	i, err := syscall.Mmap(int(f.Fd()), int64(base&^0xFFF), 4096, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "mapping at 0x%x failed", base)
 	}
-	return &Mem{i, unsafeRemap(i)}, nil
+	return &Mem{i, unsafeRemap(i[base&0xFFF:])}, nil
 }
 
 // Close unmaps the I/O registers.

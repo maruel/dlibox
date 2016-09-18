@@ -21,22 +21,22 @@ type pin struct {
 }
 
 var (
-	GROUND      host.Pin
-	V3_3        host.Pin
-	V5          host.Pin
-	DC_IN       host.Pin
-	TEMP_SENSOR host.Pin
-	BAT_PLUS    host.Pin
-	IR_RX       host.Pin
-	EAROUTP     host.Pin
-	EAROUT_N    host.Pin
-	CHARGER_LED host.Pin
-	RESET       host.Pin
-	PWR_SWITCH  host.Pin
-	KEY_ADC     host.Pin
-	X32KFOUT    host.Pin
-	VCC         host.Pin
-	IOVCC       host.Pin
+	GROUND      host.Pin = &pin{"GROUND"}
+	V3_3        host.Pin = &pin{"V3_3"}
+	V5          host.Pin = &pin{"V5"}
+	DC_IN       host.Pin = &pin{"DC_IN"}
+	TEMP_SENSOR host.Pin = &pin{"TEMP_SENSOR"}
+	BAT_PLUS    host.Pin = &pin{"BAT_PLUS"}
+	IR_RX       host.Pin = &pin{"IR_RX"}
+	EAROUTP     host.Pin = &pin{"EAROUTP"}
+	EAROUT_N    host.Pin = &pin{"EAROUT_N"}
+	CHARGER_LED host.Pin = &pin{"CHARGER_LED"}
+	RESET       host.Pin = &pin{"RESET"}
+	PWR_SWITCH  host.Pin = &pin{"PWR_SWITCH"}
+	KEY_ADC     host.Pin = &pin{"KEY_ADC"}
+	X32KFOUT    host.Pin = &pin{"X32KFOUT"}
+	VCC         host.Pin = &pin{"VCC"}
+	IOVCC       host.Pin = &pin{"IOVCC"}
 )
 
 func (p *pin) Number() int {
@@ -68,21 +68,25 @@ var Functional map[string]host.Pin
 //
 // Returns nil in case of failure.
 func ByNumber(number int) host.PinIO {
-	if Init() != nil {
+	if Init(true) != nil {
 		return nil
 	}
 	p, _ := All[number]
 	return p
 }
 
-func Init() error {
+func Init(fallback bool) error {
 	lock.Lock()
 	defer lock.Unlock()
 	if All != nil {
 		return nil
 	}
 	if internal.IsBCM283x() {
-		if err := bcm283x.Init(); err == nil {
+		if err := bcm283x.Init(); err != nil {
+			if !fallback {
+				return err
+			}
+		} else {
 			All = make(map[int]host.PinIO, len(bcm283x.Pins))
 			for i := range bcm283x.Pins {
 				All[i] = &bcm283x.Pins[i]
@@ -92,7 +96,11 @@ func Init() error {
 		}
 	}
 	if internal.IsAllWinner() {
-		if err := allwinner.Init(); err == nil {
+		if err := allwinner.Init(); err != nil {
+			if !fallback {
+				return err
+			}
+		} else {
 			All = make(map[int]host.PinIO, len(allwinner.Pins))
 			for i := range allwinner.Pins {
 				All[i] = &allwinner.Pins[i]
@@ -117,22 +125,3 @@ func Init() error {
 //
 
 var lock sync.Mutex
-
-func init() {
-	GROUND = &pin{"GROUND"}
-	V3_3 = &pin{"V3_3"}
-	V5 = &pin{"V5"}
-	DC_IN = &pin{"DC_IN"}
-	TEMP_SENSOR = &pin{"TEMP_SENSOR"}
-	BAT_PLUS = &pin{"BAT_PLUS"}
-	IR_RX = &pin{"IR_RX"}
-	EAROUTP = &pin{"EAROUTP"}
-	EAROUT_N = &pin{"EAROUT_N"}
-	CHARGER_LED = &pin{"CHARGER_LED"}
-	RESET = &pin{"RESET"}
-	PWR_SWITCH = &pin{"PWR_SWITCH"}
-	KEY_ADC = &pin{"KEY_ADC"}
-	X32KFOUT = &pin{"X32KFOUT"}
-	VCC = &pin{"VCC"}
-	IOVCC = &pin{"IOVCC"}
-}

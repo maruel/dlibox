@@ -3,6 +3,3 @@
 // that can be found in the LICENSE file.
 
 package internal
-
-var CPUInfo = map[string]string{}
-var OSRelease = map[string]string{}

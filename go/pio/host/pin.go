@@ -34,8 +34,8 @@ type Pull uint8
 
 const (
 	Float        Pull = 0 // Let the input float
-	Down         Pull = 1 // Apply pull-down; for a bcm283x, the resistor is 50KOhm~60kOhm
-	Up           Pull = 2 // Apply pull-up; for a bcm283x, the resistor is 50kOhm~65kOhm
+	Down         Pull = 1 // Apply pull-down
+	Up           Pull = 2 // Apply pull-up
 	PullNoChange Pull = 3 // Do not change the previous pull resistor setting
 )
 

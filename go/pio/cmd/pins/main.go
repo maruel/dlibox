@@ -17,30 +17,6 @@ import (
 	"github.com/maruel/dlibox/go/pio/host/pins"
 )
 
-func getMaxName(invalid bool) int {
-	max := 0
-	for _, p := range pins.All {
-		if invalid || headers.IsConnected(p) {
-			if l := len(p.String()); l > max {
-				max = l
-			}
-		}
-	}
-	return max
-}
-
-func getMaxFn(invalid bool) int {
-	max := 0
-	for _, p := range pins.All {
-		if invalid || headers.IsConnected(p) {
-			if l := len(p.Function()); l > max {
-				max = l
-			}
-		}
-	}
-	return max
-}
-
 func printFunc(invalid bool) {
 	max := 0
 	funcs := make([]string, 0, len(pins.Functional))
@@ -66,8 +42,18 @@ func printFunc(invalid bool) {
 }
 
 func printGPIO(invalid bool) {
-	maxName := getMaxName(invalid)
-	maxFn := getMaxFn(invalid)
+	maxName := 0
+	maxFn := 0
+	for _, p := range pins.All {
+		if invalid || headers.IsConnected(p) {
+			if l := len(p.String()); l > maxName {
+				maxName = l
+			}
+			if l := len(p.Function()); l > maxFn {
+				maxFn = l
+			}
+		}
+	}
 	ids := make([]int, 0, len(pins.All))
 	for i := range pins.All {
 		ids = append(ids, i)
@@ -84,22 +70,19 @@ func printGPIO(invalid bool) {
 }
 
 func printHardware(invalid bool) {
-	names := make([]string, 0, len(headers.All))
-	for name := range headers.All {
+	all := headers.All()
+	names := make([]string, 0, len(all))
+	for name := range all {
 		names = append(names, name)
 	}
 	sort.Strings(names)
-	for _, name := range names {
-		header := headers.All[name]
-		if len(header) == 0 {
-			fmt.Printf("%s: No pin connected\n", name)
+	maxName := 0
+	maxFn := 0
+	for _, header := range all {
+		if len(header) == 0 || len(header[0]) != 2 {
 			continue
 		}
-		sum := 0
-		maxName := 0
-		maxFn := 0
 		for _, line := range header {
-			sum += len(line)
 			for _, p := range line {
 				if l := len(p.String()); l > maxName {
 					maxName = l
@@ -109,11 +92,25 @@ func printHardware(invalid bool) {
 				}
 			}
 		}
+	}
+	for i, name := range names {
+		if i != 0 {
+			fmt.Print("\n")
+		}
+		header := all[name]
+		if len(header) == 0 {
+			fmt.Printf("%s: No pin connected\n", name)
+			continue
+		}
+		sum := 0
+		for _, line := range header {
+			sum += len(line)
+		}
 		fmt.Printf("%s: %d pins\n", name, sum)
 		if len(header[0]) == 2 {
 			fmt.Printf("  %*s  %*s  Pos  Pos  %-*s Func\n", maxFn, "Func", maxName, "Name", maxName, "Name")
 			for i, line := range header {
-				fmt.Printf("  %*s  %*s  %3d  %-3d  %-*s %s\n", maxFn, line[0].Function(), maxName, line[0], i+1, i+2, maxName, line[1], line[1].Function())
+				fmt.Printf("  %*s  %*s  %3d  %-3d  %-*s %s\n", maxFn, line[0].Function(), maxName, line[0], 2*i+1, 2*i+2, maxName, line[1], line[1].Function())
 			}
 			continue
 		}
@@ -147,11 +144,11 @@ func mainImpl() error {
 	}
 
 	// Explicitly initialize to catch any error.
-	if err := pins.Init(); err != nil {
+	if err := pins.Init(false); err != nil {
 		return err
 	}
 	if *info {
-		fmt.Printf("MaxSpeed: %dMhz\n", cpu.MaxSpeed/1000000)
+		fmt.Printf("MaxSpeed: %dMhz\n", cpu.MaxSpeed()/1000000)
 	}
 	if *fun {
 		printFunc(*invalid)
