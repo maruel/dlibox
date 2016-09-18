@@ -85,7 +85,7 @@ func (s *SPI) Write(d []byte) (int, error) {
 // BUG(maruel): Completely untested.
 //
 // cs can be nil.
-func MakeSPI(clk, mosi host.PinOut, miso host.PinIn, cs host.PinOut, speedHz int) (*SPI, error) {
+func MakeSPI(clk, mosi host.PinOut, miso host.PinIn, cs host.PinOut, speedHz int64) (*SPI, error) {
 	if err := clk.Out(); err != nil {
 		return nil, err
 	}
@@ -94,8 +94,10 @@ func MakeSPI(clk, mosi host.PinOut, miso host.PinIn, cs host.PinOut, speedHz int
 		return nil, err
 	}
 	mosi.Set(host.High)
-	if err := miso.In(host.Up); err != nil {
-		return nil, err
+	if miso != nil {
+		if err := miso.In(host.Up); err != nil {
+			return nil, err
+		}
 	}
 	if cs != nil {
 		if err := cs.Out(); err != nil {

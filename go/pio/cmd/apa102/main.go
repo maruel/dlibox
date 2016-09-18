@@ -25,7 +25,9 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/bitbang"
 	"github.com/maruel/dlibox/go/pio/host/hosttest"
+	"github.com/maruel/dlibox/go/pio/host/pins"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/nfnt/resize"
 )
@@ -98,6 +100,9 @@ func mainImpl() error {
 	verbose := flag.Bool("v", false, "verbose mode")
 	bus := flag.Int("b", 0, "SPI bus to use; use -1 to dump the raw binary data to stdout")
 	fake := flag.Bool("fake", false, "display as ANSI terminal color (intensity and temperature are ignored)")
+	clk := flag.Int("c", -1, "clk pin for bitbanging")
+	mosi := flag.Int("m", -1, "mosi pin for bitbanging")
+
 	numLights := flag.Int("n", 150, "number of lights on the strip")
 	intensity := flag.Int("l", 127, "light intensity [1-255]")
 	temperature := flag.Int("t", 5000, "light temperature in °Kelvin [3500-7500]")
@@ -129,7 +134,18 @@ func mainImpl() error {
 		defer os.Stdout.Write([]byte("\033[0m\n"))
 	} else {
 		var spiBus host.SPI
-		if *bus == -1 {
+		if *clk != -1 && *mosi != -1 {
+			if err := pins.Init(false); err != nil {
+				return err
+			}
+			pclk := pins.ByNumber(*clk)
+			pmosi := pins.ByNumber(*mosi)
+			b, err := bitbang.MakeSPI(pclk, pmosi, nil, nil, int64(*speed))
+			if err != nil {
+				return err
+			}
+			spiBus = b
+		} else if *bus == -1 {
 			spiBus = &hosttest.SPI{W: os.Stdout}
 		} else {
 			b, err := sysfs.MakeSPI(*bus, 0, int64(*speed))
