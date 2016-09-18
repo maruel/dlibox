@@ -7,6 +7,7 @@
 package headers
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/maruel/dlibox/go/pio/host"
@@ -32,9 +33,12 @@ func IsConnected(p host.Pin) bool {
 	// Populate the map on first use.
 	if reverse == nil {
 		reverse = map[string]bool{}
-		for _, header := range All {
-			for _, line := range header {
-				for _, item := range line {
+		for name, header := range All {
+			for i, line := range header {
+				for j, item := range line {
+					if item == nil || len(item.String()) == 0 {
+						fmt.Printf("%s[%d][%d]\n", name, i, j)
+					}
 					reverse[item.String()] = true
 				}
 			}
@@ -46,8 +50,8 @@ func IsConnected(p host.Pin) bool {
 
 func init() {
 	if internal.IsRaspberryPi() {
-		All = pine64.Headers
-	} else if internal.IsPine64() {
 		All = rpi.Headers
+	} else if internal.IsPine64() {
+		All = pine64.Headers
 	}
 }

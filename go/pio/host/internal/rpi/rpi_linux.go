@@ -35,7 +35,7 @@ func init() {
 			log.Printf("Unknown hardware version: 0x%x", i)
 		}
 	} else {
-		log.Printf("Failed to read cpu_info: %v", err)
+		//log.Printf("Failed to read cpu_info: %v", err)
 	}
 
 	if Version == 1 {

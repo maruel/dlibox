@@ -48,7 +48,7 @@ func (p *pin) String() string {
 }
 
 func (p *pin) Function() string {
-	return p.name
+	return ""
 }
 
 // All refers to all the GPIO pins available on this host.

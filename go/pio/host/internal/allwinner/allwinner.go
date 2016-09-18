@@ -16,7 +16,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/host/internal/sysfs"
 )
 
-var Pins = [10]Pin{
+var Pins = [116]Pin{
 	{number: 0, name: "PB0", defaultPull: host.Float},
 	{number: 1, name: "PB1", defaultPull: host.Float},
 	{number: 2, name: "PB2", defaultPull: host.Float},
@@ -27,7 +27,112 @@ var Pins = [10]Pin{
 	{number: 7, name: "PB7", defaultPull: host.Float},
 	{number: 8, name: "PB8", defaultPull: host.Float},
 	{number: 9, name: "PB9", defaultPull: host.Float},
-	// TODO(maruel): add rest, only a few PC pins have a default pull up.
+	{number: 10, name: "PC0", defaultPull: host.Float},
+	{number: 11, name: "PC1", defaultPull: host.Float},
+	{number: 12, name: "PC2", defaultPull: host.Float},
+	{number: 13, name: "PC3", defaultPull: host.Up},
+	{number: 14, name: "PC4", defaultPull: host.Up},
+	{number: 15, name: "PC5", defaultPull: host.Float},
+	{number: 16, name: "PC6", defaultPull: host.Up},
+	{number: 17, name: "PC7", defaultPull: host.Up},
+	{number: 18, name: "PC8", defaultPull: host.Float},
+	{number: 19, name: "PC9", defaultPull: host.Float},
+	{number: 20, name: "PC10", defaultPull: host.Float},
+	{number: 21, name: "PC11", defaultPull: host.Float},
+	{number: 22, name: "PC12", defaultPull: host.Float},
+	{number: 23, name: "PC13", defaultPull: host.Float},
+	{number: 24, name: "PC14", defaultPull: host.Float},
+	{number: 25, name: "PC15", defaultPull: host.Float},
+	{number: 26, name: "PC16", defaultPull: host.Float},
+	{number: 27, name: "PD0", defaultPull: host.Float},
+	{number: 28, name: "PD1", defaultPull: host.Float},
+	{number: 29, name: "PD2", defaultPull: host.Float},
+	{number: 30, name: "PD3", defaultPull: host.Float},
+	{number: 31, name: "PD4", defaultPull: host.Float},
+	{number: 32, name: "PD5", defaultPull: host.Float},
+	{number: 33, name: "PD6", defaultPull: host.Float},
+	{number: 34, name: "PD7", defaultPull: host.Float},
+	{number: 35, name: "PD8", defaultPull: host.Float},
+	{number: 36, name: "PD9", defaultPull: host.Float},
+	{number: 37, name: "PD10", defaultPull: host.Float},
+	{number: 38, name: "PD11", defaultPull: host.Float},
+	{number: 39, name: "PD12", defaultPull: host.Float},
+	{number: 40, name: "PD13", defaultPull: host.Float},
+	{number: 41, name: "PD14", defaultPull: host.Float},
+	{number: 42, name: "PD15", defaultPull: host.Float},
+	{number: 43, name: "PD16", defaultPull: host.Float},
+	{number: 44, name: "PD17", defaultPull: host.Float},
+	{number: 45, name: "PD18", defaultPull: host.Float},
+	{number: 46, name: "PD19", defaultPull: host.Float},
+	{number: 47, name: "PD20", defaultPull: host.Float},
+	{number: 48, name: "PD21", defaultPull: host.Float},
+	{number: 49, name: "PD22", defaultPull: host.Float},
+	{number: 50, name: "PD23", defaultPull: host.Float},
+	{number: 51, name: "PD24", defaultPull: host.Float},
+	{number: 52, name: "PE0", defaultPull: host.Float},
+	{number: 53, name: "PE1", defaultPull: host.Float},
+	{number: 54, name: "PE2", defaultPull: host.Float},
+	{number: 55, name: "PE3", defaultPull: host.Float},
+	{number: 56, name: "PE4", defaultPull: host.Float},
+	{number: 57, name: "PE5", defaultPull: host.Float},
+	{number: 58, name: "PE6", defaultPull: host.Float},
+	{number: 59, name: "PE7", defaultPull: host.Float},
+	{number: 60, name: "PE8", defaultPull: host.Float},
+	{number: 61, name: "PE9", defaultPull: host.Float},
+	{number: 62, name: "PE10", defaultPull: host.Float},
+	{number: 63, name: "PE11", defaultPull: host.Float},
+	{number: 64, name: "PE12", defaultPull: host.Float},
+	{number: 65, name: "PE13", defaultPull: host.Float},
+	{number: 66, name: "PE14", defaultPull: host.Float},
+	{number: 67, name: "PE15", defaultPull: host.Float},
+	{number: 68, name: "PE16", defaultPull: host.Float},
+	{number: 69, name: "PE17", defaultPull: host.Float},
+	{number: 70, name: "PF0", defaultPull: host.Float},
+	{number: 71, name: "PF1", defaultPull: host.Float},
+	{number: 72, name: "PF2", defaultPull: host.Float},
+	{number: 73, name: "PF3", defaultPull: host.Float},
+	{number: 74, name: "PF4", defaultPull: host.Float},
+	{number: 75, name: "PF5", defaultPull: host.Float},
+	{number: 76, name: "PF6", defaultPull: host.Float},
+	{number: 77, name: "PG0", defaultPull: host.Float},
+	{number: 78, name: "PG1", defaultPull: host.Float},
+	{number: 79, name: "PG2", defaultPull: host.Float},
+	{number: 80, name: "PG3", defaultPull: host.Float},
+	{number: 81, name: "PG4", defaultPull: host.Float},
+	{number: 82, name: "PG5", defaultPull: host.Float},
+	{number: 83, name: "PG6", defaultPull: host.Float},
+	{number: 84, name: "PG7", defaultPull: host.Float},
+	{number: 85, name: "PG8", defaultPull: host.Float},
+	{number: 86, name: "PG9", defaultPull: host.Float},
+	{number: 87, name: "PG10", defaultPull: host.Float},
+	{number: 88, name: "PG11", defaultPull: host.Float},
+	{number: 89, name: "PG12", defaultPull: host.Float},
+	{number: 90, name: "PG13", defaultPull: host.Float},
+	{number: 91, name: "PH0", defaultPull: host.Float},
+	{number: 92, name: "PH1", defaultPull: host.Float},
+	{number: 93, name: "PH2", defaultPull: host.Float},
+	{number: 94, name: "PH3", defaultPull: host.Float},
+	{number: 95, name: "PH4", defaultPull: host.Float},
+	{number: 96, name: "PH5", defaultPull: host.Float},
+	{number: 97, name: "PH6", defaultPull: host.Float},
+	{number: 98, name: "PH7", defaultPull: host.Float},
+	{number: 99, name: "PH8", defaultPull: host.Float},
+	{number: 100, name: "PH9", defaultPull: host.Float},
+	{number: 101, name: "PH10", defaultPull: host.Float},
+	{number: 102, name: "PH11", defaultPull: host.Float},
+	{number: 103, name: "PL0", defaultPull: host.Float},
+	{number: 104, name: "PL1", defaultPull: host.Float},
+	{number: 105, name: "PL2", defaultPull: host.Float},
+	{number: 106, name: "PL3", defaultPull: host.Float},
+	{number: 107, name: "PL4", defaultPull: host.Float},
+	{number: 108, name: "PL5", defaultPull: host.Float},
+	{number: 109, name: "PL6", defaultPull: host.Float},
+	{number: 110, name: "PL7", defaultPull: host.Float},
+	{number: 111, name: "PL8", defaultPull: host.Float},
+	{number: 112, name: "PL9", defaultPull: host.Float},
+	{number: 113, name: "PL10", defaultPull: host.Float},
+	{number: 114, name: "PL11", defaultPull: host.Float},
+	{number: 115, name: "PL12", defaultPull: host.Float},
 }
 
 // Functional is pins.Functional on this CPU.
@@ -149,6 +254,7 @@ var (
 	PH9  host.PinIO //
 	PH10 host.PinIO //
 	PH11 host.PinIO //
+	PL0  host.PinIO //
 	PL1  host.PinIO //
 	PL2  host.PinIO //
 	PL3  host.PinIO //
@@ -281,3 +387,122 @@ var gpioMemory32 []uint32
 // Page 621 I2S/PCM
 
 var _ host.PinIO = &Pin{}
+
+func init() {
+	PB0 = &Pins[0]
+	PB1 = &Pins[1]
+	PB2 = &Pins[2]
+	PB3 = &Pins[3]
+	PB4 = &Pins[4]
+	PB5 = &Pins[5]
+	PB6 = &Pins[6]
+	PB7 = &Pins[7]
+	PB8 = &Pins[8]
+	PB9 = &Pins[9]
+	PC0 = &Pins[10]
+	PC1 = &Pins[11]
+	PC2 = &Pins[12]
+	PC3 = &Pins[13]
+	PC4 = &Pins[14]
+	PC5 = &Pins[15]
+	PC6 = &Pins[16]
+	PC7 = &Pins[17]
+	PC8 = &Pins[18]
+	PC9 = &Pins[19]
+	PC10 = &Pins[20]
+	PC11 = &Pins[21]
+	PC12 = &Pins[22]
+	PC13 = &Pins[23]
+	PC14 = &Pins[24]
+	PC15 = &Pins[25]
+	PC16 = &Pins[26]
+	PD0 = &Pins[27]
+	PD1 = &Pins[28]
+	PD2 = &Pins[29]
+	PD3 = &Pins[30]
+	PD4 = &Pins[31]
+	PD5 = &Pins[32]
+	PD6 = &Pins[33]
+	PD7 = &Pins[34]
+	PD8 = &Pins[35]
+	PD9 = &Pins[36]
+	PD10 = &Pins[37]
+	PD11 = &Pins[38]
+	PD12 = &Pins[39]
+	PD13 = &Pins[40]
+	PD14 = &Pins[41]
+	PD15 = &Pins[42]
+	PD16 = &Pins[43]
+	PD17 = &Pins[44]
+	PD18 = &Pins[45]
+	PD19 = &Pins[46]
+	PD20 = &Pins[47]
+	PD21 = &Pins[48]
+	PD22 = &Pins[49]
+	PD23 = &Pins[50]
+	PD24 = &Pins[51]
+	PE0 = &Pins[52]
+	PE1 = &Pins[53]
+	PE2 = &Pins[54]
+	PE3 = &Pins[55]
+	PE4 = &Pins[56]
+	PE5 = &Pins[57]
+	PE6 = &Pins[58]
+	PE7 = &Pins[59]
+	PE8 = &Pins[60]
+	PE9 = &Pins[61]
+	PE10 = &Pins[62]
+	PE11 = &Pins[63]
+	PE12 = &Pins[64]
+	PE13 = &Pins[65]
+	PE14 = &Pins[66]
+	PE15 = &Pins[67]
+	PE16 = &Pins[68]
+	PE17 = &Pins[69]
+	PF0 = &Pins[70]
+	PF1 = &Pins[71]
+	PF2 = &Pins[72]
+	PF3 = &Pins[73]
+	PF4 = &Pins[74]
+	PF5 = &Pins[75]
+	PF6 = &Pins[76]
+	PG0 = &Pins[77]
+	PG1 = &Pins[78]
+	PG2 = &Pins[79]
+	PG3 = &Pins[80]
+	PG4 = &Pins[81]
+	PG5 = &Pins[82]
+	PG6 = &Pins[83]
+	PG7 = &Pins[84]
+	PG8 = &Pins[85]
+	PG9 = &Pins[86]
+	PG10 = &Pins[87]
+	PG11 = &Pins[88]
+	PG12 = &Pins[89]
+	PG13 = &Pins[90]
+	PH0 = &Pins[91]
+	PH1 = &Pins[92]
+	PH2 = &Pins[93]
+	PH3 = &Pins[94]
+	PH4 = &Pins[95]
+	PH5 = &Pins[96]
+	PH6 = &Pins[97]
+	PH7 = &Pins[98]
+	PH8 = &Pins[99]
+	PH9 = &Pins[100]
+	PH10 = &Pins[101]
+	PH11 = &Pins[102]
+	PL0 = &Pins[103]
+	PL1 = &Pins[104]
+	PL2 = &Pins[105]
+	PL3 = &Pins[106]
+	PL4 = &Pins[107]
+	PL5 = &Pins[108]
+	PL6 = &Pins[109]
+	PL7 = &Pins[110]
+	PL8 = &Pins[111]
+	PL9 = &Pins[112]
+	PL10 = &Pins[113]
+	PL11 = &Pins[114]
+	PL12 = &Pins[115]
+}

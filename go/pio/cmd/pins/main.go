@@ -41,9 +41,11 @@ func printFunc(invalid bool) {
 	max := 0
 	funcs := make([]string, 0, len(pins.Functional))
 	for f := range pins.Functional {
-		funcs = append(funcs, f)
-		if l := len(f); l > max {
-			max = l
+		if l := len(f); l > 0 && f[0] != '<' {
+			funcs = append(funcs, f)
+			if l > max {
+				max = l
+			}
 		}
 	}
 	sort.Strings(funcs)

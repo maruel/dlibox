@@ -197,17 +197,35 @@ func (p *Pin) Function() string {
 	case out:
 		return "Out/" + p.Read().String()
 	case alt0:
-		return mapping[p.number][0]
+		if s := mapping[p.number][0]; len(s) != 0 {
+			return s
+		}
+		return "<Alt0>"
 	case alt1:
-		return mapping[p.number][1]
+		if s := mapping[p.number][1]; len(s) != 0 {
+			return s
+		}
+		return "<Alt1>"
 	case alt2:
-		return mapping[p.number][2]
+		if s := mapping[p.number][2]; len(s) != 0 {
+			return s
+		}
+		return "<Alt2>"
 	case alt3:
-		return mapping[p.number][3]
+		if s := mapping[p.number][3]; len(s) != 0 {
+			return s
+		}
+		return "<Alt3>"
 	case alt4:
-		return mapping[p.number][4]
+		if s := mapping[p.number][4]; len(s) != 0 {
+			return s
+		}
+		return "<Alt4>"
 	case alt5:
-		return mapping[p.number][5]
+		if s := mapping[p.number][5]; len(s) != 0 {
+			return s
+		}
+		return "<Alt5>"
 	default:
 		return "<Unknown>"
 	}
