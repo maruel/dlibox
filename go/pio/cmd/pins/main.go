@@ -17,21 +17,25 @@ import (
 	"github.com/maruel/dlibox/go/pio/host/pins"
 )
 
-func getMaxName() int {
+func getMaxName(invalid bool) int {
 	max := 0
 	for _, p := range pins.All {
-		if l := len(p.String()); l > max {
-			max = l
+		if invalid || headers.IsConnected(p) {
+			if l := len(p.String()); l > max {
+				max = l
+			}
 		}
 	}
 	return max
 }
 
-func getMaxFn() int {
+func getMaxFn(invalid bool) int {
 	max := 0
 	for _, p := range pins.All {
-		if l := len(p.Function()); l > max {
-			max = l
+		if invalid || headers.IsConnected(p) {
+			if l := len(p.Function()); l > max {
+				max = l
+			}
 		}
 	}
 	return max
@@ -61,7 +65,9 @@ func printFunc(invalid bool) {
 	}
 }
 
-func printGPIO(invalid bool, maxName, maxFn int) {
+func printGPIO(invalid bool) {
+	maxName := getMaxName(invalid)
+	maxFn := getMaxFn(invalid)
 	ids := make([]int, 0, len(pins.All))
 	for i := range pins.All {
 		ids = append(ids, i)
@@ -77,7 +83,7 @@ func printGPIO(invalid bool, maxName, maxFn int) {
 	}
 }
 
-func printHardware(invalid bool, maxName, maxFn int) {
+func printHardware(invalid bool) {
 	names := make([]string, 0, len(headers.All))
 	for name := range headers.All {
 		names = append(names, name)
@@ -90,8 +96,18 @@ func printHardware(invalid bool, maxName, maxFn int) {
 			continue
 		}
 		sum := 0
+		maxName := 0
+		maxFn := 0
 		for _, line := range header {
 			sum += len(line)
+			for _, p := range line {
+				if l := len(p.String()); l > maxName {
+					maxName = l
+				}
+				if l := len(p.Function()); l > maxFn {
+					maxFn = l
+				}
+			}
 		}
 		fmt.Printf("%s: %d pins\n", name, sum)
 		if len(header[0]) == 2 {
@@ -137,16 +153,14 @@ func mainImpl() error {
 	if *info {
 		fmt.Printf("MaxSpeed: %dMhz\n", cpu.MaxSpeed/1000000)
 	}
-	maxName := getMaxName()
-	maxFn := getMaxFn()
 	if *fun {
 		printFunc(*invalid)
 	}
 	if *gpio {
-		printGPIO(*invalid, maxName, maxFn)
+		printGPIO(*invalid)
 	}
 	if *hardware {
-		printHardware(*invalid, maxName, maxFn)
+		printHardware(*invalid)
 	}
 	return nil
 }

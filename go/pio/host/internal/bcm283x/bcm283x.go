@@ -330,6 +330,15 @@ func (p *Pin) Set(l host.Level) {
 
 // Special functionality.
 
+// DefaultPull returns the default pull for the function.
+//
+// The CPU doesn't return the current pull.
+func (p *Pin) DefaultPull() host.Pull {
+	return p.defaultPull
+}
+
+// Internal code.
+
 // function returns the current GPIO pin function.
 func (p *Pin) function() function {
 	if gpioMemory32 == nil {
@@ -343,15 +352,6 @@ func (p *Pin) function() function {
 	// 0x14    RW   GPIO Function Select 5 (GPIO50-53)
 	return function((gpioMemory32[p.number/10] >> uint((p.number%10)*3)) & 7)
 }
-
-// DefaultPull returns the default pull for the function.
-//
-// The CPU doesn't return the current pull.
-func (p *Pin) DefaultPull() host.Pull {
-	return p.defaultPull
-}
-
-// Internal code.
 
 // setFunction changes the GPIO pin function.
 //

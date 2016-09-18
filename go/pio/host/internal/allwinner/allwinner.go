@@ -282,11 +282,48 @@ func (p *Pin) String() string {
 }
 
 func (p *Pin) Function() string {
-	// TODO(maruel): Add; can be disabled, unlike broadcom.
-	return ""
+	switch f := p.function(); f {
+	case in:
+		return "In/" + p.Read().String()
+	case out:
+		return "Out/" + p.Read().String()
+	case alt1:
+		if s := mapping[p.number][0]; len(s) != 0 {
+			return s
+		}
+		return "<Alt1>"
+	case alt2:
+		if s := mapping[p.number][1]; len(s) != 0 {
+			return s
+		}
+		return "<Alt2>"
+	case alt3:
+		if s := mapping[p.number][2]; len(s) != 0 {
+			return s
+		}
+		return "<Alt3>"
+	case alt4:
+		if s := mapping[p.number][3]; len(s) != 0 {
+			return s
+		}
+		return "<Alt4>"
+	case alt5:
+		if s := mapping[p.number][4]; len(s) != 0 {
+			return s
+		}
+		return "<Alt5>"
+	case disabled:
+		return "<Disabled>"
+	default:
+		return "<Unknown>"
+	}
 }
 
 func (p *Pin) In(pull host.Pull) error {
+	if gpioMemory32 == nil {
+		return errors.New("subsystem not initialized")
+	}
+
 	return errors.New("implement me")
 }
 
@@ -299,10 +336,53 @@ func (p *Pin) Edges() (chan host.Level, error) {
 }
 
 func (p *Pin) Out() error {
+	if gpioMemory32 == nil {
+		return errors.New("subsystem not initialized")
+	}
 	return errors.New("implement me")
 }
 
 func (p *Pin) Set(l host.Level) {
+}
+
+// function returns the current GPIO pin function.
+func (p *Pin) function() function {
+	if gpioMemory32 == nil {
+		return disabled
+	}
+
+	// 0x00    RW   GPIO Function Select 0 (GPIO0-9)
+	// 0x04    RW   GPIO Function Select 1 (GPIO10-19)
+	// 0x08    RW   GPIO Function Select 2 (GPIO20-29)
+	// 0x0C    RW   GPIO Function Select 3 (GPIO30-39)
+	// 0x10    RW   GPIO Function Select 4 (GPIO40-49)
+	// 0x14    RW   GPIO Function Select 5 (GPIO50-53)
+	return function((gpioMemory32[p.number/10] >> uint((p.number%10)*4)) & 7)
+}
+
+// setFunction changes the GPIO pin function.
+//
+// Returns false if the pin was in AltN. Only accepts in and out
+func (p *Pin) setFunction(f function) bool {
+	if f != in && f != out {
+		return false
+	}
+	if f == in && p.edge != nil {
+		p.edge.DisableEdge()
+	}
+	if actual := p.function(); actual != in && actual != out {
+		return false
+	}
+	// 0x00    RW   GPIO Function Select 0 (GPIO0-9)
+	// 0x04    RW   GPIO Function Select 1 (GPIO10-19)
+	// 0x08    RW   GPIO Function Select 2 (GPIO20-29)
+	// 0x0C    RW   GPIO Function Select 3 (GPIO30-39)
+	// 0x10    RW   GPIO Function Select 4 (GPIO40-49)
+	// 0x14    RW   GPIO Function Select 5 (GPIO50-53)
+	off := p.number / 10
+	shift := uint(p.number%10) * 3
+	gpioMemory32[off] = (gpioMemory32[off] &^ (7 << shift)) | (uint32(f) << shift)
+	return true
 }
 
 func Init() error {
@@ -320,10 +400,26 @@ func Init() error {
 
 //
 
+// function specifies the active functionality of a pin. The alternative
+// function is GPIO pin dependent.
+type function uint8
+
+// Each pin can have one of 7 functions.
+const (
+	in       function = 0
+	out      function = 1
+	alt1     function = 2
+	alt2     function = 3
+	alt3     function = 4
+	alt4     function = 5
+	alt5     function = 6
+	disabled function = 7
+)
+
 // mapping excludes functions in and out.
 // Datasheet, page 23.
 // http://files.pine64.org/doc/datasheet/pine64/A64_Datasheet_V1.1.pdf
-var mapping = [][5]string{
+var mapping = [116][5]string{
 	{"UART2_TX", "", "JTAG_MS0", "", "PB_EINT0"},                    // PB0
 	{"UART2_RX", "", "JTAG_CK0", "SIM_PWREN", "PB_EINT1"},           // PB1
 	{"UART2_RTS", "", "JTAG_DO0", "SIM_VPPEN", "PB_EINT2"},          // PB2
