@@ -11,10 +11,8 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/cpu"
 	"github.com/maruel/dlibox/go/pio/host/internal/gpiomem"
 	"github.com/maruel/dlibox/go/pio/host/internal/sysfs"
 	"github.com/maruel/dlibox/go/pio/host/ir"
@@ -238,13 +236,13 @@ func (p *Pin) In(pull host.Pull) error {
 		gpioMemory32[37] = uint32(pull)
 
 		// Datasheet states caller needs to sleep 150 cycles.
-		time.Sleep(sleep160cycles)
+		sleep150cycles()
 		// 0x98    RW   GPIO Pin Pull-up/down Enable Clock 0 (GPIO0-31)
 		// 0x9C    RW   GPIO Pin Pull-up/down Enable Clock 1 (GPIO32-53)
 		offset := 38 + p.number/32
 		gpioMemory32[offset] = 1 << uint(p.number%32)
 
-		time.Sleep(sleep160cycles)
+		sleep150cycles()
 		gpioMemory32[37] = 0
 		gpioMemory32[offset] = 0
 	}
@@ -428,8 +426,22 @@ const (
 // 0xB0    -    Test (byte)
 var gpioMemory32 []uint32
 
-// Changing pull resistor require a 150 cycles sleep. Use 160 to be safe.
-var sleep160cycles time.Duration = time.Second * 160 / time.Duration(cpu.MaxSpeed)
+// Changing pull resistor require a 150 cycles sleep.
+//
+// Do not inline so the temporary value is not optimized out.
+//
+//go:noinline
+func sleep150cycles() uint32 {
+	// Do not call into any kernel function, since this causes a high chance of
+	// being preempted.
+	// Abuse the fact that gpioMemory32 is uncached memory.
+	// TODO(maruel): No idea if this is too much or enough.
+	var out uint32
+	for i := 0; i < 150; i++ {
+		out += gpioMemory32[i]
+	}
+	return out
+}
 
 func setIfAlt0(p *Pin, special *host.Pin) {
 	if p.function() == alt0 {

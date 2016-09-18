@@ -123,27 +123,26 @@ func Make(i host.I2C, temperature, pressure, humidity Oversampling, standby Stan
 	// The device starts in 2ms as per datasheet. No need to wait for boot to be
 	// finished.
 
-	// Do all the I/O as one big transaction.
-	chipId := [1]byte{}
-	tph := [0xA2 - 0x88]byte{}
-	h := [0xE8 - 0xE1]byte{}
+	var chipId [1]byte
 	// Read register 0xD0 to read the chip id.
 	if err := d.d.ReadReg(0xD0, chipId[:]); err != nil {
 		return nil, err
 	}
+	if chipId[0] != 0x60 {
+		return nil, errors.New("unexpected chip id; is this a BME280?")
+	}
 	// Read calibration data t1~3, p1~9, 8bits padding, h1.
+	var tph [0xA2 - 0x88]byte
 	if err := d.d.ReadReg(0x88, tph[:]); err != nil {
 		return nil, err
 	}
-	// Read calibration data  h2~6
+	// Read calibration data h2~6
+	var h [0xE8 - 0xE1]byte
 	if err := d.d.ReadReg(0xE1, h[:]); err != nil {
 		return nil, err
 	}
 	if err := d.d.Tx(config[:], nil); err != nil {
 		return nil, err
-	}
-	if chipId[0] != 0x60 {
-		return nil, errors.New("unexpected chip id; is this a BME280?")
 	}
 
 	d.c.t1 = uint16(tph[0]) | uint16(tph[1])<<8

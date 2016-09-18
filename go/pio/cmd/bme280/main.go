@@ -53,6 +53,9 @@ func mainImpl() error {
 	log.SetFlags(log.Lmicroseconds)
 
 	i, err := sysfs.MakeI2C(*bus)
+	//clk := bcm283x.GPIO5
+	//data := bcm283x.GPIO0
+	//i, err := bitbang.MakeI2C(clk, data, 100000)
 	if err != nil {
 		return err
 	}
