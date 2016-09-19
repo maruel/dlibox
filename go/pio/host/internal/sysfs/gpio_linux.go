@@ -43,5 +43,5 @@ func (e event) makeEvent(f *os.File) (int, error) {
 	fd := f.Fd()
 	e[0].Events = EPOLLPRI
 	e[0].Fd = int32(fd)
-	return epollFd, syscall.EpollCtl(epollFd, EPOLL_CTL_ADD, int(fd()), &e[0])
+	return epollFd, syscall.EpollCtl(epollFd, EPOLL_CTL_ADD, int(fd), &e[0])
 }
