@@ -29,74 +29,119 @@ func getPin(s string) (host.PinIO, error) {
 	return p, nil
 }
 
-const shortDelay = time.Millisecond
+const shortDelay = time.Microsecond
 const longDelay = 2 * time.Second
 
-func doCycle(p1, p2 host.PinIO, noPull, slow bool) error {
+func slowSleep(do bool) {
+	if do {
+		fmt.Printf("  Sleep(%s)\n", longDelay)
+		time.Sleep(longDelay)
+	}
+}
+
+func waitChan(c <-chan host.Level) (host.Level, bool) {
+	select {
+	case i := <-c:
+		return i, true
+	case <-time.After(time.Second):
+		return host.Low, false
+	}
+}
+
+func doCycle(p1, p2 host.PinIO, noEdge, noPull, slow bool) error {
 	// Do a 'shortDelay' sleep between writting and reading because there can be
 	// propagation delay in the wire.
 	//
 	// Random observation, needs to be confirmed:
 	// On A64, on some pin the pull resistor is low and can give a 3.3v/2 output
 	// when crossing an output at high.
+	fmt.Printf("%s -> %s\n", p1, p2)
 	pull := host.Float
 	if noPull {
 		pull = host.PullNoChange
 	}
-	fmt.Printf("%s.In(%s)\n", p1, pull)
+	fmt.Printf("  %s.In(%s)\n", p1, pull)
 	if err := p1.In(pull); err != nil {
 		return err
 	}
-	fmt.Printf("%s.Out()\n", p2)
+	fmt.Printf("  %s.Out()\n", p2)
 	if err := p2.Out(); err != nil {
 		return err
 	}
-	fmt.Printf("%s.Set(Low)\n", p2)
+	fmt.Printf("  %s.Set(Low)\n", p2)
 	p2.Set(host.Low)
 	time.Sleep(shortDelay)
-	fmt.Printf("- %s: %s\n- %s: %s\n", p1, p1.Function(), p2, p2.Function())
+	fmt.Printf("  -> %s: %s\n- %s: %s\n", p1, p1.Function(), p2, p2.Function())
 	if p1.Read() != host.Low {
 		return errors.New("read low failure")
 	}
 
-	if slow {
-		fmt.Printf("Sleep(%s)\n", longDelay)
-		time.Sleep(longDelay)
-	}
-	fmt.Printf("%s.Set(High)\n", p2)
+	slowSleep(slow)
+	fmt.Printf("  %s.Set(High)\n", p2)
 	p2.Set(host.High)
 	time.Sleep(shortDelay)
-	fmt.Printf("- %s: %s\n- %s: %s\n", p1, p1.Function(), p2, p2.Function())
+	fmt.Printf("  -> %s: %s\n- %s: %s\n", p1, p1.Function(), p2, p2.Function())
 	if p1.Read() != host.High {
 		return errors.New("read high failure")
 	}
 
+	if !noEdge {
+		slowSleep(slow)
+		fmt.Printf("  %s.Edges()\n", p1)
+		c, err := p1.Edges()
+		if err != nil {
+			return err
+		}
+		time.Sleep(shortDelay)
+
+		fmt.Printf("  %s.Set(Low)\n", p2)
+		p2.Set(host.Low)
+		if l, ok := waitChan(c); !ok {
+			return errors.New("edge didn't trigger")
+		} else if l != host.Low {
+			return fmt.Errorf("expected Low, got %s", l)
+		}
+
+		slowSleep(slow)
+		fmt.Printf("  %s.Set(High)\n", p2)
+		p2.Set(host.High)
+		if l, ok := waitChan(c); !ok {
+			return errors.New("edge didn't trigger")
+		} else if l != host.High {
+			return fmt.Errorf("expected High, got %s", l)
+		}
+
+		slowSleep(slow)
+		fmt.Printf("  %s.Set(Low)\n", p2)
+		p2.Set(host.Low)
+		if l, ok := waitChan(c); !ok {
+			return errors.New("edge didn't trigger")
+		} else if l != host.Low {
+			return fmt.Errorf("expected Low, got %s", l)
+		}
+		// TODO(maruel): p1.DisableEdges(). It's important to do on Allwinner CPUs.
+	}
+
 	if !noPull {
 		// p1 is float.
-		if slow {
-			fmt.Printf("Sleep(%s)\n", longDelay)
-			time.Sleep(longDelay)
-		}
-		fmt.Printf("%s.In(Down)\n", p2)
+		slowSleep(slow)
+		fmt.Printf("  %s.In(Down)\n", p2)
 		if err := p2.In(host.Down); err != nil {
 			return err
 		}
 		time.Sleep(shortDelay)
-		fmt.Printf("- %s: %s\n- %s: %s\n", p1, p1.Function(), p2, p2.Function())
+		fmt.Printf("  -> %s: %s\n- %s: %s\n", p1, p1.Function(), p2, p2.Function())
 		if p1.Read() != host.Low {
 			return errors.New("read pull down failure")
 		}
 
-		if slow {
-			fmt.Printf("Sleep(%s)\n", longDelay)
-			time.Sleep(longDelay)
-		}
-		fmt.Printf("%s.In(Up)\n", p2)
+		slowSleep(slow)
+		fmt.Printf("  %s.In(Up)\n", p2)
 		if err := p2.In(host.Up); err != nil {
 			return err
 		}
 		time.Sleep(shortDelay)
-		fmt.Printf("- %s: %s\n- %s: %s\n", p1, p1.Function(), p2, p2.Function())
+		fmt.Printf("  -> %s: %s\n- %s: %s\n", p1, p1.Function(), p2, p2.Function())
 		if p1.Read() != host.High {
 			return errors.New("read pull up failure")
 		}
@@ -105,8 +150,9 @@ func doCycle(p1, p2 host.PinIO, noPull, slow bool) error {
 }
 
 func mainImpl() error {
+	noEdge := flag.Bool("e", false, "no edge test, necessary when testing without sysfs")
 	// This flag should be set automatically when sysfs gpio is detected.
-	noPull := flag.Bool("n", false, "no pull test, necessary when testing sysfs gpio")
+	noPull := flag.Bool("p", false, "no pull test, necessary when testing sysfs gpio")
 	slow := flag.Bool("s", false, "slow; insert a second between each step")
 	flag.Parse()
 
@@ -123,12 +169,12 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Using pins:\n- %s: %s\n- %s: %s\n", p1, p1.Function(), p2, p2.Function())
-	if err := doCycle(p1, p2, *noPull, *slow); err != nil {
+	fmt.Printf("Using pins and their current state:\n- %s: %s\n- %s: %s\n\n", p1, p1.Function(), p2, p2.Function())
+	if err := doCycle(p1, p2, *noEdge, *noPull, *slow); err != nil {
 		return err
 	}
-	fmt.Printf("\nTesting reversed\n")
-	return doCycle(p2, p1, *noPull, *slow)
+	fmt.Print("\n")
+	return doCycle(p2, p1, *noEdge, *noPull, *slow)
 }
 
 func main() {

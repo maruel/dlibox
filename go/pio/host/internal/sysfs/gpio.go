@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/maruel/dlibox/go/pio/host"
 )
@@ -114,6 +115,7 @@ func (p *Pin) Read() host.Level {
 
 // Edges creates a edge detection loop and implements host.PinIn.
 func (p *Pin) Edges() (chan host.Level, error) {
+	last := p.Read()
 	if err := p.setEdge(true); err != nil {
 		return nil, err
 	}
@@ -146,10 +148,17 @@ func (p *Pin) Edges() (chan host.Level, error) {
 				}
 				break
 			}
+			// Make sure to ignore spurious wake up.
 			if b[0] == '1' {
-				c <- host.High
+				if last != host.High {
+					c <- host.High
+					last = host.High
+				}
 			} else {
-				c <- host.Low
+				if last != host.Low {
+					c <- host.Low
+					last = host.Low
+				}
 			}
 		}
 	}()
@@ -191,10 +200,25 @@ func (p *Pin) openValue() error {
 	defer p.lock.Unlock()
 	var err error
 	if p.fValue == nil {
-		// Ignore the failure. Exporting a pin that is already exported causes a
-		// write failure.
+		// Ignore the failure unless this is a permission failure. Exporting a pin
+		// that is already exported causes a write failure.
 		_, err = exportHandle.Write([]byte(fmt.Sprintf("%d\n", p.number)))
-		p.fValue, err = os.OpenFile(p.root+"value", os.O_RDWR, 0600)
+		if os.IsPermission(err) {
+			return err
+		}
+		// There's a race condition where the file may be created but udev is still
+		// running the script to make it readable to the current user. It's simpler
+		// to just loop a little as if /export is accessible, it doesn't make sense
+		// that gpioN/value doesn't become accessible eventually.
+		timeout := 5 * time.Second
+		for start := time.Now(); time.Since(start) < timeout; {
+			p.fValue, err = os.OpenFile(p.root+"value", os.O_RDWR, 0600)
+			// The virtual file creation is synchronous when writing to /export for
+			// udev rule execution is asynchronous.
+			if err == nil || !os.IsPermission(err) {
+				break
+			}
+		}
 	}
 	return err
 }

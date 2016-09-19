@@ -374,16 +374,16 @@ type Pin struct {
 // http://forum.pine64.org/showthread.php?tid=474
 // about number calculation.
 var (
-	PB0  host.PinIO = &Pins[0]   // Z UART2_TX, -, JTAG_MS0, -, PB_EINT0
-	PB1  host.PinIO = &Pins[1]   // Z, UART2_RX, -, JTAG_CK0, SIM_PWREN, PB_EINT1
-	PB2  host.PinIO = &Pins[2]   //
-	PB3  host.PinIO = &Pins[3]   //
-	PB4  host.PinIO = &Pins[4]   //
-	PB5  host.PinIO = &Pins[5]   //
-	PB6  host.PinIO = &Pins[6]   // AIF2_DOUT, PCM0_DOUT, -, SIM_RST
-	PB7  host.PinIO = &Pins[7]   // AIF2_DIN, PCM0_DIN, -, SIM_DET
-	PB8  host.PinIO = &Pins[8]   //
-	PB9  host.PinIO = &Pins[9]   //
+	PB0  host.PinIO = &Pins[0]   // 32
+	PB1  host.PinIO = &Pins[1]   // 33
+	PB2  host.PinIO = &Pins[2]   // 34
+	PB3  host.PinIO = &Pins[3]   // 35
+	PB4  host.PinIO = &Pins[4]   // 36
+	PB5  host.PinIO = &Pins[5]   // 37
+	PB6  host.PinIO = &Pins[6]   // 38
+	PB7  host.PinIO = &Pins[7]   // 39
+	PB8  host.PinIO = &Pins[8]   // 40
+	PB9  host.PinIO = &Pins[9]   // 41
 	PC0  host.PinIO = &Pins[10]  //
 	PC1  host.PinIO = &Pins[11]  //
 	PC2  host.PinIO = &Pins[12]  //
@@ -451,42 +451,42 @@ var (
 	PF4  host.PinIO = &Pins[74]  //
 	PF5  host.PinIO = &Pins[75]  //
 	PF6  host.PinIO = &Pins[76]  //
-	PG0  host.PinIO = &Pins[77]  //
-	PG1  host.PinIO = &Pins[78]  //
-	PG2  host.PinIO = &Pins[79]  //
-	PG3  host.PinIO = &Pins[80]  //
-	PG4  host.PinIO = &Pins[81]  //
-	PG5  host.PinIO = &Pins[82]  //
-	PG6  host.PinIO = &Pins[83]  //
-	PG7  host.PinIO = &Pins[84]  //
-	PG8  host.PinIO = &Pins[85]  //
-	PG9  host.PinIO = &Pins[86]  //
-	PG10 host.PinIO = &Pins[87]  //
-	PG11 host.PinIO = &Pins[88]  //
-	PG12 host.PinIO = &Pins[89]  //
-	PG13 host.PinIO = &Pins[90]  //
-	PH0  host.PinIO = &Pins[91]  //
-	PH1  host.PinIO = &Pins[92]  //
-	PH2  host.PinIO = &Pins[93]  //
-	PH3  host.PinIO = &Pins[94]  //
-	PH4  host.PinIO = &Pins[95]  //
-	PH5  host.PinIO = &Pins[96]  //
-	PH6  host.PinIO = &Pins[97]  //
-	PH7  host.PinIO = &Pins[98]  //
-	PH8  host.PinIO = &Pins[99]  //
-	PH9  host.PinIO = &Pins[100] //
-	PH10 host.PinIO = &Pins[101] //
+	PG0  host.PinIO = &Pins[77]  // 192
+	PG1  host.PinIO = &Pins[78]  // 193
+	PG2  host.PinIO = &Pins[79]  // 194
+	PG3  host.PinIO = &Pins[80]  // 195
+	PG4  host.PinIO = &Pins[81]  // 196
+	PG5  host.PinIO = &Pins[82]  // 197
+	PG6  host.PinIO = &Pins[83]  // 198
+	PG7  host.PinIO = &Pins[84]  // 199
+	PG8  host.PinIO = &Pins[85]  // 200
+	PG9  host.PinIO = &Pins[86]  // 201
+	PG10 host.PinIO = &Pins[87]  // 202
+	PG11 host.PinIO = &Pins[88]  // 203
+	PG12 host.PinIO = &Pins[89]  // 204
+	PG13 host.PinIO = &Pins[90]  // 205
+	PH0  host.PinIO = &Pins[91]  // 224
+	PH1  host.PinIO = &Pins[92]  // 225
+	PH2  host.PinIO = &Pins[93]  // 226
+	PH3  host.PinIO = &Pins[94]  // 227
+	PH4  host.PinIO = &Pins[95]  // 228
+	PH5  host.PinIO = &Pins[96]  // 229
+	PH6  host.PinIO = &Pins[97]  // 230
+	PH7  host.PinIO = &Pins[98]  // 232
+	PH8  host.PinIO = &Pins[99]  // 233
+	PH9  host.PinIO = &Pins[100] // 234
+	PH10 host.PinIO = &Pins[101] // 235
 	PH11 host.PinIO = &Pins[102] //
-	PL0  host.PinIO = &Pins[103] //
-	PL1  host.PinIO = &Pins[104] //
-	PL2  host.PinIO = &Pins[105] //
-	PL3  host.PinIO = &Pins[106] //
-	PL4  host.PinIO = &Pins[107] //
-	PL5  host.PinIO = &Pins[108] //
-	PL6  host.PinIO = &Pins[109] //
-	PL7  host.PinIO = &Pins[110] //
-	PL8  host.PinIO = &Pins[111] //
-	PL9  host.PinIO = &Pins[112] //
+	PL0  host.PinIO = &Pins[103] // 352
+	PL1  host.PinIO = &Pins[104] // 353
+	PL2  host.PinIO = &Pins[105] // 357
+	PL3  host.PinIO = &Pins[106] // 358
+	PL4  host.PinIO = &Pins[107] // 359
+	PL5  host.PinIO = &Pins[108] // 360
+	PL6  host.PinIO = &Pins[109] // 361
+	PL7  host.PinIO = &Pins[110] // 362
+	PL8  host.PinIO = &Pins[111] // 363
+	PL9  host.PinIO = &Pins[112] // 364
 	PL10 host.PinIO = &Pins[113] //
 	PL11 host.PinIO = &Pins[114] //
 	PL12 host.PinIO = &Pins[115] //
@@ -495,13 +495,19 @@ var (
 // PinIO implementation.
 
 // Number implements host.PinIO
+//
+// It returns the GPIO pin number as represented by gpio sysfs.
 func (p *Pin) Number() int {
-	return int(p.number)
+	g := int(p.group / 9)
+	if g == 0 {
+		g = 11
+	}
+	return g*32 + int(p.offset)
 }
 
 // String implements host.PinIO
 func (p *Pin) String() string {
-	return fmt.Sprintf("%s(%d)", p.name, p.number)
+	return fmt.Sprintf("%s(%d)", p.name, p.Number())
 }
 
 func (p *Pin) Function() string {
@@ -586,8 +592,29 @@ func (p *Pin) Read() host.Level {
 	return host.Level(gpioMemoryPB[p.group+4]&(1<<p.offset) != 0)
 }
 
+// Edges creates a edge detection loop and implements host.PinIn.
+//
+// This requires opening a gpio sysfs file handle. The pin will be exported at
+// /sys/class/gpio/gpio*/. Note that the pin will not be unexported at
+// shutdown.
+//
+// Not all pins support edge detection Allwinner processors!
 func (p *Pin) Edges() (chan host.Level, error) {
-	return nil, errors.New("implement me")
+	switch p.group {
+	case 0, 1 * 9, 6 * 9, 7 * 9:
+	default:
+		return nil, errors.New("only groups PB, PG, PH and PL support edge based triggering")
+	}
+	// This is a race condition but this is fine; at worst GetPin() is called
+	// twice but it is guaranteed to return the same value. p.edge is never set
+	// to nil.
+	if p.edge == nil {
+		var err error
+		if p.edge, err = sysfs.GetPin(p.Number()); err != nil {
+			return nil, err
+		}
+	}
+	return p.edge.Edges()
 }
 
 func (p *Pin) Out() error {
@@ -641,10 +668,12 @@ func (p *Pin) setFunction(f function) bool {
 	if f != in && f != out {
 		return false
 	}
-	if f == in && p.edge != nil {
+	if p.edge != nil {
 		p.edge.DisableEdge()
 	}
-	if actual := p.function(); actual != in && actual != out && actual != disabled {
+	// TODO(maruel): There's a problem where interrupt based edge triggering is
+	// Alt5 but this is only supported on some pins.
+	if actual := p.function(); actual != in && actual != out && actual != disabled && actual != alt5 {
 		// Pin is in special mode.
 		return false
 	}

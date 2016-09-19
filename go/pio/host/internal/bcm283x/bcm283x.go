@@ -426,7 +426,7 @@ func (p *Pin) setFunction(f function) bool {
 	if f != in && f != out {
 		return false
 	}
-	if f == in && p.edge != nil {
+	if p.edge != nil {
 		p.edge.DisableEdge()
 	}
 	if actual := p.function(); actual != in && actual != out {
