@@ -65,8 +65,6 @@ func mainImpl() error {
 		// Turn it off
 		b = tm1637.Off
 	}
-	var hour, minute int
-	var digits []int
 	var segments []byte
 	if *asTime {
 		if flag.NArg() != 2 {
@@ -76,12 +74,13 @@ func mainImpl() error {
 		if err != nil {
 			return err
 		}
-		hour = int(x)
+		hour := int(x)
 		x, err = strconv.ParseUint(flag.Arg(1), 10, 8)
 		if err != nil {
 			return err
 		}
-		minute = int(x)
+		minute := int(x)
+		segments = tm1637.Clock(hour, minute, *showDot)
 	} else if *asSeg {
 		segments = make([]byte, flag.NArg())
 		for i, d := range flag.Args() {
@@ -92,7 +91,7 @@ func mainImpl() error {
 			segments[i] = byte(x)
 		}
 	} else {
-		digits = make([]int, flag.NArg())
+		digits := make([]int, flag.NArg())
 		for i, d := range flag.Args() {
 			x, err := strconv.ParseUint(d, 16, 8)
 			if err != nil {
@@ -100,6 +99,7 @@ func mainImpl() error {
 			}
 			digits[i] = int(x)
 		}
+		segments = tm1637.Digits(digits...)
 	}
 
 	pClk := pins.ByNumber(*clk)
@@ -117,14 +117,8 @@ func mainImpl() error {
 	if err = d.SetBrightness(b); err != nil {
 		return err
 	}
-	if len(segments) != 0 {
-		return d.Segments(segments...)
-	} else if len(digits) != 0 {
-		return d.Digits(digits...)
-	} else if *asTime {
-		return d.Clock(hour, minute, *showDot)
-	}
-	return nil
+	_, err = d.Write(segments)
+	return err
 }
 
 func main() {

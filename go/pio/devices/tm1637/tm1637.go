@@ -11,15 +11,38 @@ package tm1637
 
 import (
 	"errors"
+	"runtime"
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/internal"
 )
 
-type Dev struct {
-	clk  host.PinOut
-	data host.PinIO
+// Clock converts time to a slice of bytes as segments.
+func Clock(hour, minute int, showDots bool) []byte {
+	seg := make([]byte, 4)
+	seg[0] = byte(digitToSegment[hour/10])
+	seg[1] = byte(digitToSegment[hour%10])
+	seg[2] = byte(digitToSegment[minute/10])
+	seg[3] = byte(digitToSegment[minute%10])
+	if showDots {
+		seg[1] |= 0x80
+	}
+	return seg[:]
+}
+
+// Digits converts hex numbers to a slice of bytes as segments.
+//
+// Numbers outside the range [0, 15] are displayed as blank. Use -1 to mark it
+// as blank.
+func Digits(n ...int) []byte {
+	seg := make([]byte, len(n))
+	for i := range n {
+		if n[i] >= 0 && n[i] < 16 {
+			seg[i] = byte(digitToSegment[n[i]])
+		}
+	}
+	return seg
 }
 
 // Brightness defines the screen brightness as controlled by the internal PWM.
@@ -37,26 +60,40 @@ const (
 	Brightness14 Brightness = 0x8F // 14/16 PWM
 )
 
+// Dev represents an handle to a tm1637.
+type Dev struct {
+	clk  host.PinOut
+	data host.PinIO
+}
+
 // Brightness changes the brightness and/or turns the display on and off.
 func (d *Dev) SetBrightness(b Brightness) error {
+	// This helps reduce jitter a little.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 	d.start()
 	d.writeByte(byte(b))
 	d.stop()
 	return nil
 }
 
-// Segments writes raw segments.
+// Write writes raw segments, while implementing io.Writer.
+//
+// P can be a dot or ':' following a digit. Otherwise it is likely
+// disconnected. Each byte is encoded as PGFEDCBA.
+//
 //     -A-
 //    F   B
 //     -G-
 //    E   C
 //     -D-   P
-//
-// P is a dot. Each byte is encoded as PGFEDCBA.
-func (d *Dev) Segments(seg ...byte) error {
+func (d *Dev) Write(seg []byte) (int, error) {
 	if len(seg) > 6 {
-		return errors.New("up to 6 digits are supported")
+		return 0, errors.New("tm1637: up to 6 segment groups are supported")
 	}
+	// This helps reduce jitter a little.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 	// Use auto-incrementing address. It is possible to write to a single
 	// segment but there isn't much point.
 	d.start()
@@ -71,34 +108,8 @@ func (d *Dev) Segments(seg ...byte) error {
 			d.writeByte(seg[i])
 		}
 	}
-
 	d.stop()
-	return nil
-}
-
-// Clock writes the time.
-func (d *Dev) Clock(hour, minute int, showDots bool) error {
-	var seg [4]byte
-	seg[0] = byte(digitToSegment[hour/10])
-	seg[1] = byte(digitToSegment[hour%10])
-	seg[2] = byte(digitToSegment[minute/10])
-	seg[3] = byte(digitToSegment[minute%10])
-	if showDots {
-		seg[1] |= 0x80
-	}
-	return d.Segments(seg[:]...)
-}
-
-// Digits writes hex numbers. Numbers outside the range [0, 15] are
-// displayed as blank. Use -1 to mark it as blank.
-func (d *Dev) Digits(n ...int) error {
-	seg := make([]byte, len(n))
-	for i := range n {
-		if n[i] >= 0 && n[i] < 16 {
-			seg[i] = byte(digitToSegment[n[i]])
-		}
-	}
-	return d.Segments(seg...)
+	return len(seg), nil
 }
 
 // Make returns an object that communicates over two pins to a TM1637.
@@ -119,6 +130,9 @@ func Make(clk host.PinOut, data host.PinIO) (*Dev, error) {
 //
 
 // Page 10 states the max clock frequency is 500KHz but page 3 states 250KHz.
+//
+// Writing the complete display is 8 bytes, totalizing 9*8+2 = 74 cycles.
+// At 250KHz, this is 296µs.
 const clockHalfCycle = time.Second / 250000 / 2
 
 // Hex digits from 0 to F.
