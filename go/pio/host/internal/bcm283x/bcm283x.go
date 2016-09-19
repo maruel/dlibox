@@ -655,10 +655,11 @@ func getBaseAddress() uint64 {
 	return 0x3F200000
 }
 
-func Init() error {
+func initArm() error {
 	mem, err := gpiomem.OpenGPIO()
 	if err != nil {
-		// Try without /dev/gpiomem.
+		// Try without /dev/gpiomem. This is the case of not running on Raspbian or
+		// raspbian before Jessie. This requires running as root.
 		mem, err = gpiomem.OpenMem(getBaseAddress())
 		if err != nil {
 			return err

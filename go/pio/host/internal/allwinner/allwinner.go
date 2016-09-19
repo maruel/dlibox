@@ -689,8 +689,7 @@ func (p *Pin) pull() host.Pull {
 	}
 }
 
-func Init() error {
-	//mem, err := gpiomem.OpenGPIO()
+func initMem() error {
 	mem, err := gpiomem.OpenMem(getBaseAddressPL())
 	if err != nil {
 		return err

@@ -4,65 +4,17 @@
 
 package gpiomem
 
-import (
-	"os"
-	"reflect"
-	"syscall"
-	"unsafe"
-
-	"github.com/pkg/errors"
-)
-
 // OpenGPIO returns a CPU specific memory mapping of the CPU I/O registers using
 // /dev/gpiomem.
 //
 // /dev/gpiomem is only supported on Raspbian Jessie via a specific kernel
 // driver.
-//
-// TODO(maruel): Port the driver to make it generic.
 func OpenGPIO() (*Mem, error) {
-	f, err := os.OpenFile("/dev/gpiomem", os.O_RDWR|os.O_SYNC, 0)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	// TODO(maruel): Map PWM, CLK, PADS, TIMER for more functionality.
-	i, err := syscall.Mmap(int(f.Fd()), 0, 4096, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
-	if err != nil {
-		return nil, err
-	}
-	return &Mem{i, unsafeRemap(i)}, nil
+	return openGPIO()
 }
 
 // OpenMem returns a memory mapped view of arbitrary kernel memory range using
 // /dev/mem.
 func OpenMem(base uint64) (*Mem, error) {
-	f, err := os.OpenFile("/dev/mem", os.O_RDWR|os.O_SYNC, 0)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	// Align at 4Kb then offset the returned uint32 array.
-	i, err := syscall.Mmap(int(f.Fd()), int64(base&^0xFFF), 4096, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
-	if err != nil {
-		return nil, errors.Wrapf(err, "mapping at 0x%x failed", base)
-	}
-	return &Mem{i, unsafeRemap(i[base&0xFFF:])}, nil
-}
-
-// Close unmaps the I/O registers.
-func (m *Mem) Close() error {
-	u := m.Uint8
-	m.Uint8 = nil
-	m.Uint32 = nil
-	return syscall.Munmap(u)
-}
-
-func unsafeRemap(i []byte) []uint32 {
-	// I/O needs to happen as 32 bits operation, so remap accordingly.
-	header := *(*reflect.SliceHeader)(unsafe.Pointer(&i))
-	header.Len /= 4
-	header.Cap /= 4
-	return *(*[]uint32)(unsafe.Pointer(&header))
+	return openMem(base)
 }

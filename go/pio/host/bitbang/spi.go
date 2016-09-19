@@ -13,11 +13,10 @@ package bitbang
 
 import (
 	"errors"
-	"log"
-	"syscall"
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/internal"
 )
 
 // SPI represents a SPI master implemented as bit-banging on 3 or 4 GPIO pins.
@@ -122,21 +121,7 @@ func MakeSPI(clk, mosi host.PinOut, miso host.PinIn, cs host.PinOut, speedHz int
 
 // sleep does a busy loop to act as fast as possible.
 func (s *SPI) sleepHalfCycle() {
-	// If time.Sleep(s.halfCycle) is used, we can expect roughly 5kHz or so. When
-	// getting in the 1MHz range, the sleep is 500ns. Another option is
-	// syscall.Nanosleep() or runtime.nanotime but the later is not exported. :(
-	//for start := time.Now(); time.Since(start) < s.halfCycle; {
-	//}
-	time := syscall.NsecToTimespec(s.halfCycle.Nanoseconds())
-	leftover := syscall.Timespec{}
-	for {
-		if err := syscall.Nanosleep(&time, &leftover); err != nil {
-			time = leftover
-			log.Printf("Nanosleep() -> %v: %v", leftover, err)
-			continue
-		}
-		break
-	}
+	internal.Nanosleep(s.halfCycle)
 }
 
 var _ host.SPI = &SPI{}

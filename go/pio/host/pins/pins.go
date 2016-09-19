@@ -79,7 +79,7 @@ func Init(fallback bool) error {
 			return nil
 		}
 	}
-	if internal.IsAllWinner() {
+	if internal.IsAllwinner() {
 		if err := allwinner.Init(); err != nil {
 			if !fallback {
 				return err

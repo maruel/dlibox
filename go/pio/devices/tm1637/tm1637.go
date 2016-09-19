@@ -11,11 +11,10 @@ package tm1637
 
 import (
 	"errors"
-	"log"
-	"syscall"
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/internal"
 )
 
 type Dev struct {
@@ -172,19 +171,5 @@ func (d *Dev) writeByte(b byte) (bool, error) {
 
 // sleep does a busy loop to act as fast as possible.
 func (d *Dev) sleepHalfCycle() {
-	// If time.Sleep() is used, we can expect roughly 5kHz or so. When getting in
-	// the 100kHz range, the sleep is 5µs. Another option is syscall.Nanosleep()
-	// or runtime.nanotime but the later is not exported. :(
-	//for start := time.Now(); time.Since(start) < clockHalfCycle; {
-	//}
-	time := syscall.NsecToTimespec(clockHalfCycle.Nanoseconds())
-	leftover := syscall.Timespec{}
-	for {
-		if err := syscall.Nanosleep(&time, &leftover); err != nil {
-			time = leftover
-			log.Printf("Nanosleep() -> %v: %v", leftover, err)
-			continue
-		}
-		break
-	}
+	internal.Nanosleep(clockHalfCycle)
 }

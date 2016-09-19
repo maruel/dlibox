@@ -2,11 +2,13 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// +build !linux
+
 package sysfs
 
 import (
+	"errors"
 	"os"
-	"syscall"
 )
 
 // Init initializes GPIO sysfs handling code.
@@ -22,26 +24,17 @@ import (
 //
 // Init returns an error no non-Linux OS.
 func Init() error {
-	return initLinux()
+	return errors.New("gpio sysfs is not implemented on non-linux OSes")
 }
 
 //
 
-type event [1]syscall.EpollEvent
+type event struct{}
 
 func (e event) wait(ep int) (int, error) {
-	return syscall.EpollWait(ep, e[:], -1)
+	return 0, errors.New("unreachable code")
 }
 
 func (e event) makeEvent(f *os.File) (int, error) {
-	epollFd, err := syscall.EpollCreate(1)
-	if err != nil {
-		return 0, err
-	}
-	const EPOLLPRI = 2
-	const EPOLL_CTL_ADD = 1
-	fd := f.Fd()
-	e[0].Events = EPOLLPRI
-	e[0].Fd = int32(fd)
-	return epollFd, syscall.EpollCtl(epollFd, EPOLL_CTL_ADD, int(fd()), &e[0])
+	return 0, errors.New("unreachable code")
 }

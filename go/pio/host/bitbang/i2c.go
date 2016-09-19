@@ -11,10 +11,10 @@ import (
 	"errors"
 	"log"
 	"runtime"
-	"syscall"
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/internal"
 )
 
 // Use SkipAddr to skip the address from being sent.
@@ -225,19 +225,7 @@ func (i *I2C) readByte() (byte, error) {
 
 // sleep does a busy loop to act as fast as possible.
 func (i *I2C) sleepHalfCycle() {
-	// If time.Sleep(i.halfCycle) is used, we can expect roughly 5kHz or so. When
-	// getting in the 100kHz range, the sleep is 5µs. Another option is
-	// syscall.Nanosleep() or runtime.nanotime but the later is not exported. :(
-	//for start := time.Now(); time.Since(start) < i.halfCycle; {
-	//}
-	time := syscall.NsecToTimespec(i.halfCycle.Nanoseconds())
-	leftover := syscall.Timespec{}
-	for {
-		if err := syscall.Nanosleep(&time, &leftover); err != nil {
-			time = leftover
-			log.Printf("Nanosleep() -> %v: %v", leftover, err)
-			continue
-		}
-		break
-	}
+	internal.Nanosleep(i.halfCycle)
 }
+
+var _ host.I2C = &I2C{}

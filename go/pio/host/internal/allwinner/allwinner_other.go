@@ -2,11 +2,13 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package cpu
+// +build !arm
 
-// MaxSpeed returns the processor maximum speed in Hz.
-//
-// Returns 0 if it couldn't be calculated.
-func MaxSpeed() int64 {
-	return getMaxSpeedLinux()
+package allwinner
+
+import "errors"
+
+// Init initializes the Allwinner CPU GPIO registers if relevant.
+func Init() error {
+	return errors.New("not supported")
 }

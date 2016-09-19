@@ -4,8 +4,11 @@
 
 // +build !arm
 
-package rpi
+package bcm283x
 
-func init() {
-	zapPins()
+import "errors"
+
+// Init initializes the Broadcom bcm283x CPU GPIO registers if relevant.
+func Init() error {
+	return errors.New("not supported on this platform")
 }

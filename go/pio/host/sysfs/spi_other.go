@@ -2,7 +2,11 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// +build !linux
+
 package sysfs
+
+import "errors"
 
 // MakeSPI opens a *SPI via its sysfs interface as described at
 // https://www.kernel.org/doc/Documentation/spi/spidev.
@@ -13,5 +17,5 @@ package sysfs
 //
 // Default configuration is Mode3 and 8 bits.
 func MakeSPI(bus, chipSelect int, speed int64) (*SPI, error) {
-	return makeSPI(bus, chipSelect, speed)
+	return nil, errors.New("sysfs.spi is not implemented on non-linux OSes")
 }
