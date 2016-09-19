@@ -39,7 +39,7 @@ func init() {
 	}
 
 	if Version == 1 {
-		Headers["P1"] = [][]host.Pin{
+		Headers["P1"] = [][]host.PinIO{
 			{P1_1, P1_2},
 			{P1_3, P1_4},
 			{P1_5, P1_6},
@@ -54,7 +54,7 @@ func init() {
 			{P1_23, P1_24},
 			{P1_25, P1_26},
 		}
-		Headers["P5"] = [][]host.Pin{
+		Headers["P5"] = [][]host.PinIO{
 			{P5_1, P5_2},
 			{P5_3, P5_4},
 			{P5_5, P5_6},
@@ -79,7 +79,7 @@ func init() {
 		P1_39 = host.INVALID
 		P1_40 = host.INVALID
 	} else {
-		Headers["P1"] = [][]host.Pin{
+		Headers["P1"] = [][]host.PinIO{
 			{P1_1, P1_2},
 			{P1_3, P1_4},
 			{P1_5, P1_6},
@@ -113,7 +113,7 @@ func init() {
 	if Version < 3 {
 		AUDIO_LEFT = bcm283x.GPIO45
 	}
-	Headers["AUDIO"] = [][]host.Pin{
+	Headers["AUDIO"] = [][]host.PinIO{
 		{AUDIO_LEFT},
 		{AUDIO_RIGHT},
 	}

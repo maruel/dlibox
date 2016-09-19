@@ -6,6 +6,7 @@
 package pins
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/maruel/dlibox/go/pio/host"
@@ -15,41 +16,24 @@ import (
 	"github.com/maruel/dlibox/go/pio/host/internal/sysfs"
 )
 
-// pin implements host.Pin.
-type pin struct {
-	name string
-}
-
 var (
-	GROUND      host.Pin = &pin{"GROUND"}
-	V3_3        host.Pin = &pin{"V3_3"}
-	V5          host.Pin = &pin{"V5"}
-	DC_IN       host.Pin = &pin{"DC_IN"}
-	TEMP_SENSOR host.Pin = &pin{"TEMP_SENSOR"}
-	BAT_PLUS    host.Pin = &pin{"BAT_PLUS"}
-	IR_RX       host.Pin = &pin{"IR_RX"}
-	EAROUTP     host.Pin = &pin{"EAROUTP"}
-	EAROUT_N    host.Pin = &pin{"EAROUT_N"}
-	CHARGER_LED host.Pin = &pin{"CHARGER_LED"}
-	RESET       host.Pin = &pin{"RESET"}
-	PWR_SWITCH  host.Pin = &pin{"PWR_SWITCH"}
-	KEY_ADC     host.Pin = &pin{"KEY_ADC"}
-	X32KFOUT    host.Pin = &pin{"X32KFOUT"}
-	VCC         host.Pin = &pin{"VCC"}
-	IOVCC       host.Pin = &pin{"IOVCC"}
+	GROUND      host.PinIO = &pin{"GROUND"}
+	V3_3        host.PinIO = &pin{"V3_3"}
+	V5          host.PinIO = &pin{"V5"}
+	DC_IN       host.PinIO = &pin{"DC_IN"}
+	TEMP_SENSOR host.PinIO = &pin{"TEMP_SENSOR"}
+	BAT_PLUS    host.PinIO = &pin{"BAT_PLUS"}
+	IR_RX       host.PinIO = &pin{"IR_RX"}
+	EAROUTP     host.PinIO = &pin{"EAROUTP"}
+	EAROUT_N    host.PinIO = &pin{"EAROUT_N"}
+	CHARGER_LED host.PinIO = &pin{"CHARGER_LED"}
+	RESET       host.PinIO = &pin{"RESET"}
+	PWR_SWITCH  host.PinIO = &pin{"PWR_SWITCH"}
+	KEY_ADC     host.PinIO = &pin{"KEY_ADC"}
+	X32KFOUT    host.PinIO = &pin{"X32KFOUT"}
+	VCC         host.PinIO = &pin{"VCC"}
+	IOVCC       host.PinIO = &pin{"IOVCC"}
 )
-
-func (p *pin) Number() int {
-	return -1
-}
-
-func (p *pin) String() string {
-	return p.name
-}
-
-func (p *pin) Function() string {
-	return ""
-}
 
 // All refers to all the GPIO pins available on this host.
 //
@@ -60,7 +44,7 @@ var All map[int]host.PinIO
 
 // Functional lists all pins implementing hardware provided special
 // functionality, like I²C, SPI, ADC.
-var Functional map[string]host.Pin
+var Functional map[string]host.PinIO
 
 // ByNumber returns a GPIO pin from its number.
 //
@@ -125,3 +109,39 @@ func Init(fallback bool) error {
 //
 
 var lock sync.Mutex
+
+// pin implements host.PinIO.
+type pin struct {
+	name string
+}
+
+func (p *pin) Number() int {
+	return -1
+}
+
+func (p *pin) String() string {
+	return p.name
+}
+
+func (p *pin) Function() string {
+	return ""
+}
+
+func (p *pin) In(host.Pull) error {
+	return fmt.Errorf("%s cannot be used as input", p.name)
+}
+
+func (p *pin) Read() host.Level {
+	return host.Low
+}
+
+func (p *pin) Edges() (chan host.Level, error) {
+	return nil, fmt.Errorf("%s cannot be used as input", p.name)
+}
+
+func (p *pin) Out() error {
+	return fmt.Errorf("%s cannot be used as output", p.name)
+}
+
+func (p *pin) Set(host.Level) {
+}

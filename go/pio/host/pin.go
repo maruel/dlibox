@@ -50,23 +50,10 @@ func (i Pull) String() string {
 	return pullName[pullIndex[i]:pullIndex[i+1]]
 }
 
-// Pin is a generic GPIO pin. Users are expected to use one of PinIn, PinOut or
-// PinIO.
-type Pin interface {
-	fmt.Stringer
-	// Number returns the logical pin number or a negative number if the pin is
-	// not a GPIO, e.g. GROUND, V3_3, etc.
-	Number() int
-	// Function returns a user readable string representation of what the pin is
-	// configured to do. Common case is In and Out but it can be bus specific pin
-	// name.
-	Function() string
-}
-
 // PinIn is an input GPIO pin.
+//
+// It may optionally support internal pull resistor and edge based triggering.
 type PinIn interface {
-	Pin
-
 	// In setups a pin as an input.
 	In(pull Pull) error
 	// Read return the current pin level.
@@ -87,8 +74,6 @@ type PinIn interface {
 
 // PinOut is an output GPIO pin.
 type PinOut interface {
-	Pin
-
 	// Out sets a pin as output. The caller should immediately call Set() after.
 	Out() error
 	// Set sets a pin already set for output as High or Low.
@@ -98,40 +83,27 @@ type PinOut interface {
 }
 
 // PinIO is a GPIO pin that supports both input and output.
+//
+// It may fail at either input and or output, for example ground, vcc and other
+// similar pins.
 type PinIO interface {
-	// PinIn and PinOut have to be duplicated here because Go doesn't allow
-	// diamond shaped interfaces.
-	Pin
+	PinIn
+	PinOut
 
-	// In setups a pin as an input.
-	In(pull Pull) error
-	// Read return the current pin level.
-	//
-	// Behavior is undefined if In() wasn't used before.
-	Read() Level
-	// Edges returns a channel that sends level changes.
-	//
-	// It is important to stop the querying loop by sending a Low to the channel
-	// to stop it. The channel will then immediately be closed.
-	//
-	// If interrupt based edge detection is not supported, it will be emulated
-	// via a query loop.
-	//
-	// Behavior is undefined if In() wasn't used before.
-	Edges() (chan Level, error)
-
-	// Out sets a pin as output. The caller should immediately call Set() after.
-	Out() error
-	// Set sets a pin already set for output as High or Low.
-	//
-	// Behavior is undefined if Out() wasn't used before.
-	Set(l Level)
+	fmt.Stringer
+	// Number returns the logical pin number or a negative number if the pin is
+	// not a GPIO, e.g. GROUND, V3_3, etc.
+	Number() int
+	// Function returns a user readable string representation of what the pin is
+	// configured to do. Common case is In and Out but it can be bus specific pin
+	// name.
+	Function() string
 }
 
 // invalidPinErr is returned when trying to use INVALID.
 var invalidPinErr = errors.New("invalid pin")
 
-// INVALID implements PinIO for compability but fails on all access.
+// INVALID implements PinIO and fails on all access.
 var INVALID invalidPin
 
 // invalidPin implements PinIO for compability but fails on all access.
@@ -147,7 +119,7 @@ func (invalidPin) String() string {
 }
 
 func (invalidPin) Function() string {
-	return "INVALID"
+	return ""
 }
 
 func (invalidPin) In(Pull) error {

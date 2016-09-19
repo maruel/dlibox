@@ -138,7 +138,7 @@ var Pins = [116]Pin{
 }
 
 // Functional is pins.Functional on this CPU.
-var Functional = map[string]host.Pin{
+var Functional = map[string]host.PinIO{
 	/*
 		"AIF2_BCLK":    host.INVALID,
 		"AIF2_DIN":     host.INVALID,
@@ -494,12 +494,12 @@ var (
 
 // PinIO implementation.
 
-// Number implements host.Pin
+// Number implements host.PinIO
 func (p *Pin) Number() int {
 	return int(p.number)
 }
 
-// String implements host.Pin
+// String implements host.PinIO
 func (p *Pin) String() string {
 	return fmt.Sprintf("%s(%d)", p.name, p.number)
 }

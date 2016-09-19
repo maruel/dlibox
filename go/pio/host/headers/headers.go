@@ -18,8 +18,8 @@ import (
 
 // All contains all the on-board headers on a micro computer. The map key is
 // the header name, e.g. "P1" or "EULER" and the value is a slice of slice of
-// pins. For a 2x20 header, it's going to be a slice of [20][2]host.Pin.
-func All() map[string][][]host.Pin {
+// pins. For a 2x20 header, it's going to be a slice of [20][2]host.PinIO.
+func All() map[string][][]host.PinIO {
 	lock.Lock()
 	defer lock.Unlock()
 	initAll()
@@ -27,7 +27,7 @@ func All() map[string][][]host.Pin {
 }
 
 // IsConnected returns true if the pin is on a header.
-func IsConnected(p host.Pin) bool {
+func IsConnected(p host.PinIO) bool {
 	lock.Lock()
 	defer lock.Unlock()
 	// Populate the map on first use.
@@ -53,7 +53,7 @@ func IsConnected(p host.Pin) bool {
 
 var (
 	lock    sync.Mutex
-	all     map[string][][]host.Pin
+	all     map[string][][]host.PinIO
 	reverse map[string]bool
 )
 
@@ -64,7 +64,8 @@ func initAll() {
 		} else if internal.IsPine64() {
 			all = pine64.Headers
 		} else {
-			all = map[string][][]host.Pin{}
+			// Implement!
+			all = map[string][][]host.PinIO{}
 		}
 	}
 }

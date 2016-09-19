@@ -78,4 +78,4 @@ func (p *Pin) Set(level host.Level) {
 	p.Level = level
 }
 
-var _ host.Pin = &Pin{}
+var _ host.PinIO = &Pin{}
