@@ -23,8 +23,8 @@ type I2C struct {
 	fn functionality
 }
 
-func makeI2C(bus int) (*I2C, error) {
-	f, err := os.OpenFile(fmt.Sprintf("/dev/i2c-%d", bus), os.O_RDWR, os.ModeExclusive)
+func makeI2C(busNumber int) (*I2C, error) {
+	f, err := os.OpenFile(fmt.Sprintf("/dev/i2c-%d", busNumber), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
 		// Try to be helpful here. There are generally two cases:
 		// - /dev/i2c-X doesn't exist. In this case, /boot/config.txt has to be

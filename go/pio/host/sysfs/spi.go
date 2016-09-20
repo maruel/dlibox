@@ -19,8 +19,8 @@ type SPI struct {
 	f *os.File
 }
 
-func makeSPI(bus, chipSelect int, speed int64) (*SPI, error) {
-	if bus < 0 || bus > 255 {
+func makeSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
+	if busNumber < 0 || busNumber > 255 {
 		return nil, errors.New("invalid bus")
 	}
 	if chipSelect < 0 || chipSelect > 255 {
@@ -29,7 +29,7 @@ func makeSPI(bus, chipSelect int, speed int64) (*SPI, error) {
 	if speed < 1000 {
 		return nil, errors.New("invalid speed")
 	}
-	f, err := os.OpenFile(fmt.Sprintf("/dev/spidev%d.%d", bus, chipSelect), os.O_RDWR, os.ModeExclusive)
+	f, err := os.OpenFile(fmt.Sprintf("/dev/spidev%d.%d", busNumber, chipSelect), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
 		return nil, err
 	}

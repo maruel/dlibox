@@ -62,12 +62,6 @@ type PinIn interface {
 	Read() Level
 	// Edges returns a channel that sends level changes.
 	//
-	// It is important to stop the querying loop by sending a Low to the channel
-	// to stop it. The channel will then immediately be closed.
-	//
-	// If interrupt based edge detection is not supported, it will be emulated
-	// via a query loop.
-	//
 	// Behavior is undefined if In() wasn't used before.
 	Edges() (<-chan Level, error)
 	// DisableEdges() closes a previous Edges() channel and stops polling.
