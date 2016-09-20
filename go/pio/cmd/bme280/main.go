@@ -6,6 +6,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -13,18 +14,21 @@ import (
 	"os"
 	"time"
 
+	"github.com/kr/pretty"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
+	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/hosttest"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 )
 
 func read(e devices.Environmental, loop bool) error {
 	for {
-		t, p, h, err := e.Read()
-		if err != nil {
+		var env devices.Environment
+		if err := e.Read(&env); err != nil {
 			return err
 		}
-		fmt.Printf("%.3f°C %.4fkPa %.3f%%rH\n", t, p, h)
+		fmt.Printf("%6.3f°C %7.3fkPa %6.2f%%rH\n", float32(env.MilliCelcius)*0.001, float32(env.Pascal)*0.001, float32(env.Humidity)*0.01)
 		if !loop {
 			break
 		}
@@ -34,7 +38,9 @@ func read(e devices.Environmental, loop bool) error {
 }
 
 func mainImpl() error {
-	bus := flag.Int("b", 1, "I²C bus to use")
+	i2c := flag.Int("i", -1, "I²C bus to use")
+	spi := flag.Int("s", -1, "SPI bus to use")
+	cs := flag.Int("cs", -1, "SPI chip select (CS) line to use")
 	sample1x := flag.Bool("s1", false, "sample at 1x")
 	sample2x := flag.Bool("s2", false, "sample at 2x")
 	sample4x := flag.Bool("s4", false, "sample at 4x")
@@ -46,19 +52,13 @@ func mainImpl() error {
 	filter16x := flag.Bool("f16", false, "filter IIR at 16x")
 	loop := flag.Bool("l", false, "loop every 100ms")
 	verbose := flag.Bool("v", false, "verbose mode")
+	record := flag.Bool("r", false, "record operation (for playback unit testing, only works with I²C)")
 	flag.Parse()
 	if !*verbose {
 		log.SetOutput(ioutil.Discard)
 	}
 	log.SetFlags(log.Lmicroseconds)
 
-	i, err := sysfs.MakeI2C(*bus)
-	//clk := bcm283x.GPIO5
-	//data := bcm283x.GPIO0
-	//i, err := bitbang.MakeI2C(clk, data, 100000)
-	if err != nil {
-		return err
-	}
 	s := bme280.O4x
 	if *sample1x {
 		s = bme280.O1x
@@ -81,12 +81,43 @@ func mainImpl() error {
 	} else if *filter16x {
 		f = bme280.F16
 	}
-	b, err := bme280.Make(i, s, s, s, bme280.S20ms, f)
-	if err != nil {
-		return err
+
+	var dev *bme280.Dev
+	var recorder hosttest.I2CRecord
+	if *i2c != -1 {
+		bus, err := sysfs.MakeI2C(*i2c)
+		if err != nil {
+			return err
+		}
+		defer bus.Close()
+		var base host.I2C = bus
+		if *record {
+			recorder.Bus = bus
+			base = &recorder
+		}
+		if dev, err = bme280.MakeI2C(base, s, s, s, bme280.S20ms, f); err != nil {
+			return err
+		}
+	} else if *spi != -1 && *cs != -1 {
+		// Spec calls for max 10Mhz. In practice so little data is used.
+		bus, err := sysfs.MakeSPI(*spi, *cs, 5000000)
+		if err != nil {
+			return err
+		}
+		defer bus.Close()
+		if dev, err = bme280.MakeSPI(bus, s, s, s, bme280.S20ms, f); err != nil {
+			return err
+		}
+	} else {
+		return errors.New("use either -i or -s and -cs")
 	}
-	defer b.Stop()
-	return read(b, *loop)
+
+	defer dev.Stop()
+	err := read(dev, *loop)
+	if *record {
+		pretty.Printf("%# v\n", recorder.Ops)
+	}
+	return err
 }
 
 func main() {

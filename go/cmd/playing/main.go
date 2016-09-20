@@ -20,6 +20,7 @@ import (
 	_ "image/png"
 
 	"github.com/maruel/dlibox/go/bw2d"
+	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
@@ -65,7 +66,7 @@ func mainImpl() error {
 	button := make(chan bool)
 	motion := make(chan bool)
 	keys := make(chan host.Key)
-	bme := make(chan env)
+	env := make(chan *devices.Environment)
 
 	f8, err := psf.Load("VGA8")
 	if err != nil {
@@ -99,15 +100,15 @@ func mainImpl() error {
 	if _, err = s.Write(img.Buf); err != nil {
 		return err
 	}
-	go displayLoop(s, f8, img, button, motion, bme, keys)
+	go displayLoop(s, f8, img, button, motion, env, keys)
 
 	if useBME280 {
-		b, err := bme280.Make(i, bme280.O4x, bme280.O4x, bme280.O4x, bme280.S20ms, bme280.F4)
+		b, err := bme280.MakeI2C(i, bme280.O4x, bme280.O4x, bme280.O4x, bme280.S20ms, bme280.F4)
 		if err != nil {
 			return err
 		}
 		defer b.Stop()
-		go sensorLoop(b, bme)
+		go sensorLoop(b, env)
 	}
 
 	if useButton {
@@ -174,7 +175,7 @@ func mainImpl() error {
 	return nil
 }
 
-func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-chan bool, bme <-chan env, keys <-chan host.Key) {
+func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-chan bool, env <-chan *devices.Environment, keys <-chan host.Key) {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
 	for {
@@ -195,10 +196,10 @@ func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-
 				f.Draw(img, 0, f.H*5, bw2d.On, bw2d.Off, "          ")
 			}
 
-		case t := <-bme:
-			f.Draw(img, 0, f.H, bw2d.On, bw2d.Off, fmt.Sprintf("%.2fC ", t.t))
-			f.Draw(img, 0, f.H*2, bw2d.On, bw2d.Off, fmt.Sprintf("%.2fkPa ", t.p))
-			f.Draw(img, 0, f.H*3, bw2d.On, bw2d.Off, fmt.Sprintf("%.2f%% ", t.h))
+		case t := <-env:
+			f.Draw(img, 0, f.H, bw2d.On, bw2d.Off, fmt.Sprintf("%6.3f°C", float32(t.MilliCelcius)*0.001))
+			f.Draw(img, 0, f.H*2, bw2d.On, bw2d.Off, fmt.Sprintf("%7.3fkPa", float32(t.Pascal)*0.001))
+			f.Draw(img, 0, f.H*3, bw2d.On, bw2d.Off, fmt.Sprintf("%6.2f%%rH", float32(t.Humidity)*0.01))
 
 		case s := <-keys:
 			f.Draw(img, 0, f.H*6, bw2d.On, bw2d.Off, string(s))
@@ -256,18 +257,15 @@ func pirLoop(b <-chan host.Level, c chan<- bool) {
 	}
 }
 
-func sensorLoop(b *bme280.Dev, c chan<- env) {
+func sensorLoop(b *bme280.Dev, c chan<- *devices.Environment) {
 	tick := time.NewTicker(500 * time.Millisecond)
 	defer tick.Stop()
 	for {
-		t, p, h, err := b.Read()
-		if err != nil {
+		env := &devices.Environment{}
+		if err := b.Read(env); err != nil {
 			log.Fatal(err)
 		}
-		//log.Printf("%6.3fC  %7.4fkPa  %7.4f%%", t, p, h)
-		if err == nil {
-			c <- env{t, p, h}
-		}
+		c <- env
 		<-tick.C
 	}
 }

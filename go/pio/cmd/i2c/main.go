@@ -21,10 +21,10 @@ import (
 
 func mainImpl() error {
 	addr := flag.Int("a", -1, "I²C device address to query")
-	bus := flag.Int("b", 1, "I²C bus to use")
+	bus := flag.Int("b", -1, "I²C bus to use")
 	verbose := flag.Bool("v", false, "verbose mode")
 	write := flag.Bool("w", false, "write instead of reading")
-	reg := flag.Int("r", 0, "register to address")
+	reg := flag.Int("r", -1, "register to address")
 	l := flag.Int("l", 1, "length of data to read; ignored if -w is specified")
 	flag.Parse()
 	if !*verbose {
@@ -32,6 +32,9 @@ func mainImpl() error {
 	}
 	log.SetFlags(log.Lmicroseconds)
 
+	if *bus == -1 {
+		return errors.New("-b must be specified")
+	}
 	if *addr < 0 || *addr >= 1<<9 {
 		return fmt.Errorf("-a is required and must be between 0 and %d", 1<<9-1)
 	}
@@ -44,7 +47,7 @@ func mainImpl() error {
 	var buf []byte
 	if *write {
 		if flag.NArg() == 0 {
-			return errors.New("specify bytes to write")
+			return errors.New("specify data to write as a list of hex encoded bytes")
 		}
 		buf = make([]byte, 0, flag.NArg())
 		for _, a := range flag.Args() {

@@ -65,40 +65,50 @@ const (
 	F16  Filter = 4
 )
 
+// Dev is an handle to a bme280.
 type Dev struct {
-	d i2cdev.Dev
-	c calibration
+	d     host.Bus
+	isSPI bool
+	c     calibration
 }
 
 // Read returns measurements as °C, kPa and % of relative humidity.
-func (d *Dev) Read() (float32, float32, float32, error) {
+func (d *Dev) Read(env *devices.Environment) error {
+	// All registers must be read in a single pass, as noted at page 21, section
+	// 4.1.
 	// Pressure: 0xF7~0xF9
 	// Temperature: 0xFA~0xFC
 	// Humidity: 0xFD~0xFE
 	buf := [0xFF - 0xF7]byte{}
-	if err := d.d.ReadReg(0xF7, buf[:]); err != nil {
-		return 0, 0, 0, err
+	if err := d.readReg(0xF7, buf[:]); err != nil {
+		return err
 	}
 	// These values are 20 bits as per doc.
 	pRaw := int32(buf[0])<<12 | int32(buf[1])<<4 | int32(buf[2])>>4
 	tRaw := int32(buf[3])<<12 | int32(buf[4])<<4 | int32(buf[5])>>4
 	// This value is 16 bits as per doc.
 	hRaw := int32(buf[6])<<8 | int32(buf[7])
-	t, tFine := d.c.compensateTempFloat(tRaw)
-	p := d.c.compensatePressureFloat(pRaw, tFine)
-	h := d.c.compensateHumidityFloat(hRaw, tFine)
-	return t, p, h, nil
+
+	t, tFine := d.c.compensateTempInt(tRaw)
+	env.MilliCelcius = t * 10
+
+	p := d.c.compensatePressureInt64(pRaw, tFine)
+	env.Pascal = (int32(p) + 127) / 256
+
+	h := d.c.compensateHumidityInt(hRaw, tFine)
+	env.Humidity = (int32(h)*100 + 511) / 1024
+	return nil
 }
 
 // Stop stops the bme280 from acquiring measurements. It is recommended to call
 // to reduce idle power usage.
 func (d *Dev) Stop() error {
-	_, err := d.d.Write([]byte{0xF7, 0xF4, byte(sleep)})
-	return err
+	// Page 27 (for register) and 12~13 section 3.3.
+	return d.writeCommands([]byte{0xF4, byte(sleep)})
 }
 
-// Make returns an object that communicates over I²C to BME280
-// environmental sensor.
+// MakeI2C returns an object that communicates over I²C to BME280 environmental
+// sensor.
 //
 // Recommended values are O4x for oversampling, S20ms for standby and FOff for
 // filter if planing to call frequently, else use S500ms to get a bit more than
@@ -106,64 +116,37 @@ func (d *Dev) Stop() error {
 //
 // It is recommended to call Stop() when done with the device so it stops
 // sampling.
-func Make(i host.I2C, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
-	d := &Dev{d: i2cdev.Dev{i, 0x76}}
-
-	config := []byte{
-		// ctrl_meas; put it to sleep otherwise the config update may be ignored.
-		0xF4, byte(temperature)<<5 | byte(pressure)<<2 | byte(sleep),
-		// ctrl_hum
-		0xF2, byte(humidity),
-		// config
-		0xF5, byte(standby)<<5 | byte(filter)<<2,
-		// ctrl_meas
-		0xF4, byte(temperature)<<5 | byte(pressure)<<2 | byte(normal),
-	}
-
-	// The device starts in 2ms as per datasheet. No need to wait for boot to be
-	// finished.
-
-	var chipId [1]byte
-	// Read register 0xD0 to read the chip id.
-	if err := d.d.ReadReg(0xD0, chipId[:]); err != nil {
+func MakeI2C(i host.I2C, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
+	d := &Dev{d: &i2cdev.Dev{i, 0x76}, isSPI: false}
+	if err := d.makeDev(temperature, pressure, humidity, standby, filter); err != nil {
 		return nil, err
 	}
-	if chipId[0] != 0x60 {
-		return nil, errors.New("unexpected chip id; is this a BME280?")
-	}
-	// Read calibration data t1~3, p1~9, 8bits padding, h1.
-	var tph [0xA2 - 0x88]byte
-	if err := d.d.ReadReg(0x88, tph[:]); err != nil {
-		return nil, err
-	}
-	// Read calibration data h2~6
-	var h [0xE8 - 0xE1]byte
-	if err := d.d.ReadReg(0xE1, h[:]); err != nil {
-		return nil, err
-	}
-	if err := d.d.Tx(config[:], nil); err != nil {
-		return nil, err
-	}
+	return d, nil
+}
 
-	d.c.t1 = uint16(tph[0]) | uint16(tph[1])<<8
-	d.c.t2 = int16(tph[2]) | int16(tph[3])<<8
-	d.c.t3 = int16(tph[4]) | int16(tph[5])<<8
-	d.c.p1 = uint16(tph[6]) | uint16(tph[7])<<8
-	d.c.p2 = int16(tph[8]) | int16(tph[9])<<8
-	d.c.p3 = int16(tph[10]) | int16(tph[11])<<8
-	d.c.p4 = int16(tph[12]) | int16(tph[13])<<8
-	d.c.p5 = int16(tph[14]) | int16(tph[15])<<8
-	d.c.p6 = int16(tph[16]) | int16(tph[17])<<8
-	d.c.p7 = int16(tph[18]) | int16(tph[19])<<8
-	d.c.p8 = int16(tph[20]) | int16(tph[21])<<8
-	d.c.p9 = int16(tph[22]) | int16(tph[23])<<8
-	d.c.h1 = uint8(tph[25])
-
-	d.c.h2 = int16(h[0]) | int16(h[1])<<8
-	d.c.h3 = uint8(h[2])
-	d.c.h4 = int16(h[3])<<4 | int16(h[4])&0xF
-	d.c.h5 = int16(h[4])&0xF0 | int16(h[5])<<4
-	d.c.h6 = int8(h[6])
+// MakeSPI returns an object that communicates over SPI to BME280 environmental
+// sensor.
+//
+// Recommended values are O4x for oversampling, S20ms for standby and FOff for
+// filter if planing to call frequently, else use S500ms to get a bit more than
+// one reading per second.
+//
+// It is recommended to call Stop() when done with the device so it stops
+// sampling.
+//
+// When using SPI, the CS line must be used.
+//
+// BUG(maruel): This code was not tested yet, still waiting for a SPI enabled
+// device in the mail.
+func MakeSPI(s host.SPI, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
+	// It works both in Mode0 and Mode3.
+	if err := s.Configure(host.Mode3, 8); err != nil {
+		return nil, err
+	}
+	d := &Dev{d: s, isSPI: true}
+	if err := d.makeDev(temperature, pressure, humidity, standby, filter); err != nil {
+		return nil, err
+	}
 	return d, nil
 }
 
@@ -184,6 +167,93 @@ const (
 	measuring status = 8 // set when conversion is running
 	im_update status = 1 // set when NVM data are being copied to image registers
 )
+
+func (d *Dev) makeDev(temperature, pressure, humidity Oversampling, standby Standby, filter Filter) error {
+	config := []byte{
+		// ctrl_meas; put it to sleep otherwise the config update may be ignored.
+		0xF4, byte(temperature)<<5 | byte(pressure)<<2 | byte(sleep),
+		// ctrl_hum
+		0xF2, byte(humidity),
+		// config
+		0xF5, byte(standby)<<5 | byte(filter)<<2,
+		// ctrl_meas
+		0xF4, byte(temperature)<<5 | byte(pressure)<<2 | byte(normal),
+	}
+
+	// The device starts in 2ms as per datasheet. No need to wait for boot to be
+	// finished.
+
+	var chipId [1]byte
+	// Read register 0xD0 to read the chip id.
+	if err := d.readReg(0xD0, chipId[:]); err != nil {
+		return err
+	}
+	if chipId[0] != 0x60 {
+		return errors.New("unexpected chip id; is this a BME280?")
+	}
+	// Read calibration data t1~3, p1~9, 8bits padding, h1.
+	var tph [0xA2 - 0x88]byte
+	if err := d.readReg(0x88, tph[:]); err != nil {
+		return err
+	}
+	// Read calibration data h2~6
+	var h [0xE8 - 0xE1]byte
+	if err := d.readReg(0xE1, h[:]); err != nil {
+		return err
+	}
+	if err := d.writeCommands(config[:]); err != nil {
+		return err
+	}
+
+	d.c.t1 = uint16(tph[0]) | uint16(tph[1])<<8
+	d.c.t2 = int16(tph[2]) | int16(tph[3])<<8
+	d.c.t3 = int16(tph[4]) | int16(tph[5])<<8
+	d.c.p1 = uint16(tph[6]) | uint16(tph[7])<<8
+	d.c.p2 = int16(tph[8]) | int16(tph[9])<<8
+	d.c.p3 = int16(tph[10]) | int16(tph[11])<<8
+	d.c.p4 = int16(tph[12]) | int16(tph[13])<<8
+	d.c.p5 = int16(tph[14]) | int16(tph[15])<<8
+	d.c.p6 = int16(tph[16]) | int16(tph[17])<<8
+	d.c.p7 = int16(tph[18]) | int16(tph[19])<<8
+	d.c.p8 = int16(tph[20]) | int16(tph[21])<<8
+	d.c.p9 = int16(tph[22]) | int16(tph[23])<<8
+	d.c.h1 = uint8(tph[25])
+
+	d.c.h2 = int16(h[0]) | int16(h[1])<<8
+	d.c.h3 = uint8(h[2])
+	d.c.h4 = int16(h[3])<<4 | int16(h[4])&0xF
+	d.c.h5 = int16(h[4])>>4 | int16(h[5])<<4
+	d.c.h6 = int8(h[6])
+	return nil
+}
+
+func (d *Dev) readReg(reg uint8, b []byte) error {
+	// Page 32-33
+	if d.isSPI {
+		read := make([]byte, len(b)+1)
+		write := make([]byte, len(read))
+		write[0] = reg
+		if err := d.d.Tx(write, read); err != nil {
+			return err
+		}
+		copy(b, read[:1])
+	}
+	return d.d.Tx([]byte{reg}, b)
+}
+
+// writeCommands writes a command to the bme280.
+//
+// Warning: b may be modified!
+func (d *Dev) writeCommands(b []byte) error {
+	if d.isSPI {
+		// Page 33; set RW bit 7 to 0.
+		for i := 0; i < len(b); i += 2 {
+			b[i] &^= 0x80
+		}
+	}
+	_, err := d.d.Write(b)
+	return err
+}
 
 // Register table:
 // 0x00..0x87  --
@@ -240,8 +310,6 @@ func (c *calibration) compensateTempInt(raw int32) (int32, int32) {
 // 24674867/256 = 96386.2 Pa = 963.862 hPa.
 //
 // raw has 20 bits of resolution.
-//
-// BUG(maruel): Output is incorrect.
 func (c *calibration) compensatePressureInt64(raw, tFine int32) uint32 {
 	x := int64(tFine) - 128000
 	y := x * x * int64(c.p6)

@@ -34,9 +34,16 @@ type Display interface {
 	Draw(r image.Rectangle, src image.Image, sp image.Point)
 }
 
+// Environment represents measurements from an environmental sensor.
+type Environment struct {
+	MilliCelcius int32 // 0.001°C; range [-273150, >1000000]
+	Pascal       int32 // 1Pa; range [0, >1000000]
+	Humidity     int32 // 0.01%rH or 0.1milli-rH; range [0, 10000]
+}
+
 // Environmental represents an environmental sensor.
 type Environmental interface {
-	// Read returns the value read from the sensor. Returns 0 for the unsupported
-	// metrics.
-	Read() (temperatureC, pressurekPa, humidity float32, err error)
+	// Read returns the value read from the sensor. Unsupported metrics are not
+	// modified.
+	Read(env *Environment) error
 }

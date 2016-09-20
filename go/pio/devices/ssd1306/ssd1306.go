@@ -166,6 +166,8 @@ func colorToBit(c color.Color) byte {
 }
 
 // Draw implements devices.Display.
+//
+// BUG(maruel): It discards any failure. Change devices.Display interface?
 func (d *Dev) Draw(r image.Rectangle, src image.Image, sp image.Point) {
 	r = r.Intersect(d.Bounds())
 	srcR := src.Bounds()

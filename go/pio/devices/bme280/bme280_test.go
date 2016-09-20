@@ -4,7 +4,12 @@
 
 package bme280
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/maruel/dlibox/go/pio/devices"
+	"github.com/maruel/dlibox/go/pio/host/hosttest"
+)
 
 // Real data extracted from a device.
 var calib = calibration{
@@ -26,6 +31,45 @@ var calib = calibration{
 	h4: 309,
 	h5: 0,
 	h6: 30,
+}
+
+func TestRead(t *testing.T) {
+	// This data was generated with "bme280 -r"
+	bus := hosttest.I2CPlayback{
+		Ops: []hosttest.I2CIO{
+			// Chipd ID detection.
+			{Addr: 0x76, Write: []byte{0xd0}, Read: []byte{0x60}},
+			// Calibration data.
+			{
+				Addr:  0x76,
+				Write: []byte{0x88},
+				Read:  []byte{0x10, 0x6e, 0x6c, 0x66, 0x32, 0x0, 0x5d, 0x95, 0xb8, 0xd5, 0xd0, 0xb, 0x77, 0x1e, 0x9d, 0xff, 0xf9, 0xff, 0xac, 0x26, 0xa, 0xd8, 0xbd, 0x10, 0x0, 0x4b},
+			},
+			// Calibration data.
+			{Addr: 0x76, Write: []byte{0xe1}, Read: []byte{0x6e, 0x1, 0x0, 0x13, 0x5, 0x0, 0x1e}},
+			// Configuration.
+			{Addr: 0x76, Write: []byte{0xf4, 0x6c, 0xf2, 0x3, 0xf5, 0xe0, 0xf4, 0x6f}, Read: nil},
+			// Read.
+			{Addr: 0x76, Write: []byte{0xf7}, Read: []byte{0x4a, 0x52, 0xc0, 0x80, 0x96, 0xc0, 0x7a, 0x76}},
+		},
+	}
+	dev, err := MakeI2C(&bus, O4x, O4x, O4x, S20ms, FOff)
+	if err != nil {
+		t.Fatal(err)
+	}
+	env := devices.Environment{}
+	if err := dev.Read(&env); err != nil {
+		t.Fatalf("Read(): %v", err)
+	}
+	if env.MilliCelcius != 23720 {
+		t.Fatalf("temp %d", env.MilliCelcius)
+	}
+	if env.Pascal != 100943 {
+		t.Fatalf("pressure %d", env.Pascal)
+	}
+	if env.Humidity != 6531 {
+		t.Fatalf("humidity %d", env.Humidity)
+	}
 }
 
 func TestCalibrationFloat(t *testing.T) {
