@@ -7,6 +7,7 @@ package pins
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/maruel/dlibox/go/pio/host"
@@ -35,47 +36,89 @@ var (
 	IOVCC       host.PinIO = &pin{"IOVCC"}
 )
 
-// All refers to all the GPIO pins available on this host.
+// All returns all the GPIO pins available on this host.
 //
-// This gets populated by Init().
+// The list is guaranteed to be in order of number.
 //
 // This list excludes non-GPIO pins like GROUND, V3_3, etc.
-var All map[int]host.PinIO
+func All() []host.PinIO {
+	Init(true)
+	return all
+}
 
-// Functional lists all pins implementing hardware provided special
+// Functional returns a map of all pins implementing hardware provided special
 // functionality, like I²C, SPI, ADC.
-var Functional map[string]host.PinIO
+func Functional() map[string]host.PinIO {
+	Init(true)
+	lock.Lock()
+	defer lock.Unlock()
+	/*
+		if byFunction == nil {
+			byFunction = make(map[string]host.PinIO, len(all))
+			for _, pin := range all {
+				f := pin.Function()
+				// TODO(maruel): Cheezy.
+				if len(f) == 0 || strings.HasPrefix(f, "In/") || strings.HasPrefix(f, "Out/") {
+					continue
+				}
+				// Lower pin number wins.
+				if _, ok := byFunction[f]; !ok {
+					byFunction[f] = pin
+				}
+			}
+		}
+	*/
+	return byFunction
+}
 
 // ByNumber returns a GPIO pin from its number.
 //
-// This excludes non-GPIO pins like GROUND, V3_3, etc.
-//
 // Returns nil in case of failure.
 func ByNumber(number int) host.PinIO {
-	if Init(true) != nil {
-		return nil
+	Init(true)
+	lock.Lock()
+	defer lock.Unlock()
+	if byNumber == nil {
+		byNumber = make(map[int]host.PinIO, len(all))
+		for _, pin := range all {
+			byNumber[pin.Number()] = pin
+		}
 	}
-	p, _ := All[number]
-	return p
+	pin, _ := byNumber[number]
+	return pin
+}
+
+// ByFunction returns a GPIO pin from its function.
+//
+// This can be strings like I2C1_SDA, SPI0_MOSI, etc.
+//
+// Returns nil in case of failure.
+func ByFunction(fn string) host.PinIO {
+	Init(true)
+	pin, _ := byFunction[fn]
+	return pin
 }
 
 func Init(fallback bool) error {
 	lock.Lock()
 	defer lock.Unlock()
-	if All != nil {
+	if all != nil {
 		return nil
 	}
+	all = []host.PinIO{}
+	byFunction = map[string]host.PinIO{}
 	if internal.IsBCM283x() {
 		if err := bcm283x.Init(); err != nil {
 			if !fallback {
 				return err
 			}
 		} else {
-			All = make(map[int]host.PinIO, len(bcm283x.Pins))
+			all = make([]host.PinIO, len(bcm283x.Pins))
 			for i := range bcm283x.Pins {
-				All[i] = &bcm283x.Pins[i]
+				all[i] = &bcm283x.Pins[i]
 			}
-			Functional = bcm283x.Functional
+			sort.Sort(all)
+			byFunction = bcm283x.Functional
 			return nil
 		}
 	}
@@ -85,11 +128,12 @@ func Init(fallback bool) error {
 				return err
 			}
 		} else {
-			All = make(map[int]host.PinIO, len(allwinner.Pins))
+			all = make([]host.PinIO, len(allwinner.Pins))
 			for i := range allwinner.Pins {
-				All[i] = &allwinner.Pins[i]
+				all[i] = &allwinner.Pins[i]
 			}
-			Functional = allwinner.Functional
+			sort.Sort(all)
+			byFunction = allwinner.Functional
 			return nil
 		}
 	}
@@ -98,17 +142,29 @@ func Init(fallback bool) error {
 	if err := sysfs.Init(); err != nil {
 		return err
 	}
-	All = make(map[int]host.PinIO, len(sysfs.Pins))
-	for id, p := range sysfs.Pins {
-		All[id] = p
+	all = make([]host.PinIO, 0, len(sysfs.Pins))
+	for _, p := range sysfs.Pins {
+		all = append(all, p)
 	}
-	// Functional cannot be populated.
+	sort.Sort(all)
+	// sysfs doesn't expose enough information to fill byFunction.
 	return nil
 }
 
 //
 
-var lock sync.Mutex
+var (
+	lock       sync.Mutex
+	all        pins
+	byNumber   map[int]host.PinIO
+	byFunction map[string]host.PinIO
+)
+
+type pins []host.PinIO
+
+func (p pins) Len() int           { return len(p) }
+func (p pins) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p pins) Less(i, j int) bool { return p[i].Number() < p[j].Number() }
 
 // pin implements host.PinIO.
 type pin struct {

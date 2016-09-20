@@ -33,15 +33,15 @@ var Version int
 var (
 	P1_1  host.PinIO = pins.V3_3      // 3.3 volt; max 30mA
 	P1_2  host.PinIO = pins.V5        // 5 volt (after filtering)
-	P1_3  host.PinIO = bcm283x.GPIO2  // High, I2C_SDA1
+	P1_3  host.PinIO = bcm283x.GPIO2  // High, I2C1_SDA
 	P1_4  host.PinIO = pins.V5        //
-	P1_5  host.PinIO = bcm283x.GPIO3  // High, I2C_SCL1
+	P1_5  host.PinIO = bcm283x.GPIO3  // High, I2C1_SCL
 	P1_6  host.PinIO = pins.GROUND    //
 	P1_7  host.PinIO = bcm283x.GPIO4  // High, GPCLK0
-	P1_8  host.PinIO = bcm283x.GPIO14 // Low,  UART_TXD0, UART_TXD1
+	P1_8  host.PinIO = bcm283x.GPIO14 // Low,  UART0_TXD, UART1_TXD
 	P1_9  host.PinIO = pins.GROUND    //
-	P1_10 host.PinIO = bcm283x.GPIO15 // Low,  UART_RXD0, UART_RXD1
-	P1_11 host.PinIO = bcm283x.GPIO17 // Low,  UART_RTS0, SPI1_CE1, UART_RTS1
+	P1_10 host.PinIO = bcm283x.GPIO15 // Low,  UART0_RXD, UART1_RXD
+	P1_11 host.PinIO = bcm283x.GPIO17 // Low,  UART0_RTS, SPI1_CE1, UART1_RTS
 	P1_12 host.PinIO = bcm283x.GPIO18 // Low,  PCM_CLK, SPI1_CE0, PWM0_OUT
 	P1_13 host.PinIO = bcm283x.GPIO27 // Low,
 	P1_14 host.PinIO = pins.GROUND    //
@@ -59,8 +59,8 @@ var (
 	P1_26 host.PinIO = bcm283x.GPIO7  // High, SPI0_CE1
 
 	// Raspberry Pi 2 and later:
-	P1_27 host.PinIO = bcm283x.GPIO0  // High, I2C_SDA0 used to probe for HAT EEPROM, see https://github.com/raspberrypi/hats
-	P1_28 host.PinIO = bcm283x.GPIO1  // High, I2C_SCL0
+	P1_27 host.PinIO = bcm283x.GPIO0  // High, I2C0_SDA used to probe for HAT EEPROM, see https://github.com/raspberrypi/hats
+	P1_28 host.PinIO = bcm283x.GPIO1  // High, I2C0_SCL
 	P1_29 host.PinIO = bcm283x.GPIO5  // High, GPCLK1
 	P1_30 host.PinIO = pins.GROUND    //
 	P1_31 host.PinIO = bcm283x.GPIO6  // High, GPCLK2
@@ -68,7 +68,7 @@ var (
 	P1_33 host.PinIO = bcm283x.GPIO13 // Low,  PWM1_OUT
 	P1_34 host.PinIO = pins.GROUND    //
 	P1_35 host.PinIO = bcm283x.GPIO19 // Low,  PCM_FS, SPI1_MISO, PWM1_OUT
-	P1_36 host.PinIO = bcm283x.GPIO16 // Low,  UART_CTS0, SPI1_CE2, UART_CTS1
+	P1_36 host.PinIO = bcm283x.GPIO16 // Low,  UART0_CTS, SPI1_CE2, UART1_CTS
 	P1_37 host.PinIO = bcm283x.GPIO26 //
 	P1_38 host.PinIO = bcm283x.GPIO20 // Low,  PCM_DIN, SPI1_MOSI, GPCLK0
 	P1_39 host.PinIO = pins.GROUND    //
@@ -77,15 +77,15 @@ var (
 	// Raspberry Pi 1 header:
 	P5_1 host.PinIO = pins.V5
 	P5_2 host.PinIO = pins.V3_3
-	P5_3 host.PinIO = bcm283x.GPIO28 // Float, I2C_SDA0, PCM_CLK
-	P5_4 host.PinIO = bcm283x.GPIO29 // Float, I2C_SCL0, PCM_FS
-	P5_5 host.PinIO = bcm283x.GPIO30 // Low,   PCM_DIN, UART_CTS0, UARTS_CTS1
-	P5_6 host.PinIO = bcm283x.GPIO31 // Low,   PCM_DOUT, UART_RTS0, UARTS_RTS1
+	P5_3 host.PinIO = bcm283x.GPIO28 // Float, I2C0_SDA, PCM_CLK
+	P5_4 host.PinIO = bcm283x.GPIO29 // Float, I2C0_SCL, PCM_FS
+	P5_5 host.PinIO = bcm283x.GPIO30 // Low,   PCM_DIN, UART0_CTS, UART1_CTS
+	P5_6 host.PinIO = bcm283x.GPIO31 // Low,   PCM_DOUT, UART0_RTS, UART1_RTS
 	P5_7 host.PinIO = pins.GROUND
 	P5_8 host.PinIO = pins.GROUND
 
-	AUDIO_LEFT          host.PinIO = bcm283x.GPIO41 // Low,   PWM1_OUT, SPI2_MOSI, UART_RXD1
-	AUDIO_RIGHT         host.PinIO = bcm283x.GPIO40 // Low,   PWM0_OUT, SPI2_MISO, UART_TXD1
+	AUDIO_LEFT          host.PinIO = bcm283x.GPIO41 // Low,   PWM1_OUT, SPI2_MOSI, UART1_RXD
+	AUDIO_RIGHT         host.PinIO = bcm283x.GPIO40 // Low,   PWM0_OUT, SPI2_MISO, UART1_TXD
 	HDMI_HOTPLUG_DETECT host.PinIO = bcm283x.GPIO46 // High,
 )
 
@@ -251,5 +251,8 @@ func initAsRPi() {
 	Headers["AUDIO"] = [][]host.PinIO{
 		{AUDIO_LEFT},
 		{AUDIO_RIGHT},
+	}
+	Headers["HDMI"] = [][]host.PinIO{
+		{HDMI_HOTPLUG_DETECT},
 	}
 }

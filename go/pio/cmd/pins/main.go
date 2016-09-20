@@ -19,8 +19,9 @@ import (
 
 func printFunc(invalid bool) {
 	max := 0
-	funcs := make([]string, 0, len(pins.Functional))
-	for f := range pins.Functional {
+	functional := pins.Functional()
+	funcs := make([]string, 0, len(functional))
+	for f := range functional {
 		if l := len(f); l > 0 && f[0] != '<' {
 			funcs = append(funcs, f)
 			if l > max {
@@ -30,7 +31,7 @@ func printFunc(invalid bool) {
 	}
 	sort.Strings(funcs)
 	for _, name := range funcs {
-		pin := pins.Functional[name]
+		pin := functional[name]
 		if invalid || pin != host.INVALID {
 			if pin == nil {
 				fmt.Printf("%-*s: INVALID\n", max, name)
@@ -44,7 +45,8 @@ func printFunc(invalid bool) {
 func printGPIO(invalid bool) {
 	maxName := 0
 	maxFn := 0
-	for _, p := range pins.All {
+	all := pins.All()
+	for _, p := range all {
 		if invalid || headers.IsConnected(p) {
 			if l := len(p.String()); l > maxName {
 				maxName = l
@@ -54,13 +56,7 @@ func printGPIO(invalid bool) {
 			}
 		}
 	}
-	ids := make([]int, 0, len(pins.All))
-	for i := range pins.All {
-		ids = append(ids, i)
-	}
-	sort.Ints(ids)
-	for _, id := range ids {
-		p := pins.All[id]
+	for _, p := range all {
 		if headers.IsConnected(p) {
 			fmt.Printf("%-*s: %s\n", maxName, p, p.Function())
 		} else if invalid {
@@ -127,7 +123,7 @@ func printHardware(invalid bool) {
 
 func mainImpl() error {
 	all := flag.Bool("a", false, "print everything")
-	fun := flag.Bool("f", false, "print functional pins (e.g. I2C_SCL1)")
+	fun := flag.Bool("f", false, "print functional pins (e.g. I2C1_SCL)")
 	gpio := flag.Bool("g", false, "print GPIO pins (e.g. GPIO1) (default)")
 	hardware := flag.Bool("h", false, "print hardware pins (e.g. P1_1)")
 	info := flag.Bool("i", false, "show general information")

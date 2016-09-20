@@ -23,10 +23,10 @@ var Functional = map[string]host.PinIO{
 	"GPCLK0":    host.INVALID,
 	"GPCLK1":    host.INVALID,
 	"GPCLK2":    host.INVALID,
-	"I2C_SCL0":  host.INVALID,
-	"I2C_SDA0":  host.INVALID,
-	"I2C_SCL1":  host.INVALID,
-	"I2C_SDA1":  host.INVALID,
+	"I2C0_SCL":  host.INVALID,
+	"I2C0_SDA":  host.INVALID,
+	"I2C1_SCL":  host.INVALID,
+	"I2C1_SDA":  host.INVALID,
 	"IR_IN":     host.INVALID,
 	"IR_OUT":    host.INVALID,
 	"PCM_CLK":   host.INVALID,
@@ -52,14 +52,14 @@ var Functional = map[string]host.PinIO{
 	"SPI2_CE0":  host.INVALID,
 	"SPI2_CE1":  host.INVALID,
 	"SPI2_CE2":  host.INVALID,
-	"UART_RXD0": host.INVALID,
-	"UART_CTS0": host.INVALID,
-	"UART_CTS1": host.INVALID,
-	"UART_RTS0": host.INVALID,
-	"UART_RTS1": host.INVALID,
-	"UART_TXD0": host.INVALID,
-	"UART_RXD1": host.INVALID,
-	"UART_TXD1": host.INVALID,
+	"UART0_RXD": host.INVALID,
+	"UART0_CTS": host.INVALID,
+	"UART1_CTS": host.INVALID,
+	"UART0_RTS": host.INVALID,
+	"UART1_RTS": host.INVALID,
+	"UART0_TXD": host.INVALID,
+	"UART1_RXD": host.INVALID,
+	"UART1_TXD": host.INVALID,
 }
 
 // Pin is a GPIO number (GPIOnn) on BCM238(5|6|7).
@@ -132,10 +132,10 @@ var Pins = [54]Pin{
 }
 
 var (
-	GPIO0  *Pin = &Pins[0]  // I2C_SDA0
-	GPIO1  *Pin = &Pins[1]  // I2C_SCL0
-	GPIO2  *Pin = &Pins[2]  // I2C_SDA1
-	GPIO3  *Pin = &Pins[3]  // I2C_SCL1
+	GPIO0  *Pin = &Pins[0]  // I2C0_SDA
+	GPIO1  *Pin = &Pins[1]  // I2C0_SCL
+	GPIO2  *Pin = &Pins[2]  // I2C1_SDA
+	GPIO3  *Pin = &Pins[3]  // I2C1_SCL
 	GPIO4  *Pin = &Pins[4]  // GPCLK0
 	GPIO5  *Pin = &Pins[5]  // GPCLK1
 	GPIO6  *Pin = &Pins[6]  // GPCLK2
@@ -146,10 +146,10 @@ var (
 	GPIO11 *Pin = &Pins[11] // SPI0_CLK
 	GPIO12 *Pin = &Pins[12] // PWM0_OUT
 	GPIO13 *Pin = &Pins[13] // PWM1_OUT
-	GPIO14 *Pin = &Pins[14] // UART_TXD0, UART_TXD1
-	GPIO15 *Pin = &Pins[15] // UART_RXD0, UART_RXD1
-	GPIO16 *Pin = &Pins[16] // UART_CTS0, SPI1_CE2, UART_CTS1
-	GPIO17 *Pin = &Pins[17] // UART_RTS0, SPI1_CE1, UART_RTS1
+	GPIO14 *Pin = &Pins[14] // UART0_TXD, UART1_TXD
+	GPIO15 *Pin = &Pins[15] // UART0_RXD, UART1_RXD
+	GPIO16 *Pin = &Pins[16] // UART0_CTS, SPI1_CE2, UART1_CTS
+	GPIO17 *Pin = &Pins[17] // UART0_RTS, SPI1_CE1, UART1_RTS
 	GPIO18 *Pin = &Pins[18] // PCM_CLK, SPI1_CE0, PWM0_OUT
 	GPIO19 *Pin = &Pins[19] // PCM_FS, SPI1_MISO, PWM1_OUT
 	GPIO20 *Pin = &Pins[20] // PCM_DIN, SPI1_MOSI, GPCLK0
@@ -160,24 +160,24 @@ var (
 	GPIO25 *Pin = &Pins[25] //
 	GPIO26 *Pin = &Pins[26] //
 	GPIO27 *Pin = &Pins[27] //
-	GPIO28 *Pin = &Pins[28] // I2C_SDA0, PCM_CLK
-	GPIO29 *Pin = &Pins[29] // I2C_SCL0, PCM_FS
-	GPIO30 *Pin = &Pins[30] // PCM_DIN, UART_CTS0, UARTS_CTS1
-	GPIO31 *Pin = &Pins[31] // PCM_DOUT, UART_RTS0, UARTS_RTS1
-	GPIO32 *Pin = &Pins[32] // GPCLK0, UART_TXD0, UARTS_TXD1
-	GPIO33 *Pin = &Pins[33] // UART_RXD0, UARTS_RXD1
+	GPIO28 *Pin = &Pins[28] // I2C0_SDA, PCM_CLK
+	GPIO29 *Pin = &Pins[29] // I2C0_SCL, PCM_FS
+	GPIO30 *Pin = &Pins[30] // PCM_DIN, UART0_CTS, UART1_CTS
+	GPIO31 *Pin = &Pins[31] // PCM_DOUT, UART0_RTS, UART1_RTS
+	GPIO32 *Pin = &Pins[32] // GPCLK0, UART0_TXD, UART1_TXD
+	GPIO33 *Pin = &Pins[33] // UART0_RXD, UART1_RXD
 	GPIO34 *Pin = &Pins[34] // GPCLK0
 	GPIO35 *Pin = &Pins[35] // SPI0_CE1
-	GPIO36 *Pin = &Pins[36] // SPI0_CE0, UART_TXD0
-	GPIO37 *Pin = &Pins[37] // SPI0_MISO, UART_RXD0
-	GPIO38 *Pin = &Pins[38] // SPI0_MOSI, UART_RTS0
-	GPIO39 *Pin = &Pins[39] // SPI0_CLK, UART_CTS0
-	GPIO40 *Pin = &Pins[40] // PWM0_OUT, SPI2_MISO, UART_TXD1
-	GPIO41 *Pin = &Pins[41] // PWM1_OUT, SPI2_MOSI, UART_RXD1
-	GPIO42 *Pin = &Pins[42] // GPCLK1, SPI2_CLK, UART_RTS1
-	GPIO43 *Pin = &Pins[43] // GPCLK2, SPI2_CE0, UART_CTS1
-	GPIO44 *Pin = &Pins[44] // GPCLK1, I2C_SDA0, I2C_SDA1, SPI2_CE1
-	GPIO45 *Pin = &Pins[45] // PWM1_OUT, I2C_SCL0, I2C_SCL1, SPI2_CE2
+	GPIO36 *Pin = &Pins[36] // SPI0_CE0, UART0_TXD
+	GPIO37 *Pin = &Pins[37] // SPI0_MISO, UART0_RXD
+	GPIO38 *Pin = &Pins[38] // SPI0_MOSI, UART0_RTS
+	GPIO39 *Pin = &Pins[39] // SPI0_CLK, UART0_CTS
+	GPIO40 *Pin = &Pins[40] // PWM0_OUT, SPI2_MISO, UART1_TXD
+	GPIO41 *Pin = &Pins[41] // PWM1_OUT, SPI2_MOSI, UART1_RXD
+	GPIO42 *Pin = &Pins[42] // GPCLK1, SPI2_CLK, UART1_RTS
+	GPIO43 *Pin = &Pins[43] // GPCLK2, SPI2_CE0, UART1_CTS
+	GPIO44 *Pin = &Pins[44] // GPCLK1, I2C0_SDA, I2C1_SDA, SPI2_CE1
+	GPIO45 *Pin = &Pins[45] // PWM1_OUT, I2C0_SCL, I2C1_SCL, SPI2_CE2
 	GPIO46 *Pin = &Pins[46] //
 	GPIO47 *Pin = &Pins[47] // SDCard
 	GPIO48 *Pin = &Pins[48] // SDCard
@@ -194,10 +194,10 @@ var (
 	GPCLK0    host.PinIO = host.INVALID // GPIO4, GPIO20, GPIO32, GPIO34 (also named GPIO_GCLK)
 	GPCLK1    host.PinIO = host.INVALID // GPIO5, GPIO21, GPIO42, GPIO44
 	GPCLK2    host.PinIO = host.INVALID // GPIO6, GPIO43
-	I2C_SCL0  host.PinIO = host.INVALID // GPIO1, GPIO29, GPIO45
-	I2C_SDA0  host.PinIO = host.INVALID // GPIO0, GPIO28, GPIO44
-	I2C_SCL1  host.PinIO = host.INVALID // GPIO3, GPIO45
-	I2C_SDA1  host.PinIO = host.INVALID // GPIO2, GPIO44
+	I2C0_SCL  host.PinIO = host.INVALID // GPIO1, GPIO29, GPIO45
+	I2C0_SDA  host.PinIO = host.INVALID // GPIO0, GPIO28, GPIO44
+	I2C1_SCL  host.PinIO = host.INVALID // GPIO3, GPIO45
+	I2C1_SDA  host.PinIO = host.INVALID // GPIO2, GPIO44
 	IR_IN     host.PinIO = host.INVALID // (any GPIO)
 	IR_OUT    host.PinIO = host.INVALID // (any GPIO)
 	PCM_CLK   host.PinIO = host.INVALID // GPIO18, GPIO28 (I2S)
@@ -223,14 +223,14 @@ var (
 	SPI2_CE0  host.PinIO = host.INVALID // GPIO43
 	SPI2_CE1  host.PinIO = host.INVALID // GPIO44
 	SPI2_CE2  host.PinIO = host.INVALID // GPIO45
-	UART_RXD0 host.PinIO = host.INVALID // GPIO15, GPIO33, GPIO37
-	UART_CTS0 host.PinIO = host.INVALID // GPIO16, GPIO30, GPIO39
-	UART_CTS1 host.PinIO = host.INVALID // GPIO16, GPIO30
-	UART_RTS0 host.PinIO = host.INVALID // GPIO17, GPIO31, GPIO38
-	UART_RTS1 host.PinIO = host.INVALID // GPIO17, GPIO31
-	UART_TXD0 host.PinIO = host.INVALID // GPIO14, GPIO32, GPIO36
-	UART_RXD1 host.PinIO = host.INVALID // GPIO15, GPIO33, GPIO41
-	UART_TXD1 host.PinIO = host.INVALID // GPIO14, GPIO32, GPIO40
+	UART0_CTS host.PinIO = host.INVALID // GPIO16, GPIO30, GPIO39
+	UART0_RTS host.PinIO = host.INVALID // GPIO17, GPIO31, GPIO38
+	UART0_RXD host.PinIO = host.INVALID // GPIO15, GPIO33, GPIO37
+	UART0_TXD host.PinIO = host.INVALID // GPIO14, GPIO32, GPIO36
+	UART1_CTS host.PinIO = host.INVALID // GPIO16, GPIO30
+	UART1_RTS host.PinIO = host.INVALID // GPIO17, GPIO31
+	UART1_RXD host.PinIO = host.INVALID // GPIO15, GPIO33, GPIO41
+	UART1_TXD host.PinIO = host.INVALID // GPIO14, GPIO32, GPIO40
 )
 
 // PinIO implementation.
@@ -598,10 +598,10 @@ func setIfAlt(p *Pin, special0 *host.PinIO, special1 *host.PinIO, special2 *host
 
 // This excludes the functions in and out.
 var mapping = [54][6]string{
-	{"I2C_SDA0"}, // 0
-	{"I2C_SCL0"},
-	{"I2C_SDA1"},
-	{"I2C_SCL1"},
+	{"I2C0_SDA"}, // 0
+	{"I2C0_SCL"},
+	{"I2C1_SDA"},
+	{"I2C1_SCL"},
 	{"GPCLK0"},
 	{"GPCLK1"},
 	{"GPCLK2"},
@@ -612,10 +612,10 @@ var mapping = [54][6]string{
 	{"SPI0_CLK"},
 	{"PWM0_OUT"},
 	{"PWM1_OUT"},
-	{"UART_TXD0", "", "", "", "", "UART_TXD1"},
-	{"UART_RXD0", "", "", "", "", "UART_RXD1"},
-	{"", "", "", "UART_CTS0", "SPI1_CE2", "UART_CTS1"},
-	{"", "", "", "UART_RTS0", "SPI1_CE1", "UART_RTS1"},
+	{"UART0_TXD", "", "", "", "", "UART1_TXD"},
+	{"UART0_RXD", "", "", "", "", "UART1_RXD"},
+	{"", "", "", "UART0_CTS", "SPI1_CE2", "UART1_CTS"},
+	{"", "", "", "UART0_RTS", "SPI1_CE1", "UART1_RTS"},
 	{"PCM_CLK", "", "", "", "SPI1_CE0", "PWM0_OUT"},
 	{"PCM_FS", "", "", "", "SPI1_MISO", "PWM1_OUT"},
 	{"PCM_DIN", "", "", "", "SPI1_MOSI", "GPCLK0"}, // 20
@@ -626,24 +626,24 @@ var mapping = [54][6]string{
 	{},
 	{},
 	{},
-	{"I2C_SDA0", "", "PCM_CLK", "", "", ""},
-	{"I2C_SCL0", "", "PCM_FS", "", "", ""},
-	{"", "", "PCM_DIN", "UART_CTS0", "", "UART_CTS1"}, // 30
-	{"", "", "PCM_DOUT", "UART_RTS0", "", "UART_RTS"},
-	{"GPCLK0", "", "", "UART_TXD0", "", "UART_TXD1"},
-	{"", "", "", "UART_RXD0", "", "UART_RXD1"},
+	{"I2C0_SDA", "", "PCM_CLK", "", "", ""},
+	{"I2C0_SCL", "", "PCM_FS", "", "", ""},
+	{"", "", "PCM_DIN", "UART0_CTS", "", "UART1_CTS"}, // 30
+	{"", "", "PCM_DOUT", "UART0_RTS", "", "UART1_RTS"},
+	{"GPCLK0", "", "", "UART0_TXD", "", "UART1_TXD"},
+	{"", "", "", "UART0_RXD", "", "UART1_RXD"},
 	{"GPCLK0"},
 	{"SPI0_CE1"},
-	{"SPI0_CE0", "", "UART_TXD0", "", "", ""},
-	{"SPI0_MISO", "", "UART_RXD0", "", "", ""},
-	{"SPI0_MOSI", "", "UART_RTS0", "", "", ""},
-	{"SPI0_CLK", "", "UART_CTS0", "", "", ""},
-	{"PWM0_OUT", "", "", "", "SPI2_MISO", "UART_TXD1"}, // 40
-	{"PWM1_OUT", "", "", "", "SPI2_MOSI", "UART_RXD1"},
-	{"GPCLK1", "", "", "", "SPI2_CLK", "UART_RTS1"},
-	{"GPCLK2", "", "", "", "SPI2_CE0", "UART_CTS1"},
-	{"GPCLK1", "I2C_SDA0", "I2C_SDA1", "", "SPI2_CE1", ""},
-	{"PWM1_OUT", "I2C_SCL0", "I2C_SCL1", "", "SPI2_CE2", ""},
+	{"SPI0_CE0", "", "UART0_TXD", "", "", ""},
+	{"SPI0_MISO", "", "UART0_RXD", "", "", ""},
+	{"SPI0_MOSI", "", "UART0_RTS", "", "", ""},
+	{"SPI0_CLK", "", "UART0_CTS", "", "", ""},
+	{"PWM0_OUT", "", "", "", "SPI2_MISO", "UART1_TXD"}, // 40
+	{"PWM1_OUT", "", "", "", "SPI2_MOSI", "UART1_RXD"},
+	{"GPCLK1", "", "", "", "SPI2_CLK", "UART1_RTS"},
+	{"GPCLK2", "", "", "", "SPI2_CE0", "UART1_CTS"},
+	{"GPCLK1", "I2C0_SDA", "I2C1_SDA", "", "SPI2_CE1", ""},
+	{"PWM1_OUT", "I2C0_SCL", "I2C1_SCL", "", "SPI2_CE2", ""},
 }
 
 // getBaseAddress queries the virtual file system to retrieve the base address
@@ -682,10 +682,10 @@ func initArm() error {
 
 	// https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 	// Page 102.
-	setIfAlt0(GPIO0, &I2C_SDA0)
-	setIfAlt0(GPIO1, &I2C_SCL0)
-	setIfAlt0(GPIO2, &I2C_SDA1)
-	setIfAlt0(GPIO3, &I2C_SCL1)
+	setIfAlt0(GPIO0, &I2C0_SDA)
+	setIfAlt0(GPIO1, &I2C0_SCL)
+	setIfAlt0(GPIO2, &I2C1_SDA)
+	setIfAlt0(GPIO3, &I2C1_SCL)
 	setIfAlt0(GPIO4, &GPCLK0)
 	setIfAlt0(GPIO5, &GPCLK1)
 	setIfAlt0(GPIO6, &GPCLK2)
@@ -696,33 +696,33 @@ func initArm() error {
 	setIfAlt0(GPIO11, &SPI0_CLK)
 	setIfAlt0(GPIO12, &PWM0_OUT)
 	setIfAlt0(GPIO13, &PWM1_OUT)
-	setIfAlt(GPIO14, &UART_TXD0, nil, nil, nil, nil, &UART_TXD1)
-	setIfAlt(GPIO15, &UART_RXD0, nil, nil, nil, nil, &UART_RXD1)
-	setIfAlt(GPIO16, nil, nil, nil, &UART_CTS0, &SPI1_CE2, &UART_CTS1)
-	setIfAlt(GPIO17, nil, nil, nil, &UART_RTS0, &SPI1_CE1, &UART_RTS1)
+	setIfAlt(GPIO14, &UART0_TXD, nil, nil, nil, nil, &UART1_TXD)
+	setIfAlt(GPIO15, &UART0_RXD, nil, nil, nil, nil, &UART1_RXD)
+	setIfAlt(GPIO16, nil, nil, nil, &UART0_CTS, &SPI1_CE2, &UART1_CTS)
+	setIfAlt(GPIO17, nil, nil, nil, &UART0_RTS, &SPI1_CE1, &UART1_RTS)
 	setIfAlt(GPIO18, &PCM_CLK, nil, nil, nil, &SPI1_CE0, &PWM0_OUT)
 	setIfAlt(GPIO19, &PCM_FS, nil, nil, nil, &SPI1_MISO, &PWM1_OUT)
 	setIfAlt(GPIO20, &PCM_DIN, nil, nil, nil, &SPI1_MOSI, &GPCLK0)
 	setIfAlt(GPIO21, &PCM_DOUT, nil, nil, nil, &SPI1_CLK, &GPCLK1)
 	// GPIO22-GPIO27 do not have interesting alternate function.
-	setIfAlt(GPIO28, &I2C_SDA0, nil, &PCM_CLK, nil, nil, nil)
-	setIfAlt(GPIO29, &I2C_SCL0, nil, &PCM_FS, nil, nil, nil)
-	setIfAlt(GPIO30, nil, nil, &PCM_DIN, &UART_CTS0, nil, &UART_CTS1)
-	setIfAlt(GPIO31, nil, nil, &PCM_DOUT, &UART_RTS0, nil, &UART_RTS1)
-	setIfAlt(GPIO32, &GPCLK0, nil, nil, &UART_TXD0, nil, &UART_TXD1)
-	setIfAlt(GPIO33, nil, nil, nil, &UART_RXD0, nil, &UART_RXD1)
+	setIfAlt(GPIO28, &I2C0_SDA, nil, &PCM_CLK, nil, nil, nil)
+	setIfAlt(GPIO29, &I2C0_SCL, nil, &PCM_FS, nil, nil, nil)
+	setIfAlt(GPIO30, nil, nil, &PCM_DIN, &UART0_CTS, nil, &UART1_CTS)
+	setIfAlt(GPIO31, nil, nil, &PCM_DOUT, &UART0_RTS, nil, &UART1_RTS)
+	setIfAlt(GPIO32, &GPCLK0, nil, nil, &UART0_TXD, nil, &UART1_TXD)
+	setIfAlt(GPIO33, nil, nil, nil, &UART0_RXD, nil, &UART1_RXD)
 	setIfAlt0(GPIO34, &GPCLK0)
 	setIfAlt0(GPIO35, &SPI0_CE1)
-	setIfAlt(GPIO36, &SPI0_CE0, nil, &UART_TXD0, nil, nil, nil)
-	setIfAlt(GPIO37, &SPI0_MISO, nil, &UART_RXD0, nil, nil, nil)
-	setIfAlt(GPIO38, &SPI0_MOSI, nil, &UART_RTS0, nil, nil, nil)
-	setIfAlt(GPIO39, &SPI0_CLK, nil, &UART_CTS0, nil, nil, nil)
-	setIfAlt(GPIO40, &PWM0_OUT, nil, nil, nil, &SPI2_MISO, &UART_TXD1)
-	setIfAlt(GPIO41, &PWM1_OUT, nil, nil, nil, &SPI2_MOSI, &UART_RXD1)
-	setIfAlt(GPIO42, &GPCLK1, nil, nil, nil, &SPI2_CLK, &UART_RTS1)
-	setIfAlt(GPIO43, &GPCLK2, nil, nil, nil, &SPI2_CE0, &UART_CTS1)
-	setIfAlt(GPIO44, &GPCLK1, &I2C_SDA0, &I2C_SDA1, nil, &SPI2_CE1, nil)
-	setIfAlt(GPIO45, &PWM1_OUT, &I2C_SCL0, &I2C_SCL1, nil, &SPI2_CE2, nil)
+	setIfAlt(GPIO36, &SPI0_CE0, nil, &UART0_TXD, nil, nil, nil)
+	setIfAlt(GPIO37, &SPI0_MISO, nil, &UART0_RXD, nil, nil, nil)
+	setIfAlt(GPIO38, &SPI0_MOSI, nil, &UART0_RTS, nil, nil, nil)
+	setIfAlt(GPIO39, &SPI0_CLK, nil, &UART0_CTS, nil, nil, nil)
+	setIfAlt(GPIO40, &PWM0_OUT, nil, nil, nil, &SPI2_MISO, &UART1_TXD)
+	setIfAlt(GPIO41, &PWM1_OUT, nil, nil, nil, &SPI2_MOSI, &UART1_RXD)
+	setIfAlt(GPIO42, &GPCLK1, nil, nil, nil, &SPI2_CLK, &UART1_RTS)
+	setIfAlt(GPIO43, &GPCLK2, nil, nil, nil, &SPI2_CE0, &UART1_CTS)
+	setIfAlt(GPIO44, &GPCLK1, &I2C0_SDA, &I2C1_SDA, nil, &SPI2_CE1, nil)
+	setIfAlt(GPIO45, &PWM1_OUT, &I2C0_SCL, &I2C1_SCL, nil, &SPI2_CE2, nil)
 	// GPIO46 doesn't have interesting alternate function.
 	// GPIO47-GPIO53 are connected to the SDCard.
 

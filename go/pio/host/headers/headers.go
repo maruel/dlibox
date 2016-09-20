@@ -31,30 +31,30 @@ func IsConnected(p host.PinIO) bool {
 	lock.Lock()
 	defer lock.Unlock()
 	// Populate the map on first use.
-	if reverse == nil {
+	if connectedPins == nil {
 		initAll()
-		reverse = map[string]bool{}
+		connectedPins = map[string]bool{}
 		for name, header := range all {
 			for i, line := range header {
-				for j, item := range line {
-					if item == nil || len(item.String()) == 0 {
+				for j, pin := range line {
+					if pin == nil || len(pin.String()) == 0 {
 						fmt.Printf("%s[%d][%d]\n", name, i, j)
 					}
-					reverse[item.String()] = true
+					connectedPins[pin.String()] = true
 				}
 			}
 		}
 	}
-	b, _ := reverse[p.String()]
+	b, _ := connectedPins[p.String()]
 	return b
 }
 
 //
 
 var (
-	lock    sync.Mutex
-	all     map[string][][]host.PinIO
-	reverse map[string]bool
+	lock          sync.Mutex
+	all           map[string][][]host.PinIO // every known headers as per internal lookup table
+	connectedPins map[string]bool           // GPIO pin name to bool
 )
 
 func initAll() {

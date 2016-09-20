@@ -31,10 +31,10 @@ For more information for enabling functional pins, see
 Print the pins per special functionality:
 
     $ pins -f
-    I2C_SCL1 : GPIO3
-    I2C_SDA1 : GPIO2
-    IR_IN    : GPIO6
-    IR_OUT   : GPIO5
+    GPCLK1   : GPIO42
+    GPCLK2   : GPIO43
+    I2C1_SCL : GPIO3
+    I2C1_SDA : GPIO2
     PWM0_OUT : GPIO40
     PWM1_OUT : GPIO41
     SPI0_CLK : GPIO11
@@ -43,8 +43,8 @@ Print the pins per special functionality:
     SPI1_CLK : GPIO21
     SPI1_MISO: GPIO19
     SPI1_MOSI: GPIO20
-    UART_RXD0: GPIO15
-    UART_TXD0: GPIO14
+    UART0_RXD: GPIO15
+    UART0_TXD: GPIO14
 
 
 ### GPIO
@@ -54,21 +54,21 @@ Print the pins per GPIO number:
     $ ./pins -g
     GPIO0 : In/High
     GPIO1 : In/High
-    GPIO2 : I2C_SDA1
-    GPIO3 : I2C_SCL1
-    GPIO4 : In/High
-    GPIO5 : IR_OUT
-    GPIO6 : IR_IN
+    GPIO2 : I2C1_SDA
+    GPIO3 : I2C1_SCL
+    GPIO4 : In/Low
+    GPIO5 : Out/Low
+    GPIO6 : In/High
     GPIO7 : Out/High
-    GPIO8 : Out/High
+    GPIO8 : Out/Low
     GPIO9 : SPI0_MISO
     GPIO10: SPI0_MOSI
     GPIO11: SPI0_CLK
-    GPIO12: In/Low
-    GPIO13: In/Low
-    GPIO14: UART_TXD0
-    GPIO15: UART_RXD0
-    GPIO16: In/High
+    GPIO12: In/High
+    GPIO13: In/High
+    GPIO14: UART0_TXD
+    GPIO15: UART0_RXD
+    GPIO16: In/Low
     GPIO17: In/Low
     GPIO18: Out/High
     GPIO19: SPI1_MISO
@@ -92,36 +92,41 @@ internal lookup table then query each pin. Here's an example on a host with two
 SPI host and lirc enabled:
 
     $ ./pins -h
-    Header    Func  Name  Pos Pos  Name   Func
-    P1:             V3_3  1 x x 2  V5     
-         I2C_SDA1  GPIO2  3 x x 4  V5     
-         I2C_SCL1  GPIO3  5 x x 6  GROUND 
-          In/High  GPIO4  7 x x 8  GPIO14 UART_TXD0
-                  GROUND  9 x x 10 GPIO15 UART_RXD0
-           In/Low GPIO17 11 x x 12 GPIO18 Out/High
-           In/Low GPIO27 13 x x 14 GROUND 
-           In/Low GPIO22 15 x x 16 GPIO23 In/Low
-                    V3_3 17 x x 18 GPIO24 In/Low
-        SPI0_MOSI GPIO10 19 x x 20 GROUND 
-        SPI0_MISO  GPIO9 21 x x 22 GPIO25 In/Low
-         SPI0_CLK GPIO11 23 x x 24 GPIO8  Out/High
-                  GROUND 25 x x 26 GPIO7  Out/High
-          In/High  GPIO0 27 x x 28 GPIO1  In/High
-           IR_OUT  GPIO5 29 x x 30 GROUND 
-            IR_IN  GPIO6 31 x x 32 GPIO12 In/Low
-           In/Low GPIO13 33 x x 34 GROUND 
-        SPI1_MISO GPIO19 35 x x 36 GPIO16 In/High
-           In/Low GPIO26 37 x x 38 GPIO20 SPI1_MOSI
-                  GROUND 39 x x 40 GPIO21 SPI1_CLK
-    
-    AUDIO_LEFT  : GPIO41
-    AUDIO_RIGHT : GPIO40
-    HDMI_HOTPLUG: GPIO46
+    AUDIO: 2 pins
+      Pos  Name    Func
+      1    GPIO41  PWM1_OUT
+      2    GPIO40  PWM0_OUT
 
+    HDMI: 1 pins
+      Pos  Name    Func
+      1    GPIO46  In/High
+
+    P1: 40 pins
+           Func    Name  Pos  Pos  Name   Func
+                   V3_3    1  2    V5    g
+       I2C1_SDA   GPIO2    3  4    V5    g
+       I2C1_SCL   GPIO3    5  6    GROUNDg
+         In/Low   GPIO4    7  8    GPIO14 UART0_TXD
+                 GROUND    9  10   GPIO15 UART0_RXD
+         In/Low  GPIO17   11  12   GPIO18 Out/High
+         In/Low  GPIO27   13  14   GROUNDg
+         In/Low  GPIO22   15  16   GPIO23 In/Low
+                   V3_3   17  18   GPIO24 In/Low
+      SPI0_MOSI  GPIO10   19  20   GROUNDg
+      SPI0_MISO   GPIO9   21  22   GPIO25 In/Low
+       SPI0_CLK  GPIO11   23  24   GPIO8  Out/Low
+                 GROUND   25  26   GPIO7  Out/High
+        In/High   GPIO0   27  28   GPIO1  In/High
+        Out/Low   GPIO5   29  30   GROUNDg
+        In/High   GPIO6   31  32   GPIO12 In/High
+        In/High  GPIO13   33  34   GROUNDg
+      SPI1_MISO  GPIO19   35  36   GPIO16 In/Low
+         In/Low  GPIO26   37  38   GPIO20 SPI1_MOSI
+                 GROUND   39  40   GPIO21 SPI1_CLK
 
 ### Info
 
-Queries the Raspberry Pi version:
+Queries the processor's maximum speed:
 
     $ ./pins -i
-    Version: 3  MaxSpeed: 1200Mhz
+    MaxSpeed: 1200Mhz

@@ -19,6 +19,9 @@ import (
 )
 
 // GetPin returns a *Pin for the pin number, if any.
+//
+// TODO(maruel): This only exists because bcm283x and allwinner need it but it
+// doesn't make sense at the interface level.
 func GetPin(i int) (*Pin, error) {
 	if err := Init(); err != nil {
 		return nil, err
