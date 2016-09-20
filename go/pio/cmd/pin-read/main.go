@@ -67,6 +67,7 @@ func mainImpl() error {
 	}
 	if *edges {
 		c, err := p.Edges()
+		defer p.DisableEdges()
 		if err != nil {
 			return err
 		}

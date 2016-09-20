@@ -18,8 +18,9 @@ type Pin struct {
 	Num  int    // Should be immutable
 	Fn   string // Should be immutable
 
-	sync.Mutex                 // Grab the Mutex before modifying the members to keep it concurrent safe
-	host.Level                 // Used for both input and output
+	sync.Mutex            // Grab the Mutex before modifying the members to keep it concurrent safe
+	L          host.Level // Used for both input and output
+	P          host.Pull
 	EdgesChan  chan host.Level // Use it to fake edges
 }
 
@@ -39,10 +40,11 @@ func (p *Pin) Function() string {
 func (p *Pin) In(pull host.Pull) error {
 	p.Lock()
 	defer p.Unlock()
+	p.P = pull
 	if pull == host.Down {
-		p.Level = host.Low
+		p.L = host.Low
 	} else if pull == host.Up {
-		p.Level = host.High
+		p.L = host.High
 	}
 	return nil
 }
@@ -51,17 +53,30 @@ func (p *Pin) In(pull host.Pull) error {
 func (p *Pin) Read() host.Level {
 	p.Lock()
 	defer p.Unlock()
-	return p.Level
+	return p.L
 }
 
 // Edges is concurrent safe.
-func (p *Pin) Edges() (chan host.Level, error) {
+func (p *Pin) Edges() (<-chan host.Level, error) {
 	p.Lock()
 	defer p.Unlock()
 	if p.EdgesChan == nil {
 		p.EdgesChan = make(chan host.Level)
 	}
 	return p.EdgesChan, nil
+}
+
+func (p *Pin) DisableEdges() {
+	p.Lock()
+	defer p.Unlock()
+	if p.EdgesChan != nil {
+		close(p.EdgesChan)
+		p.EdgesChan = nil
+	}
+}
+
+func (p *Pin) Pull() host.Pull {
+	return p.P
 }
 
 // Out is concurrent safe.
@@ -75,7 +90,7 @@ func (p *Pin) Out() error {
 func (p *Pin) Set(level host.Level) {
 	p.Lock()
 	defer p.Unlock()
-	p.Level = level
+	p.L = level
 }
 
 var _ host.PinIO = &Pin{}

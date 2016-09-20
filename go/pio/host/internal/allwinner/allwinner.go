@@ -513,7 +513,7 @@ func (p *Pin) String() string {
 func (p *Pin) Function() string {
 	switch f := p.function(); f {
 	case in:
-		return "In/" + p.Read().String() + "/" + p.pull().String()
+		return "In/" + p.Read().String() + "/" + p.Pull().String()
 	case out:
 		return "Out/" + p.Read().String()
 	case alt1:
@@ -599,7 +599,7 @@ func (p *Pin) Read() host.Level {
 // shutdown.
 //
 // Not all pins support edge detection Allwinner processors!
-func (p *Pin) Edges() (chan host.Level, error) {
+func (p *Pin) Edges() (<-chan host.Level, error) {
 	switch p.group {
 	case 0, 1 * 9, 6 * 9, 7 * 9:
 	default:
@@ -615,6 +615,34 @@ func (p *Pin) Edges() (chan host.Level, error) {
 		}
 	}
 	return p.edge.Edges()
+}
+
+func (p *Pin) DisableEdges() {
+	if p.edge != nil {
+		p.edge.DisableEdges()
+	}
+}
+
+func (p *Pin) Pull() host.Pull {
+	off := p.group + 7 + p.offset/16
+	var v uint32
+	if p.group == 0 {
+		v = gpioMemoryPL[off]
+	} else {
+		// Pn_PULL  n*0x24+0x1C Port n Pull Register (n from 1(B) to 7(H))
+		v = gpioMemoryPB[off]
+	}
+	switch (v >> (2 * (p.offset % 16))) & 3 {
+	case 0:
+		return host.Float
+	case 1:
+		return host.Up
+	case 2:
+		return host.Down
+	default:
+		// Confused.
+		return host.PullNoChange
+	}
 }
 
 func (p *Pin) Out() error {
@@ -668,9 +696,7 @@ func (p *Pin) setFunction(f function) bool {
 	if f != in && f != out {
 		return false
 	}
-	if p.edge != nil {
-		p.edge.DisableEdge()
-	}
+	p.edge.DisableEdges()
 	// TODO(maruel): There's a problem where interrupt based edge triggering is
 	// Alt5 but this is only supported on some pins.
 	if actual := p.function(); actual != in && actual != out && actual != disabled && actual != alt5 {
@@ -694,28 +720,6 @@ func (p *Pin) setFunction(f function) bool {
 		panic(f)
 	}
 	return true
-}
-
-func (p *Pin) pull() host.Pull {
-	off := p.group + 7 + p.offset/16
-	var v uint32
-	if p.group == 0 {
-		v = gpioMemoryPL[off]
-	} else {
-		// Pn_PULL  n*0x24+0x1C Port n Pull Register (n from 1(B) to 7(H))
-		v = gpioMemoryPB[off]
-	}
-	switch (v >> (2 * (p.offset % 16))) & 3 {
-	case 0:
-		return host.Float
-	case 1:
-		return host.Up
-	case 2:
-		return host.Down
-	default:
-		// Confused.
-		return host.PullNoChange
-	}
 }
 
 func initMem() error {

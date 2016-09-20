@@ -232,7 +232,7 @@ func irLoop(irBus host.IR, keys chan<- host.Key) {
 	}
 }
 
-func buttonLoop(b chan host.Level, c chan<- bool) {
+func buttonLoop(b <-chan host.Level, c chan<- bool) {
 	for {
 		select {
 		case l := <-b:
@@ -244,7 +244,7 @@ func buttonLoop(b chan host.Level, c chan<- bool) {
 	}
 }
 
-func pirLoop(b chan host.Level, c chan<- bool) {
+func pirLoop(b <-chan host.Level, c chan<- bool) {
 	for {
 		select {
 		case l := <-b:

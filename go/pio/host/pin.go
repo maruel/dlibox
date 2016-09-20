@@ -69,7 +69,12 @@ type PinIn interface {
 	// via a query loop.
 	//
 	// Behavior is undefined if In() wasn't used before.
-	Edges() (chan Level, error)
+	Edges() (<-chan Level, error)
+	// DisableEdges() closes a previous Edges() channel and stops polling.
+	DisableEdges()
+	// Pull returns the internal pull resistor if the pin is set as input pin.
+	// Returns PullNoChange if the value cannot be read.
+	Pull() Pull
 }
 
 // PinOut is an output GPIO pin.
@@ -130,8 +135,15 @@ func (invalidPin) Read() Level {
 	return Low
 }
 
-func (invalidPin) Edges() (chan Level, error) {
+func (invalidPin) Edges() (<-chan Level, error) {
 	return nil, invalidPinErr
+}
+
+func (invalidPin) DisableEdges() {
+}
+
+func (invalidPin) Pull() Pull {
+	return PullNoChange
 }
 
 func (invalidPin) Out() error {

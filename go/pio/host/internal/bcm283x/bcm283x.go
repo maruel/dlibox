@@ -351,7 +351,7 @@ func (p *Pin) Read() host.Level {
 // For edge detection, the processor samples the input at its CPU clock rate
 // and looks for '011' to rising and '100' for falling detection to avoid
 // glitches. Because gpio sysfs is used, the latency is unpredictable.
-func (p *Pin) Edges() (chan host.Level, error) {
+func (p *Pin) Edges() (<-chan host.Level, error) {
 	// This is a race condition but this is fine; at worst GetPin() is called
 	// twice but it is guaranteed to return the same value. p.edge is never set
 	// to nil.
@@ -362,6 +362,21 @@ func (p *Pin) Edges() (chan host.Level, error) {
 		}
 	}
 	return p.edge.Edges()
+}
+
+func (p *Pin) DisableEdges() {
+	if p.edge != nil {
+		p.edge.DisableEdges()
+	}
+}
+
+// Pull implemented host.PinIO.
+//
+// bcm283x doesn't support querying the pull resistor of any GPIO pin.
+func (p *Pin) Pull() host.Pull {
+	// TODO(maruel): The best that could be added is to cache the last set value
+	// and return it.
+	return host.PullNoChange
 }
 
 // Out sets a pin as output and implements host.PinOut. The caller should
@@ -426,9 +441,7 @@ func (p *Pin) setFunction(f function) bool {
 	if f != in && f != out {
 		return false
 	}
-	if p.edge != nil {
-		p.edge.DisableEdge()
-	}
+	p.DisableEdges()
 	if actual := p.function(); actual != in && actual != out {
 		return false
 	}

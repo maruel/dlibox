@@ -48,6 +48,44 @@ func waitChan(c <-chan host.Level) (host.Level, bool) {
 	}
 }
 
+func doEdges(p1, p2 host.PinIO, slow bool) error {
+	slowSleep(slow)
+	fmt.Printf("  %s.Edges()\n", p1)
+	c, err := p1.Edges()
+	if err != nil {
+		return err
+	}
+	defer p1.DisableEdges()
+	time.Sleep(shortDelay)
+
+	fmt.Printf("  %s.Set(Low)\n", p2)
+	p2.Set(host.Low)
+	if l, ok := waitChan(c); !ok {
+		return errors.New("edge didn't trigger")
+	} else if l != host.Low {
+		return fmt.Errorf("expected Low, got %s", l)
+	}
+
+	slowSleep(slow)
+	fmt.Printf("  %s.Set(High)\n", p2)
+	p2.Set(host.High)
+	if l, ok := waitChan(c); !ok {
+		return errors.New("edge didn't trigger")
+	} else if l != host.High {
+		return fmt.Errorf("expected High, got %s", l)
+	}
+
+	slowSleep(slow)
+	fmt.Printf("  %s.Set(Low)\n", p2)
+	p2.Set(host.Low)
+	if l, ok := waitChan(c); !ok {
+		return errors.New("edge didn't trigger")
+	} else if l != host.Low {
+		return fmt.Errorf("expected Low, got %s", l)
+	}
+	return nil
+}
+
 func doCycle(p1, p2 host.PinIO, noEdge, noPull, slow bool) error {
 	// Do a 'shortDelay' sleep between writting and reading because there can be
 	// propagation delay in the wire.
@@ -86,40 +124,9 @@ func doCycle(p1, p2 host.PinIO, noEdge, noPull, slow bool) error {
 	}
 
 	if !noEdge {
-		slowSleep(slow)
-		fmt.Printf("  %s.Edges()\n", p1)
-		c, err := p1.Edges()
-		if err != nil {
+		if err := doEdges(p1, p2, slow); err != nil {
 			return err
 		}
-		time.Sleep(shortDelay)
-
-		fmt.Printf("  %s.Set(Low)\n", p2)
-		p2.Set(host.Low)
-		if l, ok := waitChan(c); !ok {
-			return errors.New("edge didn't trigger")
-		} else if l != host.Low {
-			return fmt.Errorf("expected Low, got %s", l)
-		}
-
-		slowSleep(slow)
-		fmt.Printf("  %s.Set(High)\n", p2)
-		p2.Set(host.High)
-		if l, ok := waitChan(c); !ok {
-			return errors.New("edge didn't trigger")
-		} else if l != host.High {
-			return fmt.Errorf("expected High, got %s", l)
-		}
-
-		slowSleep(slow)
-		fmt.Printf("  %s.Set(Low)\n", p2)
-		p2.Set(host.Low)
-		if l, ok := waitChan(c); !ok {
-			return errors.New("edge didn't trigger")
-		} else if l != host.Low {
-			return fmt.Errorf("expected Low, got %s", l)
-		}
-		// TODO(maruel): p1.DisableEdges(). It's important to do on Allwinner CPUs.
 	}
 
 	if !noPull {

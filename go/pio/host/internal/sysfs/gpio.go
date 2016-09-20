@@ -114,7 +114,7 @@ func (p *Pin) Read() host.Level {
 }
 
 // Edges creates a edge detection loop and implements host.PinIn.
-func (p *Pin) Edges() (chan host.Level, error) {
+func (p *Pin) Edges() (<-chan host.Level, error) {
 	last := p.Read()
 	if err := p.setEdge(true); err != nil {
 		return nil, err
@@ -165,9 +165,13 @@ func (p *Pin) Edges() (chan host.Level, error) {
 	return c, nil
 }
 
-// DisableEdge stops edges.
-func (p *Pin) DisableEdge() {
+// DisableEdges stops a previous Edges() call.
+func (p *Pin) DisableEdges() {
 	p.setEdge(false)
+}
+
+func (p *Pin) Pull() host.Pull {
+	return host.PullNoChange
 }
 
 // Out sets a pin as output

@@ -135,8 +135,15 @@ func (p *pin) Read() host.Level {
 	return host.Low
 }
 
-func (p *pin) Edges() (chan host.Level, error) {
+func (p *pin) Edges() (<-chan host.Level, error) {
 	return nil, fmt.Errorf("%s cannot be used as input", p.name)
+}
+
+func (p *pin) DisableEdges() {
+}
+
+func (p *pin) Pull() host.Pull {
+	return host.PullNoChange
 }
 
 func (p *pin) Out() error {
