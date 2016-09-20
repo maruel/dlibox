@@ -5,8 +5,7 @@
 package sysfs
 
 // MakeI2C opens an I²C bus via its sysfs interface as described at
-// https://www.kernel.org/doc/Documentation/i2c/dev-interface It is not
-// Raspberry Pi specific.
+// https://www.kernel.org/doc/Documentation/i2c/dev-interface.
 //
 // busNumber is the bus number as exported by sysfs. For example if the path is
 // /dev/i2c-1, busNumber should be 1.
