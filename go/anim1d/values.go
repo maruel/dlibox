@@ -127,6 +127,37 @@ func (i Interpolation) Scale(in, out Frame) {
 	}
 }
 
+// MovePerHour is the number of movement per hour.
+//
+// Can be either positive or negative. Maximum supported value is ±3600000, 1000
+// move/sec.
+//
+// Sample values:
+//   - 1: one move per hour
+//   - 60: one move per minute
+//   - 3600: one move per second
+//   - 216000: 60 move per second
+type MovePerHour int32
+
+func (m MovePerHour) Eval(timeMS uint32, cycle int) int {
+	// Prevent overflows.
+	if m > 3600000 {
+		m = 3600000
+	} else if m < -3600000 {
+		m = -3600000
+	}
+	// TODO(maruel): Reduce the amount of int64 code in there yet keeping it from
+	// overflowing.
+	// offset ranges [0, 3599999]
+	offset := timeMS % 3600000
+	// (1<<32)/3600000 = 1193 is too low. Temporarily upgrade to int64 to
+	// calculate the value.
+	low := int64(offset) * int64(m) / 3600000
+	hour := timeMS / 3600000
+	high := int64(hour) * int64(m)
+	return int((low + high) % int64(cycle))
+}
+
 //
 
 const epsilon = 1e-7

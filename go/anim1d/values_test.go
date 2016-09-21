@@ -91,6 +91,43 @@ func TestInterpolation(t *testing.T) {
 	}
 }
 
+func TestMovePerHour(t *testing.T) {
+	data := []struct {
+		s        MovePerHour
+		timeMS   uint32
+		cycle    int
+		expected int
+	}{
+		{1, 0, 10, 0},
+		{1, 3600000, 10, 1},
+		{1, 2 * 3600000, 10, 2},
+		{1, 3 * 3600000, 10, 3},
+		{1, 4 * 3600000, 10, 4},
+		{1, 5 * 3600000, 10, 5},
+		{1, 6 * 3600000, 10, 6},
+		{1, 7 * 3600000, 10, 7},
+		{1, 8 * 3600000, 10, 8},
+		{1, 9 * 3600000, 10, 9},
+		{1, 10 * 3600000, 10, 0},
+		{1, 10 * 3600000, 11, 10},
+		{60, 16, 10, 0},
+		{60, 1000, 9, 0},
+		{60, 1000, 10, 0},
+		{60, 3600000, 10, 0},
+		{3600, 3600000, 10, 0},
+		{3600000, 0, 10, 0},
+		{3600000, 1, 10, 1},
+		{3600000, 2, 10, 2},
+		{2 * 3600000, 1, 10, 1},
+		{2 * 3600000, 2, 10, 2},
+	}
+	for i, line := range data {
+		if actual := line.s.Eval(line.timeMS, line.cycle); actual != line.expected {
+			t.Fatalf("%d: %d.Eval(%d, %d) = %d != %d", i, line.s, line.timeMS, line.cycle, actual, line.expected)
+		}
+	}
+}
+
 func BenchmarkSetupCache(b *testing.B) {
 	// Calculate how much this one-time initialization cost is.
 	for i := 0; i < b.N; i++ {
