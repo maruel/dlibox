@@ -14,8 +14,22 @@ type Color struct {
 	R, G, B uint8
 }
 
-// Add adds two color together with saturation, mixing according to the alpha
-// channel.
+func (c *Color) NextFrame(pixels Frame, timeMS uint32) {
+	for i := range pixels {
+		pixels[i] = *c
+	}
+}
+
+// Dim reduces the intensity of a color/pixel to scale it on intensity.
+func (c *Color) Dim(intensity uint8) {
+	i := uint16(intensity)
+	d := i >> 1
+	c.R = uint8((uint16(c.R)*i + d) >> 8)
+	c.G = uint8((uint16(c.G)*i + d) >> 8)
+	c.B = uint8((uint16(c.B)*i + d) >> 8)
+}
+
+// Add adds two color together with saturation.
 func (c *Color) Add(d Color) {
 	r := uint16(c.R) + uint16(d.R)
 	if r > 255 {
@@ -37,6 +51,12 @@ func (c *Color) Add(d Color) {
 // Mix blends the second color with the first.
 //
 // gradient 0 means pure 'c', gradient 255 means pure 'd'.
+//
+// It is the equivalent of:
+//   c.Dim(255-gradient)
+//   d.Dim(gradient)
+//   c.Add(d)
+// except that this function doesn't affect d.
 func (c *Color) Mix(d Color, gradient uint8) {
 	grad := uint16(gradient)
 	grad1 := 255 - grad
@@ -46,11 +66,7 @@ func (c *Color) Mix(d Color, gradient uint8) {
 	c.B = uint8(((uint16(c.B)+1)*grad1 + (uint16(d.B)+1)*grad) >> 8)
 }
 
-func (c *Color) NextFrame(pixels Frame, timeMS uint32) {
-	for i := range pixels {
-		pixels[i] = *c
-	}
-}
+//
 
 // Frame is a strip of colors. It knows how to renders itself into a frame
 // (which is recursive).
@@ -60,9 +76,29 @@ func (f Frame) NextFrame(pixels Frame, timeMS uint32) {
 	copy(pixels, f)
 }
 
+// Dim reduces the intensity of a frame to scale it on intensity.
+func (f Frame) Dim(intensity uint8) {
+	for i := range f {
+		f[i].Dim(intensity)
+	}
+}
+
+// Add adds two frames together with saturation.
+func (f Frame) Add(r Frame) {
+	for i := range f {
+		f[i].Add(r[i])
+	}
+}
+
 // Mix blends the second frame with the first.
 //
 // gradient 0 means pure 'f', gradient 255 means pure 'b'.
+//
+// It is the equivalent of:
+//   c.Dim(255-gradient)
+//   d.Dim(gradient)
+//   c.Add(d)
+// except that this function doesn't affect d.
 func (f Frame) Mix(b Frame, gradient uint8) {
 	for i := range f {
 		f[i].Mix(b[i], gradient)
@@ -101,6 +137,8 @@ func (f Frame) isEqual(rhs Frame) bool {
 	}
 	return true
 }
+
+//
 
 // Rainbow renders rainbow colors.
 type Rainbow struct {

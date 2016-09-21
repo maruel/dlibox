@@ -40,7 +40,8 @@ var knownPatterns = []Pattern{
 	&Rotate{},
 	&PingPong{},
 	&Crop{},
-	&Mixer{},
+	&Dim{},
+	&Add{},
 	&Scale{},
 }
 

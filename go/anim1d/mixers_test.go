@@ -120,8 +120,25 @@ func TestCrop(t *testing.T) {
 	// TODO(maruel): Add.
 }
 
-func TestMixer(t *testing.T) {
-	// TODO(maruel): Add.
+func TestDim(t *testing.T) {
+	a := Color{0x60, 0x60, 0x60}
+	d := Dim{SPattern{&a}, 127}
+	o := Frame{{}}
+	d.NextFrame(o, 0)
+	if o[0].R != 0x2f || o[0].G != 0x2f || o[0].B != 0x2f {
+		t.Fatalf("%#v", o[0])
+	}
+}
+
+func TestAdd(t *testing.T) {
+	a := Color{0x60, 0x60, 0x60}
+	b := Color{0x10, 0x20, 0x30}
+	d := Add{Patterns: []SPattern{{&a}, {&b}}}
+	o := Frame{{}}
+	d.NextFrame(o, 0)
+	if o[0].R != 0x70 || o[0].G != 0x80 || o[0].B != 0x90 {
+		t.Fatalf("%#v", o[0])
+	}
 }
 
 func TestScale(t *testing.T) {

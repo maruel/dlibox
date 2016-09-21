@@ -279,45 +279,32 @@ func (s *Crop) NextFrame(pixels Frame, timeMS uint32) {
 	}
 }
 
-// Mixer is a generic mixer that merges the output from multiple patterns.
-//
-// It doesn't animate.
-type Mixer struct {
-	Patterns []SPattern
-	Weights  []float32 // In theory Sum(Weights) should be 1 but it doesn't need to. For example, mixing a night sky will likely have all of the Weights set to 1.
-	bufs     []Frame
+// Dim is a filter that dim the intensity of a buffer.
+type Dim struct {
+	Child     SPattern //
+	Intensity uint8    // 0 is transparent, 255 is fully opaque with original colors.
 }
 
-func (m *Mixer) NextFrame(pixels Frame, timeMS uint32) {
-	if len(m.Patterns) != len(m.Weights) {
-		return
+func (d *Dim) NextFrame(pixels Frame, timeMS uint32) {
+	if d.Child.Pattern != nil {
+		d.Child.NextFrame(pixels, timeMS)
+		pixels.Dim(d.Intensity)
 	}
-	if len(m.bufs) != len(m.Patterns) {
-		m.bufs = make([]Frame, len(m.Patterns))
-	}
-	for i := range m.bufs {
-		m.bufs[i].reset(len(pixels))
-	}
+}
 
-	// Draw each pattern.
-	for i := range m.Patterns {
-		m.Patterns[i].NextFrame(m.bufs[i], timeMS)
-	}
+// Add is a generic mixer that merges the output from multiple patterns with
+// saturation.
+type Add struct {
+	Patterns []SPattern // It should be a list of Dim{} with their corresponding weight.
+	buf      Frame      //
+}
 
-	// Merge patterns.
-	for i := range pixels {
-		// TODO(maruel): Use uint32 calculation.
-		var r, g, b float32
-		for j := range m.bufs {
-			c := m.bufs[j][i]
-			w := m.Weights[j]
-			r += float32(c.R) * w
-			g += float32(c.G) * w
-			b += float32(c.B) * w
-		}
-		pixels[i].R = FloatToUint8(r)
-		pixels[i].G = FloatToUint8(g)
-		pixels[i].B = FloatToUint8(b)
+func (a *Add) NextFrame(pixels Frame, timeMS uint32) {
+	a.buf.reset(len(pixels))
+	// Draw and merge each pattern.
+	for i := range a.Patterns {
+		a.Patterns[i].NextFrame(a.buf, timeMS)
+		pixels.Add(a.buf)
 	}
 }
 
