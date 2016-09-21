@@ -30,7 +30,7 @@ func TestRotate(t *testing.T) {
 	a := Color{10, 10, 10}
 	b := Color{20, 20, 20}
 	c := Color{30, 30, 30}
-	p := &Rotate{Child: SPattern{Frame{a, b, c}}, MovesPerSec: 100}
+	p := &Rotate{Child: SPattern{Frame{a, b, c}}, MovesPerHour: 360000}
 	e := []expectation{
 		{0, Frame{a, b, c}},
 		{5, Frame{a, b, c}},
@@ -49,7 +49,7 @@ func TestRotateRev(t *testing.T) {
 	a := Color{10, 10, 10}
 	b := Color{20, 20, 20}
 	c := Color{30, 30, 30}
-	p := &Rotate{Child: SPattern{Frame{a, b, c}}, MovesPerSec: -100}
+	p := &Rotate{Child: SPattern{Frame{a, b, c}}, MovesPerHour: -360000}
 	e := []expectation{
 		{0, Frame{a, b, c}},
 		{5, Frame{a, b, c}},
@@ -88,7 +88,7 @@ func TestPingPong(t *testing.T) {
 	e := Color{0x50, 0x50, 0x50}
 	f := Color{0x60, 0x60, 0x60}
 
-	p := &PingPong{Child: SPattern{Frame{a, b}}, MovesPerSec: 100}
+	p := &PingPong{Child: SPattern{Frame{a, b}}, MovesPerHour: 360000}
 	exp := []expectation{
 		{0, Frame{a, b, {}}},
 		{5, Frame{a, b, {}}},
@@ -101,7 +101,7 @@ func TestPingPong(t *testing.T) {
 	}
 	testFrames(t, p, exp)
 
-	p = &PingPong{Child: SPattern{Frame{a, b, c, d, e, f}}, MovesPerSec: 1}
+	p = &PingPong{Child: SPattern{Frame{a, b, c, d, e, f}}, MovesPerHour: 3600}
 	exp = []expectation{
 		{0, Frame{a, b, c, d}},
 		{500, Frame{a, b, c, d}},

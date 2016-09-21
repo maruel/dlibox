@@ -138,9 +138,9 @@ func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
 //
 // Use 5x oversampling with Scale{} to create smoother animation.
 type Rotate struct {
-	Child       SPattern
-	MovesPerSec float32 // Expressed in number of light jumps per second.
-	buf         Frame
+	Child        SPattern
+	MovesPerHour int32 // Expressed in number of light jumps per hour.
+	buf          Frame
 }
 
 func (r *Rotate) NextFrame(pixels Frame, timeMS uint32) {
@@ -150,7 +150,8 @@ func (r *Rotate) NextFrame(pixels Frame, timeMS uint32) {
 	}
 	r.buf.reset(l)
 	r.Child.NextFrame(r.buf, timeMS)
-	offset := int(float32(timeMS)*0.001*r.MovesPerSec) % l
+	// There's going to be a glitch once per day.
+	offset := int(int64(timeMS%86400)*int64(r.MovesPerHour)/3600000) % l
 	if offset < 0 {
 		offset = l + offset
 	}
@@ -206,10 +207,9 @@ func (r *Chronometer) NextFrame(pixels Frame, timeMS uint32) {
 // To get smoothed movement, use Scale{} with a 5x factor or so.
 // TODO(maruel): That's a bit inefficient, enable Interpolation here.
 type PingPong struct {
-	Child SPattern // [0] is the front pixel so the pixels are effectively drawn in reverse order.
-	// TODO(maruel): PerMoveMS uint32
-	MovesPerSec float32 // Expressed in number of light jumps per second.
-	buf         Frame
+	Child        SPattern // [0] is the front pixel so the pixels are effectively drawn in reverse order
+	MovesPerHour int32    // Expressed in number of light jumps per hour
+	buf          Frame
 }
 
 func (p *PingPong) NextFrame(pixels Frame, timeMS uint32) {
@@ -233,8 +233,8 @@ func (p *PingPong) NextFrame(pixels Frame, timeMS uint32) {
 	//   move 14 -> move 0; "2*(8-1)"
 	cycle := 2 * (len(pixels) - 1)
 	// TODO(maruel): Smoothing with Curve, defaults to Step.
-	// TODO(maruel): Convert to uint32.
-	pos := int(float32(timeMS)*0.001*p.MovesPerSec) % cycle
+	// There's going to be a glitch once per day.
+	pos := int(int64(timeMS%86400)*int64(p.MovesPerHour)/3600000) % cycle
 
 	// Once it works the following code looks trivial but everytime it takes me
 	// an absurd amount of time to rewrite it.

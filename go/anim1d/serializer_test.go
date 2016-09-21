@@ -58,7 +58,7 @@ func TestJSON(t *testing.T) {
 	serialize(t, &Frame{}, `"L"`)
 	serialize(t, &Frame{{1, 2, 3}, {4, 5, 6}}, `"L010203040506"`)
 	serialize(t, &Rainbow{}, `"Rainbow"`)
-	serialize(t, &PingPong{}, `{"Child":{},"MovesPerSec":0,"_type":"PingPong"}`)
+	serialize(t, &PingPong{}, `{"Child":{},"MovesPerHour":0,"_type":"PingPong"}`)
 	serialize(t, &Chronometer{}, `{"Child":{},"_type":"Chronometer"}`)
 	serialize(t, &Cycle{}, `{"FrameDurationMS":0,"Frames":null,"_type":"Cycle"}`)
 

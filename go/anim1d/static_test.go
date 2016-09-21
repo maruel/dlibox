@@ -475,6 +475,19 @@ func TestWaveLength2RGB(t *testing.T) {
 	}
 }
 
+func TestRainbow(t *testing.T) {
+	f := make(Frame, 16)
+	r := Rainbow{}
+	r.NextFrame(f, 0)
+	var expected Frame
+	if err := expected.UnmarshalJSON([]byte("\"L4d00818300ed1b00ff0056ff00c1ff00ff7f2bff0083ff00deff00ffc000ff5600ff0000ff0000dc00007e0000000000\"")); err != nil {
+		t.Fatal(err)
+	}
+	if !frameEqual(f, expected) {
+		t.Fatalf("%s != %s", Marshal(f), Marshal(expected))
+	}
+}
+
 func TestRepeated(t *testing.T) {
 	a := Color{0x10, 0x10, 0x10}
 	b := Color{0x20, 0x20, 0x20}
@@ -515,6 +528,21 @@ func testFrame(t *testing.T, p Pattern, e expectation) {
 }
 
 func frameEqual(lhs, rhs Frame) bool {
+	if len(lhs) != len(rhs) {
+		return false
+	}
+	for i, a := range lhs {
+		if a != rhs[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func frameSimilar(lhs, rhs Frame) bool {
+	if len(lhs) != len(rhs) {
+		return false
+	}
 	for i, a := range lhs {
 		b := rhs[i]
 		dR := int(a.R) - int(b.R)
