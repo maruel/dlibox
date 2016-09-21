@@ -15,7 +15,7 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/devices/tm1637"
-	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/host/hal/pins"
 )
 
 func mainImpl() error {

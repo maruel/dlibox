@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/maruel/dlibox/go/pio/devices"
-	"github.com/maruel/dlibox/go/pio/host/hosttest"
+	"github.com/maruel/dlibox/go/pio/host/hal/hosttest"
 )
 
 // Real data extracted from a device.

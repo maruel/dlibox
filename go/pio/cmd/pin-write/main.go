@@ -12,7 +12,7 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/host/hal/pins"
 )
 
 func mainImpl() error {

@@ -16,7 +16,7 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/devices/i2cdev"
-	"github.com/maruel/dlibox/go/pio/host/sysfs"
+	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
 )
 
 func mainImpl() error {

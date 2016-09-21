@@ -6,8 +6,8 @@ package pine64
 
 import (
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/internal/allwinner"
-	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/host/drivers/allwinner"
+	"github.com/maruel/dlibox/go/pio/host/hal/pins"
 )
 
 // Version is the board version. Only reports as 1 for now.

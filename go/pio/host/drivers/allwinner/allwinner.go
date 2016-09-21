@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
 	"github.com/maruel/dlibox/go/pio/host/internal/gpiomem"
-	"github.com/maruel/dlibox/go/pio/host/internal/sysfs"
 )
 
 // 0x24/4 = 9

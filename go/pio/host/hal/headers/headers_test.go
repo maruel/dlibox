@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/hosttest"
-	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/host/hal/hosttest"
+	"github.com/maruel/dlibox/go/pio/host/hal/pins"
 )
 
 func TestAll(t *testing.T) {

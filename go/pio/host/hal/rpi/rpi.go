@@ -11,9 +11,9 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/drivers/bcm283x"
+	"github.com/maruel/dlibox/go/pio/host/hal/pins"
 	"github.com/maruel/dlibox/go/pio/host/internal"
-	"github.com/maruel/dlibox/go/pio/host/internal/bcm283x"
-	"github.com/maruel/dlibox/go/pio/host/pins"
 )
 
 // Version is the Raspberry Pi version 1, 2 or 3.

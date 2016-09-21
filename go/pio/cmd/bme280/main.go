@@ -18,8 +18,8 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/hosttest"
-	"github.com/maruel/dlibox/go/pio/host/sysfs"
+	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
+	"github.com/maruel/dlibox/go/pio/host/hal/hosttest"
 )
 
 func read(e devices.Environmental, loop bool) error {

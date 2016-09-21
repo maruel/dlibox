@@ -9,7 +9,7 @@ import (
 	"image/color"
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/host/hosttest"
+	"github.com/maruel/dlibox/go/pio/host/hal/hosttest"
 )
 
 func makeCheckboard(r image.Rectangle) image.Image {

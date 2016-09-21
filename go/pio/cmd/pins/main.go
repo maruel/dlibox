@@ -12,9 +12,9 @@ import (
 	"sort"
 
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/cpu"
-	"github.com/maruel/dlibox/go/pio/host/headers"
-	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/host/hal/cpu"
+	"github.com/maruel/dlibox/go/pio/host/hal/headers"
+	"github.com/maruel/dlibox/go/pio/host/hal/pins"
 )
 
 func printFunc(invalid bool) {

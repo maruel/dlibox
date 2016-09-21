@@ -11,9 +11,9 @@ import (
 	"sync"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/hal/pine64"
+	"github.com/maruel/dlibox/go/pio/host/hal/rpi"
 	"github.com/maruel/dlibox/go/pio/host/internal"
-	"github.com/maruel/dlibox/go/pio/host/internal/pine64"
-	"github.com/maruel/dlibox/go/pio/host/internal/rpi"
 )
 
 // All contains all the on-board headers on a micro computer. The map key is

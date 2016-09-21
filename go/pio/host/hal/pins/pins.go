@@ -11,10 +11,10 @@ import (
 	"sync"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/drivers/allwinner"
+	"github.com/maruel/dlibox/go/pio/host/drivers/bcm283x"
+	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
 	"github.com/maruel/dlibox/go/pio/host/internal"
-	"github.com/maruel/dlibox/go/pio/host/internal/allwinner"
-	"github.com/maruel/dlibox/go/pio/host/internal/bcm283x"
-	"github.com/maruel/dlibox/go/pio/host/internal/sysfs"
 )
 
 var (
