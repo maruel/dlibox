@@ -52,22 +52,6 @@ func Functional() map[string]host.PinIO {
 	Init(true)
 	lock.Lock()
 	defer lock.Unlock()
-	/*
-		if byFunction == nil {
-			byFunction = make(map[string]host.PinIO, len(all))
-			for _, pin := range all {
-				f := pin.Function()
-				// TODO(maruel): Cheezy.
-				if len(f) == 0 || strings.HasPrefix(f, "In/") || strings.HasPrefix(f, "Out/") {
-					continue
-				}
-				// Lower pin number wins.
-				if _, ok := byFunction[f]; !ok {
-					byFunction[f] = pin
-				}
-			}
-		}
-	*/
 	return byFunction
 }
 
@@ -85,6 +69,27 @@ func ByNumber(number int) host.PinIO {
 		}
 	}
 	pin, _ := byNumber[number]
+	return pin
+}
+
+// ByName returns a GPIO pin from its name.
+//
+// This can be strings like GPIO2, PB8, etc.
+//
+// Returns nil in case of failure.
+func ByName(name string) host.PinIO {
+	Init(true)
+	lock.Lock()
+	defer lock.Unlock()
+	if byName == nil {
+		byName = make(map[string]host.PinIO, len(all))
+		for _, pin := range all {
+			// This assumes there is not 2 pins with the same name and that String()
+			// returns the pin name.
+			byName[pin.String()] = pin
+		}
+	}
+	pin, _ := byName[name]
 	return pin
 }
 
@@ -157,6 +162,7 @@ var (
 	lock       sync.Mutex
 	all        pins
 	byNumber   map[int]host.PinIO
+	byName     map[string]host.PinIO
 	byFunction map[string]host.PinIO
 )
 

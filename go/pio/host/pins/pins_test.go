@@ -26,6 +26,15 @@ func TestByNumber(t *testing.T) {
 	}
 }
 
+func TestByName(t *testing.T) {
+	if ByName("GPIO0") != nil {
+		t.Fatal("GPIO0 doesn't exist")
+	}
+	if ByName("GPIO2") != gpio2 {
+		t.Fatal("GPIO2 should have been found")
+	}
+}
+
 func TestByFunction(t *testing.T) {
 	if ByFunction("SPI1_MOSI") != nil {
 		t.Fatal("spi doesn't exist")
