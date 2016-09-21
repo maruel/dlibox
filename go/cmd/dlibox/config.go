@@ -13,7 +13,7 @@ import (
 	"sync"
 
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/pio/host/ir"
+	"github.com/maruel/dlibox/go/pio/devices/ir"
 	"github.com/pkg/errors"
 )
 

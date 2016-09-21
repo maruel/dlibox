@@ -17,7 +17,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/host/ir"
+	"github.com/maruel/dlibox/go/pio/devices/ir"
 )
 
 // Pins queries the kernel module to determine which GPIO pins are taken by

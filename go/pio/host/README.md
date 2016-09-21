@@ -6,7 +6,6 @@ on.
 
 * [cpu](cpu) exposes information about the CPU.
 * [hosttest](hosttest) implements fakes to be used for unit testing.
-* [ir](ir) exposes infra red remote support via lircd.
 * [headers](headers) exposes  hardware specific headers pinout.
 * [pins](pins) exposes GPIO functionality as found on the CPU driver, if any is
   found. Otherwise fallbacks to gpio sysfs, if available. 

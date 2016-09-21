@@ -15,6 +15,10 @@ Contains driver for the following devices:
 
 ![bme280](https://raw.githubusercontent.com/wiki/maruel/dlibox/bme280.jpg)
 
+* [ir](ir) exposes infra red remote support via lircd.
+
+\<insert image of a remote here\>
+
 * [ssd1306](ssd1306) drives a small OLED display of 128x64 or less
 
 ![ssd1306](https://raw.githubusercontent.com/wiki/maruel/dlibox/ssd1306.jpg)

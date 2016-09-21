@@ -17,7 +17,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/maruel/dlibox/go/pio/host/ir/lirc"
+	"github.com/maruel/dlibox/go/pio/devices/ir/lirc"
 )
 
 func mainImpl() error {
