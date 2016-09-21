@@ -18,7 +18,7 @@ import (
 )
 
 // 0x24/4 = 9
-var Pins = [116]Pin{
+var Pins = []Pin{
 	{number: 0, group: 9 * 1, offset: 0, name: "PB0", defaultPull: host.Float},
 	{number: 1, group: 9 * 1, offset: 1, name: "PB1", defaultPull: host.Float},
 	{number: 2, group: 9 * 1, offset: 2, name: "PB2", defaultPull: host.Float},
@@ -477,7 +477,7 @@ var (
 	PH9  host.PinIO = &Pins[100] // 234
 	PH10 host.PinIO = &Pins[101] // 235
 	PH11 host.PinIO = &Pins[102] //
-	PL0  host.PinIO = &Pins[103] // 352
+	PL0  host.PinIO = &Pins[103] // 352; these pins are optional and may not be present.
 	PL1  host.PinIO = &Pins[104] // 353
 	PL2  host.PinIO = &Pins[105] // 357
 	PL3  host.PinIO = &Pins[106] // 358
@@ -627,6 +627,9 @@ func (p *Pin) Pull() host.Pull {
 	off := p.group + 7 + p.offset/16
 	var v uint32
 	if p.group == 0 {
+		if gpioMemoryPL == nil {
+			return host.PullNoChange
+		}
 		v = gpioMemoryPL[off]
 	} else {
 		// Pn_PULL  n*0x24+0x1C Port n Pull Register (n from 1(B) to 7(H))
@@ -709,6 +712,10 @@ func (p *Pin) setFunction(f function) bool {
 	v := (uint32(f) << shift) ^ mask
 	// First disable, then setup. This is concurrent safe.
 	if p.group == 0 {
+		if gpioMemoryPL == nil {
+			// Group PL is missing on this CPU.
+			return false
+		}
 		gpioMemoryPL[off] |= mask
 		gpioMemoryPL[off] &^= v
 	} else {
@@ -723,16 +730,22 @@ func (p *Pin) setFunction(f function) bool {
 }
 
 func initMem() error {
-	mem, err := gpiomem.OpenMem(getBaseAddressPL())
-	if err != nil {
-		return err
+	if gpioMemoryPB != nil {
+		return nil
 	}
-	gpioMemoryPL = mem.Uint32
-	mem, err = gpiomem.OpenMem(getBaseAddressPB())
+	mem, err := gpiomem.OpenMem(getBaseAddressPB())
 	if err != nil {
 		return err
 	}
 	gpioMemoryPB = mem.Uint32
+	if mem, err = gpiomem.OpenMem(getBaseAddressPL()); err != nil {
+		// PL GPIO group is optional. This code works without this set. Remove the
+		// 13 PL pins.
+		Pins = Pins[:len(Pins)-13]
+	} else {
+		gpioMemoryPL = mem.Uint32
+	}
+
 	for i := range Pins {
 		if f := Pins[i].function(); f != disabled && f != in && f != out {
 			Functional[Pins[i].Function()] = &Pins[i]
