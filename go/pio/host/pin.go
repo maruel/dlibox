@@ -59,6 +59,10 @@ type PinIn interface {
 	// Read return the current pin level.
 	//
 	// Behavior is undefined if In() wasn't used before.
+	//
+	// In some rare case, it is possible that Read() fails silently. This happens
+	// if another process on the host messes up with the pin after In() was
+	// called. In this case, call In() again.
 	Read() Level
 	// Edges returns a channel that sends level changes.
 	//
@@ -78,6 +82,10 @@ type PinOut interface {
 	// Set sets a pin already set for output as High or Low.
 	//
 	// Behavior is undefined if Out() wasn't used before.
+	//
+	// In some rare case, it is possible that Set() fails silently. This happens
+	// if another process on the host messes up with the pin after Out() was
+	// called. In this case, call Out() again.
 	Set(l Level)
 }
 
@@ -86,10 +94,10 @@ type PinOut interface {
 // It may fail at either input and or output, for example ground, vcc and other
 // similar pins.
 type PinIO interface {
+	fmt.Stringer
 	PinIn
 	PinOut
 
-	fmt.Stringer
 	// Number returns the logical pin number or a negative number if the pin is
 	// not a GPIO, e.g. GROUND, V3_3, etc.
 	Number() int
