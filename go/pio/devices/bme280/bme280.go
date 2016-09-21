@@ -107,7 +107,7 @@ func (d *Dev) Stop() error {
 	return d.writeCommands([]byte{0xF4, byte(sleep)})
 }
 
-// MakeI2C returns an object that communicates over I²C to BME280 environmental
+// NewI2C returns an object that communicates over I²C to BME280 environmental
 // sensor.
 //
 // Recommended values are O4x for oversampling, S20ms for standby and FOff for
@@ -116,7 +116,7 @@ func (d *Dev) Stop() error {
 //
 // It is recommended to call Stop() when done with the device so it stops
 // sampling.
-func MakeI2C(i host.I2C, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
+func NewI2C(i host.I2C, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
 	d := &Dev{d: &i2cdev.Dev{i, 0x76}, isSPI: false}
 	if err := d.makeDev(temperature, pressure, humidity, standby, filter); err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func MakeI2C(i host.I2C, temperature, pressure, humidity Oversampling, standby S
 	return d, nil
 }
 
-// MakeSPI returns an object that communicates over SPI to BME280 environmental
+// NewSPI returns an object that communicates over SPI to BME280 environmental
 // sensor.
 //
 // Recommended values are O4x for oversampling, S20ms for standby and FOff for
@@ -138,7 +138,7 @@ func MakeI2C(i host.I2C, temperature, pressure, humidity Oversampling, standby S
 //
 // BUG(maruel): This code was not tested yet, still waiting for a SPI enabled
 // device in the mail.
-func MakeSPI(s host.SPI, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
+func NewSPI(s host.SPI, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
 	// It works both in Mode0 and Mode3.
 	if err := s.Configure(host.Mode3, 8); err != nil {
 		return nil, err

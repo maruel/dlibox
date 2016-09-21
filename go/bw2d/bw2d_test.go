@@ -18,17 +18,17 @@ func TestBit(t *testing.T) {
 		t.Fail()
 	}
 }
-func TestImageMake(t *testing.T) {
-	if img, err := Make(8, 7); img != nil || err == nil {
+func TestImageNew(t *testing.T) {
+	if img, err := New(8, 7); img != nil || err == nil {
 		t.Fail()
 	}
-	if img, err := Make(1, 8); img == nil || err != nil {
+	if img, err := New(1, 8); img == nil || err != nil {
 		t.Fail()
 	}
 }
 
 func TestImagePixels(t *testing.T) {
-	img, _ := Make(1, 8)
+	img, _ := New(1, 8)
 	if !bytes.Equal(img.Buf, []byte{0x00}) {
 		t.Fatal("starts black")
 	}
@@ -55,7 +55,7 @@ func TestImagePixels(t *testing.T) {
 }
 
 func TestColorModel(t *testing.T) {
-	img, _ := Make(1, 8)
+	img, _ := New(1, 8)
 	if v := img.ColorModel().Convert(color.NRGBA{0x80, 0x80, 0x80, 0xFF}).(Bit); v != On {
 		t.Fatalf("%s", v)
 	}

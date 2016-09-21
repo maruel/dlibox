@@ -112,8 +112,8 @@ func (d *Dev) Write(seg []byte) (int, error) {
 	return len(seg), nil
 }
 
-// Make returns an object that communicates over two pins to a TM1637.
-func Make(clk host.PinOut, data host.PinIO) (*Dev, error) {
+// New returns an object that communicates over two pins to a TM1637.
+func New(clk host.PinOut, data host.PinIO) (*Dev, error) {
 	// Spec calls to idle at high.
 	if err := clk.Out(); err != nil {
 		return nil, err

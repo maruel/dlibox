@@ -267,7 +267,7 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 	return len(pixels), err
 }
 
-// Make returns a strip that communicates over SPI to APA102 LEDs.
+// New returns a strip that communicates over SPI to APA102 LEDs.
 //
 // The SPI bus speed should be high, at least in the Mhz range, as
 // there's 32 bits sent per LED, creating a staggered effect. See
@@ -278,7 +278,7 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 // As per APA102-C spec, the chip's max refresh rate is 400hz.
 // https://en.wikipedia.org/wiki/Flicker_fusion_threshold is a recommended
 // reading.
-func Make(s host.SPI, numLights int, intensity uint8, temperature uint16) (*Dev, error) {
+func New(s host.SPI, numLights int, intensity uint8, temperature uint16) (*Dev, error) {
 	if err := s.Configure(host.Mode3, 8); err != nil {
 		return nil, err
 	}

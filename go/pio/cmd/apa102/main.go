@@ -130,7 +130,7 @@ func mainImpl() error {
 	// Open the display device.
 	var display devices.Display
 	if *fake {
-		display = screen.Make(*numLights)
+		display = screen.New(*numLights)
 		defer os.Stdout.Write([]byte("\033[0m\n"))
 	} else {
 		var spiBus host.SPI
@@ -140,7 +140,7 @@ func mainImpl() error {
 			}
 			pclk := pins.ByNumber(*clk)
 			pmosi := pins.ByNumber(*mosi)
-			b, err := bitbang.MakeSPI(pclk, pmosi, nil, nil, int64(*speed))
+			b, err := bitbang.NewSPI(pclk, pmosi, nil, nil, int64(*speed))
 			if err != nil {
 				return err
 			}
@@ -148,7 +148,7 @@ func mainImpl() error {
 		} else if *bus == -1 {
 			spiBus = &hosttest.SPI{W: os.Stdout}
 		} else {
-			b, err := sysfs.MakeSPI(*bus, 0, int64(*speed))
+			b, err := sysfs.NewSPI(*bus, 0, int64(*speed))
 			if err != nil {
 				return err
 			}
@@ -156,7 +156,7 @@ func mainImpl() error {
 			spiBus = b
 		}
 		var err error
-		display, err = apa102.Make(spiBus, *numLights, uint8(*intensity), uint16(*temperature))
+		display, err = apa102.New(spiBus, *numLights, uint8(*intensity), uint16(*temperature))
 		if err != nil {
 			return err
 		}

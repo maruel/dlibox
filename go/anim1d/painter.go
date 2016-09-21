@@ -59,11 +59,11 @@ func (p *Painter) Close() error {
 	return nil
 }
 
-// MakePainter returns a Painter that manages updating the Patterns to the
+// NewPainter returns a Painter that manages updating the Patterns to the
 // strip.
 //
 // It Assumes the display uses native RGB packed pixels.
-func MakePainter(d devices.Display, fps int) *Painter {
+func NewPainter(d devices.Display, fps int) *Painter {
 	p := &Painter{
 		d:             d,
 		c:             make(chan Pattern),

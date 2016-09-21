@@ -40,11 +40,11 @@ import (
 )
 
 func initDisplay() (devices.Display, error) {
-	i2cBus, err := sysfs.MakeI2C(1)
+	i2cBus, err := sysfs.NewI2C(1)
 	if err != nil {
 		return nil, err
 	}
-	display, err := ssd1306.MakeI2C(i2cBus, 128, 64, false)
+	display, err := ssd1306.NewI2C(i2cBus, 128, 64, false)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func initDisplay() (devices.Display, error) {
 	}
 	// TODO(maruel): Leverage bme280 while at it but don't fail if not
 	// connected.
-	img, err := bw2d.Make(display.W, display.H)
+	img, err := bw2d.New(display.W, display.H)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func initDisplay() (devices.Display, error) {
 }
 
 func initIR(painter *anim1d.Painter, config *IR) error {
-	bus, err := ir.Make()
+	bus, err := ir.New()
 	if err != nil {
 		return err
 	}
@@ -184,19 +184,19 @@ func mainImpl() error {
 	if *fake {
 		// Hardcode to 100 characters when using a terminal output.
 		// TODO(maruel): Query the terminal and use its width.
-		leds = screen.Make(100)
+		leds = screen.New(100)
 		defer os.Stdout.Write([]byte("\033[0m\n"))
 		// Use lower refresh rate too.
 		fps = 30
 		properties = append(properties, "fake=1")
 	} else {
-		spiBus, err := sysfs.MakeSPI(0, 0, config.Settings.APA102.SPIspeed)
+		spiBus, err := sysfs.NewSPI(0, 0, config.Settings.APA102.SPIspeed)
 		if err != nil {
 			log.Printf("SPI failed: %v", err)
 			leds = &devicestest.Display{image.NewNRGBA(image.Rect(0, 0, config.Settings.APA102.NumberLights, 1))}
 		} else {
 			defer spiBus.Close()
-			if leds, err = apa102.Make(spiBus, config.Settings.APA102.NumberLights, 255, 6500); err != nil {
+			if leds, err = apa102.New(spiBus, config.Settings.APA102.NumberLights, 255, 6500); err != nil {
 				return err
 			}
 			properties = append(properties, fmt.Sprintf("APA102=%d", config.Settings.APA102.NumberLights))
@@ -209,7 +209,7 @@ func mainImpl() error {
 	}
 
 	// Painter.
-	p := anim1d.MakePainter(leds, fps)
+	p := anim1d.NewPainter(leds, fps)
 	if err := config.Init(p); err != nil {
 		return err
 	}

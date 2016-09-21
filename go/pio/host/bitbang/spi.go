@@ -79,12 +79,12 @@ func (s *SPI) Write(d []byte) (int, error) {
 	return len(d), nil
 }
 
-// MakeSPI returns an object that communicates SPI over 3 or 4 pins.
+// NewSPI returns an object that communicates SPI over 3 or 4 pins.
 //
 // BUG(maruel): Completely untested.
 //
 // cs can be nil.
-func MakeSPI(clk, mosi host.PinOut, miso host.PinIn, cs host.PinOut, speedHz int64) (*SPI, error) {
+func NewSPI(clk, mosi host.PinOut, miso host.PinIn, cs host.PinOut, speedHz int64) (*SPI, error) {
 	if err := clk.Out(); err != nil {
 		return nil, err
 	}

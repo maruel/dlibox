@@ -19,7 +19,7 @@ type SPI struct {
 	f *os.File
 }
 
-func makeSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
+func newSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
 	if busNumber < 0 || busNumber > 255 {
 		return nil, errors.New("invalid bus")
 	}

@@ -110,7 +110,7 @@ func mainImpl() error {
 	if pData == nil {
 		return errors.New("specify a valid pin for data")
 	}
-	d, err := tm1637.Make(pClk, pData)
+	d, err := tm1637.New(pClk, pData)
 	if err != nil {
 		return err
 	}

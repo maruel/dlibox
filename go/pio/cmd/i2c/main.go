@@ -67,7 +67,7 @@ func mainImpl() error {
 		buf = make([]byte, *l)
 	}
 
-	i, err := sysfs.MakeI2C(*bus)
+	i, err := sysfs.NewI2C(*bus)
 	if err != nil {
 		return err
 	}

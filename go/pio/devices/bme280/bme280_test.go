@@ -53,7 +53,7 @@ func TestRead(t *testing.T) {
 			{Addr: 0x76, Write: []byte{0xf7}, Read: []byte{0x4a, 0x52, 0xc0, 0x80, 0x96, 0xc0, 0x7a, 0x76}},
 		},
 	}
-	dev, err := MakeI2C(&bus, O4x, O4x, O4x, S20ms, FOff)
+	dev, err := NewI2C(&bus, O4x, O4x, O4x, S20ms, FOff)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -30,7 +30,7 @@ func mainImpl() error {
 	if flag.NArg() != 0 {
 		return errors.New("unexpected argument, try -help")
 	}
-	i, err := ir.Make()
+	i, err := ir.New()
 	if err != nil {
 		return err
 	}

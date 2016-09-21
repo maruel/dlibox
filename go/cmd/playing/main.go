@@ -42,7 +42,7 @@ func loadImg(path string) (*bw2d.Image, error) {
 		return nil, err
 	}
 	r := src.Bounds()
-	img, err := bw2d.Make(r.Max.X, r.Max.Y)
+	img, err := bw2d.New(r.Max.X, r.Max.Y)
 	if err != nil {
 		return nil, err
 	}
@@ -77,18 +77,18 @@ func mainImpl() error {
 		return err
 	}
 
-	i, err := sysfs.MakeI2C(1)
+	i, err := sysfs.NewI2C(1)
 	if err != nil {
 		return err
 	}
 
 	// Display
-	s, err := ssd1306.MakeI2C(i, 128, 64, false)
+	s, err := ssd1306.NewI2C(i, 128, 64, false)
 	if err != nil {
 		return err
 	}
 	src.Inverse()
-	img, err := bw2d.Make(s.W, s.H)
+	img, err := bw2d.New(s.W, s.H)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func mainImpl() error {
 	go displayLoop(s, f8, img, button, motion, env, keys)
 
 	if useBME280 {
-		b, err := bme280.MakeI2C(i, bme280.O4x, bme280.O4x, bme280.O4x, bme280.S20ms, bme280.F4)
+		b, err := bme280.NewI2C(i, bme280.O4x, bme280.O4x, bme280.O4x, bme280.S20ms, bme280.F4)
 		if err != nil {
 			return err
 		}
@@ -162,7 +162,7 @@ func mainImpl() error {
 	}
 
 	if useIR {
-		irBus, err := ir.Make()
+		irBus, err := ir.New()
 		if err != nil {
 			return err
 		}

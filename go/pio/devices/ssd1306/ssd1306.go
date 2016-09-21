@@ -60,7 +60,7 @@ type Dev struct {
 	H int
 }
 
-// MakeSPI returns a Dev object that communicates over SPI to SSD1306 display
+// NewSPI returns a Dev object that communicates over SPI to SSD1306 display
 // controler.
 //
 // If rotated, turns the display by 180°
@@ -70,27 +70,27 @@ type Dev struct {
 // to SCLK.
 //
 // As per datasheet, maximum clock speed is 1/100ns = 10MHz.
-func MakeSPI(s host.SPI, w, h int, rotated bool) (*Dev, error) {
+func NewSPI(s host.SPI, w, h int, rotated bool) (*Dev, error) {
 	if err := s.Configure(host.Mode3, 8); err != nil {
 		return nil, err
 	}
-	return makeDev(s, w, h, rotated)
+	return newDev(s, w, h, rotated)
 }
 
-// MakeI2C returns a Dev object that communicates over I²C to SSD1306 display
+// NewI2C returns a Dev object that communicates over I²C to SSD1306 display
 // controler.
 //
 // If rotated, turns the display by 180°
 //
 // As per datasheet, maximum clock speed is 1/2.5µs = 400KHz. It's worth
 // bumping up from default bus speed of 100KHz if possible.
-func MakeI2C(i host.I2C, w, h int, rotated bool) (*Dev, error) {
-	return makeDev(&i2cdev.Dev{i, 0x3C}, w, h, rotated)
+func NewI2C(i host.I2C, w, h int, rotated bool) (*Dev, error) {
+	return newDev(&i2cdev.Dev{i, 0x3C}, w, h, rotated)
 }
 
-// makeDev is the common initialization code that is independent of the bus
+// newDev is the common initialization code that is independent of the bus
 // being used.
-func makeDev(dev io.Writer, w, h int, rotated bool) (*Dev, error) {
+func newDev(dev io.Writer, w, h int, rotated bool) (*Dev, error) {
 	if w&7 != 0 || h&7 != 0 {
 		return nil, errors.New("height and width must be multiple of 8")
 	}

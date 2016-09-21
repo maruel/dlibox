@@ -56,8 +56,8 @@ type Bus struct {
 	pendingList map[string][]string // list of remotes and associated keys being created.
 }
 
-// Make returns a IR receiver / emitter handle.
-func Make() (*Bus, error) {
+// New returns a IR receiver / emitter handle.
+func New() (*Bus, error) {
 	w, err := net.Dial("unix", "/var/run/lirc/lircd")
 	if err != nil {
 		return nil, err

@@ -49,8 +49,8 @@ type Image struct {
 	Buf []byte // Can be passed directly to ssd1306.(*Dev).Write()
 }
 
-// Make returns an initialized Image instance.
-func Make(w, h int) (*Image, error) {
+// New returns an initialized Image instance.
+func New(w, h int) (*Image, error) {
 	if h&7 != 0 {
 		return nil, errors.New("height must be multiple of 8")
 	}

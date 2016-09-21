@@ -112,7 +112,7 @@ func demo(s *ssd1306.Dev) error {
 func convert(s *ssd1306.Dev, src image.Image, f *psf.Font, text string) (*bw2d.Image, error) {
 	// Resize automatically while keeping aspect ratio.
 	src = resize.Thumbnail(uint(s.W), uint(s.H), src, resize.Lanczos3)
-	img, err := bw2d.Make(s.W, s.H)
+	img, err := bw2d.New(s.W, s.H)
 	if err != nil {
 		return nil, err
 	}
@@ -154,20 +154,20 @@ func mainImpl() error {
 	// Open the device on the right bus.
 	var s *ssd1306.Dev
 	if *i2cId >= 0 {
-		i2cBus, err := sysfs.MakeI2C(*i2cId)
+		i2cBus, err := sysfs.NewI2C(*i2cId)
 		if err != nil {
 			return err
 		}
-		s, err = ssd1306.MakeI2C(i2cBus, *w, *h, *rotated)
+		s, err = ssd1306.NewI2C(i2cBus, *w, *h, *rotated)
 		if err != nil {
 			return err
 		}
 	} else {
-		spiBus, err := sysfs.MakeSPI(*spiId, *csId, int64(*speed))
+		spiBus, err := sysfs.NewSPI(*spiId, *csId, int64(*speed))
 		if err != nil {
 			return err
 		}
-		s, err = ssd1306.MakeSPI(spiBus, *w, *h, *rotated)
+		s, err = ssd1306.NewSPI(spiBus, *w, *h, *rotated)
 		if err != nil {
 			return err
 		}
@@ -208,7 +208,7 @@ func mainImpl() error {
 
 	if src == nil {
 		// Create a blank image.
-		if src, err = bw2d.Make(s.W, s.H); err != nil {
+		if src, err = bw2d.New(s.W, s.H); err != nil {
 			return err
 		}
 	}

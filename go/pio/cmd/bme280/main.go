@@ -85,7 +85,7 @@ func mainImpl() error {
 	var dev *bme280.Dev
 	var recorder hosttest.I2CRecord
 	if *i2c != -1 {
-		bus, err := sysfs.MakeI2C(*i2c)
+		bus, err := sysfs.NewI2C(*i2c)
 		if err != nil {
 			return err
 		}
@@ -95,17 +95,17 @@ func mainImpl() error {
 			recorder.Bus = bus
 			base = &recorder
 		}
-		if dev, err = bme280.MakeI2C(base, s, s, s, bme280.S20ms, f); err != nil {
+		if dev, err = bme280.NewI2C(base, s, s, s, bme280.S20ms, f); err != nil {
 			return err
 		}
 	} else if *spi != -1 && *cs != -1 {
 		// Spec calls for max 10Mhz. In practice so little data is used.
-		bus, err := sysfs.MakeSPI(*spi, *cs, 5000000)
+		bus, err := sysfs.NewSPI(*spi, *cs, 5000000)
 		if err != nil {
 			return err
 		}
 		defer bus.Close()
-		if dev, err = bme280.MakeSPI(bus, s, s, s, bme280.S20ms, f); err != nil {
+		if dev, err = bme280.NewSPI(bus, s, s, s, bme280.S20ms, f); err != nil {
 			return err
 		}
 	} else {

@@ -85,11 +85,11 @@ func (d *Dev) Draw(r image.Rectangle, src image.Image, sp image.Point) {
 	d.refresh()
 }
 
-// Make returns a strip that displays at the console.
+// New returns a strip that displays at the console.
 //
 // This is generally what you want while waiting for the LED strip to be
 // shipped and you are excited to try it out.
-func Make(l int) *Dev {
+func New(l int) *Dev {
 	return &Dev{
 		w:      colorable.NewColorableStdout(),
 		l:      l,

@@ -136,7 +136,7 @@ func TestWrite(t *testing.T) {
 	}
 	// To record, use the following instead:
 	//bus := hosttest.I2CRecord{}
-	dev, err := MakeI2C(&bus, 128, 64, false)
+	dev, err := NewI2C(&bus, 128, 64, false)
 	if err != nil {
 		t.Fatal(err)
 	}

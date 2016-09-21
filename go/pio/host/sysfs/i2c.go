@@ -23,7 +23,7 @@ type I2C struct {
 	fn functionality
 }
 
-func makeI2C(busNumber int) (*I2C, error) {
+func newI2C(busNumber int) (*I2C, error) {
 	f, err := os.OpenFile(fmt.Sprintf("/dev/i2c-%d", busNumber), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
 		// Try to be helpful here. There are generally two cases:

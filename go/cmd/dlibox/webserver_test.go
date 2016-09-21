@@ -24,7 +24,7 @@ func TestWeb(t *testing.T) {
 	config.ResetDefault()
 	config.LRU.Patterns = []Pattern{"\"#010101\"", "\"#020202\""}
 	d := &devicestest.Display{image.NewNRGBA(image.Rect(0, 0, 128, 1))}
-	painter := anim1d.MakePainter(d, 60)
+	painter := anim1d.NewPainter(d, 60)
 	defer painter.Close()
 	s, err := startWebServer(0, painter, &config)
 	defer s.Close()

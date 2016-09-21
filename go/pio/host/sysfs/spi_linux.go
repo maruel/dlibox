@@ -4,7 +4,7 @@
 
 package sysfs
 
-// MakeSPI opens a *SPI via its sysfs interface as described at
+// NewSPI opens a SPI bus via its sysfs interface as described at
 // https://www.kernel.org/doc/Documentation/spi/spidev.
 //
 // busNumber is the bus number as exported by sysfs. For example if the path is
@@ -15,6 +15,6 @@ package sysfs
 // is good.
 //
 // Default configuration is Mode3 and 8 bits.
-func MakeSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
-	return makeSPI(busNumber, chipSelect, speed)
+func NewSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
+	return newSPI(busNumber, chipSelect, speed)
 }

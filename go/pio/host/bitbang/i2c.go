@@ -73,7 +73,7 @@ func (i *I2C) Tx(addr uint16, w, r []byte) error {
 	return nil
 }
 
-// Make returns an object that communicates I²C over two pins.
+// New returns an object that communicates I²C over two pins.
 //
 // BUG(maruel): It is close to working but not yet, the signal is incorrect
 // during ACK.
@@ -82,8 +82,8 @@ func (i *I2C) Tx(addr uint16, w, r []byte) error {
 // - Special address SkipAddr can be used to skip the address from being
 //   communicated
 // - An arbitrary speed can be used
-func Make(clk host.PinIO, data host.PinIO, speedHz int) (*I2C, error) {
-	log.Printf("bitbang.i2c.Make(%s, %s, %d)", clk, data, speedHz)
+func New(clk host.PinIO, data host.PinIO, speedHz int) (*I2C, error) {
+	log.Printf("bitbang.i2c.New(%s, %s, %d)", clk, data, speedHz)
 	// Spec calls to idle at high. Page 8, section 3.1.1.
 	// Set SCL as pull-up.
 	if err := clk.In(host.Up); err != nil {
