@@ -26,14 +26,15 @@ func newSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
 	if chipSelect < 0 || chipSelect > 255 {
 		return nil, errors.New("invalid chip select")
 	}
-	if speed < 1000 {
-		return nil, errors.New("invalid speed")
-	}
 	f, err := os.OpenFile(fmt.Sprintf("/dev/spidev%d.%d", busNumber, chipSelect), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
 		return nil, err
 	}
 	s := &SPI{f: f}
+	if err := s.Speed(speed); err != nil {
+		s.Close()
+		return nil, err
+	}
 	if err := s.Configure(host.Mode3, 8); err != nil {
 		s.Close()
 		return nil, err
@@ -49,7 +50,13 @@ func (s *SPI) Close() error {
 	return err
 }
 
-// Configure changes the communication parameters of the bus.
+func (s *SPI) Speed(hz int64) error {
+	if hz < 1000 {
+		return errors.New("invalid speed")
+	}
+	return s.setFlag(spiIOCMaxSpeedHz, uint64(hz))
+}
+
 func (s *SPI) Configure(mode host.Mode, bits int) error {
 	if bits < 1 || bits > 256 {
 		return errors.New("invalid bits")
@@ -60,7 +67,6 @@ func (s *SPI) Configure(mode host.Mode, bits int) error {
 	return s.setFlag(spiIOCBitsPerWord, uint64(bits))
 }
 
-// Write writes to the SPI bus without reading.
 func (s *SPI) Write(b []byte) (int, error) {
 	return s.f.Write(b)
 }

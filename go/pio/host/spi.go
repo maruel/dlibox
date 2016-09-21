@@ -24,5 +24,8 @@ const (
 // SPI defines the interface a concrete SPI driver must implement.
 type SPI interface {
 	Bus
+	// Speed changes the bus speed.
+	Speed(hz int64) error
+	// Configure changes the communication parameters of the bus.
 	Configure(mode Mode, bits int) error
 }

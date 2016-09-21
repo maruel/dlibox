@@ -27,6 +27,13 @@ func (s *SPI) Close() error {
 	return nil
 }
 
+// Speed is a no-op.
+func (s *SPI) Speed(hz int64) error {
+	s.Lock()
+	defer s.Unlock()
+	return nil
+}
+
 // Configure is a no-op.
 func (s *SPI) Configure(mode host.Mode, bits int) error {
 	s.Lock()

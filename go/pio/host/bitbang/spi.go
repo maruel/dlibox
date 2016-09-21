@@ -13,6 +13,7 @@ package bitbang
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/host"
@@ -25,13 +26,24 @@ type SPI struct {
 	sdi       host.PinIn  // MISO
 	sdo       host.PinOut // MOSI
 	csn       host.PinOut // CS
+	lock      sync.Mutex
 	mode      host.Mode
 	bits      int
 	halfCycle time.Duration
 }
 
+// Speed implements host.SPI.
+func (s *SPI) Speed(hz int64) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.halfCycle = time.Second / time.Duration(hz) / time.Duration(2)
+	return nil
+}
+
 // Configure implements host.SPI.
 func (s *SPI) Configure(mode host.Mode, bits int) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if mode != host.Mode3 {
 		return errors.New("not implemented")
 	}
@@ -49,6 +61,8 @@ func (s *SPI) Tx(w, r []byte) error {
 	if len(r) != 0 && len(w) != len(r) {
 		return errors.New("write and read buffers must be the same length")
 	}
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if s.csn != nil {
 		s.csn.Set(host.Low)
 		s.sleepHalfCycle()
