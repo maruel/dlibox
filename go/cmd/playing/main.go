@@ -25,6 +25,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/ir"
+	"github.com/maruel/dlibox/go/pio/host/ir/lirc"
 	"github.com/maruel/dlibox/go/pio/host/pins"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/psf"
@@ -65,7 +66,7 @@ func mainImpl() error {
 
 	button := make(chan bool)
 	motion := make(chan bool)
-	keys := make(chan host.Key)
+	keys := make(chan ir.Key)
 	env := make(chan *devices.Environment)
 
 	f8, err := psf.Load("VGA8")
@@ -162,7 +163,7 @@ func mainImpl() error {
 	}
 
 	if useIR {
-		irBus, err := ir.New()
+		irBus, err := lirc.New()
 		if err != nil {
 			return err
 		}
@@ -175,7 +176,7 @@ func mainImpl() error {
 	return nil
 }
 
-func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-chan bool, env <-chan *devices.Environment, keys <-chan host.Key) {
+func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-chan bool, env <-chan *devices.Environment, keys <-chan ir.Key) {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
 	for {
@@ -220,7 +221,7 @@ func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-
 	}
 }
 
-func irLoop(irBus host.IR, keys chan<- host.Key) {
+func irLoop(irBus ir.IR, keys chan<- ir.Key) {
 	c := irBus.Channel()
 	for {
 		select {

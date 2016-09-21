@@ -32,7 +32,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/cpu"
-	"github.com/maruel/dlibox/go/pio/host/ir"
+	"github.com/maruel/dlibox/go/pio/host/ir/lirc"
 	"github.com/maruel/dlibox/go/pio/host/pins"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/psf"
@@ -71,7 +71,7 @@ func initDisplay() (devices.Display, error) {
 }
 
 func initIR(painter *anim1d.Painter, config *IR) error {
-	bus, err := ir.New()
+	bus, err := lirc.New()
 	if err != nil {
 		return err
 	}

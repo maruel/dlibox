@@ -15,7 +15,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/internal/gpiomem"
 	"github.com/maruel/dlibox/go/pio/host/internal/sysfs"
-	"github.com/maruel/dlibox/go/pio/host/ir"
+	"github.com/maruel/dlibox/go/pio/host/ir/lirc"
 )
 
 // Functional is pins.Functional on this CPU.
@@ -736,7 +736,7 @@ func initArm() error {
 		}
 	}
 
-	in, out := ir.Pins()
+	in, out := lirc.Pins()
 	if in != -1 {
 		IR_IN = &Pins[in]
 	}

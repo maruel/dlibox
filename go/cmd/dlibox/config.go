@@ -13,7 +13,7 @@ import (
 	"sync"
 
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/ir"
 	"github.com/pkg/errors"
 )
 
@@ -105,7 +105,7 @@ type APA102 struct {
 
 // IR contains InfraRed remote information.
 type IR struct {
-	Mapping map[host.Key]Pattern // TODO(maruel): We may actually do something more complex than just set a pattern.
+	Mapping map[ir.Key]Pattern // TODO(maruel): We may actually do something more complex than just set a pattern.
 }
 
 // PIR contains a motion detection behavior.
@@ -166,9 +166,9 @@ func (s *Settings) ResetDefault() {
 		Pattern: "\"#ffffff\"",
 	}
 	s.IR = IR{
-		Mapping: map[host.Key]Pattern{
-			host.KeyNumeric0: "\"#000000\"",
-			host.Key100Plus:  "\"#ffffff\"",
+		Mapping: map[ir.Key]Pattern{
+			ir.KeyNumeric0: "\"#000000\"",
+			ir.Key100Plus:  "\"#ffffff\"",
 		},
 	}
 	s.PatternSettings.ResetDefault()
