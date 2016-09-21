@@ -266,17 +266,36 @@ func (p *PingPong) NextFrame(pixels Frame, timeMS uint32) {
 	}
 }
 
-// Crop draws a subset of a strip, not touching the rest.
+// Crop skips the begining and the end of the source.
 type Crop struct {
 	Child  SPattern
-	Start  int // Starting pixels to skip
-	Length int // Length of the pixels to affect
+	Before int32 // Starting pixels to skip
+	After  int32 // Ending pixels to skip
+	buf    Frame
 }
 
-func (s *Crop) NextFrame(pixels Frame, timeMS uint32) {
-	if s.Child.Pattern != nil {
-		s.Child.NextFrame(pixels[s.Start:s.Length], timeMS)
+func (c *Crop) NextFrame(pixels Frame, timeMS uint32) {
+	if c.Child.Pattern == nil {
+		return
 	}
+	// This is slightly wasteful as pixels are drawn just to be ditched.
+	c.buf.reset(len(pixels) + int(c.Before+c.After))
+	c.Child.NextFrame(c.buf, timeMS)
+	copy(pixels, c.buf[c.Before:])
+}
+
+// Subset skips the begining and the end of the destination.
+type Subset struct {
+	Child  SPattern
+	Offset int32 // Starting pixels to skip
+	Length int32 // Length of the pixels to carry over
+}
+
+func (s *Subset) NextFrame(pixels Frame, timeMS uint32) {
+	if s.Child.Pattern == nil {
+		return
+	}
+	s.Child.NextFrame(pixels[s.Offset:s.Offset+s.Length], timeMS)
 }
 
 // Dim is a filter that dim the intensity of a buffer.
@@ -286,10 +305,11 @@ type Dim struct {
 }
 
 func (d *Dim) NextFrame(pixels Frame, timeMS uint32) {
-	if d.Child.Pattern != nil {
-		d.Child.NextFrame(pixels, timeMS)
-		pixels.Dim(d.Intensity)
+	if d.Child.Pattern == nil {
+		return
 	}
+	d.Child.NextFrame(pixels, timeMS)
+	pixels.Dim(d.Intensity)
 }
 
 // Add is a generic mixer that merges the output from multiple patterns with
@@ -314,8 +334,7 @@ func (a *Add) NextFrame(pixels Frame, timeMS uint32) {
 type Scale struct {
 	Child         SPattern
 	Interpolation Interpolation // Defaults to Linear
-	Length        int           // A buffer of this length will be provided to Child and will be scaled to the actual pixels length
-	Ratio         float32       // Scaling ratio to use, <1 means smaller, >1 means larger. Only one of Length or Ratio can be used
+	RatioMilli    int32         // A buffer of this len(buffer)*RatioMilli/1000 will be provided to Child and will be scaled; 500 means smaller, 2000 is larger.
 	buf           Frame
 }
 
@@ -323,11 +342,7 @@ func (s *Scale) NextFrame(pixels Frame, timeMS uint32) {
 	if s.Child.Pattern == nil {
 		return
 	}
-	l := s.Length
-	if l == 0 {
-		l = int(ceil(s.Ratio * float32(len(pixels))))
-	}
-	s.buf.reset(l)
+	s.buf.reset((int(s.RatioMilli)*len(pixels) + 500) / 1000)
 	s.Child.NextFrame(s.buf, timeMS)
 	s.Interpolation.Scale(s.buf, pixels)
 }

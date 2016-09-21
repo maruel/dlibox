@@ -113,34 +113,52 @@ func TestPingPong(t *testing.T) {
 		{6000, Frame{a, b, c, d}},
 	}
 	testFrames(t, p, exp)
-
 }
 
 func TestCrop(t *testing.T) {
-	// TODO(maruel): Add.
+	// Crop skips the begining and the end of the source.
+	f := Frame{
+		{0x10, 0x10, 0x10},
+		{0x20, 0x20, 0x20},
+		{0x30, 0x30, 0x30},
+	}
+	p := &Crop{Child: SPattern{f}, Before: 1, After: 2}
+	testFrame(t, p, expectation{0, f[1:3]})
+}
+
+func TestSubset(t *testing.T) {
+	// Subset skips the begining and the end of the destination.
+	f := Frame{
+		{0x10, 0x10, 0x10},
+		{0x20, 0x20, 0x20},
+		{0x30, 0x30, 0x30},
+	}
+	p := &Subset{Child: SPattern{f}, Offset: 1, Length: 2}
+	// Skip the begining and the end of the destination.
+	expected := Frame{
+		{},
+		{0x10, 0x10, 0x10},
+		{0x20, 0x20, 0x20},
+		{},
+	}
+	testFrame(t, p, expectation{0, expected})
 }
 
 func TestDim(t *testing.T) {
-	a := Color{0x60, 0x60, 0x60}
-	d := Dim{SPattern{&a}, 127}
-	o := Frame{{}}
-	d.NextFrame(o, 0)
-	if o[0].R != 0x2f || o[0].G != 0x2f || o[0].B != 0x2f {
-		t.Fatalf("%#v", o[0])
-	}
+	p := &Dim{SPattern{&Color{0x60, 0x60, 0x60}}, 127}
+	testFrame(t, p, expectation{0, Frame{{0x2f, 0x2f, 0x2f}}})
 }
 
 func TestAdd(t *testing.T) {
 	a := Color{0x60, 0x60, 0x60}
 	b := Color{0x10, 0x20, 0x30}
-	d := Add{Patterns: []SPattern{{&a}, {&b}}}
-	o := Frame{{}}
-	d.NextFrame(o, 0)
-	if o[0].R != 0x70 || o[0].G != 0x80 || o[0].B != 0x90 {
-		t.Fatalf("%#v", o[0])
-	}
+	p := &Add{Patterns: []SPattern{{&a}, {&b}}}
+	testFrame(t, p, expectation{0, Frame{{0x70, 0x80, 0x90}}})
 }
 
 func TestScale(t *testing.T) {
-	// TODO(maruel): Add.
+	f := Frame{{0x60, 0x60, 0x60}, {0x10, 0x20, 0x30}}
+	p := &Scale{Child: SPattern{f}, Interpolation: NearestSkip, RatioMilli: 667}
+	expected := Frame{{0x60, 0x60, 0x60}, {}, {0x10, 0x20, 0x30}}
+	testFrame(t, p, expectation{0, expected})
 }
