@@ -11,7 +11,6 @@ package i2c
 
 import (
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/fuck_dont_use_this/host"
 )
 
 // Bus defines the function a concrete I²C driver must implement.
@@ -34,7 +33,7 @@ type Bus interface {
 // It saves from repeatedly specifying the device address and implements
 // utility functions.
 type Dev struct {
-	Bus  host.I2C
+	Bus  Bus
 	Addr uint16
 }
 
