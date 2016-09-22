@@ -25,8 +25,8 @@ import (
 	"io"
 
 	"github.com/maruel/dlibox/go/pio/devices"
-	"github.com/maruel/dlibox/go/pio/devices/i2cdev"
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/hal/i2cdev"
 )
 
 // FrameRate determines scrolling speed.

@@ -13,8 +13,8 @@ import (
 	"errors"
 
 	"github.com/maruel/dlibox/go/pio/devices"
-	"github.com/maruel/dlibox/go/pio/devices/i2cdev"
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/hal/i2cdev"
 )
 
 // Oversampling affects how much time is taken to measure each of temperature,
