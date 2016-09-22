@@ -8,15 +8,55 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"syscall"
 	"unsafe"
 
+	"github.com/maruel/dlibox/go/pio/host/internal/pins2"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
+// EnumerateSPI returns the available SPI buses.
+//
+// The first int is the bus number, the second is the chip select line.
+func EnumerateSPI() ([][2]int, error) {
+	prefix := "/dev/spidev"
+	items, err := filepath.Glob(prefix + "*")
+	if err != nil {
+		return nil, err
+	}
+	out := make([][2]int, 0, len(items))
+	for _, item := range items {
+		parts := strings.Split(item[len(prefix):], ".")
+		if len(parts) != 2 {
+			continue
+		}
+		bus, err := strconv.Atoi(parts[0])
+		if err != nil {
+			continue
+		}
+		cs, err := strconv.Atoi(parts[1])
+		if err != nil {
+			continue
+		}
+		out = append(out, [2]int{bus, cs})
+	}
+	return out, nil
+}
+
 // SPI is an open SPI bus.
 type SPI struct {
-	f *os.File
+	f          *os.File
+	busNumber  int
+	chipSelect int
+	clk        gpio.PinOut
+	mosi       gpio.PinOut
+	miso       gpio.PinIn
+	cs         gpio.PinOut
 }
 
 func newSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
@@ -30,10 +70,12 @@ func newSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &SPI{f: f}
-	if err := s.Speed(speed); err != nil {
-		s.Close()
-		return nil, err
+	s := &SPI{f: f, busNumber: busNumber, chipSelect: chipSelect}
+	if speed != 0 {
+		if err := s.Speed(speed); err != nil {
+			s.Close()
+			return nil, err
+		}
 	}
 	if err := s.Configure(spi.Mode3, 8); err != nil {
 		s.Close()
@@ -80,6 +122,42 @@ func (s *SPI) Tx(w, r []byte) error {
 		bitsPerWord: 8,
 	}
 	return s.ioctl(spiIOCTx|0x40000000, unsafe.Pointer(&p))
+}
+
+// CLK implements spi.Bus.
+//
+// It will fail if host.Init() wasn't called. host.Init() is transparently
+// called by host.MakeSPI().
+func (s *SPI) CLK() gpio.PinOut {
+	s.initPins()
+	return s.clk
+}
+
+// MISO implements spi.Bus.
+//
+// It will fail if host.Init() wasn't called. host.Init() is transparently
+// called by host.MakeSPI().
+func (s *SPI) MISO() gpio.PinIn {
+	s.initPins()
+	return s.miso
+}
+
+// MOSI implements spi.Bus.
+//
+// It will fail if host.Init() wasn't called. host.Init() is transparently
+// called by host.MakeSPI().
+func (s *SPI) MOSI() gpio.PinOut {
+	s.initPins()
+	return s.mosi
+}
+
+// CS implements spi.Bus.
+//
+// It will fail if host.Init() wasn't called. host.Init() is transparently
+// called by host.MakeSPI().
+func (s *SPI) CS() gpio.PinOut {
+	s.initPins()
+	return s.cs
 }
 
 // Private details.
@@ -137,3 +215,23 @@ func (s *SPI) ioctl(op uint, arg unsafe.Pointer) error {
 	}
 	return nil
 }
+
+func (s *SPI) initPins() {
+	if s.clk == nil {
+		ok := false
+		if s.clk, ok = pins2.ByFunction[fmt.Sprintf("SPI%d_CLK", s.busNumber)]; !ok {
+			s.clk = pins.INVALID
+		}
+		if s.miso, ok = pins2.ByFunction[fmt.Sprintf("SPI%d_MISO", s.busNumber)]; !ok {
+			s.miso = pins.INVALID
+		}
+		if s.mosi, ok = pins2.ByFunction[fmt.Sprintf("SPI%d_MISO", s.busNumber)]; !ok {
+			s.mosi = pins.INVALID
+		}
+		if s.cs, ok = pins2.ByFunction[fmt.Sprintf("SPI%d_CS%d", s.busNumber, s.chipSelect)]; !ok {
+			s.cs = pins.INVALID
+		}
+	}
+}
+
+var _ spi.Bus = &SPI{}

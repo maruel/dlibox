@@ -94,6 +94,26 @@ func (s *SPI) Write(d []byte) (int, error) {
 	return len(d), nil
 }
 
+func (s *SPI) CLK() gpio.PinOut {
+	return s.sck
+}
+
+func (s *SPI) MOSI() gpio.PinOut {
+	return s.sdo
+}
+
+func (s *SPI) MISO() gpio.PinIn {
+	return s.sdi
+}
+
+func (s *SPI) CS() gpio.PinOut {
+	return s.csn
+}
+
+func (s *SPI) Close() error {
+	return nil
+}
+
 // NewSPI returns an object that communicates SPI over 3 or 4 pins.
 //
 // BUG(maruel): Completely untested.

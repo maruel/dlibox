@@ -9,6 +9,8 @@ import (
 	"io"
 	"sync"
 
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
@@ -55,6 +57,22 @@ func (s *SPI) Tx(w, r []byte) error {
 	}
 	_, err := s.Write(w)
 	return err
+}
+
+func (s *SPI) CLK() gpio.PinOut {
+	return pins.INVALID
+}
+
+func (s *SPI) MISO() gpio.PinIn {
+	return pins.INVALID
+}
+
+func (s *SPI) MOSI() gpio.PinOut {
+	return pins.INVALID
+}
+
+func (s *SPI) CS() gpio.PinOut {
+	return pins.INVALID
 }
 
 var _ spi.Bus = &SPI{}

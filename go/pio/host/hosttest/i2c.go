@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // I2CIO registers the I/O that happened on either a real or fake I2C bus.
@@ -52,6 +54,20 @@ func (i *I2CRecord) Tx(addr uint16, w, r []byte) error {
 	return nil
 }
 
+func (i *I2CRecord) SCL() gpio.PinIO {
+	if i.Bus != nil {
+		return i.Bus.SCL()
+	}
+	return pins.INVALID
+}
+
+func (i *I2CRecord) SDA() gpio.PinIO {
+	if i.Bus != nil {
+		return i.Bus.SDA()
+	}
+	return pins.INVALID
+}
+
 // I2CPlayblack implements i2c.Bus and plays back a recorded I/O flow.
 //
 // While "replay" type of unit tests are of limited value, they still present
@@ -84,6 +100,14 @@ func (i *I2CPlayback) Tx(addr uint16, w, r []byte) error {
 	copy(r, i.Ops[0].Read)
 	i.Ops = i.Ops[1:]
 	return nil
+}
+
+func (i *I2CPlayback) SCL() gpio.PinIO {
+	return pins.INVALID
+}
+
+func (i *I2CPlayback) SDA() gpio.PinIO {
+	return pins.INVALID
 }
 
 var _ i2c.Bus = &I2CRecord{}

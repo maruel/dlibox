@@ -15,6 +15,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 )
@@ -32,9 +33,6 @@ func mainImpl() error {
 	}
 	log.SetFlags(log.Lmicroseconds)
 
-	if *bus == -1 {
-		return errors.New("-b must be specified")
-	}
 	if *addr < 0 || *addr >= 1<<9 {
 		return fmt.Errorf("-a is required and must be between 0 and %d", 1<<9-1)
 	}
@@ -67,10 +65,22 @@ func mainImpl() error {
 		buf = make([]byte, *l)
 	}
 
-	i, err := sysfs.NewI2C(*bus)
-	if err != nil {
-		return err
+	var i host.I2CCloser
+	var err error
+	if *bus == -1 {
+		i, err = host.NewI2C()
+		if err != nil {
+			return err
+		}
+		defer i.Close()
+	} else {
+		i, err = sysfs.NewI2C(*bus)
+		if err != nil {
+			return err
+		}
+		defer i.Close()
 	}
+	log.Printf("Using pins SCL: %s  SDA: %s", i.SCL(), i.SDA())
 	d := i2c.Dev{i, uint16(*addr)}
 	if *write {
 		_, err = d.Write(buf)

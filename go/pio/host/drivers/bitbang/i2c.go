@@ -74,6 +74,18 @@ func (i *I2C) Tx(addr uint16, w, r []byte) error {
 	return nil
 }
 
+func (i *I2C) SCL() gpio.PinIO {
+	return i.scl
+}
+
+func (i *I2C) SDA() gpio.PinIO {
+	return i.sda
+}
+
+func (i *I2C) Close() error {
+	return nil
+}
+
 // New returns an object that communicates I²C over two pins.
 //
 // BUG(maruel): It is close to working but not yet, the signal is incorrect

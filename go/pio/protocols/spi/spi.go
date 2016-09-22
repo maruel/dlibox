@@ -5,7 +5,10 @@
 // Package spi defines the SPI protocol.
 package spi
 
-import "github.com/maruel/dlibox/go/pio/protocols"
+import (
+	"github.com/maruel/dlibox/go/pio/protocols"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+)
 
 // Mode determines how communication is done. The bits can be OR'ed to change
 // the polarity and phase used for communication.
@@ -29,4 +32,13 @@ type Bus interface {
 	Speed(hz int64) error
 	// Configure changes the communication parameters of the bus.
 	Configure(mode Mode, bits int) error
+
+	// CLK returns the SCK (clock) pin.
+	CLK() gpio.PinOut
+	// MOSI returns the SDO (master out, slave in) pin.
+	MOSI() gpio.PinOut
+	// MISO returns the SDI (master in, slave out) pin.
+	MISO() gpio.PinIn
+	// CS returns the CSN (chip select) pin.
+	CS() gpio.PinOut
 }

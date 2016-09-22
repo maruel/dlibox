@@ -7,11 +7,12 @@ package host
 import (
 	"testing"
 
+	"github.com/maruel/dlibox/go/pio/host/internal/pins2"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 func TestPins(t *testing.T) {
-	if len(allPins) != len(Pins()) {
+	if len(pins2.All) != len(Pins()) {
 		t.Fail()
 	}
 }
@@ -46,8 +47,8 @@ func TestPinByFunction(t *testing.T) {
 //
 
 func init() {
-	allPins = []gpio.PinIO{gpio2, gpio3}
-	pinByFunction = map[string]gpio.PinIO{
+	pins2.All = []gpio.PinIO{gpio2, gpio3}
+	pins2.ByFunction = map[string]gpio.PinIO{
 		gpio2.Function(): gpio2,
 		gpio3.Function(): gpio3,
 	}

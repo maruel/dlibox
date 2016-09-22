@@ -9,7 +9,10 @@
 // enables the support of protocols.Bus.
 package i2c
 
-import "github.com/maruel/fuck_dont_use_this/host"
+import (
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/fuck_dont_use_this/host"
+)
 
 // Bus defines the function a concrete I²C driver must implement.
 //
@@ -17,6 +20,11 @@ import "github.com/maruel/fuck_dont_use_this/host"
 // be specified. Use i2cdev.Dev as an adapter to get a Bus compatible object.
 type Bus interface {
 	Tx(addr uint16, w, r []byte) error
+
+	// SCL returns the CLK (clock) pin.
+	SCL() gpio.PinIO
+	// SDA returns the DATA pin.
+	SDA() gpio.PinIO
 }
 
 // Dev is a device on a I²C bus.

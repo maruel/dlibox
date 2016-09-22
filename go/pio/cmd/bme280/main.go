@@ -6,7 +6,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -17,6 +16,7 @@ import (
 	"github.com/kr/pretty"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
 	"github.com/maruel/dlibox/go/pio/host/hosttest"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
@@ -84,12 +84,24 @@ func mainImpl() error {
 
 	var dev *bme280.Dev
 	var recorder hosttest.I2CRecord
-	if *i2cId != -1 {
+	if *spiId != -1 && *cs != -1 {
+		// Spec calls for max 10Mhz. In practice so little data is used.
+		bus, err := sysfs.NewSPI(*spiId, *cs, 5000000)
+		if err != nil {
+			return err
+		}
+		defer bus.Close()
+		log.Printf("Using pins CLK: %s  MOSI: %s  MISO: %s  CS: %s", bus.CLK(), bus.MOSI(), bus.MISO(), bus.CS())
+		if dev, err = bme280.NewSPI(bus, s, s, s, bme280.S20ms, f); err != nil {
+			return err
+		}
+	} else if *i2cId != -1 {
 		bus, err := sysfs.NewI2C(*i2cId)
 		if err != nil {
 			return err
 		}
 		defer bus.Close()
+		log.Printf("Using pins SCL: %s  SDA: %s", bus.SCL(), bus.SDA())
 		var base i2c.Bus = bus
 		if *record {
 			recorder.Bus = bus
@@ -98,18 +110,22 @@ func mainImpl() error {
 		if dev, err = bme280.NewI2C(base, s, s, s, bme280.S20ms, f); err != nil {
 			return err
 		}
-	} else if *spiId != -1 && *cs != -1 {
-		// Spec calls for max 10Mhz. In practice so little data is used.
-		bus, err := sysfs.NewSPI(*spiId, *cs, 5000000)
+	} else {
+		// Get the first I²C bus available.
+		bus, err := host.NewI2C()
 		if err != nil {
 			return err
 		}
 		defer bus.Close()
-		if dev, err = bme280.NewSPI(bus, s, s, s, bme280.S20ms, f); err != nil {
+		log.Printf("Using pins SCL: %s  SDA: %s", bus.SCL(), bus.SDA())
+		var base i2c.Bus = bus
+		if *record {
+			recorder.Bus = bus
+			base = &recorder
+		}
+		if dev, err = bme280.NewI2C(base, s, s, s, bme280.S20ms, f); err != nil {
 			return err
 		}
-	} else {
-		return errors.New("use either -i or -s and -cs")
 	}
 
 	defer dev.Stop()

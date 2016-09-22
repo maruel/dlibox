@@ -172,15 +172,15 @@ var Functional = map[string]gpio.PinIO{
 		"CSI_HSYNC":    pins.INVALID,
 		"CSI_MCLK":     pins.INVALID,
 		"CSI_PCLK":     pins.INVALID,
-		"CSI_SCK":      pins.INVALID,
+		"CSI_SCL":      pins.INVALID,
 		"CSI_SDA":      pins.INVALID,
 		"CSI_VSYNC":    pins.INVALID,
 	*/
-	"I2C0_SCK":  pins.INVALID,
+	"I2C0_SCL":  pins.INVALID,
 	"I2C0_SDA":  pins.INVALID,
-	"I2C1_SCK":  pins.INVALID,
+	"I2C1_SCL":  pins.INVALID,
 	"I2C1_SDA":  pins.INVALID,
-	"I2C2_SCK":  pins.INVALID,
+	"I2C2_SCL":  pins.INVALID,
 	"I2C2_SDA":  pins.INVALID,
 	"I2S0_MCLK": pins.INVALID,
 	/*
@@ -305,17 +305,17 @@ var Functional = map[string]gpio.PinIO{
 		"SIM_VPPPP":    pins.INVALID,
 	*/
 	"SPI0_CLK":  pins.INVALID,
-	"SPI0_CS":   pins.INVALID,
+	"SPI0_CS0":  pins.INVALID,
 	"SPI0_MISO": pins.INVALID,
 	"SPI0_MOSI": pins.INVALID,
 	"SPI1_CLK":  pins.INVALID,
-	"SPI1_CS":   pins.INVALID,
+	"SPI1_CS0":  pins.INVALID,
 	"SPI1_MISO": pins.INVALID,
 	"SPI1_MOSI": pins.INVALID,
 	/*
 		"S_CIR_RX":  pins.INVALID,
 		"S_I2C_CSK": pins.INVALID,
-		"S_I2C_SCK": pins.INVALID,
+		"S_I2C_SCL": pins.INVALID,
 		"S_I2C_SDA": pins.INVALID,
 		"S_I2C_SDA": pins.INVALID,
 		"S_JTAG_CK": pins.INVALID,
@@ -821,7 +821,7 @@ var mapping = [116][5]string{
 	{"NAND_WE", "", "SPI0_MOSI"},                                    // PC0
 	{"NAND_ALE", "SDC2_DS", "SPI0_MISO"},                            // PC1
 	{"NAND_CLE", "", "SPI0_CLK"},                                    // PC2
-	{"NAND_CE1", "", "SPI0_CS"},                                     // PC3
+	{"NAND_CE1", "", "SPI0_CS0"},                                    // PC3
 	{"NAND_CE0"},                                                    // PC4
 	{"NAND_RE", "SDC2_CLK"},                                         // PC5
 	{"NAND_RB0", "SDC2_CMD"},                                        // PC6
@@ -835,7 +835,7 @@ var mapping = [116][5]string{
 	{"NAND_DQ6", "SDC2_D6"},                                         // PC14
 	{"NAND_DQ7", "SDC2_D7"},                                         // PC15
 	{"NAND_DQS", "SDC2_RST"},                                        // PC16
-	{"LCD_D2", "UART3_TX", "SPI1_CS", "CCIR_CLK"},                   // PD0
+	{"LCD_D2", "UART3_TX", "SPI1_CS0", "CCIR_CLK"},                  // PD0
 	{"LCD_D3", "UART3_RX", "SPI1_CLK", "CCIR_DE"},                   // PD1
 	{"LCD_D4", "UART4_TX", "SPI1_MOSI", "CCIR_HSYNC"},               // PD2
 	{"LCD_D5", "UART4_RX", "SPI1_MISO", "CCIR_VSYNC"},               // PD3
@@ -874,7 +874,7 @@ var mapping = [116][5]string{
 	{"CSI_D7", "", "TS_D7"},                                         // PE11
 	{"CSI_SCK"},                                                     // PE12
 	{"CSI_SDA"},                                                     // PE13
-	{"PLL_LOCK_DBG", "I2C2_SCK"},                                    // PE14
+	{"PLL_LOCK_DBG", "I2C2_SCL"},                                    // PE14
 	{"", "I2C2_SDA"},                                                // PE15
 	{},                                                              // PE16
 	{"", ""},                                                        // PE17
@@ -899,9 +899,9 @@ var mapping = [116][5]string{
 	{"AIF3_BCLK", "PCM1_BCLK", "", "", "PG_EINT11"},                 // PG11
 	{"AIF3_DOUT", "PCM1_DOUT", "", "", "PG_EINT12"},                 // PG12
 	{"AIF3_DIN", "PCM1_DIN", "", "", "PG_EINT13"},                   // PG13
-	{"I2C0_SCK", "", "", "", "PH_EINT0"},                            // PH0
+	{"I2C0_SCL", "", "", "", "PH_EINT0"},                            // PH0
 	{"I2C0_SDA", "", "", "", "PH_EINT1"},                            // PH1
-	{"I2C1_SCK", "", "", "", "PH_EINT2"},                            // PH2
+	{"I2C1_SCL", "", "", "", "PH_EINT2"},                            // PH2
 	{"I2C1_SDA", "", "", "", "PH_EINT3"},                            // PH3
 	{"UART3_TX", "", "", "", "PH_EINT4"},                            // PH4
 	{"UART3_RX", "", "", "", "PH_EINT5"},                            // PH5
@@ -911,7 +911,7 @@ var mapping = [116][5]string{
 	{"", "", "", "", "PH_EINT9"},                                    // PH9
 	{"MIC_CLK", "", "", "", "PH_EINT10"},                            // PH10
 	{"MIC_DATA", "", "", "", "PH_EINT11"},                           // PH11
-	{"S_RSB_SCK", "S_I2C_SCK", "", "", "S_PL_EINT0"},                // PL0
+	{"S_RSB_SCK", "S_I2C_SCL", "", "", "S_PL_EINT0"},                // PL0
 	{"S_RSB_SDA", "S_I2C_SDA", "", "", "S_PL_EINT1"},                // PL1
 	{"S_UART_TX", "", "", "", "S_PL_EINT2"},                         // PL2
 	{"S_UART_RX", "", "", "", "S_PL_EINT3"},                         // PL3

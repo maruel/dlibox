@@ -12,6 +12,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/host/drivers/bcm283x"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
 	"github.com/maruel/dlibox/go/pio/host/internal"
+	"github.com/maruel/dlibox/go/pio/host/internal/pins2"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
@@ -28,7 +29,7 @@ var (
 // This list excludes non-GPIO pins like GROUND, V3_3, etc.
 func Pins() []gpio.PinIO {
 	Init()
-	return allPins
+	return pins2.All
 }
 
 // PinsFunctional returns a map of all pins implementing hardware provided
@@ -37,7 +38,7 @@ func PinsFunctional() map[string]gpio.PinIO {
 	Init()
 	lock.Lock()
 	defer lock.Unlock()
-	return pinByFunction
+	return pins2.ByFunction
 }
 
 // PinByNumber returns a GPIO pin from its number.
@@ -45,7 +46,7 @@ func PinsFunctional() map[string]gpio.PinIO {
 // Returns nil in case of failure.
 func PinByNumber(number int) gpio.PinIO {
 	Init()
-	pin, _ := pinByNumber[number]
+	pin, _ := pins2.ByNumber[number]
 	return pin
 }
 
@@ -56,17 +57,17 @@ func PinByNumber(number int) gpio.PinIO {
 // Returns nil in case of failure.
 func PinByName(name string) gpio.PinIO {
 	Init()
-	lock.Lock()
-	defer lock.Unlock()
-	if pinByName == nil {
-		pinByName = make(map[string]gpio.PinIO, len(allPins))
-		for _, pin := range allPins {
+	pins2.Lock.Lock()
+	defer pins2.Lock.Unlock()
+	if pins2.ByName == nil {
+		pins2.ByName = make(map[string]gpio.PinIO, len(pins2.All))
+		for _, pin := range pins2.All {
 			// This assumes there is not 2 pins with the same name and that String()
 			// returns the pin name.
-			pinByName[pin.String()] = pin
+			pins2.ByName[pin.String()] = pin
 		}
 	}
-	pin, _ := pinByName[name]
+	pin, _ := pins2.ByName[name]
 	return pin
 }
 
@@ -77,29 +78,29 @@ func PinByName(name string) gpio.PinIO {
 // Returns nil in case of failure.
 func PinByFunction(fn string) gpio.PinIO {
 	Init()
-	pin, _ := pinByFunction[fn]
+	pin, _ := pins2.ByFunction[fn]
 	return pin
 }
 
 // Init initializes the pins and returns the name of the subsystem used.
 func Init() (string, error) {
-	lock.Lock()
-	defer lock.Unlock()
-	if allPins != nil {
+	pins2.Lock.Lock()
+	defer pins2.Lock.Unlock()
+	if pins2.All != nil {
 		return subsystem, nil
 	}
 
-	allPins = []gpio.PinIO{}
-	pinByFunction = map[string]gpio.PinIO{}
+	pins2.All = []gpio.PinIO{}
+	pins2.ByFunction = map[string]gpio.PinIO{}
 	if internal.IsBCM283x() {
 		if err := bcm283x.Init(); err != nil {
 		} else {
-			allPins = make([]gpio.PinIO, len(bcm283x.Pins))
+			pins2.All = make([]gpio.PinIO, len(bcm283x.Pins))
 			for i := range bcm283x.Pins {
-				allPins[i] = &bcm283x.Pins[i]
+				pins2.All[i] = &bcm283x.Pins[i]
 			}
-			sort.Sort(allPins)
-			pinByFunction = bcm283x.Functional
+			sort.Sort(pins2.All)
+			pins2.ByFunction = bcm283x.Functional
 			subsystem = "bcm283x"
 			setIR()
 			return subsystem, nil
@@ -108,12 +109,12 @@ func Init() (string, error) {
 	if internal.IsAllwinner() {
 		if err := allwinner.Init(); err != nil {
 		} else {
-			allPins = make([]gpio.PinIO, len(allwinner.Pins))
+			pins2.All = make([]gpio.PinIO, len(allwinner.Pins))
 			for i := range allwinner.Pins {
-				allPins[i] = &allwinner.Pins[i]
+				pins2.All[i] = &allwinner.Pins[i]
 			}
-			sort.Sort(allPins)
-			pinByFunction = allwinner.Functional
+			sort.Sort(pins2.All)
+			pins2.ByFunction = allwinner.Functional
 			subsystem = "allwinner"
 			setIR()
 			return subsystem, nil
@@ -124,12 +125,12 @@ func Init() (string, error) {
 	if err := sysfs.Init(); err != nil {
 		return "", err
 	}
-	allPins = make([]gpio.PinIO, 0, len(sysfs.Pins))
+	pins2.All = make([]gpio.PinIO, 0, len(sysfs.Pins))
 	for _, p := range sysfs.Pins {
-		allPins = append(allPins, p)
+		pins2.All = append(pins2.All, p)
 	}
-	sort.Sort(allPins)
-	// sysfs doesn't expose enough information to fill pinByFunction.
+	sort.Sort(pins2.All)
+	// sysfs doesn't expose enough information to fill pins2.ByFunction.
 	subsystem = "sysfs"
 	setIR()
 	return subsystem, nil
@@ -138,35 +139,25 @@ func Init() (string, error) {
 //
 
 var (
-	subsystem     string
-	allPins       pinList
-	pinByNumber   map[int]gpio.PinIO
-	pinByName     map[string]gpio.PinIO
-	pinByFunction map[string]gpio.PinIO
+	subsystem string
 )
 
-type pinList []gpio.PinIO
-
-func (p pinList) Len() int           { return len(p) }
-func (p pinList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-func (p pinList) Less(i, j int) bool { return p[i].Number() < p[j].Number() }
-
 func setIR() {
-	pinByNumber = make(map[int]gpio.PinIO, len(allPins))
-	for _, pin := range allPins {
-		pinByNumber[pin.Number()] = pin
+	pins2.ByNumber = make(map[int]gpio.PinIO, len(pins2.All))
+	for _, pin := range pins2.All {
+		pins2.ByNumber[pin.Number()] = pin
 	}
 	in, out := lirc.Pins()
 	if in != -1 {
-		if pin, ok := pinByNumber[in]; ok {
+		if pin, ok := pins2.ByNumber[in]; ok {
 			IR_IN = pin
 		}
 	}
 	if out != -1 {
-		if pin, ok := pinByNumber[out]; ok {
+		if pin, ok := pins2.ByNumber[out]; ok {
 			IR_OUT = pin
 		}
 	}
-	pinByFunction["IR_IN"] = IR_IN
-	pinByFunction["IR_OUT"] = IR_OUT
+	pins2.ByFunction["IR_IN"] = IR_IN
+	pins2.ByFunction["IR_OUT"] = IR_OUT
 }

@@ -8,19 +8,47 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"unsafe"
+
+	"github.com/maruel/dlibox/go/pio/host/internal/pins2"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
+
+// EnumerateI2C returns the available I²C buses.
+func EnumerateI2C() ([]int, error) {
+	prefix := "/dev/i2c-"
+	items, err := filepath.Glob(prefix + "*")
+	if err != nil {
+		return nil, err
+	}
+	out := make([]int, 0, len(items))
+	for _, item := range items {
+		i, err := strconv.Atoi(item[len(prefix):])
+		if err != nil {
+			continue
+		}
+		out = append(out, i)
+	}
+	return out, nil
+}
 
 // I2C is an open I²C bus via sysfs.
 //
 // It can be used to communicate with multiple devices from multiple goroutines.
 type I2C struct {
-	f  *os.File
-	l  sync.Mutex // In theory the kernel probably has an internal lock but not taking any chance.
-	fn functionality
+	f         *os.File
+	busNumber int
+	l         sync.Mutex // In theory the kernel probably has an internal lock but not taking any chance.
+	fn        functionality
+	scl       gpio.PinIO
+	sda       gpio.PinIO
 }
 
 func newI2C(busNumber int) (*I2C, error) {
@@ -35,7 +63,7 @@ func newI2C(busNumber int) (*I2C, error) {
 		}
 		return nil, fmt.Errorf("are you member of group 'plugdev'? please follow instructions at https://github.com/maruel/dlibox/tree/master/go/setup. %s", err)
 	}
-	i := &I2C{f: f}
+	i := &I2C{f: f, busNumber: busNumber}
 
 	// TODO(maruel): Changing the speed is currently doing this for all devices.
 	// https://github.com/raspberrypi/linux/issues/215
@@ -87,6 +115,26 @@ func (i *I2C) Tx(addr uint16, w, r []byte) error {
 	return i.ioctl(ioctlRdwr, pp)
 }
 
+// SCL implements i2c.Bus.
+//
+// It will fail if host.Init() wasn't called. host.Init() is transparently
+// called by host.MakeI2C().
+func (i *I2C) SCL() gpio.PinIO {
+	i.initPins()
+	return i.scl
+}
+
+// SDA implements i2c.Bus.
+//
+// It will fail if host.Init() wasn't called. host.Init() is transparently
+// called by host.MakeI2C().
+func (i *I2C) SDA() gpio.PinIO {
+	i.initPins()
+	return i.sda
+}
+
+// Private details.
+
 func (i *I2C) ioctl(op uint, arg uintptr) error {
 	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, i.f.Fd(), uintptr(op), arg); errno != 0 {
 		return fmt.Errorf("i²c ioctl: %s", syscall.Errno(errno))
@@ -94,7 +142,19 @@ func (i *I2C) ioctl(op uint, arg uintptr) error {
 	return nil
 }
 
-// Private details.
+func (i *I2C) initPins() {
+	i.l.Lock()
+	if i.scl == nil {
+		ok := false
+		if i.scl, ok = pins2.ByFunction[fmt.Sprintf("I2C%d_SCL", i.busNumber)]; !ok {
+			i.scl = pins.INVALID
+		}
+		if i.sda, ok = pins2.ByFunction[fmt.Sprintf("I2C%d_SDA", i.busNumber)]; !ok {
+			i.sda = pins.INVALID
+		}
+	}
+	i.l.Unlock()
+}
 
 // i2cdev driver IOCTL control codes.
 //
@@ -215,3 +275,5 @@ type i2cMsg struct {
 	length uint16
 	buf    uintptr
 }
+
+var _ i2c.Bus = &I2C{}

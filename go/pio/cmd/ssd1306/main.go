@@ -22,6 +22,7 @@ import (
 
 	"github.com/maruel/dlibox/go/bw2d"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/nfnt/resize"
@@ -147,27 +148,40 @@ func mainImpl() error {
 	if flag.NArg() != 0 {
 		return errors.New("unexpected argument, try -help")
 	}
-	if (*i2cId >= 0) == (*spiId >= 0) {
-		return errors.New("use exactly one of -i2c or -spi")
-	}
 
 	// Open the device on the right bus.
 	var s *ssd1306.Dev
-	if *i2cId >= 0 {
-		i2cBus, err := sysfs.NewI2C(*i2cId)
+	if *spiId >= 0 {
+		bus, err := sysfs.NewSPI(*spiId, *csId, int64(*speed))
 		if err != nil {
 			return err
 		}
-		s, err = ssd1306.NewI2C(i2cBus, *w, *h, *rotated)
+		defer bus.Close()
+		log.Printf("Using pins CLK: %s  MOSI: %s  CS: %s", bus.CLK(), bus.MOSI(), bus.CS())
+		s, err = ssd1306.NewSPI(bus, *w, *h, *rotated)
+		if err != nil {
+			return err
+		}
+	} else if *i2cId >= 0 {
+		bus, err := sysfs.NewI2C(*i2cId)
+		if err != nil {
+			return err
+		}
+		defer bus.Close()
+		log.Printf("Using pins SCL: %s  SDA: %s", bus.SCL(), bus.SDA())
+		s, err = ssd1306.NewI2C(bus, *w, *h, *rotated)
 		if err != nil {
 			return err
 		}
 	} else {
-		spiBus, err := sysfs.NewSPI(*spiId, *csId, int64(*speed))
+		// Get the first I²C bus available.
+		bus, err := host.NewI2C()
 		if err != nil {
 			return err
 		}
-		s, err = ssd1306.NewSPI(spiBus, *w, *h, *rotated)
+		defer bus.Close()
+		log.Printf("Using pins SCL: %s  SDA: %s", bus.SCL(), bus.SDA())
+		s, err = ssd1306.NewI2C(bus, *w, *h, *rotated)
 		if err != nil {
 			return err
 		}
