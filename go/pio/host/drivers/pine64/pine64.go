@@ -6,8 +6,8 @@ package pine64
 
 import (
 	"github.com/maruel/dlibox/go/pio/host/drivers/allwinner"
-	"github.com/maruel/dlibox/go/pio/host/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // Version is the board version. Only reports as 1 for now.
@@ -86,8 +86,8 @@ var (
 	EULER_29 gpio.PinIO = allwinner.PB8    //
 	EULER_30 gpio.PinIO = allwinner.PB9    //
 	EULER_31 gpio.PinIO = pins.EAROUTP     //
-	EULER_32 gpio.PinIO = pins.EAROUT_N    //
-	EULER_33 gpio.PinIO = gpio.INVALID     //
+	EULER_32 gpio.PinIO = pins.EAROUTN     //
+	EULER_33 gpio.PinIO = pins.INVALID     //
 	EULER_34 gpio.PinIO = pins.GROUND      //
 
 	EXP_1  gpio.PinIO = pins.V3_3        //
@@ -128,8 +128,8 @@ var (
 	WIFI_BT_25 gpio.PinIO = pins.VCC       //
 	WIFI_BT_26 gpio.PinIO = pins.IOVCC     //
 
-	AUDIO_LEFT  gpio.PinIO = gpio.INVALID // TODO(maruel): Figure out, is that EAROUT?
-	AUDIO_RIGHT gpio.PinIO = gpio.INVALID //
+	AUDIO_LEFT  gpio.PinIO = pins.INVALID // TODO(maruel): Figure out, is that EAROUT?
+	AUDIO_RIGHT gpio.PinIO = pins.INVALID //
 )
 
 // See headers.Headers for more info.

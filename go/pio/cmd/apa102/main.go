@@ -24,10 +24,10 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/bitbang"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
 	"github.com/maruel/dlibox/go/pio/host/hosttest"
-	"github.com/maruel/dlibox/go/pio/host/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 	"github.com/nfnt/resize"
 )
@@ -135,11 +135,11 @@ func mainImpl() error {
 	} else {
 		var spiBus spi.Bus
 		if *clk != -1 && *mosi != -1 {
-			if _, err := pins.Init(false); err != nil {
+			if _, err := host.Init(); err != nil {
 				return err
 			}
-			pclk := pins.ByNumber(*clk)
-			pmosi := pins.ByNumber(*mosi)
+			pclk := host.PinByNumber(*clk)
+			pmosi := host.PinByNumber(*mosi)
 			b, err := bitbang.NewSPI(pclk, pmosi, nil, nil, int64(*speed))
 			if err != nil {
 				return err

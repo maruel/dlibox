@@ -31,9 +31,8 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
 	"github.com/maruel/dlibox/go/pio/devices/ir/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
-	"github.com/maruel/dlibox/go/pio/host/cpu"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
-	"github.com/maruel/dlibox/go/pio/host/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
@@ -96,7 +95,7 @@ func initIR(painter *anim1d.Painter, config *IR) error {
 }
 
 func initPIR(painter *anim1d.Painter, config *PIR) error {
-	p := pins.ByNumber(config.Pin)
+	p := host.PinByNumber(config.Pin)
 	if p == nil {
 		return nil
 	}
@@ -174,7 +173,7 @@ func mainImpl() error {
 	log.Printf("Config:\n%s", string(b))
 
 	fps := 60
-	if cpu.MaxSpeed() < 900000 || runtime.NumCPU() < 4 {
+	if host.MaxSpeed() < 900000 || runtime.NumCPU() < 4 {
 		// Use 30Hz on slower devices because it is too slow.
 		fps = 30
 	}

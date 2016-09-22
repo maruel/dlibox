@@ -5,10 +5,7 @@
 // Package gpio defines digital pins.
 package gpio
 
-import (
-	"errors"
-	"fmt"
-)
+import "fmt"
 
 // Level is the level of the pin: Low or High.
 type Level bool
@@ -98,49 +95,4 @@ type PinIO interface {
 	// configured to do. Common case is In and Out but it can be bus specific pin
 	// name.
 	Function() string
-}
-
-// invalidPinErr is returned when trying to use INVALID.
-var invalidPinErr = errors.New("invalid pin")
-
-// INVALID implements PinIO and fails on all access.
-var INVALID invalidPin
-
-// invalidPin implements PinIO for compability but fails on all access.
-type invalidPin struct {
-}
-
-func (invalidPin) Number() int {
-	return -1
-}
-
-func (invalidPin) String() string {
-	return "INVALID"
-}
-
-func (invalidPin) Function() string {
-	return ""
-}
-
-func (invalidPin) In(Pull) error {
-	return invalidPinErr
-}
-
-func (invalidPin) Read() Level {
-	return Low
-}
-
-func (invalidPin) Edges() (<-chan Level, error) {
-	return nil, invalidPinErr
-}
-
-func (invalidPin) DisableEdges() {
-}
-
-func (invalidPin) Pull() Pull {
-	return PullNoChange
-}
-
-func (invalidPin) Out(Level) error {
-	return invalidPinErr
 }

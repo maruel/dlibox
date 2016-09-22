@@ -2,30 +2,30 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package headers
+package host
 
 import (
 	"testing"
 
 	"github.com/maruel/dlibox/go/pio/host/hosttest"
-	"github.com/maruel/dlibox/go/pio/host/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
-func TestAll(t *testing.T) {
-	if len(all) != len(All()) {
+func TestPinsHeaders(t *testing.T) {
+	if len(allHeaders) != len(PinsHeaders()) {
 		t.Fail()
 	}
 }
 
-func TestIsConnected(t *testing.T) {
-	if !IsConnected(pins.V3_3) {
+func TestPinIsConnected(t *testing.T) {
+	if !PinIsConnected(pins.V3_3) {
 		t.Fail()
 	}
-	if IsConnected(pins.V5) {
+	if PinIsConnected(pins.V5) {
 		t.Fail()
 	}
-	if !IsConnected(gpio2) {
+	if !PinIsConnected(gpio2) {
 		t.Fail()
 	}
 }
@@ -38,7 +38,7 @@ var (
 )
 
 func init() {
-	all = map[string][][]gpio.PinIO{
+	allHeaders = map[string][][]gpio.PinIO{
 		"P1": {
 			{pins.GROUND, pins.V3_3},
 			{gpio2, gpio3},

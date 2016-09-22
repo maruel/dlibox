@@ -2,14 +2,13 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package cpu
+package host
 
 import (
 	"io/ioutil"
 	"log"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 func getMaxSpeedLinux() int64 {
@@ -34,6 +33,5 @@ func getMaxSpeedLinux() int64 {
 }
 
 var (
-	lock     sync.Mutex
 	maxSpeed int64 = -1
 )

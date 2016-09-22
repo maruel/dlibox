@@ -11,15 +11,13 @@ import (
 	"os"
 	"sort"
 
-	"github.com/maruel/dlibox/go/pio/host/cpu"
-	"github.com/maruel/dlibox/go/pio/host/headers"
-	"github.com/maruel/dlibox/go/pio/host/pins"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 func printFunc(invalid bool) {
 	max := 0
-	functional := pins.Functional()
+	functional := host.PinsFunctional()
 	funcs := make([]string, 0, len(functional))
 	for f := range functional {
 		if l := len(f); l > 0 && f[0] != '<' {
@@ -32,7 +30,7 @@ func printFunc(invalid bool) {
 	sort.Strings(funcs)
 	for _, name := range funcs {
 		pin := functional[name]
-		if invalid || pin != gpio.INVALID {
+		if invalid || pin != pins.INVALID {
 			if pin == nil {
 				fmt.Printf("%-*s: INVALID\n", max, name)
 			} else {
@@ -45,9 +43,9 @@ func printFunc(invalid bool) {
 func printGPIO(invalid bool) {
 	maxName := 0
 	maxFn := 0
-	all := pins.All()
+	all := host.Pins()
 	for _, p := range all {
-		if invalid || headers.IsConnected(p) {
+		if invalid || host.PinIsConnected(p) {
 			if l := len(p.String()); l > maxName {
 				maxName = l
 			}
@@ -57,7 +55,7 @@ func printGPIO(invalid bool) {
 		}
 	}
 	for _, p := range all {
-		if headers.IsConnected(p) {
+		if host.PinIsConnected(p) {
 			fmt.Printf("%-*s: %s\n", maxName, p, p.Function())
 		} else if invalid {
 			fmt.Printf("%-*s: %-*s (not connected)\n", maxName, p, maxFn, p.Function())
@@ -66,7 +64,7 @@ func printGPIO(invalid bool) {
 }
 
 func printHardware(invalid bool) {
-	all := headers.All()
+	all := host.PinsHeaders()
 	names := make([]string, 0, len(all))
 	for name := range all {
 		names = append(names, name)
@@ -140,12 +138,12 @@ func mainImpl() error {
 	}
 
 	// Explicitly initialize to catch any error.
-	subsystem, err := pins.Init(true)
+	subsystem, err := host.Init()
 	if err != nil {
 		return err
 	}
 	if *info {
-		fmt.Printf("Subsystem: %s\nMaxSpeed: %dMhz\n", subsystem, cpu.MaxSpeed()/1000000)
+		fmt.Printf("Subsystem: %s\nMaxSpeed: %dMhz\n", subsystem, host.MaxSpeed()/1000000)
 	}
 	if *fun {
 		printFunc(*invalid)

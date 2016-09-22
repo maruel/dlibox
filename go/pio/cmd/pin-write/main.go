@@ -11,7 +11,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
@@ -23,7 +23,7 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	p := pins.ByNumber(pin)
+	p := host.PinByNumber(pin)
 	if p == nil {
 		return errors.New("invalid pin number")
 	}

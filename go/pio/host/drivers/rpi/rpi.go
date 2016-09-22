@@ -12,8 +12,8 @@ import (
 
 	"github.com/maruel/dlibox/go/pio/host/drivers/bcm283x"
 	"github.com/maruel/dlibox/go/pio/host/internal"
-	"github.com/maruel/dlibox/go/pio/host/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // Version is the Raspberry Pi version 1, 2 or 3.
@@ -95,57 +95,57 @@ var Headers = map[string][][]gpio.PinIO{}
 //
 
 func zapPins() {
-	P1_1 = gpio.INVALID
-	P1_2 = gpio.INVALID
-	P1_3 = gpio.INVALID
-	P1_4 = gpio.INVALID
-	P1_5 = gpio.INVALID
-	P1_6 = gpio.INVALID
-	P1_7 = gpio.INVALID
-	P1_8 = gpio.INVALID
-	P1_9 = gpio.INVALID
-	P1_10 = gpio.INVALID
-	P1_11 = gpio.INVALID
-	P1_12 = gpio.INVALID
-	P1_13 = gpio.INVALID
-	P1_14 = gpio.INVALID
-	P1_15 = gpio.INVALID
-	P1_16 = gpio.INVALID
-	P1_17 = gpio.INVALID
-	P1_18 = gpio.INVALID
-	P1_19 = gpio.INVALID
-	P1_20 = gpio.INVALID
-	P1_21 = gpio.INVALID
-	P1_22 = gpio.INVALID
-	P1_23 = gpio.INVALID
-	P1_24 = gpio.INVALID
-	P1_25 = gpio.INVALID
-	P1_26 = gpio.INVALID
-	P1_27 = gpio.INVALID
-	P1_28 = gpio.INVALID
-	P1_29 = gpio.INVALID
-	P1_30 = gpio.INVALID
-	P1_31 = gpio.INVALID
-	P1_32 = gpio.INVALID
-	P1_33 = gpio.INVALID
-	P1_34 = gpio.INVALID
-	P1_35 = gpio.INVALID
-	P1_36 = gpio.INVALID
-	P1_37 = gpio.INVALID
-	P1_38 = gpio.INVALID
-	P1_39 = gpio.INVALID
-	P1_40 = gpio.INVALID
-	P5_1 = gpio.INVALID
-	P5_2 = gpio.INVALID
-	P5_3 = gpio.INVALID
-	P5_4 = gpio.INVALID
-	P5_5 = gpio.INVALID
-	P5_6 = gpio.INVALID
-	P5_7 = gpio.INVALID
-	P5_8 = gpio.INVALID
-	AUDIO_LEFT = gpio.INVALID
-	AUDIO_RIGHT = gpio.INVALID
-	HDMI_HOTPLUG_DETECT = gpio.INVALID
+	P1_1 = pins.INVALID
+	P1_2 = pins.INVALID
+	P1_3 = pins.INVALID
+	P1_4 = pins.INVALID
+	P1_5 = pins.INVALID
+	P1_6 = pins.INVALID
+	P1_7 = pins.INVALID
+	P1_8 = pins.INVALID
+	P1_9 = pins.INVALID
+	P1_10 = pins.INVALID
+	P1_11 = pins.INVALID
+	P1_12 = pins.INVALID
+	P1_13 = pins.INVALID
+	P1_14 = pins.INVALID
+	P1_15 = pins.INVALID
+	P1_16 = pins.INVALID
+	P1_17 = pins.INVALID
+	P1_18 = pins.INVALID
+	P1_19 = pins.INVALID
+	P1_20 = pins.INVALID
+	P1_21 = pins.INVALID
+	P1_22 = pins.INVALID
+	P1_23 = pins.INVALID
+	P1_24 = pins.INVALID
+	P1_25 = pins.INVALID
+	P1_26 = pins.INVALID
+	P1_27 = pins.INVALID
+	P1_28 = pins.INVALID
+	P1_29 = pins.INVALID
+	P1_30 = pins.INVALID
+	P1_31 = pins.INVALID
+	P1_32 = pins.INVALID
+	P1_33 = pins.INVALID
+	P1_34 = pins.INVALID
+	P1_35 = pins.INVALID
+	P1_36 = pins.INVALID
+	P1_37 = pins.INVALID
+	P1_38 = pins.INVALID
+	P1_39 = pins.INVALID
+	P1_40 = pins.INVALID
+	P5_1 = pins.INVALID
+	P5_2 = pins.INVALID
+	P5_3 = pins.INVALID
+	P5_4 = pins.INVALID
+	P5_5 = pins.INVALID
+	P5_6 = pins.INVALID
+	P5_7 = pins.INVALID
+	P5_8 = pins.INVALID
+	AUDIO_LEFT = pins.INVALID
+	AUDIO_RIGHT = pins.INVALID
+	HDMI_HOTPLUG_DETECT = pins.INVALID
 }
 
 func initAsRPi() {
@@ -199,20 +199,20 @@ func initAsRPi() {
 		// P2 and P3 are not useful.
 		// P6 has a RUN pin for reset but it's not available after Pi version 1.
 
-		P1_27 = gpio.INVALID
-		P1_28 = gpio.INVALID
-		P1_29 = gpio.INVALID
-		P1_30 = gpio.INVALID
-		P1_31 = gpio.INVALID
-		P1_32 = gpio.INVALID
-		P1_33 = gpio.INVALID
-		P1_34 = gpio.INVALID
-		P1_35 = gpio.INVALID
-		P1_36 = gpio.INVALID
-		P1_37 = gpio.INVALID
-		P1_38 = gpio.INVALID
-		P1_39 = gpio.INVALID
-		P1_40 = gpio.INVALID
+		P1_27 = pins.INVALID
+		P1_28 = pins.INVALID
+		P1_29 = pins.INVALID
+		P1_30 = pins.INVALID
+		P1_31 = pins.INVALID
+		P1_32 = pins.INVALID
+		P1_33 = pins.INVALID
+		P1_34 = pins.INVALID
+		P1_35 = pins.INVALID
+		P1_36 = pins.INVALID
+		P1_37 = pins.INVALID
+		P1_38 = pins.INVALID
+		P1_39 = pins.INVALID
+		P1_40 = pins.INVALID
 	} else {
 		Headers["P1"] = [][]gpio.PinIO{
 			{P1_1, P1_2},
@@ -236,14 +236,14 @@ func initAsRPi() {
 			{P1_37, P1_38},
 			{P1_39, P1_40},
 		}
-		P5_1 = gpio.INVALID
-		P5_2 = gpio.INVALID
-		P5_3 = gpio.INVALID
-		P5_4 = gpio.INVALID
-		P5_5 = gpio.INVALID
-		P5_6 = gpio.INVALID
-		P5_7 = gpio.INVALID
-		P5_8 = gpio.INVALID
+		P5_1 = pins.INVALID
+		P5_2 = pins.INVALID
+		P5_3 = pins.INVALID
+		P5_4 = pins.INVALID
+		P5_5 = pins.INVALID
+		P5_6 = pins.INVALID
+		P5_7 = pins.INVALID
+		P5_8 = pins.INVALID
 	}
 	if Version < 3 {
 		AUDIO_LEFT = bcm283x.GPIO45

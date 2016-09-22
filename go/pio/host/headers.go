@@ -2,9 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package headers contains a table to represent the physical headers found on
-// micro computers.
-package headers
+package host
 
 import (
 	"fmt"
@@ -16,25 +14,27 @@ import (
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
-// All contains all the on-board headers on a micro computer. The map key is
-// the header name, e.g. "P1" or "EULER" and the value is a slice of slice of
-// pins. For a 2x20 header, it's going to be a slice of [20][2]gpio.PinIO.
-func All() map[string][][]gpio.PinIO {
+// PinsHeaders contains all the on-board headers on a micro computer.
+//
+// The map key is the header name, e.g. "P1" or "EULER" and the value is a
+// slice of slice of pins. For a 2x20 header, it's going to be a slice of
+// [20][2]gpio.PinIO.
+func PinsHeaders() map[string][][]gpio.PinIO {
 	lock.Lock()
 	defer lock.Unlock()
 	initAll()
-	return all
+	return allHeaders
 }
 
-// IsConnected returns true if the pin is on a header.
-func IsConnected(p gpio.PinIO) bool {
+// PinIsConnected returns true if the pin is on a header.
+func PinIsConnected(p gpio.PinIO) bool {
 	lock.Lock()
 	defer lock.Unlock()
 	// Populate the map on first use.
 	if connectedPins == nil {
 		initAll()
 		connectedPins = map[string]bool{}
-		for name, header := range all {
+		for name, header := range allHeaders {
 			for i, line := range header {
 				for j, pin := range line {
 					if pin == nil || len(pin.String()) == 0 {
@@ -53,19 +53,19 @@ func IsConnected(p gpio.PinIO) bool {
 
 var (
 	lock          sync.Mutex
-	all           map[string][][]gpio.PinIO // every known headers as per internal lookup table
+	allHeaders    map[string][][]gpio.PinIO // every known headers as per internal lookup table
 	connectedPins map[string]bool           // GPIO pin name to bool
 )
 
 func initAll() {
-	if all == nil {
+	if allHeaders == nil {
 		if internal.IsRaspberryPi() {
-			all = rpi.Headers
+			allHeaders = rpi.Headers
 		} else if internal.IsPine64() {
-			all = pine64.Headers
+			allHeaders = pine64.Headers
 		} else {
 			// Implement!
-			all = map[string][][]gpio.PinIO{}
+			allHeaders = map[string][][]gpio.PinIO{}
 		}
 	}
 }

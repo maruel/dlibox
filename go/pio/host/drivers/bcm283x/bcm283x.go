@@ -15,48 +15,49 @@ import (
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
 	"github.com/maruel/dlibox/go/pio/host/internal/gpiomem"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // Functional is pins.Functional on this CPU.
 var Functional = map[string]gpio.PinIO{
-	"GPCLK0":    gpio.INVALID,
-	"GPCLK1":    gpio.INVALID,
-	"GPCLK2":    gpio.INVALID,
-	"I2C0_SCL":  gpio.INVALID,
-	"I2C0_SDA":  gpio.INVALID,
-	"I2C1_SCL":  gpio.INVALID,
-	"I2C1_SDA":  gpio.INVALID,
-	"PCM_CLK":   gpio.INVALID,
-	"PCM_FS":    gpio.INVALID,
-	"PCM_DIN":   gpio.INVALID,
-	"PCM_DOUT":  gpio.INVALID,
-	"PWM0_OUT":  gpio.INVALID,
-	"PWM1_OUT":  gpio.INVALID,
-	"SPI0_CE0":  gpio.INVALID,
-	"SPI0_CE1":  gpio.INVALID,
-	"SPI0_CLK":  gpio.INVALID,
-	"SPI0_MISO": gpio.INVALID,
-	"SPI0_MOSI": gpio.INVALID,
-	"SPI1_CE0":  gpio.INVALID,
-	"SPI1_CE1":  gpio.INVALID,
-	"SPI1_CE2":  gpio.INVALID,
-	"SPI1_CLK":  gpio.INVALID,
-	"SPI1_MISO": gpio.INVALID,
-	"SPI1_MOSI": gpio.INVALID,
-	"SPI2_MISO": gpio.INVALID,
-	"SPI2_MOSI": gpio.INVALID,
-	"SPI2_CLK":  gpio.INVALID,
-	"SPI2_CE0":  gpio.INVALID,
-	"SPI2_CE1":  gpio.INVALID,
-	"SPI2_CE2":  gpio.INVALID,
-	"UART0_RXD": gpio.INVALID,
-	"UART0_CTS": gpio.INVALID,
-	"UART1_CTS": gpio.INVALID,
-	"UART0_RTS": gpio.INVALID,
-	"UART1_RTS": gpio.INVALID,
-	"UART0_TXD": gpio.INVALID,
-	"UART1_RXD": gpio.INVALID,
-	"UART1_TXD": gpio.INVALID,
+	"GPCLK0":    pins.INVALID,
+	"GPCLK1":    pins.INVALID,
+	"GPCLK2":    pins.INVALID,
+	"I2C0_SCL":  pins.INVALID,
+	"I2C0_SDA":  pins.INVALID,
+	"I2C1_SCL":  pins.INVALID,
+	"I2C1_SDA":  pins.INVALID,
+	"PCM_CLK":   pins.INVALID,
+	"PCM_FS":    pins.INVALID,
+	"PCM_DIN":   pins.INVALID,
+	"PCM_DOUT":  pins.INVALID,
+	"PWM0_OUT":  pins.INVALID,
+	"PWM1_OUT":  pins.INVALID,
+	"SPI0_CE0":  pins.INVALID,
+	"SPI0_CE1":  pins.INVALID,
+	"SPI0_CLK":  pins.INVALID,
+	"SPI0_MISO": pins.INVALID,
+	"SPI0_MOSI": pins.INVALID,
+	"SPI1_CE0":  pins.INVALID,
+	"SPI1_CE1":  pins.INVALID,
+	"SPI1_CE2":  pins.INVALID,
+	"SPI1_CLK":  pins.INVALID,
+	"SPI1_MISO": pins.INVALID,
+	"SPI1_MOSI": pins.INVALID,
+	"SPI2_MISO": pins.INVALID,
+	"SPI2_MOSI": pins.INVALID,
+	"SPI2_CLK":  pins.INVALID,
+	"SPI2_CE0":  pins.INVALID,
+	"SPI2_CE1":  pins.INVALID,
+	"SPI2_CE2":  pins.INVALID,
+	"UART0_RXD": pins.INVALID,
+	"UART0_CTS": pins.INVALID,
+	"UART1_CTS": pins.INVALID,
+	"UART0_RTS": pins.INVALID,
+	"UART1_RTS": pins.INVALID,
+	"UART0_TXD": pins.INVALID,
+	"UART1_RXD": pins.INVALID,
+	"UART1_TXD": pins.INVALID,
 }
 
 // Pin is a GPIO number (GPIOnn) on BCM238(5|6|7).
@@ -188,44 +189,44 @@ var (
 // Special functions that can be assigned to a GPIO. The values are probed and
 // set at runtime. Changing the value of the variables has no effect.
 var (
-	GPCLK0    gpio.PinIO = gpio.INVALID // GPIO4, GPIO20, GPIO32, GPIO34 (also named GPIO_GCLK)
-	GPCLK1    gpio.PinIO = gpio.INVALID // GPIO5, GPIO21, GPIO42, GPIO44
-	GPCLK2    gpio.PinIO = gpio.INVALID // GPIO6, GPIO43
-	I2C0_SCL  gpio.PinIO = gpio.INVALID // GPIO1, GPIO29, GPIO45
-	I2C0_SDA  gpio.PinIO = gpio.INVALID // GPIO0, GPIO28, GPIO44
-	I2C1_SCL  gpio.PinIO = gpio.INVALID // GPIO3, GPIO45
-	I2C1_SDA  gpio.PinIO = gpio.INVALID // GPIO2, GPIO44
-	PCM_CLK   gpio.PinIO = gpio.INVALID // GPIO18, GPIO28 (I2S)
-	PCM_FS    gpio.PinIO = gpio.INVALID // GPIO19, GPIO29
-	PCM_DIN   gpio.PinIO = gpio.INVALID // GPIO20, GPIO30
-	PCM_DOUT  gpio.PinIO = gpio.INVALID // GPIO21, GPIO31
-	PWM0_OUT  gpio.PinIO = gpio.INVALID // GPIO12, GPIO18, GPIO40
-	PWM1_OUT  gpio.PinIO = gpio.INVALID // GPIO13, GPIO19, GPIO41, GPIO45
-	SPI0_CE0  gpio.PinIO = gpio.INVALID // GPIO8,  GPIO36
-	SPI0_CE1  gpio.PinIO = gpio.INVALID // GPIO7,  GPIO35
-	SPI0_CLK  gpio.PinIO = gpio.INVALID // GPIO11, GPIO39
-	SPI0_MISO gpio.PinIO = gpio.INVALID // GPIO9,  GPIO37
-	SPI0_MOSI gpio.PinIO = gpio.INVALID // GPIO10, GPIO38
-	SPI1_CE0  gpio.PinIO = gpio.INVALID // GPIO18
-	SPI1_CE1  gpio.PinIO = gpio.INVALID // GPIO17
-	SPI1_CE2  gpio.PinIO = gpio.INVALID // GPIO16
-	SPI1_CLK  gpio.PinIO = gpio.INVALID // GPIO21
-	SPI1_MISO gpio.PinIO = gpio.INVALID // GPIO19
-	SPI1_MOSI gpio.PinIO = gpio.INVALID // GPIO20
-	SPI2_MISO gpio.PinIO = gpio.INVALID // GPIO40
-	SPI2_MOSI gpio.PinIO = gpio.INVALID // GPIO41
-	SPI2_CLK  gpio.PinIO = gpio.INVALID // GPIO42
-	SPI2_CE0  gpio.PinIO = gpio.INVALID // GPIO43
-	SPI2_CE1  gpio.PinIO = gpio.INVALID // GPIO44
-	SPI2_CE2  gpio.PinIO = gpio.INVALID // GPIO45
-	UART0_CTS gpio.PinIO = gpio.INVALID // GPIO16, GPIO30, GPIO39
-	UART0_RTS gpio.PinIO = gpio.INVALID // GPIO17, GPIO31, GPIO38
-	UART0_RXD gpio.PinIO = gpio.INVALID // GPIO15, GPIO33, GPIO37
-	UART0_TXD gpio.PinIO = gpio.INVALID // GPIO14, GPIO32, GPIO36
-	UART1_CTS gpio.PinIO = gpio.INVALID // GPIO16, GPIO30
-	UART1_RTS gpio.PinIO = gpio.INVALID // GPIO17, GPIO31
-	UART1_RXD gpio.PinIO = gpio.INVALID // GPIO15, GPIO33, GPIO41
-	UART1_TXD gpio.PinIO = gpio.INVALID // GPIO14, GPIO32, GPIO40
+	GPCLK0    gpio.PinIO = pins.INVALID // GPIO4, GPIO20, GPIO32, GPIO34 (also named GPIO_GCLK)
+	GPCLK1    gpio.PinIO = pins.INVALID // GPIO5, GPIO21, GPIO42, GPIO44
+	GPCLK2    gpio.PinIO = pins.INVALID // GPIO6, GPIO43
+	I2C0_SCL  gpio.PinIO = pins.INVALID // GPIO1, GPIO29, GPIO45
+	I2C0_SDA  gpio.PinIO = pins.INVALID // GPIO0, GPIO28, GPIO44
+	I2C1_SCL  gpio.PinIO = pins.INVALID // GPIO3, GPIO45
+	I2C1_SDA  gpio.PinIO = pins.INVALID // GPIO2, GPIO44
+	PCM_CLK   gpio.PinIO = pins.INVALID // GPIO18, GPIO28 (I2S)
+	PCM_FS    gpio.PinIO = pins.INVALID // GPIO19, GPIO29
+	PCM_DIN   gpio.PinIO = pins.INVALID // GPIO20, GPIO30
+	PCM_DOUT  gpio.PinIO = pins.INVALID // GPIO21, GPIO31
+	PWM0_OUT  gpio.PinIO = pins.INVALID // GPIO12, GPIO18, GPIO40
+	PWM1_OUT  gpio.PinIO = pins.INVALID // GPIO13, GPIO19, GPIO41, GPIO45
+	SPI0_CE0  gpio.PinIO = pins.INVALID // GPIO8,  GPIO36
+	SPI0_CE1  gpio.PinIO = pins.INVALID // GPIO7,  GPIO35
+	SPI0_CLK  gpio.PinIO = pins.INVALID // GPIO11, GPIO39
+	SPI0_MISO gpio.PinIO = pins.INVALID // GPIO9,  GPIO37
+	SPI0_MOSI gpio.PinIO = pins.INVALID // GPIO10, GPIO38
+	SPI1_CE0  gpio.PinIO = pins.INVALID // GPIO18
+	SPI1_CE1  gpio.PinIO = pins.INVALID // GPIO17
+	SPI1_CE2  gpio.PinIO = pins.INVALID // GPIO16
+	SPI1_CLK  gpio.PinIO = pins.INVALID // GPIO21
+	SPI1_MISO gpio.PinIO = pins.INVALID // GPIO19
+	SPI1_MOSI gpio.PinIO = pins.INVALID // GPIO20
+	SPI2_MISO gpio.PinIO = pins.INVALID // GPIO40
+	SPI2_MOSI gpio.PinIO = pins.INVALID // GPIO41
+	SPI2_CLK  gpio.PinIO = pins.INVALID // GPIO42
+	SPI2_CE0  gpio.PinIO = pins.INVALID // GPIO43
+	SPI2_CE1  gpio.PinIO = pins.INVALID // GPIO44
+	SPI2_CE2  gpio.PinIO = pins.INVALID // GPIO45
+	UART0_CTS gpio.PinIO = pins.INVALID // GPIO16, GPIO30, GPIO39
+	UART0_RTS gpio.PinIO = pins.INVALID // GPIO17, GPIO31, GPIO38
+	UART0_RXD gpio.PinIO = pins.INVALID // GPIO15, GPIO33, GPIO37
+	UART0_TXD gpio.PinIO = pins.INVALID // GPIO14, GPIO32, GPIO36
+	UART1_CTS gpio.PinIO = pins.INVALID // GPIO16, GPIO30
+	UART1_RTS gpio.PinIO = pins.INVALID // GPIO17, GPIO31
+	UART1_RXD gpio.PinIO = pins.INVALID // GPIO15, GPIO33, GPIO41
+	UART1_TXD gpio.PinIO = pins.INVALID // GPIO14, GPIO32, GPIO40
 )
 
 // PinIO implementation.

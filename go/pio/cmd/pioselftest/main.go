@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
-	"github.com/maruel/dlibox/go/pio/host/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
@@ -39,7 +39,7 @@ func getPin(s string, useSysfs bool) (gpio.PinIO, error) {
 			return nil, err
 		}
 	} else {
-		p = pins.ByNumber(number)
+		p = host.PinByNumber(number)
 	}
 	if p == nil {
 		return nil, errors.New("invalid pin number")
@@ -206,7 +206,6 @@ func doCycle(p1, p2 gpio.PinIO, noEdge, noPull, slow bool) error {
 func mainImpl() error {
 	noEdge := flag.Bool("e", false, "no edge test, necessary when testing without sysfs")
 	slow := flag.Bool("s", false, "slow; insert a second between each step")
-	fallback := flag.Bool("fallback", false, "enable fallback to sysfs if no native driver is found")
 	useSysfs := flag.Bool("sysfs", false, "force the use of sysfs")
 	flag.Parse()
 
@@ -215,7 +214,7 @@ func mainImpl() error {
 	}
 
 	if !*useSysfs {
-		subsystem, err := pins.Init(*fallback)
+		subsystem, err := host.Init()
 		if err != nil {
 			return err
 		}
