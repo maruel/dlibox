@@ -187,7 +187,7 @@ func (d *driver) Init() (bool, error) {
 	}
 
 	if Version == 1 {
-		headers.Register("P1", [][]gpio.PinIO{
+		headers.Register("P1", [][]pins.Pin{
 			{P1_1, P1_2},
 			{P1_3, P1_4},
 			{P1_5, P1_6},
@@ -202,7 +202,7 @@ func (d *driver) Init() (bool, error) {
 			{P1_23, P1_24},
 			{P1_25, P1_26},
 		})
-		headers.Register("P5", [][]gpio.PinIO{
+		headers.Register("P5", [][]pins.Pin{
 			{P5_1, P5_2},
 			{P5_3, P5_4},
 			{P5_5, P5_6},
@@ -227,7 +227,7 @@ func (d *driver) Init() (bool, error) {
 		P1_39 = pins.INVALID
 		P1_40 = pins.INVALID
 	} else {
-		headers.Register("P1", [][]gpio.PinIO{
+		headers.Register("P1", [][]pins.Pin{
 			{P1_1, P1_2},
 			{P1_3, P1_4},
 			{P1_5, P1_6},
@@ -261,10 +261,10 @@ func (d *driver) Init() (bool, error) {
 	if Version < 3 {
 		AUDIO_LEFT = bcm283x.GPIO45
 	}
-	headers.Register("AUDIO", [][]gpio.PinIO{
+	headers.Register("AUDIO", [][]pins.Pin{
 		{AUDIO_LEFT},
 		{AUDIO_RIGHT},
 	})
-	headers.Register("HDMI", [][]gpio.PinIO{{HDMI_HOTPLUG_DETECT}})
+	headers.Register("HDMI", [][]pins.Pin{{HDMI_HOTPLUG_DETECT}})
 	return true, nil
 }

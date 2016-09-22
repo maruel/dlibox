@@ -8,15 +8,15 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // All contains all the on-board headers on a micro computer.
 //
 // The map key is the header name, e.g. "P1" or "EULER" and the value is a
 // slice of slice of pins. For a 2x20 header, it's going to be a slice of
-// [20][2]gpio.PinIO.
-func All() map[string][][]gpio.PinIO {
+// [20][2]pins.Pin.
+func All() map[string][][]pins.Pin {
 	lock.Lock()
 	defer lock.Unlock()
 	// TODO(maruel): Return a copy?
@@ -24,7 +24,7 @@ func All() map[string][][]gpio.PinIO {
 }
 
 // IsConnected returns true if the pin is on a header.
-func IsConnected(p gpio.PinIO) bool {
+func IsConnected(p pins.Pin) bool {
 	lock.Lock()
 	defer lock.Unlock()
 	// Populate the map on first use.
@@ -46,7 +46,7 @@ func IsConnected(p gpio.PinIO) bool {
 }
 
 // Register registers a physical header.
-func Register(name string, pins [][]gpio.PinIO) {
+func Register(name string, pins [][]pins.Pin) {
 	lock.Lock()
 	defer lock.Unlock()
 	// TODO(maruel): Copy the slices?
@@ -57,6 +57,6 @@ func Register(name string, pins [][]gpio.PinIO) {
 
 var (
 	lock          sync.Mutex
-	allHeaders    = map[string][][]gpio.PinIO{} // every known headers as per internal lookup table
-	connectedPins map[string]bool               // GPIO pin name to bool
+	allHeaders    = map[string][][]pins.Pin{} // every known headers as per internal lookup table
+	connectedPins map[string]bool             // GPIO pin name to bool
 )

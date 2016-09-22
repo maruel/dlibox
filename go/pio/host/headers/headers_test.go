@@ -7,7 +7,6 @@ package headers
 import (
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio/gpiotest"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
@@ -38,7 +37,7 @@ var (
 )
 
 func init() {
-	allHeaders = map[string][][]gpio.PinIO{
+	allHeaders = map[string][][]pins.Pin{
 		"P1": {
 			{pins.GROUND, pins.V3_3},
 			{gpio2, gpio3},

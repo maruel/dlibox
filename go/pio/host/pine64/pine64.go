@@ -9,6 +9,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/host/allwinner"
 	"github.com/maruel/dlibox/go/pio/host/headers"
 	"github.com/maruel/dlibox/go/pio/host/internal"
+	"github.com/maruel/dlibox/go/pio/protocols/analog"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
@@ -58,51 +59,51 @@ var (
 	P1_39 gpio.PinIO = pins.GROUND    //
 	P1_40 gpio.PinIO = allwinner.PC11 //
 
-	EULER_1  gpio.PinIO = pins.V3_3        //
-	EULER_2  gpio.PinIO = pins.DC_IN       //
-	EULER_3  gpio.PinIO = pins.BAT_PLUS    //
-	EULER_4  gpio.PinIO = pins.DC_IN       //
-	EULER_5  gpio.PinIO = pins.TEMP_SENSOR //
-	EULER_6  gpio.PinIO = pins.GROUND      //
-	EULER_7  gpio.PinIO = pins.IR_RX       //
-	EULER_8  gpio.PinIO = pins.V5          //
-	EULER_9  gpio.PinIO = pins.GROUND      //
-	EULER_10 gpio.PinIO = allwinner.PH8    //
-	EULER_11 gpio.PinIO = allwinner.PB3    //
-	EULER_12 gpio.PinIO = allwinner.PB4    //
-	EULER_13 gpio.PinIO = allwinner.PB5    //
-	EULER_14 gpio.PinIO = pins.GROUND      //
-	EULER_15 gpio.PinIO = allwinner.PB6    //
-	EULER_16 gpio.PinIO = allwinner.PB7    //
-	EULER_17 gpio.PinIO = pins.V3_3        //
-	EULER_18 gpio.PinIO = allwinner.PD4    //
-	EULER_19 gpio.PinIO = allwinner.PD2    //
-	EULER_20 gpio.PinIO = pins.GROUND      //
-	EULER_21 gpio.PinIO = allwinner.PD3    //
-	EULER_22 gpio.PinIO = allwinner.PD5    //
-	EULER_23 gpio.PinIO = allwinner.PD1    //
-	EULER_24 gpio.PinIO = allwinner.PD0    //
-	EULER_25 gpio.PinIO = pins.GROUND      //
-	EULER_26 gpio.PinIO = allwinner.PD6    //
-	EULER_27 gpio.PinIO = allwinner.PB2    //
-	EULER_28 gpio.PinIO = allwinner.PD7    //
-	EULER_29 gpio.PinIO = allwinner.PB8    //
-	EULER_30 gpio.PinIO = allwinner.PB9    //
-	EULER_31 gpio.PinIO = pins.EAROUTP     //
-	EULER_32 gpio.PinIO = pins.EAROUTN     //
-	EULER_33 gpio.PinIO = pins.INVALID     //
-	EULER_34 gpio.PinIO = pins.GROUND      //
+	EULER_1  gpio.PinIO   = pins.V3_3        //
+	EULER_2  gpio.PinIO   = pins.DC_IN       //
+	EULER_3  gpio.PinIO   = pins.BAT_PLUS    //
+	EULER_4  gpio.PinIO   = pins.DC_IN       //
+	EULER_5  gpio.PinIO   = pins.TEMP_SENSOR //
+	EULER_6  gpio.PinIO   = pins.GROUND      //
+	EULER_7  gpio.PinIO   = pins.IR_RX       //
+	EULER_8  gpio.PinIO   = pins.V5          //
+	EULER_9  gpio.PinIO   = pins.GROUND      //
+	EULER_10 gpio.PinIO   = allwinner.PH8    //
+	EULER_11 gpio.PinIO   = allwinner.PB3    //
+	EULER_12 gpio.PinIO   = allwinner.PB4    //
+	EULER_13 gpio.PinIO   = allwinner.PB5    //
+	EULER_14 gpio.PinIO   = pins.GROUND      //
+	EULER_15 gpio.PinIO   = allwinner.PB6    //
+	EULER_16 gpio.PinIO   = allwinner.PB7    //
+	EULER_17 gpio.PinIO   = pins.V3_3        //
+	EULER_18 gpio.PinIO   = allwinner.PD4    //
+	EULER_19 gpio.PinIO   = allwinner.PD2    //
+	EULER_20 gpio.PinIO   = pins.GROUND      //
+	EULER_21 gpio.PinIO   = allwinner.PD3    //
+	EULER_22 gpio.PinIO   = allwinner.PD5    //
+	EULER_23 gpio.PinIO   = allwinner.PD1    //
+	EULER_24 gpio.PinIO   = allwinner.PD0    //
+	EULER_25 gpio.PinIO   = pins.GROUND      //
+	EULER_26 gpio.PinIO   = allwinner.PD6    //
+	EULER_27 gpio.PinIO   = allwinner.PB2    //
+	EULER_28 gpio.PinIO   = allwinner.PD7    //
+	EULER_29 gpio.PinIO   = allwinner.PB8    //
+	EULER_30 gpio.PinIO   = allwinner.PB9    //
+	EULER_31 analog.PinIO = pins.EAROUTP     //
+	EULER_32 analog.PinIO = pins.EAROUTP     //
+	EULER_33 gpio.PinIO   = pins.INVALID     //
+	EULER_34 gpio.PinIO   = pins.GROUND      //
 
-	EXP_1  gpio.PinIO = pins.V3_3        //
-	EXP_2  gpio.PinIO = allwinner.PL7    //
-	EXP_3  gpio.PinIO = pins.CHARGER_LED //
-	EXP_4  gpio.PinIO = pins.RESET       //
-	EXP_5  gpio.PinIO = pins.PWR_SWITCH  //
-	EXP_6  gpio.PinIO = pins.GROUND      //
-	EXP_7  gpio.PinIO = allwinner.PB8    //
-	EXP_8  gpio.PinIO = allwinner.PB9    //
-	EXP_9  gpio.PinIO = pins.GROUND      //
-	EXP_10 gpio.PinIO = pins.KEY_ADC     //
+	EXP_1  gpio.PinIO   = pins.V3_3        //
+	EXP_2  gpio.PinIO   = allwinner.PL7    //
+	EXP_3  gpio.PinIO   = pins.CHARGER_LED //
+	EXP_4  gpio.PinIO   = pins.RESET       //
+	EXP_5  gpio.PinIO   = pins.PWR_SWITCH  //
+	EXP_6  gpio.PinIO   = pins.GROUND      //
+	EXP_7  gpio.PinIO   = allwinner.PB8    //
+	EXP_8  gpio.PinIO   = allwinner.PB9    //
+	EXP_9  gpio.PinIO   = pins.GROUND      //
+	EXP_10 analog.PinIO = pins.KEY_ADC     //
 
 	WIFI_BT_1  gpio.PinIO = pins.GROUND    //
 	WIFI_BT_2  gpio.PinIO = allwinner.PG6  //
@@ -265,7 +266,7 @@ func (d *driver) Init() (bool, error) {
 		zapPins()
 		return false, nil
 	}
-	headers.Register("P1", [][]gpio.PinIO{
+	headers.Register("P1", [][]pins.Pin{
 		{P1_1, P1_2},
 		{P1_3, P1_4},
 		{P1_5, P1_6},
@@ -287,7 +288,7 @@ func (d *driver) Init() (bool, error) {
 		{P1_37, P1_38},
 		{P1_39, P1_20},
 	})
-	headers.Register("EULER", [][]gpio.PinIO{
+	headers.Register("EULER", [][]pins.Pin{
 		{EULER_1, EULER_2},
 		{EULER_3, EULER_4},
 		{EULER_5, EULER_6},
@@ -306,14 +307,14 @@ func (d *driver) Init() (bool, error) {
 		{EULER_31, EULER_32},
 		{EULER_33, EULER_34},
 	})
-	headers.Register("EXP", [][]gpio.PinIO{
+	headers.Register("EXP", [][]pins.Pin{
 		{EXP_1, EXP_2},
 		{EXP_3, EXP_4},
 		{EXP_5, EXP_6},
 		{EXP_7, EXP_8},
 		{EXP_9, EXP_10},
 	})
-	headers.Register("WIFI_BT", [][]gpio.PinIO{
+	headers.Register("WIFI_BT", [][]pins.Pin{
 		{WIFI_BT_1, WIFI_BT_2},
 		{WIFI_BT_3, WIFI_BT_4},
 		{WIFI_BT_5, WIFI_BT_6},
@@ -328,7 +329,7 @@ func (d *driver) Init() (bool, error) {
 		{WIFI_BT_23, WIFI_BT_24},
 		{WIFI_BT_25, WIFI_BT_26},
 	})
-	headers.Register("AUDIO", [][]gpio.PinIO{
+	headers.Register("AUDIO", [][]pins.Pin{
 		{AUDIO_LEFT},
 		{AUDIO_RIGHT},
 	})

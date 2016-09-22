@@ -13,29 +13,38 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/maruel/dlibox/go/pio/protocols/analog"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 var (
 	// INVALID implements gpio.PinIO and fails on all access.
 	INVALID     invalidPin
-	GROUND      gpio.PinIO = &pin{name: "GROUND"}
-	V3_3        gpio.PinIO = &pin{name: "V3_3"}
-	V5          gpio.PinIO = &pin{name: "V5"}
-	DC_IN       gpio.PinIO = &pin{name: "DC_IN"}
-	TEMP_SENSOR gpio.PinIO = &pin{name: "TEMP_SENSOR"}
-	BAT_PLUS    gpio.PinIO = &pin{name: "BAT_PLUS"}
-	IR_RX       gpio.PinIO = &pin{name: "IR_RX"}
-	EAROUTP     gpio.PinIO = &pin{name: "EAROUTP"} // Earpiece amplifier negative differential output
-	EAROUTN     gpio.PinIO = &pin{name: "EAROUTN"} // Earpiece amplifier positive differential output
-	CHARGER_LED gpio.PinIO = &pin{name: "CHARGER_LED"}
-	RESET       gpio.PinIO = &pin{name: "RESET"}
-	PWR_SWITCH  gpio.PinIO = &pin{name: "PWR_SWITCH"}
-	KEY_ADC     gpio.PinIO = &pin{name: "KEY_ADC"}
-	X32KFOUT    gpio.PinIO = &pin{name: "X32KFOUT"}
-	VCC         gpio.PinIO = &pin{name: "VCC"}
-	IOVCC       gpio.PinIO = &pin{name: "IOVCC"}
+	GROUND      gpio.PinIO   = &pin{name: "GROUND"}
+	V3_3        gpio.PinIO   = &pin{name: "V3_3"}
+	V5          gpio.PinIO   = &pin{name: "V5"}
+	VCC         gpio.PinIO   = &pin{name: "VCC"}         //
+	DC_IN       gpio.PinIO   = &pin{name: "DC_IN"}       //
+	TEMP_SENSOR gpio.PinIO   = &pin{name: "TEMP_SENSOR"} //
+	BAT_PLUS    gpio.PinIO   = &pin{name: "BAT_PLUS"}    //
+	IR_RX       gpio.PinIO   = &pin{name: "IR_RX"}       // IR Data Receive
+	CHARGER_LED gpio.PinIO   = &pin{name: "CHARGER_LED"} //
+	RESET       gpio.PinIO   = &pin{name: "RESET"}       //
+	PWR_SWITCH  gpio.PinIO   = &pin{name: "PWR_SWITCH"}  //
+	X32KFOUT    gpio.PinIO   = &pin{name: "X32KFOUT"}    // Clock output of 32Khz crystal
+	IOVCC       gpio.PinIO   = &pin{name: "IOVCC"}       // Power supply for port A
+	KEY_ADC     analog.PinIO = &pin{name: "KEY_ADC"}     // 6 bits resolution ADC for key application; can work up to 250Hz conversion rate; reference voltage is 2.0V
+	EAROUTP     analog.PinIO = &pin{name: "EAROUTP"}     // Earpiece amplifier negative differential output
+	EAROUTN     analog.PinIO = &pin{name: "EAROUTN"}     // Earpiece amplifier positive differential output
 )
+
+// Pin is the minimal common interface shared between gpio.PinIO and
+// analog.PinIO.
+type Pin interface {
+	fmt.Stringer
+	Number() int
+	Function() string
+}
 
 //
 
@@ -81,6 +90,22 @@ func (invalidPin) Out(gpio.Level) error {
 	return invalidPinErr
 }
 
+func (invalidPin) ADC() error {
+	return invalidPinErr
+}
+
+func (invalidPin) Range() (int32, int32) {
+	return 0, 0
+}
+
+func (invalidPin) Measure() int32 {
+	return 0
+}
+
+func (invalidPin) DAC(v int32) error {
+	return invalidPinErr
+}
+
 // pin implements gpio.PinIO.
 type pin struct {
 	invalidPin
@@ -101,4 +126,20 @@ func (p *pin) Edges() (<-chan gpio.Level, error) {
 
 func (p *pin) Out(gpio.Level) error {
 	return fmt.Errorf("%s cannot be used as output", p.name)
+}
+
+func (p *pin) ADC() error {
+	return fmt.Errorf("%s cannot be used as analog input", p.name)
+}
+
+func (p *pin) Range() (int32, int32) {
+	return 0, 0
+}
+
+func (p *pin) Measure() int32 {
+	return 0
+}
+
+func (p *pin) DAC(v int32) error {
+	return fmt.Errorf("%s cannot be used as analog output", p.name)
 }
