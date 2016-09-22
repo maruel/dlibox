@@ -11,8 +11,8 @@ import (
 	"sync"
 
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/hal/pine64"
-	"github.com/maruel/dlibox/go/pio/host/hal/rpi"
+	"github.com/maruel/dlibox/go/pio/host/drivers/pine64"
+	"github.com/maruel/dlibox/go/pio/host/drivers/rpi"
 	"github.com/maruel/dlibox/go/pio/host/internal"
 )
 

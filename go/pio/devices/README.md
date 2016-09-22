@@ -34,5 +34,4 @@ Contains driver for the following devices:
 In addition, contains packages for:
 
 * [devicetest](devicetest) fakes for unit testing
-* [i2cdev](i2cdev) adapter to convert a host.I2C into a host.Bus
 * [piblaster](piblaster) wrapper to generate PWM via DMA
