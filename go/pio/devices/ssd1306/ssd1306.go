@@ -70,7 +70,7 @@ type Dev struct {
 // to SCLK.
 //
 // As per datasheet, maximum clock speed is 1/100ns = 10MHz.
-func NewSPI(s spi.Bus, w, h int, rotated bool) (*Dev, error) {
+func NewSPI(s spi.Conn, w, h int, rotated bool) (*Dev, error) {
 	if err := s.Configure(spi.Mode3, 8); err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func NewSPI(s spi.Bus, w, h int, rotated bool) (*Dev, error) {
 //
 // As per datasheet, maximum clock speed is 1/2.5µs = 400KHz. It's worth
 // bumping up from default bus speed of 100KHz if possible.
-func NewI2C(i i2c.Bus, w, h int, rotated bool) (*Dev, error) {
+func NewI2C(i i2c.Conn, w, h int, rotated bool) (*Dev, error) {
 	return newDev(&i2c.Dev{i, 0x3C}, w, h, rotated)
 }
 

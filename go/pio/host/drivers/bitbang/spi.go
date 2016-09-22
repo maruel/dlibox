@@ -33,7 +33,7 @@ type SPI struct {
 	halfCycle time.Duration
 }
 
-// Speed implements spi.Bus.
+// Speed implements spi.Conn.
 func (s *SPI) Speed(hz int64) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -41,7 +41,7 @@ func (s *SPI) Speed(hz int64) error {
 	return nil
 }
 
-// Configure implements spi.Bus.
+// Configure implements spi.Conn.
 func (s *SPI) Configure(mode spi.Mode, bits int) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -53,7 +53,7 @@ func (s *SPI) Configure(mode spi.Mode, bits int) error {
 	return nil
 }
 
-// Tx implements spi.Bus.
+// Tx implements spi.Conn.
 //
 // BUG(maruel): Implement mode.
 // BUG(maruel): Implement bits.
@@ -86,7 +86,7 @@ func (s *SPI) Tx(w, r []byte) error {
 	return nil
 }
 
-// Write implements spi.Bus.
+// Write implements spi.Conn.
 func (s *SPI) Write(d []byte) (int, error) {
 	if err := s.Tx(d, nil); err != nil {
 		return 0, err
@@ -156,4 +156,4 @@ func (s *SPI) sleepHalfCycle() {
 	internal.Nanosleep(s.halfCycle)
 }
 
-var _ spi.Bus = &SPI{}
+var _ spi.Conn = &SPI{}

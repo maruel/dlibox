@@ -25,9 +25,9 @@ const (
 	Mode3 Mode = 0x3 // CPOL=1, CPHA=1
 )
 
-// Bus defines the interface a concrete SPI driver must implement.
-type Bus interface {
-	protocols.Bus
+// Conn defines the interface a concrete SPI driver must implement.
+type Conn interface {
+	protocols.Conn
 	// Speed changes the bus speed.
 	Speed(hz int64) error
 	// Configure changes the communication parameters of the bus.

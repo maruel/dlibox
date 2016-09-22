@@ -132,7 +132,7 @@ func mainImpl() error {
 		display = screen.New(*numLights)
 		defer os.Stdout.Write([]byte("\033[0m\n"))
 	} else {
-		var bus spi.Bus
+		var bus spi.Conn
 		if *clk != -1 && *mosi != -1 {
 			if _, err := host.Init(); err != nil {
 				return err

@@ -22,25 +22,25 @@ type I2CIO struct {
 	Read  []byte
 }
 
-// I2CRecord implements i2c.Bus that records everything written to it.
+// I2CRecord implements i2c.Conn that records everything written to it.
 //
 // This can then be used to feed to I2CPlayback to do "replay" based unit tests.
 type I2CRecord struct {
-	Bus  i2c.Bus // Bus can be nil if only writes are being recorded.
+	Conn i2c.Conn // Conn can be nil if only writes are being recorded.
 	Lock sync.Mutex
 	Ops  []I2CIO
 }
 
-// Tx implements i2c.Bus.
+// Tx implements i2c.Conn.
 func (i *I2CRecord) Tx(addr uint16, w, r []byte) error {
 	i.Lock.Lock()
 	defer i.Lock.Unlock()
-	if i.Bus == nil {
+	if i.Conn == nil {
 		if len(r) != 0 {
 			return errors.New("read unsupported when no bus is connected")
 		}
 	} else {
-		if err := i.Bus.Tx(addr, w, r); err != nil {
+		if err := i.Conn.Tx(addr, w, r); err != nil {
 			return err
 		}
 	}
@@ -55,20 +55,20 @@ func (i *I2CRecord) Tx(addr uint16, w, r []byte) error {
 }
 
 func (i *I2CRecord) SCL() gpio.PinIO {
-	if i.Bus != nil {
-		return i.Bus.SCL()
+	if i.Conn != nil {
+		return i.Conn.SCL()
 	}
 	return pins.INVALID
 }
 
 func (i *I2CRecord) SDA() gpio.PinIO {
-	if i.Bus != nil {
-		return i.Bus.SDA()
+	if i.Conn != nil {
+		return i.Conn.SDA()
 	}
 	return pins.INVALID
 }
 
-// I2CPlayblack implements i2c.Bus and plays back a recorded I/O flow.
+// I2CPlayblack implements i2c.Conn and plays back a recorded I/O flow.
 //
 // While "replay" type of unit tests are of limited value, they still present
 // an easy way to do basic code coverage.
@@ -80,7 +80,7 @@ type I2CPlayback struct {
 	Ops  []I2CIO
 }
 
-// Tx implements i2c.Bus.
+// Tx implements i2c.Conn.
 func (i *I2CPlayback) Tx(addr uint16, w, r []byte) error {
 	i.Lock.Lock()
 	defer i.Lock.Unlock()
@@ -110,5 +110,5 @@ func (i *I2CPlayback) SDA() gpio.PinIO {
 	return pins.INVALID
 }
 
-var _ i2c.Bus = &I2CRecord{}
-var _ i2c.Bus = &I2CPlayback{}
+var _ i2c.Conn = &I2CRecord{}
+var _ i2c.Conn = &I2CPlayback{}

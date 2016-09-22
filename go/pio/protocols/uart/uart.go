@@ -19,9 +19,9 @@ const (
 	Even Parity = 2
 )
 
-// Bus defines the interface a concrete UART driver must implement.
-type Bus interface {
-	protocols.Bus
+// Conn defines the interface a concrete UART driver must implement.
+type Conn interface {
+	protocols.Conn
 	// Speed changes the bus speed.
 	Speed(baud int64) error
 	// Configure changes the communication parameters of the bus.

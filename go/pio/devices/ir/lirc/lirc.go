@@ -47,8 +47,8 @@ func Pins() (int, int) {
 	return in, out
 }
 
-// Bus is an open port to lirc.
-type Bus struct {
+// Conn is an open port to lirc.
+type Conn struct {
 	w           net.Conn
 	c           chan ir.Message
 	lock        sync.Mutex
@@ -57,57 +57,57 @@ type Bus struct {
 }
 
 // New returns a IR receiver / emitter handle.
-func New() (*Bus, error) {
+func New() (*Conn, error) {
 	w, err := net.Dial("unix", "/var/run/lirc/lircd")
 	if err != nil {
 		return nil, err
 	}
-	b := &Bus{w: w, c: make(chan ir.Message), list: map[string][]string{}}
+	c := &Conn{w: w, c: make(chan ir.Message), list: map[string][]string{}}
 	// Inconditionally retrieve the list of all known keys at start.
 	if _, err := w.Write([]byte("LIST\n")); err != nil {
 		w.Close()
 		return nil, err
 	}
-	go b.loop(bufio.NewReader(w))
-	return b, nil
+	go c.loop(bufio.NewReader(w))
+	return c, nil
 }
 
 // Close closes the socket to lirc. It is not a requirement to close before
 // process termination.
-func (b *Bus) Close() error {
-	return b.w.Close()
+func (c *Conn) Close() error {
+	return c.w.Close()
 }
 
 // Emit implements ir.IR.
-func (b *Bus) Emit(remote string, key ir.Key) error {
+func (c *Conn) Emit(remote string, key ir.Key) error {
 	// http://www.lirc.org/html/lircd.html#lbAH
-	_, err := fmt.Fprintf(b.w, "SEND_ONCE %s %s", remote, key)
+	_, err := fmt.Fprintf(c.w, "SEND_ONCE %s %s", remote, key)
 	return err
 }
 
 // Channel implements ir.IR.
-func (b *Bus) Channel() <-chan ir.Message {
-	return b.c
+func (c *Conn) Channel() <-chan ir.Message {
+	return c.c
 }
 
 // Codes returns all the known codes.
 //
 // Empty if the list was not retrieved yet.
-func (b *Bus) Codes() map[string][]string {
-	b.lock.Lock()
-	defer b.lock.Unlock()
-	return b.list
+func (c *Conn) Codes() map[string][]string {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.list
 }
 
-func (b *Bus) loop(r *bufio.Reader) {
+func (c *Conn) loop(r *bufio.Reader) {
 	defer func() {
-		close(b.c)
-		b.c = nil
+		close(c.c)
+		c.c = nil
 	}()
 	for {
 		line, err := read(r)
 		if line == "BEGIN" {
-			err = b.readData(r)
+			err = c.readData(r)
 		} else if len(line) != 0 {
 			// Format is: <code> <repeat count> <button name> <remote control name>
 			// http://www.lirc.org/html/lircd.html#lbAG
@@ -117,7 +117,7 @@ func (b *Bus) loop(r *bufio.Reader) {
 				if i, err2 := strconv.Atoi(parts[1]); err2 != nil {
 					log.Printf("ir: corrupted line: #v", line)
 				} else if len(parts[2]) != 0 && len(parts[3]) != 0 {
-					b.c <- ir.Message{Key: ir.Key(parts[2]), RemoteType: parts[3], Repeat: i != 0}
+					c.c <- ir.Message{Key: ir.Key(parts[2]), RemoteType: parts[3], Repeat: i != 0}
 				}
 			}
 		}
@@ -127,7 +127,7 @@ func (b *Bus) loop(r *bufio.Reader) {
 	}
 }
 
-func (b *Bus) readData(r *bufio.Reader) error {
+func (c *Conn) readData(r *bufio.Reader) error {
 	// Format is:
 	// BEGIN
 	// <original command>
@@ -143,7 +143,7 @@ func (b *Bus) readData(r *bufio.Reader) error {
 	}
 	switch cmd {
 	case "SIGHUP":
-		_, err = b.w.Write([]byte("LIST\n"))
+		_, err = c.w.Write([]byte("LIST\n"))
 	default:
 		// In case of any error, ignore the rest.
 		line, err := read(r)
@@ -177,35 +177,35 @@ func (b *Bus) readData(r *bufio.Reader) error {
 		switch {
 		case cmd == "LIST":
 			// Request the codes for each remote.
-			b.pendingList = map[string][]string{}
+			c.pendingList = map[string][]string{}
 			for _, l := range list {
-				if _, ok := b.pendingList[l]; ok {
+				if _, ok := c.pendingList[l]; ok {
 					log.Printf("ir: unexpected %s", cmd)
 				} else {
-					b.pendingList[l] = []string{}
-					if _, err = fmt.Fprintf(b.w, "LIST %s\n", l); err != nil {
+					c.pendingList[l] = []string{}
+					if _, err = fmt.Fprintf(c.w, "LIST %s\n", l); err != nil {
 						return err
 					}
 				}
 			}
 		case strings.HasPrefix(line, "LIST "):
-			if b.pendingList == nil {
+			if c.pendingList == nil {
 				log.Printf("ir: unexpected %s", cmd)
 			} else {
 				remote := cmd[5:]
-				b.pendingList[remote] = list
+				c.pendingList[remote] = list
 				all := true
-				for _, v := range b.pendingList {
+				for _, v := range c.pendingList {
 					if len(v) == 0 {
 						all = false
 						break
 					}
 				}
 				if all {
-					b.lock.Lock()
-					b.list = b.pendingList
-					b.pendingList = nil
-					b.lock.Unlock()
+					c.lock.Lock()
+					c.list = c.pendingList
+					c.pendingList = nil
+					c.lock.Unlock()
 				}
 			}
 		default:
@@ -232,4 +232,4 @@ func read(r *bufio.Reader) (string, error) {
 	return string(raw), nil
 }
 
-var _ ir.IR = &Bus{}
+var _ ir.IR = &Conn{}

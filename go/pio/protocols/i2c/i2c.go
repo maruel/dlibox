@@ -6,18 +6,19 @@
 //
 // It includes an adapter to directly address an I²C device on a I²C bus
 // without having to continuously specify the address when doing I/O. This
-// enables the support of protocols.Bus.
+// enables the support of protocols.Conn.
 package i2c
 
 import (
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
-// Bus defines the function a concrete I²C driver must implement.
+// Conn defines the function a concrete I²C driver must implement.
 //
-// This interface doesn't implement protocols.Bus since a device address must
-// be specified. Use i2cdev.Dev as an adapter to get a Bus compatible object.
-type Bus interface {
+// This interface doesn't implement protocols.Conn since a device address must
+// be specified. Use i2cdev.Dev as an adapter to get a protocols.Conn
+// compatible object.
+type Conn interface {
 	Tx(addr uint16, w, r []byte) error
 
 	// SCL returns the CLK (clock) pin.
@@ -28,20 +29,20 @@ type Bus interface {
 
 // Dev is a device on a I²C bus.
 //
-// It implements protocols.Bus.
+// It implements protocols.Conn.
 //
 // It saves from repeatedly specifying the device address and implements
 // utility functions.
 type Dev struct {
-	Bus  Bus
+	Conn Conn
 	Addr uint16
 }
 
 // Tx does a transaction by adding the device's address to each command.
 //
-// It's a wrapper for Dev.Bus.Tx().
+// It's a wrapper for Dev.Conn.Tx().
 func (d *Dev) Tx(w, r []byte) error {
-	return d.Bus.Tx(d.Addr, w, r)
+	return d.Conn.Tx(d.Addr, w, r)
 }
 
 // Write writes to the I²C bus without reading, implementing io.Writer.

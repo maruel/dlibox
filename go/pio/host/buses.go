@@ -16,13 +16,13 @@ import (
 // I2CCloser is a generic I2C bus that can be closed.
 type I2CCloser interface {
 	io.Closer
-	i2c.Bus
+	i2c.Conn
 }
 
 // SPICloser is a generic SPI bus that can be closed.
 type SPICloser interface {
 	io.Closer
-	spi.Bus
+	spi.Conn
 }
 
 // NewI2C opens the first available I²C bus.

@@ -68,7 +68,7 @@ const (
 
 // Dev is an handle to a bme280.
 type Dev struct {
-	d     protocols.Bus
+	d     protocols.Conn
 	isSPI bool
 	c     calibration
 }
@@ -117,7 +117,7 @@ func (d *Dev) Stop() error {
 //
 // It is recommended to call Stop() when done with the device so it stops
 // sampling.
-func NewI2C(i i2c.Bus, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
+func NewI2C(i i2c.Conn, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
 	d := &Dev{d: &i2c.Dev{i, 0x76}, isSPI: false}
 	if err := d.makeDev(temperature, pressure, humidity, standby, filter); err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func NewI2C(i i2c.Bus, temperature, pressure, humidity Oversampling, standby Sta
 //
 // BUG(maruel): This code was not tested yet, still waiting for a SPI enabled
 // device in the mail.
-func NewSPI(s spi.Bus, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
+func NewSPI(s spi.Conn, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
 	// It works both in Mode0 and Mode3.
 	if err := s.Configure(spi.Mode3, 8); err != nil {
 		return nil, err

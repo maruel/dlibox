@@ -14,7 +14,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
-// SPI implements spi.Bus. It registers everything written to it.
+// SPI implements spi.Conn. It registers everything written to it.
 //
 // BUG(maruel): SPI does not support reading yet.
 type SPI struct {
@@ -75,4 +75,4 @@ func (s *SPI) CS() gpio.PinOut {
 	return pins.INVALID
 }
 
-var _ spi.Bus = &SPI{}
+var _ spi.Conn = &SPI{}

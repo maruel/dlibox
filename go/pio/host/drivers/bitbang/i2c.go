@@ -236,4 +236,4 @@ func (i *I2C) sleepHalfCycle() {
 	internal.Nanosleep(i.halfCycle)
 }
 
-var _ i2c.Bus = &I2C{}
+var _ i2c.Conn = &I2C{}

@@ -219,7 +219,7 @@ func ToRGB(p []color.NRGBA) []byte {
 type Dev struct {
 	Intensity   uint8  // Set an intensity between 0 (off) and 255 (full brightness).
 	Temperature uint16 // In Kelvin.
-	s           spi.Bus
+	s           spi.Conn
 	l           lut // Updated at each .Write() call.
 	numLights   int
 	buf         []byte
@@ -278,7 +278,7 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 // As per APA102-C spec, the chip's max refresh rate is 400hz.
 // https://en.wikipedia.org/wiki/Flicker_fusion_threshold is a recommended
 // reading.
-func New(s spi.Bus, numLights int, intensity uint8, temperature uint16) (*Dev, error) {
+func New(s spi.Conn, numLights int, intensity uint8, temperature uint16) (*Dev, error) {
 	if err := s.Configure(spi.Mode3, 8); err != nil {
 		return nil, err
 	}

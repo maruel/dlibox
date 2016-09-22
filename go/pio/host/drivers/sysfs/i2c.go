@@ -115,7 +115,7 @@ func (i *I2C) Tx(addr uint16, w, r []byte) error {
 	return i.ioctl(ioctlRdwr, pp)
 }
 
-// SCL implements i2c.Bus.
+// SCL implements i2c.Conn.
 //
 // It will fail if host.Init() wasn't called. host.Init() is transparently
 // called by host.MakeI2C().
@@ -124,7 +124,7 @@ func (i *I2C) SCL() gpio.PinIO {
 	return i.scl
 }
 
-// SDA implements i2c.Bus.
+// SDA implements i2c.Conn.
 //
 // It will fail if host.Init() wasn't called. host.Init() is transparently
 // called by host.MakeI2C().
@@ -276,4 +276,4 @@ type i2cMsg struct {
 	buf    uintptr
 }
 
-var _ i2c.Bus = &I2C{}
+var _ i2c.Conn = &I2C{}

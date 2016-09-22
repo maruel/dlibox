@@ -124,7 +124,7 @@ func (s *SPI) Tx(w, r []byte) error {
 	return s.ioctl(spiIOCTx|0x40000000, unsafe.Pointer(&p))
 }
 
-// CLK implements spi.Bus.
+// CLK implements spi.Conn.
 //
 // It will fail if host.Init() wasn't called. host.Init() is transparently
 // called by host.MakeSPI().
@@ -133,7 +133,7 @@ func (s *SPI) CLK() gpio.PinOut {
 	return s.clk
 }
 
-// MISO implements spi.Bus.
+// MISO implements spi.Conn.
 //
 // It will fail if host.Init() wasn't called. host.Init() is transparently
 // called by host.MakeSPI().
@@ -142,7 +142,7 @@ func (s *SPI) MISO() gpio.PinIn {
 	return s.miso
 }
 
-// MOSI implements spi.Bus.
+// MOSI implements spi.Conn.
 //
 // It will fail if host.Init() wasn't called. host.Init() is transparently
 // called by host.MakeSPI().
@@ -151,7 +151,7 @@ func (s *SPI) MOSI() gpio.PinOut {
 	return s.mosi
 }
 
-// CS implements spi.Bus.
+// CS implements spi.Conn.
 //
 // It will fail if host.Init() wasn't called. host.Init() is transparently
 // called by host.MakeSPI().
@@ -234,4 +234,4 @@ func (s *SPI) initPins() {
 	}
 }
 
-var _ spi.Bus = &SPI{}
+var _ spi.Conn = &SPI{}

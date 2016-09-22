@@ -102,9 +102,9 @@ func mainImpl() error {
 		}
 		defer bus.Close()
 		log.Printf("Using pins SCL: %s  SDA: %s", bus.SCL(), bus.SDA())
-		var base i2c.Bus = bus
+		var base i2c.Conn = bus
 		if *record {
-			recorder.Bus = bus
+			recorder.Conn = bus
 			base = &recorder
 		}
 		if dev, err = bme280.NewI2C(base, s, s, s, bme280.S20ms, f); err != nil {
@@ -118,9 +118,9 @@ func mainImpl() error {
 		}
 		defer bus.Close()
 		log.Printf("Using pins SCL: %s  SDA: %s", bus.SCL(), bus.SDA())
-		var base i2c.Bus = bus
+		var base i2c.Conn = bus
 		if *record {
-			recorder.Bus = bus
+			recorder.Conn = bus
 			base = &recorder
 		}
 		if dev, err = bme280.NewI2C(base, s, s, s, bme280.S20ms, f); err != nil {
