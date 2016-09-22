@@ -89,18 +89,16 @@ func New(clk host.PinIO, data host.PinIO, speedHz int) (*I2C, error) {
 	if err := clk.In(host.Up); err != nil {
 		return nil, err
 	}
-	if err := clk.Out(); err != nil {
+	if err := clk.Out(host.High); err != nil {
 		return nil, err
 	}
-	clk.Set(host.High)
 	// Set SDA as pull-up.
 	if err := data.In(host.Up); err != nil {
 		return nil, err
 	}
-	if err := data.Out(); err != nil {
+	if err := data.Out(host.High); err != nil {
 		return nil, err
 	}
-	data.Set(host.High)
 	i := &I2C{
 		scl:       clk,
 		sda:       data,
@@ -120,9 +118,9 @@ func New(clk host.PinIO, data host.PinIO, speedHz int) (*I2C, error) {
 func (i *I2C) start() {
 	// Page 9, section 3.1.4 START and STOP conditions
 	// In multi-master mode, it would have to sense SDA first and after the sleep.
-	i.sda.Set(host.Low)
+	i.sda.Out(host.Low)
 	i.sleepHalfCycle()
-	i.scl.Set(host.Low)
+	i.scl.Out(host.Low)
 }
 
 // "When CLK is a high level and DIO changes from low level to high level, data
@@ -131,11 +129,11 @@ func (i *I2C) start() {
 // Lasts 3/2 cycle.
 func (i *I2C) stop() {
 	// Page 9, section 3.1.4 START and STOP conditions
-	i.scl.Set(host.Low)
+	i.scl.Out(host.Low)
 	i.sleepHalfCycle()
-	i.scl.Set(host.High)
+	i.scl.Out(host.High)
 	i.sleepHalfCycle()
-	i.sda.Set(host.High)
+	i.sda.Out(host.High)
 	// TODO(maruel): This sleep could be skipped, assuming we wait for the next
 	// transfer if too quick to happen.
 	i.sleepHalfCycle()
@@ -154,13 +152,13 @@ func (i *I2C) writeByte(b byte) (bool, error) {
 	// clock."
 	// Page 10, section 3.1.5 Byte format
 	for x := 0; x < 8; x++ {
-		i.sda.Set(b&byte(1<<byte(7-x)) != 0)
+		i.sda.Out(b&byte(1<<byte(7-x)) != 0)
 		i.sleepHalfCycle()
 		// Let the device read SDA.
 		// TODO(maruel): Support clock stretching, the device may keep the line low.
-		i.scl.Set(host.High)
+		i.scl.Out(host.High)
 		i.sleepHalfCycle()
-		i.scl.Set(host.Low)
+		i.scl.Out(host.Low)
 	}
 	// Page 10, section 3.1.6 ACK and NACK
 	// 9th clock is ACK.
@@ -179,14 +177,12 @@ func (i *I2C) writeByte(b byte) (bool, error) {
 	}
 	// ACK == Low.
 	ack := i.sda.Read() == host.Low
-	if err := i.scl.Out(); err != nil {
+	if err := i.scl.Out(host.Low); err != nil {
 		return false, err
 	}
-	i.scl.Set(host.Low)
-	if err := i.sda.Out(); err != nil {
+	if err := i.sda.Out(host.Low); err != nil {
 		return false, err
 	}
-	i.sda.Set(host.Low)
 	return ack, nil
 }
 
@@ -205,20 +201,19 @@ func (i *I2C) readByte() (byte, error) {
 	for x := 0; x < 8; x++ {
 		i.sleepHalfCycle()
 		// TODO(maruel): Support clock stretching, the device may keep the line low.
-		i.scl.Set(host.High)
+		i.scl.Out(host.High)
 		i.sleepHalfCycle()
 		if i.sda.Read() == host.High {
 			b |= byte(1) << byte(7-x)
 		}
-		i.scl.Set(host.Low)
+		i.scl.Out(host.Low)
 	}
 	log.Printf("0x%x", b)
-	if err := i.sda.Out(); err != nil {
+	if err := i.sda.Out(host.Low); err != nil {
 		return 0, err
 	}
-	i.sda.Set(host.Low)
 	i.sleepHalfCycle()
-	i.scl.Set(host.High)
+	i.scl.Out(host.High)
 	i.sleepHalfCycle()
 	return b, nil
 }

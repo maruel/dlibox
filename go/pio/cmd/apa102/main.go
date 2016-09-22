@@ -135,7 +135,7 @@ func mainImpl() error {
 	} else {
 		var spiBus host.SPI
 		if *clk != -1 && *mosi != -1 {
-			if err := pins.Init(false); err != nil {
+			if _, err := pins.Init(false); err != nil {
 				return err
 			}
 			pclk := pins.ByNumber(*clk)

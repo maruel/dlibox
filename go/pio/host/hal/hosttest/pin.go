@@ -80,17 +80,11 @@ func (p *Pin) Pull() host.Pull {
 }
 
 // Out is concurrent safe.
-func (p *Pin) Out() error {
+func (p *Pin) Out(l host.Level) error {
 	p.Lock()
 	defer p.Unlock()
+	p.L = l
 	return nil
-}
-
-// Set is concurrent safe.
-func (p *Pin) Set(level host.Level) {
-	p.Lock()
-	defer p.Unlock()
-	p.L = level
 }
 
 var _ host.PinIO = &Pin{}

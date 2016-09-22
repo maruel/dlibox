@@ -10,6 +10,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/maruel/dlibox/go/pio/devices/ir/lirc"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/allwinner"
 	"github.com/maruel/dlibox/go/pio/host/drivers/bcm283x"
@@ -34,6 +35,8 @@ var (
 	X32KFOUT    host.PinIO = &pin{"X32KFOUT"}
 	VCC         host.PinIO = &pin{"VCC"}
 	IOVCC       host.PinIO = &pin{"IOVCC"}
+	IR_IN       host.PinIO = host.INVALID // (any GPIO)
+	IR_OUT      host.PinIO = host.INVALID // (any GPIO)
 )
 
 // All returns all the GPIO pins available on this host.
@@ -60,14 +63,6 @@ func Functional() map[string]host.PinIO {
 // Returns nil in case of failure.
 func ByNumber(number int) host.PinIO {
 	Init(true)
-	lock.Lock()
-	defer lock.Unlock()
-	if byNumber == nil {
-		byNumber = make(map[int]host.PinIO, len(all))
-		for _, pin := range all {
-			byNumber[pin.Number()] = pin
-		}
-	}
 	pin, _ := byNumber[number]
 	return pin
 }
@@ -104,18 +99,20 @@ func ByFunction(fn string) host.PinIO {
 	return pin
 }
 
-func Init(fallback bool) error {
+// Init initializes the pins and returns the name of the subsystem used.
+func Init(fallback bool) (string, error) {
 	lock.Lock()
 	defer lock.Unlock()
 	if all != nil {
-		return nil
+		return subsystem, nil
 	}
+
 	all = []host.PinIO{}
 	byFunction = map[string]host.PinIO{}
 	if internal.IsBCM283x() {
 		if err := bcm283x.Init(); err != nil {
 			if !fallback {
-				return err
+				return "", err
 			}
 		} else {
 			all = make([]host.PinIO, len(bcm283x.Pins))
@@ -124,13 +121,15 @@ func Init(fallback bool) error {
 			}
 			sort.Sort(all)
 			byFunction = bcm283x.Functional
-			return nil
+			subsystem = "bcm283x"
+			setIR()
+			return subsystem, nil
 		}
 	}
 	if internal.IsAllwinner() {
 		if err := allwinner.Init(); err != nil {
 			if !fallback {
-				return err
+				return "", err
 			}
 		} else {
 			all = make([]host.PinIO, len(allwinner.Pins))
@@ -139,13 +138,15 @@ func Init(fallback bool) error {
 			}
 			sort.Sort(all)
 			byFunction = allwinner.Functional
-			return nil
+			subsystem = "allwinner"
+			setIR()
+			return subsystem, nil
 		}
 	}
 
 	// Fallback to sysfs gpio.
 	if err := sysfs.Init(); err != nil {
-		return err
+		return "", err
 	}
 	all = make([]host.PinIO, 0, len(sysfs.Pins))
 	for _, p := range sysfs.Pins {
@@ -153,13 +154,16 @@ func Init(fallback bool) error {
 	}
 	sort.Sort(all)
 	// sysfs doesn't expose enough information to fill byFunction.
-	return nil
+	subsystem = "sysfs"
+	setIR()
+	return subsystem, nil
 }
 
 //
 
 var (
 	lock       sync.Mutex
+	subsystem  string
 	all        pins
 	byNumber   map[int]host.PinIO
 	byName     map[string]host.PinIO
@@ -208,9 +212,26 @@ func (p *pin) Pull() host.Pull {
 	return host.PullNoChange
 }
 
-func (p *pin) Out() error {
+func (p *pin) Out(host.Level) error {
 	return fmt.Errorf("%s cannot be used as output", p.name)
 }
 
-func (p *pin) Set(host.Level) {
+func setIR() {
+	byNumber = make(map[int]host.PinIO, len(all))
+	for _, pin := range all {
+		byNumber[pin.Number()] = pin
+	}
+	in, out := lirc.Pins()
+	if in != -1 {
+		if pin, ok := byNumber[in]; ok {
+			IR_IN = pin
+		}
+	}
+	if out != -1 {
+		if pin, ok := byNumber[out]; ok {
+			IR_OUT = pin
+		}
+	}
+	byFunction["IR_IN"] = IR_IN
+	byFunction["IR_OUT"] = IR_OUT
 }

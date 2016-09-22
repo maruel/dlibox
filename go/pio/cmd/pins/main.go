@@ -140,11 +140,12 @@ func mainImpl() error {
 	}
 
 	// Explicitly initialize to catch any error.
-	if err := pins.Init(false); err != nil {
+	subsystem, err := pins.Init(true)
+	if err != nil {
 		return err
 	}
 	if *info {
-		fmt.Printf("MaxSpeed: %dMhz\n", cpu.MaxSpeed()/1000000)
+		fmt.Printf("Subsystem: %s\nMaxSpeed: %dMhz\n", subsystem, cpu.MaxSpeed()/1000000)
 	}
 	if *fun {
 		printFunc(*invalid)

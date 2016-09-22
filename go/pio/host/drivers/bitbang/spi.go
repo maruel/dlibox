@@ -64,23 +64,23 @@ func (s *SPI) Tx(w, r []byte) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if s.csn != nil {
-		s.csn.Set(host.Low)
+		s.csn.Out(host.Low)
 		s.sleepHalfCycle()
 	}
 	for i := uint(0); i < uint(len(w)*8); i++ {
-		s.sdo.Set(w[i/8]&(1<<(i%8)) != 0)
+		s.sdo.Out(w[i/8]&(1<<(i%8)) != 0)
 		s.sleepHalfCycle()
-		s.sck.Set(host.Low)
+		s.sck.Out(host.Low)
 		s.sleepHalfCycle()
 		if len(r) != 0 {
 			if s.sdi.Read() == host.High {
 				r[i/8] |= 1 << (i % 8)
 			}
 		}
-		s.sck.Set(host.Low)
+		s.sck.Out(host.Low)
 	}
 	if s.csn != nil {
-		s.csn.Set(host.High)
+		s.csn.Out(host.High)
 	}
 	return nil
 }
@@ -99,25 +99,22 @@ func (s *SPI) Write(d []byte) (int, error) {
 //
 // cs can be nil.
 func NewSPI(clk, mosi host.PinOut, miso host.PinIn, cs host.PinOut, speedHz int64) (*SPI, error) {
-	if err := clk.Out(); err != nil {
+	if err := clk.Out(host.High); err != nil {
 		return nil, err
 	}
-	clk.Set(host.High)
-	if err := mosi.Out(); err != nil {
+	if err := mosi.Out(host.High); err != nil {
 		return nil, err
 	}
-	mosi.Set(host.High)
 	if miso != nil {
 		if err := miso.In(host.Up); err != nil {
 			return nil, err
 		}
 	}
 	if cs != nil {
-		if err := cs.Out(); err != nil {
+		// Low means active.
+		if err := cs.Out(host.High); err != nil {
 			return nil, err
 		}
-		// Low to select.
-		cs.Set(host.High)
 	}
 	s := &SPI{
 		sck:       clk,

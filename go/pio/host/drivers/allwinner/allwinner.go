@@ -605,14 +605,17 @@ func (p *Pin) Edges() (<-chan host.Level, error) {
 	default:
 		return nil, errors.New("only groups PB, PG, PH and PL support edge based triggering")
 	}
-	// This is a race condition but this is fine; at worst GetPin() is called
+	// This is a race condition but this is fine; at worst PinByNumber() is called
 	// twice but it is guaranteed to return the same value. p.edge is never set
 	// to nil.
 	if p.edge == nil {
 		var err error
-		if p.edge, err = sysfs.GetPin(p.Number()); err != nil {
+		if p.edge, err = sysfs.PinByNumber(p.Number()); err != nil {
 			return nil, err
 		}
+	}
+	if err := p.edge.In(host.PullNoChange); err != nil {
+		return nil, err
 	}
 	return p.edge.Edges()
 }
@@ -648,17 +651,15 @@ func (p *Pin) Pull() host.Pull {
 	}
 }
 
-func (p *Pin) Out() error {
+func (p *Pin) Out(l host.Level) error {
 	if gpioMemoryPB == nil {
 		return errors.New("subsystem not initialized")
 	}
 	if !p.setFunction(out) {
 		return fmt.Errorf("failed to set pin %s as output", p.name)
 	}
-	return nil
-}
-
-func (p *Pin) Set(l host.Level) {
+	// TODO(maruel): Set the value *before* changing the pin to be an output, so
+	// there is no glitch.
 	bit := uint32(1 << p.offset)
 	if p.group == 0 {
 		if l {
@@ -674,6 +675,7 @@ func (p *Pin) Set(l host.Level) {
 			gpioMemoryPB[p.group+4] &^= bit
 		}
 	}
+	return nil
 }
 
 //
@@ -699,7 +701,9 @@ func (p *Pin) setFunction(f function) bool {
 	if f != in && f != out {
 		return false
 	}
-	p.edge.DisableEdges()
+	if p.edge != nil {
+		p.edge.DisableEdges()
+	}
 	// TODO(maruel): There's a problem where interrupt based edge triggering is
 	// Alt5 but this is only supported on some pins.
 	if actual := p.function(); actual != in && actual != out && actual != disabled && actual != alt5 {

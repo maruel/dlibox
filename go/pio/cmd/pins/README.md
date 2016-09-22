@@ -129,4 +129,5 @@ SPI host and lirc enabled:
 Queries the processor's maximum speed:
 
     $ ./pins -i
+    Subsystem: bcm283x
     MaxSpeed: 1200Mhz

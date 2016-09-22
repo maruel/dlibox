@@ -27,18 +27,15 @@ func mainImpl() error {
 	if p == nil {
 		return errors.New("invalid pin number")
 	}
-	if err := p.Out(); err != nil {
-		return err
-	}
+	l := host.Low
 	switch os.Args[2] {
 	case "0":
-		p.Set(host.Low)
 	case "1":
-		p.Set(host.High)
+		l = host.High
 	default:
 		return errors.New("specify level as 0 or 1")
 	}
-	return nil
+	return p.Out(l)
 }
 
 func main() {

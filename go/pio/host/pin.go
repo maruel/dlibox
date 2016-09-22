@@ -36,7 +36,7 @@ const (
 	Float        Pull = 0 // Let the input float
 	Down         Pull = 1 // Apply pull-down
 	Up           Pull = 2 // Apply pull-up
-	PullNoChange Pull = 3 // Do not change the previous pull resistor setting
+	PullNoChange Pull = 3 // Do not change the previous pull resistor setting or an unknown value
 )
 
 const pullName = "FloatDownUpPullNoChange"
@@ -77,16 +77,11 @@ type PinIn interface {
 
 // PinOut is an output GPIO pin.
 type PinOut interface {
-	// Out sets a pin as output. The caller should immediately call Set() after.
-	Out() error
-	// Set sets a pin already set for output as High or Low.
+	// Out sets a pin as output if it wasn't already and sets the initial value.
 	//
-	// Behavior is undefined if Out() wasn't used before.
-	//
-	// In some rare case, it is possible that Set() fails silently. This happens
-	// if another process on the host messes up with the pin after Out() was
-	// called. In this case, call Out() again.
-	Set(l Level)
+	// After the initial call to ensure that the pin has been set as output, it
+	// is generally safe to ignore the error returned.
+	Out(l Level) error
 }
 
 // PinIO is a GPIO pin that supports both input and output.
@@ -148,9 +143,6 @@ func (invalidPin) Pull() Pull {
 	return PullNoChange
 }
 
-func (invalidPin) Out() error {
+func (invalidPin) Out(Level) error {
 	return invalidPinErr
-}
-
-func (invalidPin) Set(Level) {
 }

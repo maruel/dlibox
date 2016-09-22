@@ -115,14 +115,12 @@ func (d *Dev) Write(seg []byte) (int, error) {
 // New returns an object that communicates over two pins to a TM1637.
 func New(clk host.PinOut, data host.PinIO) (*Dev, error) {
 	// Spec calls to idle at high.
-	if err := clk.Out(); err != nil {
+	if err := clk.Out(host.High); err != nil {
 		return nil, err
 	}
-	clk.Set(host.High)
-	if err := data.Out(); err != nil {
+	if err := data.Out(host.High); err != nil {
 		return nil, err
 	}
-	data.Set(host.High)
 	d := &Dev{clk: clk, data: data}
 	return d, nil
 }
@@ -141,16 +139,16 @@ var digitToSegment = []byte{
 }
 
 func (d *Dev) start() {
-	d.data.Set(host.Low)
+	d.data.Out(host.Low)
 	d.sleepHalfCycle()
-	d.clk.Set(host.Low)
+	d.clk.Out(host.Low)
 }
 
 func (d *Dev) stop() {
 	d.sleepHalfCycle()
-	d.clk.Set(host.High)
+	d.clk.Out(host.High)
 	d.sleepHalfCycle()
-	d.data.Set(host.High)
+	d.data.Out(host.High)
 	d.sleepHalfCycle()
 }
 
@@ -159,27 +157,27 @@ func (d *Dev) stop() {
 func (d *Dev) writeByte(b byte) (bool, error) {
 	for i := 0; i < 8; i++ {
 		// LSB (!)
-		d.data.Set(b&(1<<byte(i)) != 0)
+		d.data.Out(b&(1<<byte(i)) != 0)
 		d.sleepHalfCycle()
-		d.clk.Set(host.High)
+		d.clk.Out(host.High)
 		d.sleepHalfCycle()
-		d.clk.Set(host.Low)
+		d.clk.Out(host.Low)
 	}
 	// 9th clock is ACK.
-	d.data.Set(host.Low)
+	d.data.Out(host.Low)
 	time.Sleep(clockHalfCycle)
 	// TODO(maruel): Add.
 	//if err := d.data.In(host.Up); err != nil {
 	//	return false, err
 	//}
-	d.clk.Set(host.High)
+	d.clk.Out(host.High)
 	d.sleepHalfCycle()
 	//ack := d.data.Read() == host.Low
 	//d.sleepHalfCycle()
 	//if err := d.data.Out(); err != nil {
 	//	return false, err
 	//}
-	d.clk.Set(host.Low)
+	d.clk.Out(host.Low)
 	return true, nil
 }
 

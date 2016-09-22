@@ -57,4 +57,5 @@ func init() {
 		gpio2.Function(): gpio2,
 		gpio3.Function(): gpio3,
 	}
+	setIR()
 }

@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/maruel/dlibox/go/pio/devices/ir/lirc"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
 	"github.com/maruel/dlibox/go/pio/host/internal/gpiomem"
@@ -27,8 +26,6 @@ var Functional = map[string]host.PinIO{
 	"I2C0_SDA":  host.INVALID,
 	"I2C1_SCL":  host.INVALID,
 	"I2C1_SDA":  host.INVALID,
-	"IR_IN":     host.INVALID,
-	"IR_OUT":    host.INVALID,
 	"PCM_CLK":   host.INVALID,
 	"PCM_FS":    host.INVALID,
 	"PCM_DIN":   host.INVALID,
@@ -198,8 +195,6 @@ var (
 	I2C0_SDA  host.PinIO = host.INVALID // GPIO0, GPIO28, GPIO44
 	I2C1_SCL  host.PinIO = host.INVALID // GPIO3, GPIO45
 	I2C1_SDA  host.PinIO = host.INVALID // GPIO2, GPIO44
-	IR_IN     host.PinIO = host.INVALID // (any GPIO)
-	IR_OUT    host.PinIO = host.INVALID // (any GPIO)
 	PCM_CLK   host.PinIO = host.INVALID // GPIO18, GPIO28 (I2S)
 	PCM_FS    host.PinIO = host.INVALID // GPIO19, GPIO29
 	PCM_DIN   host.PinIO = host.INVALID // GPIO20, GPIO30
@@ -352,14 +347,17 @@ func (p *Pin) Read() host.Level {
 // and looks for '011' to rising and '100' for falling detection to avoid
 // glitches. Because gpio sysfs is used, the latency is unpredictable.
 func (p *Pin) Edges() (<-chan host.Level, error) {
-	// This is a race condition but this is fine; at worst GetPin() is called
+	// This is a race condition but this is fine; at worst PinByNumber() is called
 	// twice but it is guaranteed to return the same value. p.edge is never set
 	// to nil.
 	if p.edge == nil {
 		var err error
-		if p.edge, err = sysfs.GetPin(p.Number()); err != nil {
+		if p.edge, err = sysfs.PinByNumber(p.Number()); err != nil {
 			return nil, err
 		}
+	}
+	if err := p.edge.In(host.PullNoChange); err != nil {
+		return nil, err
 	}
 	return p.edge.Edges()
 }
@@ -379,25 +377,14 @@ func (p *Pin) Pull() host.Pull {
 	return host.PullNoChange
 }
 
-// Out sets a pin as output and implements host.PinOut. The caller should
-// immediately call SetLow() or SetHigh() afterward.
+// Out sets a pin as output and implements host.PinOut.
 //
-// Will fail if requesting to change a pin that is set to special functionality.
-func (p *Pin) Out() error {
+// Fails if requesting to change a pin that is set to special functionality.
+func (p *Pin) Out(l host.Level) error {
 	if gpioMemory32 == nil {
 		return errors.New("subsystem not initialized")
 	}
-	if !p.setFunction(out) {
-		return errors.New("failed to change pin mode")
-	}
-	return nil
-}
-
-// Set sets a pin already set for output as host.High or host.Low and implements
-// host.PinOut.
-//
-// This function is very fast.
-func (p *Pin) Set(l host.Level) {
+	// Change output before changing mode to not create any glitch.
 	// 0x1C    W    GPIO Pin Output Set 0 (GPIO0-31)
 	// 0x20    W    GPIO Pin Output Set 1 (GPIO32-53)
 	base := 7 + p.number/32
@@ -407,6 +394,10 @@ func (p *Pin) Set(l host.Level) {
 		base += 3
 	}
 	gpioMemory32[base] = 1 << uint(p.number&31)
+	if !p.setFunction(out) {
+		return errors.New("failed to change pin mode")
+	}
+	return nil
 }
 
 // Special functionality.
@@ -734,14 +725,6 @@ func initArm() error {
 		if f := Pins[i].Function(); len(f) < 3 || (f[:2] != "In" && f[:3] != "Out") {
 			Functional[f] = &Pins[i]
 		}
-	}
-
-	in, out := lirc.Pins()
-	if in != -1 {
-		IR_IN = &Pins[in]
-	}
-	if out != -1 {
-		IR_OUT = &Pins[out]
 	}
 	return nil
 }
