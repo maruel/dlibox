@@ -27,9 +27,6 @@ func (l Level) String() string {
 }
 
 // Pull specifies the internal pull-up or pull-down for a pin set as input.
-//
-// The pull resistor stays set even after the processor shuts down. It is not
-// possible to 'read back' what value was specified for each pin.
 type Pull uint8
 
 const (

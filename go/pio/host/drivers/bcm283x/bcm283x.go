@@ -290,6 +290,9 @@ func (p *Pin) Function() string {
 // For pull down, the resistor is 50KOhm~60kOhm
 // For pull up, the resistor is 50kOhm~65kOhm
 //
+// The pull resistor stays set even after the processor shuts down. It is not
+// possible to 'read back' what value was specified for each pin.
+//
 // Will fail if requesting to change a pin that is set to special functionality.
 func (p *Pin) In(pull host.Pull) error {
 	if gpioMemory32 == nil {
