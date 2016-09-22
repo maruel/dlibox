@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 )
 
 // I2CIO registers the I/O that happened on either a real or fake I2C bus.
@@ -20,16 +20,16 @@ type I2CIO struct {
 	Read  []byte
 }
 
-// I2CRecord implements host.I2C that records everything written to it.
+// I2CRecord implements i2c.Bus that records everything written to it.
 //
 // This can then be used to feed to I2CPlayback to do "replay" based unit tests.
 type I2CRecord struct {
-	Bus  host.I2C // Bus can be nil if only writes are being recorded.
+	Bus  i2c.Bus // Bus can be nil if only writes are being recorded.
 	Lock sync.Mutex
 	Ops  []I2CIO
 }
 
-// Tx implements host.I2C.
+// Tx implements i2c.Bus.
 func (i *I2CRecord) Tx(addr uint16, w, r []byte) error {
 	i.Lock.Lock()
 	defer i.Lock.Unlock()
@@ -52,7 +52,7 @@ func (i *I2CRecord) Tx(addr uint16, w, r []byte) error {
 	return nil
 }
 
-// I2CPlayblack implements host.I2C and plays back a recorded I/O flow.
+// I2CPlayblack implements i2c.Bus and plays back a recorded I/O flow.
 //
 // While "replay" type of unit tests are of limited value, they still present
 // an easy way to do basic code coverage.
@@ -64,7 +64,7 @@ type I2CPlayback struct {
 	Ops  []I2CIO
 }
 
-// Tx implements host.I2C.
+// Tx implements i2c.Bus.
 func (i *I2CPlayback) Tx(addr uint16, w, r []byte) error {
 	i.Lock.Lock()
 	defer i.Lock.Unlock()
@@ -86,5 +86,5 @@ func (i *I2CPlayback) Tx(addr uint16, w, r []byte) error {
 	return nil
 }
 
-var _ host.I2C = &I2CRecord{}
-var _ host.I2C = &I2CPlayback{}
+var _ i2c.Bus = &I2CRecord{}
+var _ i2c.Bus = &I2CPlayback{}

@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 // PinByNumber returns a *Pin for the pin number, if any.
@@ -48,7 +48,7 @@ type Pin struct {
 	fValue     *os.File        // handle to /sys/class/gpio/gpio*/value; never closed
 	epollFd    int             // Never closed
 	event      event           // Initialized once
-	edges      chan host.Level // Closed when edges are terminated
+	edges      chan gpio.Level // Closed when edges are terminated
 	wg         sync.WaitGroup  // Set when Edges() is running
 }
 
@@ -89,8 +89,8 @@ func (p *Pin) Function() string {
 }
 
 // In setups a pin as an input.
-func (p *Pin) In(pull host.Pull) error {
-	if pull != host.PullNoChange && pull != host.Float {
+func (p *Pin) In(pull gpio.Pull) error {
+	if pull != gpio.PullNoChange && pull != gpio.Float {
 		return errors.New("not implemented")
 	}
 	p.lock.Lock()
@@ -111,32 +111,32 @@ func (p *Pin) In(pull host.Pull) error {
 	return nil
 }
 
-func (p *Pin) Read() host.Level {
+func (p *Pin) Read() gpio.Level {
 	var buf [2]byte
 	if _, err := p.fValue.Seek(0, 0); err != nil {
 		// Error.
 		//fmt.Printf("%s: %v", p, err)
-		return host.Low
+		return gpio.Low
 	}
 	if _, err := p.fValue.Read(buf[:]); err != nil {
 		// Error.
 		//fmt.Printf("%s: %v", p, err)
-		return host.Low
+		return gpio.Low
 	}
 	if buf[0] == '0' {
-		return host.Low
+		return gpio.Low
 	}
 	if buf[0] == '1' {
-		return host.High
+		return gpio.High
 	}
 	// Error.
-	return host.Low
+	return gpio.Low
 }
 
-// Edges creates a edge detection loop and implements host.PinIn.
+// Edges creates a edge detection loop and implements gpio.PinIn.
 //
 // It is the function that opens the gpio sysfs file handle for /edge.
-func (p *Pin) Edges() (<-chan host.Level, error) {
+func (p *Pin) Edges() (<-chan gpio.Level, error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if p.edges != nil {
@@ -160,7 +160,7 @@ func (p *Pin) Edges() (<-chan host.Level, error) {
 	if _, err = p.fEdge.Write([]byte("both")); err != nil {
 		return nil, err
 	}
-	p.edges = make(chan host.Level)
+	p.edges = make(chan gpio.Level)
 	p.wg.Add(1)
 	var started sync.WaitGroup
 	started.Add(1)
@@ -176,12 +176,12 @@ func (p *Pin) DisableEdges() {
 	p.disableEdge()
 }
 
-func (p *Pin) Pull() host.Pull {
-	return host.PullNoChange
+func (p *Pin) Pull() gpio.Pull {
+	return gpio.PullNoChange
 }
 
 // Out sets a pin as output.
-func (p Pin) Out(l host.Level) error {
+func (p Pin) Out(l gpio.Level) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if p.direction != dOut {
@@ -197,7 +197,7 @@ func (p Pin) Out(l host.Level) error {
 			return err
 		}
 		var d []byte
-		if l == host.Low {
+		if l == gpio.Low {
 			d = []byte("low")
 		} else {
 			d = []byte("high")
@@ -212,7 +212,7 @@ func (p Pin) Out(l host.Level) error {
 		return nil
 	}
 	var d [2]byte
-	if l == host.Low {
+	if l == gpio.Low {
 		d[0] = '0'
 	} else {
 		d[0] = '1'
@@ -325,14 +325,14 @@ func (p *Pin) edgeLoop(started *sync.WaitGroup) {
 		}
 		// Make sure to ignore spurious wake up.
 		if b[0] == '1' {
-			if last != host.High {
-				c <- host.High
-				last = host.High
+			if last != gpio.High {
+				c <- gpio.High
+				last = gpio.High
 			}
 		} else {
-			if last != host.Low {
-				c <- host.Low
-				last = host.Low
+			if last != gpio.Low {
+				c <- gpio.Low
+				last = gpio.Low
 			}
 		}
 	}

@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// ir is a small app to read from an IR receiver.
+// ir reads from an IR receiver via LIRC.
 package main
 
 import (

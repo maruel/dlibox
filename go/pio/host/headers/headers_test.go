@@ -7,9 +7,9 @@ package headers
 import (
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/hal/hosttest"
-	"github.com/maruel/dlibox/go/pio/host/hal/pins"
+	"github.com/maruel/dlibox/go/pio/host/hosttest"
+	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 func TestAll(t *testing.T) {
@@ -38,7 +38,7 @@ var (
 )
 
 func init() {
-	all = map[string][][]host.PinIO{
+	all = map[string][][]gpio.PinIO{
 		"P1": {
 			{pins.GROUND, pins.V3_3},
 			{gpio2, gpio3},

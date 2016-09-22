@@ -25,8 +25,8 @@ import (
 	"io"
 
 	"github.com/maruel/dlibox/go/pio/devices"
-	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/hal/i2cdev"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c"
+	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
 // FrameRate determines scrolling speed.
@@ -70,8 +70,8 @@ type Dev struct {
 // to SCLK.
 //
 // As per datasheet, maximum clock speed is 1/100ns = 10MHz.
-func NewSPI(s host.SPI, w, h int, rotated bool) (*Dev, error) {
-	if err := s.Configure(host.Mode3, 8); err != nil {
+func NewSPI(s spi.Bus, w, h int, rotated bool) (*Dev, error) {
+	if err := s.Configure(spi.Mode3, 8); err != nil {
 		return nil, err
 	}
 	return newDev(s, w, h, rotated)
@@ -84,8 +84,8 @@ func NewSPI(s host.SPI, w, h int, rotated bool) (*Dev, error) {
 //
 // As per datasheet, maximum clock speed is 1/2.5µs = 400KHz. It's worth
 // bumping up from default bus speed of 100KHz if possible.
-func NewI2C(i host.I2C, w, h int, rotated bool) (*Dev, error) {
-	return newDev(&i2cdev.Dev{i, 0x3C}, w, h, rotated)
+func NewI2C(i i2c.Bus, w, h int, rotated bool) (*Dev, error) {
+	return newDev(&i2c.Dev{i, 0x3C}, w, h, rotated)
 }
 
 // newDev is the common initialization code that is independent of the bus

@@ -21,13 +21,13 @@ import (
 	"io"
 	"os"
 
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 // SetPWM enables and sets the PWM duty on a GPIO output pin via piblaster.
 //
 // duty must be [0, 1].
-func SetPWM(p host.PinIO, duty float32) error {
+func SetPWM(p gpio.PinIO, duty float32) error {
 	if duty < 0 || duty > 1 {
 		return fmt.Errorf("duty %f is invalid for blaster", duty)
 	}
@@ -42,7 +42,7 @@ func SetPWM(p host.PinIO, duty float32) error {
 //
 // This function must be called on process exit for each activated pin
 // otherwise the pin will stay in the state.
-func ReleasePWM(p host.PinIO) error {
+func ReleasePWM(p gpio.PinIO) error {
 	err := openPiblaster()
 	if err == nil {
 		_, err = io.WriteString(piblasterHandle, fmt.Sprintf("release %d\n", p.Number()))

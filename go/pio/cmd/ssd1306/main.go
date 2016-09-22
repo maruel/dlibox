@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// ssd1306 is a small app to write to a display driven by a ssd1306 controler.
+// ssd1306 writes to a display driven by a ssd1306 controler.
 package main
 
 import (

@@ -2,9 +2,10 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// SPI
+// Package spi defines the SPI protocol.
+package spi
 
-package host
+import "github.com/maruel/dlibox/go/pio/protocols"
 
 // Mode determines how communication is done. The bits can be OR'ed to change
 // the polarity and phase used for communication.
@@ -21,9 +22,9 @@ const (
 	Mode3 Mode = 0x3 // CPOL=1, CPHA=1
 )
 
-// SPI defines the interface a concrete SPI driver must implement.
-type SPI interface {
-	Bus
+// Bus defines the interface a concrete SPI driver must implement.
+type Bus interface {
+	protocols.Bus
 	// Speed changes the bus speed.
 	Speed(hz int64) error
 	// Configure changes the communication parameters of the bus.

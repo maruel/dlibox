@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// tm1637 is a small app to write to a digits LED display.
+// tm1637 writes to a digits LED display.
 package main
 
 import (
@@ -15,7 +15,7 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/devices/tm1637"
-	"github.com/maruel/dlibox/go/pio/host/hal/pins"
+	"github.com/maruel/dlibox/go/pio/host/pins"
 )
 
 func mainImpl() error {

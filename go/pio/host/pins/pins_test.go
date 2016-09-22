@@ -7,8 +7,8 @@ package pins
 import (
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/hal/hosttest"
+	"github.com/maruel/dlibox/go/pio/host/hosttest"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 func TestAll(t *testing.T) {
@@ -52,8 +52,8 @@ var (
 )
 
 func init() {
-	all = []host.PinIO{gpio2, gpio3}
-	byFunction = map[string]host.PinIO{
+	all = []gpio.PinIO{gpio2, gpio3}
+	byFunction = map[string]gpio.PinIO{
 		gpio2.Function(): gpio2,
 		gpio3.Function(): gpio3,
 	}

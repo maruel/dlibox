@@ -13,8 +13,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/internal"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 )
 
 // Use SkipAddr to skip the address from being sent.
@@ -22,8 +23,8 @@ const SkipAddr uint16 = 0xFFFF
 
 // I2C represents an I²C master implemented as bit-banging on 2 GPIO pins.
 type I2C struct {
-	scl       host.PinIO // Clock line
-	sda       host.PinIO // Data line
+	scl       gpio.PinIO // Clock line
+	sda       gpio.PinIO // Data line
 	halfCycle time.Duration
 }
 
@@ -82,21 +83,21 @@ func (i *I2C) Tx(addr uint16, w, r []byte) error {
 // - Special address SkipAddr can be used to skip the address from being
 //   communicated
 // - An arbitrary speed can be used
-func New(clk host.PinIO, data host.PinIO, speedHz int) (*I2C, error) {
+func New(clk gpio.PinIO, data gpio.PinIO, speedHz int) (*I2C, error) {
 	log.Printf("bitbang.i2c.New(%s, %s, %d)", clk, data, speedHz)
 	// Spec calls to idle at high. Page 8, section 3.1.1.
 	// Set SCL as pull-up.
-	if err := clk.In(host.Up); err != nil {
+	if err := clk.In(gpio.Up); err != nil {
 		return nil, err
 	}
-	if err := clk.Out(host.High); err != nil {
+	if err := clk.Out(gpio.High); err != nil {
 		return nil, err
 	}
 	// Set SDA as pull-up.
-	if err := data.In(host.Up); err != nil {
+	if err := data.In(gpio.Up); err != nil {
 		return nil, err
 	}
-	if err := data.Out(host.High); err != nil {
+	if err := data.Out(gpio.High); err != nil {
 		return nil, err
 	}
 	i := &I2C{
@@ -118,9 +119,9 @@ func New(clk host.PinIO, data host.PinIO, speedHz int) (*I2C, error) {
 func (i *I2C) start() {
 	// Page 9, section 3.1.4 START and STOP conditions
 	// In multi-master mode, it would have to sense SDA first and after the sleep.
-	i.sda.Out(host.Low)
+	i.sda.Out(gpio.Low)
 	i.sleepHalfCycle()
-	i.scl.Out(host.Low)
+	i.scl.Out(gpio.Low)
 }
 
 // "When CLK is a high level and DIO changes from low level to high level, data
@@ -129,11 +130,11 @@ func (i *I2C) start() {
 // Lasts 3/2 cycle.
 func (i *I2C) stop() {
 	// Page 9, section 3.1.4 START and STOP conditions
-	i.scl.Out(host.Low)
+	i.scl.Out(gpio.Low)
 	i.sleepHalfCycle()
-	i.scl.Out(host.High)
+	i.scl.Out(gpio.High)
 	i.sleepHalfCycle()
-	i.sda.Out(host.High)
+	i.sda.Out(gpio.High)
 	// TODO(maruel): This sleep could be skipped, assuming we wait for the next
 	// transfer if too quick to happen.
 	i.sleepHalfCycle()
@@ -156,31 +157,31 @@ func (i *I2C) writeByte(b byte) (bool, error) {
 		i.sleepHalfCycle()
 		// Let the device read SDA.
 		// TODO(maruel): Support clock stretching, the device may keep the line low.
-		i.scl.Out(host.High)
+		i.scl.Out(gpio.High)
 		i.sleepHalfCycle()
-		i.scl.Out(host.Low)
+		i.scl.Out(gpio.Low)
 	}
 	// Page 10, section 3.1.6 ACK and NACK
 	// 9th clock is ACK.
 	i.sleepHalfCycle()
 	// SCL was already set as pull-up. PullNoChange
-	if err := i.scl.In(host.Up); err != nil {
+	if err := i.scl.In(gpio.Up); err != nil {
 		return false, err
 	}
 	// SDA was already set as pull-up.
-	if err := i.sda.In(host.Up); err != nil {
+	if err := i.sda.In(gpio.Up); err != nil {
 		return false, err
 	}
 	// Implement clock stretching, the device may keep the line low.
-	for i.scl.Read() == host.Low {
+	for i.scl.Read() == gpio.Low {
 		i.sleepHalfCycle()
 	}
 	// ACK == Low.
-	ack := i.sda.Read() == host.Low
-	if err := i.scl.Out(host.Low); err != nil {
+	ack := i.sda.Read() == gpio.Low
+	if err := i.scl.Out(gpio.Low); err != nil {
 		return false, err
 	}
-	if err := i.sda.Out(host.Low); err != nil {
+	if err := i.sda.Out(gpio.Low); err != nil {
 		return false, err
 	}
 	return ack, nil
@@ -195,25 +196,25 @@ func (i *I2C) writeByte(b byte) (bool, error) {
 // Lasts 9 cycles.
 func (i *I2C) readByte() (byte, error) {
 	var b byte
-	if err := i.sda.In(host.Up); err != nil {
+	if err := i.sda.In(gpio.Up); err != nil {
 		return b, err
 	}
 	for x := 0; x < 8; x++ {
 		i.sleepHalfCycle()
 		// TODO(maruel): Support clock stretching, the device may keep the line low.
-		i.scl.Out(host.High)
+		i.scl.Out(gpio.High)
 		i.sleepHalfCycle()
-		if i.sda.Read() == host.High {
+		if i.sda.Read() == gpio.High {
 			b |= byte(1) << byte(7-x)
 		}
-		i.scl.Out(host.Low)
+		i.scl.Out(gpio.Low)
 	}
 	log.Printf("0x%x", b)
-	if err := i.sda.Out(host.Low); err != nil {
+	if err := i.sda.Out(gpio.Low); err != nil {
 		return 0, err
 	}
 	i.sleepHalfCycle()
-	i.scl.Out(host.High)
+	i.scl.Out(gpio.High)
 	i.sleepHalfCycle()
 	return b, nil
 }
@@ -223,4 +224,4 @@ func (i *I2C) sleepHalfCycle() {
 	internal.Nanosleep(i.halfCycle)
 }
 
-var _ host.I2C = &I2C{}
+var _ i2c.Bus = &I2C{}

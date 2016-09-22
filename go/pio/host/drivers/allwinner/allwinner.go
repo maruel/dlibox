@@ -12,351 +12,351 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
 	"github.com/maruel/dlibox/go/pio/host/internal/gpiomem"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 // 0x24/4 = 9
 var Pins = []Pin{
-	{number: 0, group: 9 * 1, offset: 0, name: "PB0", defaultPull: host.Float},
-	{number: 1, group: 9 * 1, offset: 1, name: "PB1", defaultPull: host.Float},
-	{number: 2, group: 9 * 1, offset: 2, name: "PB2", defaultPull: host.Float},
-	{number: 3, group: 9 * 1, offset: 3, name: "PB3", defaultPull: host.Float},
-	{number: 4, group: 9 * 1, offset: 4, name: "PB4", defaultPull: host.Float},
-	{number: 5, group: 9 * 1, offset: 5, name: "PB5", defaultPull: host.Float},
-	{number: 6, group: 9 * 1, offset: 6, name: "PB6", defaultPull: host.Float},
-	{number: 7, group: 9 * 1, offset: 7, name: "PB7", defaultPull: host.Float},
-	{number: 8, group: 9 * 1, offset: 8, name: "PB8", defaultPull: host.Float},
-	{number: 9, group: 9 * 1, offset: 9, name: "PB9", defaultPull: host.Float},
-	{number: 10, group: 9 * 2, offset: 0, name: "PC0", defaultPull: host.Float},
-	{number: 11, group: 9 * 2, offset: 1, name: "PC1", defaultPull: host.Float},
-	{number: 12, group: 9 * 2, offset: 2, name: "PC2", defaultPull: host.Float},
-	{number: 13, group: 9 * 2, offset: 3, name: "PC3", defaultPull: host.Up},
-	{number: 14, group: 9 * 2, offset: 4, name: "PC4", defaultPull: host.Up},
-	{number: 15, group: 9 * 2, offset: 5, name: "PC5", defaultPull: host.Float},
-	{number: 16, group: 9 * 2, offset: 6, name: "PC6", defaultPull: host.Up},
-	{number: 17, group: 9 * 2, offset: 7, name: "PC7", defaultPull: host.Up},
-	{number: 18, group: 9 * 2, offset: 8, name: "PC8", defaultPull: host.Float},
-	{number: 19, group: 9 * 2, offset: 9, name: "PC9", defaultPull: host.Float},
-	{number: 20, group: 9 * 2, offset: 10, name: "PC10", defaultPull: host.Float},
-	{number: 21, group: 9 * 2, offset: 11, name: "PC11", defaultPull: host.Float},
-	{number: 22, group: 9 * 2, offset: 12, name: "PC12", defaultPull: host.Float},
-	{number: 23, group: 9 * 2, offset: 13, name: "PC13", defaultPull: host.Float},
-	{number: 24, group: 9 * 2, offset: 14, name: "PC14", defaultPull: host.Float},
-	{number: 25, group: 9 * 2, offset: 15, name: "PC15", defaultPull: host.Float},
-	{number: 26, group: 9 * 2, offset: 16, name: "PC16", defaultPull: host.Float},
-	{number: 27, group: 9 * 3, offset: 0, name: "PD0", defaultPull: host.Float},
-	{number: 28, group: 9 * 3, offset: 1, name: "PD1", defaultPull: host.Float},
-	{number: 29, group: 9 * 3, offset: 2, name: "PD2", defaultPull: host.Float},
-	{number: 30, group: 9 * 3, offset: 3, name: "PD3", defaultPull: host.Float},
-	{number: 31, group: 9 * 3, offset: 4, name: "PD4", defaultPull: host.Float},
-	{number: 32, group: 9 * 3, offset: 5, name: "PD5", defaultPull: host.Float},
-	{number: 33, group: 9 * 3, offset: 6, name: "PD6", defaultPull: host.Float},
-	{number: 34, group: 9 * 3, offset: 7, name: "PD7", defaultPull: host.Float},
-	{number: 35, group: 9 * 3, offset: 8, name: "PD8", defaultPull: host.Float},
-	{number: 36, group: 9 * 3, offset: 9, name: "PD9", defaultPull: host.Float},
-	{number: 37, group: 9 * 3, offset: 10, name: "PD10", defaultPull: host.Float},
-	{number: 38, group: 9 * 3, offset: 11, name: "PD11", defaultPull: host.Float},
-	{number: 39, group: 9 * 3, offset: 12, name: "PD12", defaultPull: host.Float},
-	{number: 40, group: 9 * 3, offset: 13, name: "PD13", defaultPull: host.Float},
-	{number: 41, group: 9 * 3, offset: 14, name: "PD14", defaultPull: host.Float},
-	{number: 42, group: 9 * 3, offset: 15, name: "PD15", defaultPull: host.Float},
-	{number: 43, group: 9 * 3, offset: 16, name: "PD16", defaultPull: host.Float},
-	{number: 44, group: 9 * 3, offset: 17, name: "PD17", defaultPull: host.Float},
-	{number: 45, group: 9 * 3, offset: 18, name: "PD18", defaultPull: host.Float},
-	{number: 46, group: 9 * 3, offset: 19, name: "PD19", defaultPull: host.Float},
-	{number: 47, group: 9 * 3, offset: 20, name: "PD20", defaultPull: host.Float},
-	{number: 48, group: 9 * 3, offset: 21, name: "PD21", defaultPull: host.Float},
-	{number: 49, group: 9 * 3, offset: 22, name: "PD22", defaultPull: host.Float},
-	{number: 50, group: 9 * 3, offset: 23, name: "PD23", defaultPull: host.Float},
-	{number: 51, group: 9 * 3, offset: 24, name: "PD24", defaultPull: host.Float},
-	{number: 52, group: 9 * 4, offset: 0, name: "PE0", defaultPull: host.Float},
-	{number: 53, group: 9 * 4, offset: 1, name: "PE1", defaultPull: host.Float},
-	{number: 54, group: 9 * 4, offset: 2, name: "PE2", defaultPull: host.Float},
-	{number: 55, group: 9 * 4, offset: 3, name: "PE3", defaultPull: host.Float},
-	{number: 56, group: 9 * 4, offset: 4, name: "PE4", defaultPull: host.Float},
-	{number: 57, group: 9 * 4, offset: 5, name: "PE5", defaultPull: host.Float},
-	{number: 58, group: 9 * 4, offset: 6, name: "PE6", defaultPull: host.Float},
-	{number: 59, group: 9 * 4, offset: 7, name: "PE7", defaultPull: host.Float},
-	{number: 60, group: 9 * 4, offset: 8, name: "PE8", defaultPull: host.Float},
-	{number: 61, group: 9 * 4, offset: 9, name: "PE9", defaultPull: host.Float},
-	{number: 62, group: 9 * 4, offset: 10, name: "PE10", defaultPull: host.Float},
-	{number: 63, group: 9 * 4, offset: 11, name: "PE11", defaultPull: host.Float},
-	{number: 64, group: 9 * 4, offset: 12, name: "PE12", defaultPull: host.Float},
-	{number: 65, group: 9 * 4, offset: 13, name: "PE13", defaultPull: host.Float},
-	{number: 66, group: 9 * 4, offset: 14, name: "PE14", defaultPull: host.Float},
-	{number: 67, group: 9 * 4, offset: 15, name: "PE15", defaultPull: host.Float},
-	{number: 68, group: 9 * 4, offset: 16, name: "PE16", defaultPull: host.Float},
-	{number: 69, group: 9 * 4, offset: 17, name: "PE17", defaultPull: host.Float},
-	{number: 70, group: 9 * 5, offset: 0, name: "PF0", defaultPull: host.Float},
-	{number: 71, group: 9 * 5, offset: 1, name: "PF1", defaultPull: host.Float},
-	{number: 72, group: 9 * 5, offset: 2, name: "PF2", defaultPull: host.Float},
-	{number: 73, group: 9 * 5, offset: 3, name: "PF3", defaultPull: host.Float},
-	{number: 74, group: 9 * 5, offset: 4, name: "PF4", defaultPull: host.Float},
-	{number: 75, group: 9 * 5, offset: 5, name: "PF5", defaultPull: host.Float},
-	{number: 76, group: 9 * 5, offset: 6, name: "PF6", defaultPull: host.Float},
-	{number: 77, group: 9 * 6, offset: 0, name: "PG0", defaultPull: host.Float},
-	{number: 78, group: 9 * 6, offset: 1, name: "PG1", defaultPull: host.Float},
-	{number: 79, group: 9 * 6, offset: 2, name: "PG2", defaultPull: host.Float},
-	{number: 80, group: 9 * 6, offset: 3, name: "PG3", defaultPull: host.Float},
-	{number: 81, group: 9 * 6, offset: 4, name: "PG4", defaultPull: host.Float},
-	{number: 82, group: 9 * 6, offset: 5, name: "PG5", defaultPull: host.Float},
-	{number: 83, group: 9 * 6, offset: 6, name: "PG6", defaultPull: host.Float},
-	{number: 84, group: 9 * 6, offset: 7, name: "PG7", defaultPull: host.Float},
-	{number: 85, group: 9 * 6, offset: 8, name: "PG8", defaultPull: host.Float},
-	{number: 86, group: 9 * 6, offset: 9, name: "PG9", defaultPull: host.Float},
-	{number: 87, group: 9 * 6, offset: 10, name: "PG10", defaultPull: host.Float},
-	{number: 88, group: 9 * 6, offset: 11, name: "PG11", defaultPull: host.Float},
-	{number: 89, group: 9 * 6, offset: 12, name: "PG12", defaultPull: host.Float},
-	{number: 90, group: 9 * 6, offset: 13, name: "PG13", defaultPull: host.Float},
-	{number: 91, group: 9 * 7, offset: 0, name: "PH0", defaultPull: host.Float},
-	{number: 92, group: 9 * 7, offset: 1, name: "PH1", defaultPull: host.Float},
-	{number: 93, group: 9 * 7, offset: 2, name: "PH2", defaultPull: host.Float},
-	{number: 94, group: 9 * 7, offset: 3, name: "PH3", defaultPull: host.Float},
-	{number: 95, group: 9 * 7, offset: 4, name: "PH4", defaultPull: host.Float},
-	{number: 96, group: 9 * 7, offset: 5, name: "PH5", defaultPull: host.Float},
-	{number: 97, group: 9 * 7, offset: 6, name: "PH6", defaultPull: host.Float},
-	{number: 98, group: 9 * 7, offset: 7, name: "PH7", defaultPull: host.Float},
-	{number: 99, group: 9 * 7, offset: 8, name: "PH8", defaultPull: host.Float},
-	{number: 100, group: 9 * 7, offset: 9, name: "PH9", defaultPull: host.Float},
-	{number: 101, group: 9 * 7, offset: 10, name: "PH10", defaultPull: host.Float},
-	{number: 102, group: 9 * 7, offset: 11, name: "PH11", defaultPull: host.Float},
-	{number: 103, group: 0, offset: 0, name: "PL0", defaultPull: host.Up},
-	{number: 104, group: 0, offset: 1, name: "PL1", defaultPull: host.Up},
-	{number: 105, group: 0, offset: 2, name: "PL2", defaultPull: host.Float},
-	{number: 106, group: 0, offset: 3, name: "PL3", defaultPull: host.Float},
-	{number: 107, group: 0, offset: 4, name: "PL4", defaultPull: host.Float},
-	{number: 108, group: 0, offset: 5, name: "PL5", defaultPull: host.Float},
-	{number: 109, group: 0, offset: 6, name: "PL6", defaultPull: host.Float},
-	{number: 110, group: 0, offset: 7, name: "PL7", defaultPull: host.Float},
-	{number: 111, group: 0, offset: 8, name: "PL8", defaultPull: host.Float},
-	{number: 112, group: 0, offset: 9, name: "PL9", defaultPull: host.Float},
-	{number: 113, group: 0, offset: 10, name: "PL10", defaultPull: host.Float},
-	{number: 114, group: 0, offset: 11, name: "PL11", defaultPull: host.Float},
-	{number: 115, group: 0, offset: 12, name: "PL12", defaultPull: host.Float},
+	{number: 0, group: 9 * 1, offset: 0, name: "PB0", defaultPull: gpio.Float},
+	{number: 1, group: 9 * 1, offset: 1, name: "PB1", defaultPull: gpio.Float},
+	{number: 2, group: 9 * 1, offset: 2, name: "PB2", defaultPull: gpio.Float},
+	{number: 3, group: 9 * 1, offset: 3, name: "PB3", defaultPull: gpio.Float},
+	{number: 4, group: 9 * 1, offset: 4, name: "PB4", defaultPull: gpio.Float},
+	{number: 5, group: 9 * 1, offset: 5, name: "PB5", defaultPull: gpio.Float},
+	{number: 6, group: 9 * 1, offset: 6, name: "PB6", defaultPull: gpio.Float},
+	{number: 7, group: 9 * 1, offset: 7, name: "PB7", defaultPull: gpio.Float},
+	{number: 8, group: 9 * 1, offset: 8, name: "PB8", defaultPull: gpio.Float},
+	{number: 9, group: 9 * 1, offset: 9, name: "PB9", defaultPull: gpio.Float},
+	{number: 10, group: 9 * 2, offset: 0, name: "PC0", defaultPull: gpio.Float},
+	{number: 11, group: 9 * 2, offset: 1, name: "PC1", defaultPull: gpio.Float},
+	{number: 12, group: 9 * 2, offset: 2, name: "PC2", defaultPull: gpio.Float},
+	{number: 13, group: 9 * 2, offset: 3, name: "PC3", defaultPull: gpio.Up},
+	{number: 14, group: 9 * 2, offset: 4, name: "PC4", defaultPull: gpio.Up},
+	{number: 15, group: 9 * 2, offset: 5, name: "PC5", defaultPull: gpio.Float},
+	{number: 16, group: 9 * 2, offset: 6, name: "PC6", defaultPull: gpio.Up},
+	{number: 17, group: 9 * 2, offset: 7, name: "PC7", defaultPull: gpio.Up},
+	{number: 18, group: 9 * 2, offset: 8, name: "PC8", defaultPull: gpio.Float},
+	{number: 19, group: 9 * 2, offset: 9, name: "PC9", defaultPull: gpio.Float},
+	{number: 20, group: 9 * 2, offset: 10, name: "PC10", defaultPull: gpio.Float},
+	{number: 21, group: 9 * 2, offset: 11, name: "PC11", defaultPull: gpio.Float},
+	{number: 22, group: 9 * 2, offset: 12, name: "PC12", defaultPull: gpio.Float},
+	{number: 23, group: 9 * 2, offset: 13, name: "PC13", defaultPull: gpio.Float},
+	{number: 24, group: 9 * 2, offset: 14, name: "PC14", defaultPull: gpio.Float},
+	{number: 25, group: 9 * 2, offset: 15, name: "PC15", defaultPull: gpio.Float},
+	{number: 26, group: 9 * 2, offset: 16, name: "PC16", defaultPull: gpio.Float},
+	{number: 27, group: 9 * 3, offset: 0, name: "PD0", defaultPull: gpio.Float},
+	{number: 28, group: 9 * 3, offset: 1, name: "PD1", defaultPull: gpio.Float},
+	{number: 29, group: 9 * 3, offset: 2, name: "PD2", defaultPull: gpio.Float},
+	{number: 30, group: 9 * 3, offset: 3, name: "PD3", defaultPull: gpio.Float},
+	{number: 31, group: 9 * 3, offset: 4, name: "PD4", defaultPull: gpio.Float},
+	{number: 32, group: 9 * 3, offset: 5, name: "PD5", defaultPull: gpio.Float},
+	{number: 33, group: 9 * 3, offset: 6, name: "PD6", defaultPull: gpio.Float},
+	{number: 34, group: 9 * 3, offset: 7, name: "PD7", defaultPull: gpio.Float},
+	{number: 35, group: 9 * 3, offset: 8, name: "PD8", defaultPull: gpio.Float},
+	{number: 36, group: 9 * 3, offset: 9, name: "PD9", defaultPull: gpio.Float},
+	{number: 37, group: 9 * 3, offset: 10, name: "PD10", defaultPull: gpio.Float},
+	{number: 38, group: 9 * 3, offset: 11, name: "PD11", defaultPull: gpio.Float},
+	{number: 39, group: 9 * 3, offset: 12, name: "PD12", defaultPull: gpio.Float},
+	{number: 40, group: 9 * 3, offset: 13, name: "PD13", defaultPull: gpio.Float},
+	{number: 41, group: 9 * 3, offset: 14, name: "PD14", defaultPull: gpio.Float},
+	{number: 42, group: 9 * 3, offset: 15, name: "PD15", defaultPull: gpio.Float},
+	{number: 43, group: 9 * 3, offset: 16, name: "PD16", defaultPull: gpio.Float},
+	{number: 44, group: 9 * 3, offset: 17, name: "PD17", defaultPull: gpio.Float},
+	{number: 45, group: 9 * 3, offset: 18, name: "PD18", defaultPull: gpio.Float},
+	{number: 46, group: 9 * 3, offset: 19, name: "PD19", defaultPull: gpio.Float},
+	{number: 47, group: 9 * 3, offset: 20, name: "PD20", defaultPull: gpio.Float},
+	{number: 48, group: 9 * 3, offset: 21, name: "PD21", defaultPull: gpio.Float},
+	{number: 49, group: 9 * 3, offset: 22, name: "PD22", defaultPull: gpio.Float},
+	{number: 50, group: 9 * 3, offset: 23, name: "PD23", defaultPull: gpio.Float},
+	{number: 51, group: 9 * 3, offset: 24, name: "PD24", defaultPull: gpio.Float},
+	{number: 52, group: 9 * 4, offset: 0, name: "PE0", defaultPull: gpio.Float},
+	{number: 53, group: 9 * 4, offset: 1, name: "PE1", defaultPull: gpio.Float},
+	{number: 54, group: 9 * 4, offset: 2, name: "PE2", defaultPull: gpio.Float},
+	{number: 55, group: 9 * 4, offset: 3, name: "PE3", defaultPull: gpio.Float},
+	{number: 56, group: 9 * 4, offset: 4, name: "PE4", defaultPull: gpio.Float},
+	{number: 57, group: 9 * 4, offset: 5, name: "PE5", defaultPull: gpio.Float},
+	{number: 58, group: 9 * 4, offset: 6, name: "PE6", defaultPull: gpio.Float},
+	{number: 59, group: 9 * 4, offset: 7, name: "PE7", defaultPull: gpio.Float},
+	{number: 60, group: 9 * 4, offset: 8, name: "PE8", defaultPull: gpio.Float},
+	{number: 61, group: 9 * 4, offset: 9, name: "PE9", defaultPull: gpio.Float},
+	{number: 62, group: 9 * 4, offset: 10, name: "PE10", defaultPull: gpio.Float},
+	{number: 63, group: 9 * 4, offset: 11, name: "PE11", defaultPull: gpio.Float},
+	{number: 64, group: 9 * 4, offset: 12, name: "PE12", defaultPull: gpio.Float},
+	{number: 65, group: 9 * 4, offset: 13, name: "PE13", defaultPull: gpio.Float},
+	{number: 66, group: 9 * 4, offset: 14, name: "PE14", defaultPull: gpio.Float},
+	{number: 67, group: 9 * 4, offset: 15, name: "PE15", defaultPull: gpio.Float},
+	{number: 68, group: 9 * 4, offset: 16, name: "PE16", defaultPull: gpio.Float},
+	{number: 69, group: 9 * 4, offset: 17, name: "PE17", defaultPull: gpio.Float},
+	{number: 70, group: 9 * 5, offset: 0, name: "PF0", defaultPull: gpio.Float},
+	{number: 71, group: 9 * 5, offset: 1, name: "PF1", defaultPull: gpio.Float},
+	{number: 72, group: 9 * 5, offset: 2, name: "PF2", defaultPull: gpio.Float},
+	{number: 73, group: 9 * 5, offset: 3, name: "PF3", defaultPull: gpio.Float},
+	{number: 74, group: 9 * 5, offset: 4, name: "PF4", defaultPull: gpio.Float},
+	{number: 75, group: 9 * 5, offset: 5, name: "PF5", defaultPull: gpio.Float},
+	{number: 76, group: 9 * 5, offset: 6, name: "PF6", defaultPull: gpio.Float},
+	{number: 77, group: 9 * 6, offset: 0, name: "PG0", defaultPull: gpio.Float},
+	{number: 78, group: 9 * 6, offset: 1, name: "PG1", defaultPull: gpio.Float},
+	{number: 79, group: 9 * 6, offset: 2, name: "PG2", defaultPull: gpio.Float},
+	{number: 80, group: 9 * 6, offset: 3, name: "PG3", defaultPull: gpio.Float},
+	{number: 81, group: 9 * 6, offset: 4, name: "PG4", defaultPull: gpio.Float},
+	{number: 82, group: 9 * 6, offset: 5, name: "PG5", defaultPull: gpio.Float},
+	{number: 83, group: 9 * 6, offset: 6, name: "PG6", defaultPull: gpio.Float},
+	{number: 84, group: 9 * 6, offset: 7, name: "PG7", defaultPull: gpio.Float},
+	{number: 85, group: 9 * 6, offset: 8, name: "PG8", defaultPull: gpio.Float},
+	{number: 86, group: 9 * 6, offset: 9, name: "PG9", defaultPull: gpio.Float},
+	{number: 87, group: 9 * 6, offset: 10, name: "PG10", defaultPull: gpio.Float},
+	{number: 88, group: 9 * 6, offset: 11, name: "PG11", defaultPull: gpio.Float},
+	{number: 89, group: 9 * 6, offset: 12, name: "PG12", defaultPull: gpio.Float},
+	{number: 90, group: 9 * 6, offset: 13, name: "PG13", defaultPull: gpio.Float},
+	{number: 91, group: 9 * 7, offset: 0, name: "PH0", defaultPull: gpio.Float},
+	{number: 92, group: 9 * 7, offset: 1, name: "PH1", defaultPull: gpio.Float},
+	{number: 93, group: 9 * 7, offset: 2, name: "PH2", defaultPull: gpio.Float},
+	{number: 94, group: 9 * 7, offset: 3, name: "PH3", defaultPull: gpio.Float},
+	{number: 95, group: 9 * 7, offset: 4, name: "PH4", defaultPull: gpio.Float},
+	{number: 96, group: 9 * 7, offset: 5, name: "PH5", defaultPull: gpio.Float},
+	{number: 97, group: 9 * 7, offset: 6, name: "PH6", defaultPull: gpio.Float},
+	{number: 98, group: 9 * 7, offset: 7, name: "PH7", defaultPull: gpio.Float},
+	{number: 99, group: 9 * 7, offset: 8, name: "PH8", defaultPull: gpio.Float},
+	{number: 100, group: 9 * 7, offset: 9, name: "PH9", defaultPull: gpio.Float},
+	{number: 101, group: 9 * 7, offset: 10, name: "PH10", defaultPull: gpio.Float},
+	{number: 102, group: 9 * 7, offset: 11, name: "PH11", defaultPull: gpio.Float},
+	{number: 103, group: 0, offset: 0, name: "PL0", defaultPull: gpio.Up},
+	{number: 104, group: 0, offset: 1, name: "PL1", defaultPull: gpio.Up},
+	{number: 105, group: 0, offset: 2, name: "PL2", defaultPull: gpio.Float},
+	{number: 106, group: 0, offset: 3, name: "PL3", defaultPull: gpio.Float},
+	{number: 107, group: 0, offset: 4, name: "PL4", defaultPull: gpio.Float},
+	{number: 108, group: 0, offset: 5, name: "PL5", defaultPull: gpio.Float},
+	{number: 109, group: 0, offset: 6, name: "PL6", defaultPull: gpio.Float},
+	{number: 110, group: 0, offset: 7, name: "PL7", defaultPull: gpio.Float},
+	{number: 111, group: 0, offset: 8, name: "PL8", defaultPull: gpio.Float},
+	{number: 112, group: 0, offset: 9, name: "PL9", defaultPull: gpio.Float},
+	{number: 113, group: 0, offset: 10, name: "PL10", defaultPull: gpio.Float},
+	{number: 114, group: 0, offset: 11, name: "PL11", defaultPull: gpio.Float},
+	{number: 115, group: 0, offset: 12, name: "PL12", defaultPull: gpio.Float},
 }
 
 // Functional is pins.Functional on this CPU.
-var Functional = map[string]host.PinIO{
+var Functional = map[string]gpio.PinIO{
 	/*
-		"AIF2_BCLK":    host.INVALID,
-		"AIF2_DIN":     host.INVALID,
-		"AIF2_DOUT":    host.INVALID,
-		"AIF2_SYNC":    host.INVALID,
-		"AIF3_BCLK":    host.INVALID,
-		"AIF3_DIN":     host.INVALID,
-		"AIF3_DOUT":    host.INVALID,
-		"AIF3_SYNC":    host.INVALID,
-		"CCIR_CLK":     host.INVALID,
-		"CCIR_D0":      host.INVALID,
-		"CCIR_D1":      host.INVALID,
-		"CCIR_D2":      host.INVALID,
-		"CCIR_D3":      host.INVALID,
-		"CCIR_D4":      host.INVALID,
-		"CCIR_D5":      host.INVALID,
-		"CCIR_D6":      host.INVALID,
-		"CCIR_D7":      host.INVALID,
-		"CCIR_DE":      host.INVALID,
-		"CCIR_HSYNC":   host.INVALID,
-		"CCIR_VSYNC":   host.INVALID,
-		"CSI_D0":       host.INVALID,
-		"CSI_D1":       host.INVALID,
-		"CSI_D2":       host.INVALID,
-		"CSI_D3":       host.INVALID,
-		"CSI_D4":       host.INVALID,
-		"CSI_D5":       host.INVALID,
-		"CSI_D6":       host.INVALID,
-		"CSI_D7":       host.INVALID,
-		"CSI_HSYNC":    host.INVALID,
-		"CSI_MCLK":     host.INVALID,
-		"CSI_PCLK":     host.INVALID,
-		"CSI_SCK":      host.INVALID,
-		"CSI_SDA":      host.INVALID,
-		"CSI_VSYNC":    host.INVALID,
+		"AIF2_BCLK":    gpio.INVALID,
+		"AIF2_DIN":     gpio.INVALID,
+		"AIF2_DOUT":    gpio.INVALID,
+		"AIF2_SYNC":    gpio.INVALID,
+		"AIF3_BCLK":    gpio.INVALID,
+		"AIF3_DIN":     gpio.INVALID,
+		"AIF3_DOUT":    gpio.INVALID,
+		"AIF3_SYNC":    gpio.INVALID,
+		"CCIR_CLK":     gpio.INVALID,
+		"CCIR_D0":      gpio.INVALID,
+		"CCIR_D1":      gpio.INVALID,
+		"CCIR_D2":      gpio.INVALID,
+		"CCIR_D3":      gpio.INVALID,
+		"CCIR_D4":      gpio.INVALID,
+		"CCIR_D5":      gpio.INVALID,
+		"CCIR_D6":      gpio.INVALID,
+		"CCIR_D7":      gpio.INVALID,
+		"CCIR_DE":      gpio.INVALID,
+		"CCIR_HSYNC":   gpio.INVALID,
+		"CCIR_VSYNC":   gpio.INVALID,
+		"CSI_D0":       gpio.INVALID,
+		"CSI_D1":       gpio.INVALID,
+		"CSI_D2":       gpio.INVALID,
+		"CSI_D3":       gpio.INVALID,
+		"CSI_D4":       gpio.INVALID,
+		"CSI_D5":       gpio.INVALID,
+		"CSI_D6":       gpio.INVALID,
+		"CSI_D7":       gpio.INVALID,
+		"CSI_HSYNC":    gpio.INVALID,
+		"CSI_MCLK":     gpio.INVALID,
+		"CSI_PCLK":     gpio.INVALID,
+		"CSI_SCK":      gpio.INVALID,
+		"CSI_SDA":      gpio.INVALID,
+		"CSI_VSYNC":    gpio.INVALID,
 	*/
-	"I2C0_SCK":  host.INVALID,
-	"I2C0_SDA":  host.INVALID,
-	"I2C1_SCK":  host.INVALID,
-	"I2C1_SDA":  host.INVALID,
-	"I2C2_SCK":  host.INVALID,
-	"I2C2_SDA":  host.INVALID,
-	"I2S0_MCLK": host.INVALID,
+	"I2C0_SCK":  gpio.INVALID,
+	"I2C0_SDA":  gpio.INVALID,
+	"I2C1_SCK":  gpio.INVALID,
+	"I2C1_SDA":  gpio.INVALID,
+	"I2C2_SCK":  gpio.INVALID,
+	"I2C2_SDA":  gpio.INVALID,
+	"I2S0_MCLK": gpio.INVALID,
 	/*
-		"JTAG_CK0":     host.INVALID,
-		"JTAG_CK1":     host.INVALID,
-		"JTAG_DI0":     host.INVALID,
-		"JTAG_DI1":     host.INVALID,
-		"JTAG_DO0":     host.INVALID,
-		"JTAG_DO1":     host.INVALID,
-		"JTAG_MS0":     host.INVALID,
-		"JTAG_MS1":     host.INVALID,
-		"LCD_CLK":      host.INVALID,
-		"LCD_D10":      host.INVALID,
-		"LCD_D11":      host.INVALID,
-		"LCD_D12":      host.INVALID,
-		"LCD_D13":      host.INVALID,
-		"LCD_D14":      host.INVALID,
-		"LCD_D15":      host.INVALID,
-		"LCD_D18":      host.INVALID,
-		"LCD_D19":      host.INVALID,
-		"LCD_D2":       host.INVALID,
-		"LCD_D20":      host.INVALID,
-		"LCD_D21":      host.INVALID,
-		"LCD_D22":      host.INVALID,
-		"LCD_D23":      host.INVALID,
-		"LCD_D3":       host.INVALID,
-		"LCD_D4":       host.INVALID,
-		"LCD_D5":       host.INVALID,
-		"LCD_D6":       host.INVALID,
-		"LCD_D7":       host.INVALID,
-		"LCD_DE":       host.INVALID,
-		"LCD_HSYNC":    host.INVALID,
-		"LCD_VSYNC":    host.INVALID,
-		"LVDS_VN0":     host.INVALID,
-		"LVDS_VN1":     host.INVALID,
-		"LVDS_VN2":     host.INVALID,
-		"LVDS_VN3":     host.INVALID,
-		"LVDS_VNC":     host.INVALID,
-		"LVDS_VP0":     host.INVALID,
-		"LVDS_VP1":     host.INVALID,
-		"LVDS_VP2":     host.INVALID,
-		"LVDS_VP3":     host.INVALID,
-		"LVDS_VPC":     host.INVALID,
-		"MDC":          host.INVALID,
-		"MDIO":         host.INVALID,
-		"MIC_CLK":      host.INVALID,
-		"MIC_DATA":     host.INVALID,
-		"NAND_ALE":     host.INVALID,
-		"NAND_CE0":     host.INVALID,
-		"NAND_CE1":     host.INVALID,
-		"NAND_CLE":     host.INVALID,
-		"NAND_DQ0":     host.INVALID,
-		"NAND_DQ1":     host.INVALID,
-		"NAND_DQ2":     host.INVALID,
-		"NAND_DQ3":     host.INVALID,
-		"NAND_DQ4":     host.INVALID,
-		"NAND_DQ5":     host.INVALID,
-		"NAND_DQ6":     host.INVALID,
-		"NAND_DQ7":     host.INVALID,
-		"NAND_DQS":     host.INVALID,
-		"NAND_RB0":     host.INVALID,
-		"NAND_RB1":     host.INVALID,
-		"NAND_RE":      host.INVALID,
-		"NAND_WE":      host.INVALID,
-		"OWA_OUT":      host.INVALID,
+		"JTAG_CK0":     gpio.INVALID,
+		"JTAG_CK1":     gpio.INVALID,
+		"JTAG_DI0":     gpio.INVALID,
+		"JTAG_DI1":     gpio.INVALID,
+		"JTAG_DO0":     gpio.INVALID,
+		"JTAG_DO1":     gpio.INVALID,
+		"JTAG_MS0":     gpio.INVALID,
+		"JTAG_MS1":     gpio.INVALID,
+		"LCD_CLK":      gpio.INVALID,
+		"LCD_D10":      gpio.INVALID,
+		"LCD_D11":      gpio.INVALID,
+		"LCD_D12":      gpio.INVALID,
+		"LCD_D13":      gpio.INVALID,
+		"LCD_D14":      gpio.INVALID,
+		"LCD_D15":      gpio.INVALID,
+		"LCD_D18":      gpio.INVALID,
+		"LCD_D19":      gpio.INVALID,
+		"LCD_D2":       gpio.INVALID,
+		"LCD_D20":      gpio.INVALID,
+		"LCD_D21":      gpio.INVALID,
+		"LCD_D22":      gpio.INVALID,
+		"LCD_D23":      gpio.INVALID,
+		"LCD_D3":       gpio.INVALID,
+		"LCD_D4":       gpio.INVALID,
+		"LCD_D5":       gpio.INVALID,
+		"LCD_D6":       gpio.INVALID,
+		"LCD_D7":       gpio.INVALID,
+		"LCD_DE":       gpio.INVALID,
+		"LCD_HSYNC":    gpio.INVALID,
+		"LCD_VSYNC":    gpio.INVALID,
+		"LVDS_VN0":     gpio.INVALID,
+		"LVDS_VN1":     gpio.INVALID,
+		"LVDS_VN2":     gpio.INVALID,
+		"LVDS_VN3":     gpio.INVALID,
+		"LVDS_VNC":     gpio.INVALID,
+		"LVDS_VP0":     gpio.INVALID,
+		"LVDS_VP1":     gpio.INVALID,
+		"LVDS_VP2":     gpio.INVALID,
+		"LVDS_VP3":     gpio.INVALID,
+		"LVDS_VPC":     gpio.INVALID,
+		"MDC":          gpio.INVALID,
+		"MDIO":         gpio.INVALID,
+		"MIC_CLK":      gpio.INVALID,
+		"MIC_DATA":     gpio.INVALID,
+		"NAND_ALE":     gpio.INVALID,
+		"NAND_CE0":     gpio.INVALID,
+		"NAND_CE1":     gpio.INVALID,
+		"NAND_CLE":     gpio.INVALID,
+		"NAND_DQ0":     gpio.INVALID,
+		"NAND_DQ1":     gpio.INVALID,
+		"NAND_DQ2":     gpio.INVALID,
+		"NAND_DQ3":     gpio.INVALID,
+		"NAND_DQ4":     gpio.INVALID,
+		"NAND_DQ5":     gpio.INVALID,
+		"NAND_DQ6":     gpio.INVALID,
+		"NAND_DQ7":     gpio.INVALID,
+		"NAND_DQS":     gpio.INVALID,
+		"NAND_RB0":     gpio.INVALID,
+		"NAND_RB1":     gpio.INVALID,
+		"NAND_RE":      gpio.INVALID,
+		"NAND_WE":      gpio.INVALID,
+		"OWA_OUT":      gpio.INVALID,
 	*/
-	"PCM0_BCLK":    host.INVALID,
-	"PCM0_DIN":     host.INVALID,
-	"PCM0_DOUT":    host.INVALID,
-	"PCM0_SYNC":    host.INVALID,
-	"PCM1_BCLK":    host.INVALID,
-	"PCM1_DIN":     host.INVALID,
-	"PCM1_DOUT":    host.INVALID,
-	"PCM1_SYNC":    host.INVALID,
-	"PLL_LOCK_DBG": host.INVALID,
-	"PWM0":         host.INVALID,
+	"PCM0_BCLK":    gpio.INVALID,
+	"PCM0_DIN":     gpio.INVALID,
+	"PCM0_DOUT":    gpio.INVALID,
+	"PCM0_SYNC":    gpio.INVALID,
+	"PCM1_BCLK":    gpio.INVALID,
+	"PCM1_DIN":     gpio.INVALID,
+	"PCM1_DOUT":    gpio.INVALID,
+	"PCM1_SYNC":    gpio.INVALID,
+	"PLL_LOCK_DBG": gpio.INVALID,
+	"PWM0":         gpio.INVALID,
 	/*
-		"RGMII_CLKI":   host.INVALID,
-		"RGMII_RXCK":   host.INVALID,
-		"RGMII_RXCT":   host.INVALID,
-		"RGMII_RXD0":   host.INVALID,
-		"RGMII_RXD1":   host.INVALID,
-		"RGMII_RXD2":   host.INVALID,
-		"RGMII_RXD3":   host.INVALID,
-		"RGMII_RXER":   host.INVALID,
-		"RGMII_TXCK":   host.INVALID,
-		"RGMII_TXCT":   host.INVALID,
-		"RGMII_TXD0":   host.INVALID,
-		"RGMII_TXD1":   host.INVALID,
-		"RGMII_TXD2":   host.INVALID,
-		"RGMII_TXD3":   host.INVALID,
-		"SDC0_CLK":     host.INVALID,
-		"SDC0_CMD":     host.INVALID,
-		"SDC0_D0":      host.INVALID,
-		"SDC0_D1":      host.INVALID,
-		"SDC0_D2":      host.INVALID,
-		"SDC0_D3":      host.INVALID,
-		"SDC1_CLK":     host.INVALID,
-		"SDC1_CMD":     host.INVALID,
-		"SDC1_D0":      host.INVALID,
-		"SDC1_D1":      host.INVALID,
-		"SDC1_D2":      host.INVALID,
-		"SDC1_D3":      host.INVALID,
-		"SDC2_CLK":     host.INVALID,
-		"SDC2_CMD":     host.INVALID,
-		"SDC2_D0":      host.INVALID,
-		"SDC2_D1":      host.INVALID,
-		"SDC2_D2":      host.INVALID,
-		"SDC2_D3":      host.INVALID,
-		"SDC2_D4":      host.INVALID,
-		"SDC2_D5":      host.INVALID,
-		"SDC2_D6":      host.INVALID,
-		"SDC2_D7":      host.INVALID,
-		"SDC2_DS":      host.INVALID,
-		"SDC2_RST":     host.INVALID,
-		"SIM_CLK":      host.INVALID,
-		"SIM_DATA":     host.INVALID,
-		"SIM_DET":      host.INVALID,
-		"SIM_PWREN":    host.INVALID,
-		"SIM_RST":      host.INVALID,
-		"SIM_VPPEN":    host.INVALID,
-		"SIM_VPPPP":    host.INVALID,
+		"RGMII_CLKI":   gpio.INVALID,
+		"RGMII_RXCK":   gpio.INVALID,
+		"RGMII_RXCT":   gpio.INVALID,
+		"RGMII_RXD0":   gpio.INVALID,
+		"RGMII_RXD1":   gpio.INVALID,
+		"RGMII_RXD2":   gpio.INVALID,
+		"RGMII_RXD3":   gpio.INVALID,
+		"RGMII_RXER":   gpio.INVALID,
+		"RGMII_TXCK":   gpio.INVALID,
+		"RGMII_TXCT":   gpio.INVALID,
+		"RGMII_TXD0":   gpio.INVALID,
+		"RGMII_TXD1":   gpio.INVALID,
+		"RGMII_TXD2":   gpio.INVALID,
+		"RGMII_TXD3":   gpio.INVALID,
+		"SDC0_CLK":     gpio.INVALID,
+		"SDC0_CMD":     gpio.INVALID,
+		"SDC0_D0":      gpio.INVALID,
+		"SDC0_D1":      gpio.INVALID,
+		"SDC0_D2":      gpio.INVALID,
+		"SDC0_D3":      gpio.INVALID,
+		"SDC1_CLK":     gpio.INVALID,
+		"SDC1_CMD":     gpio.INVALID,
+		"SDC1_D0":      gpio.INVALID,
+		"SDC1_D1":      gpio.INVALID,
+		"SDC1_D2":      gpio.INVALID,
+		"SDC1_D3":      gpio.INVALID,
+		"SDC2_CLK":     gpio.INVALID,
+		"SDC2_CMD":     gpio.INVALID,
+		"SDC2_D0":      gpio.INVALID,
+		"SDC2_D1":      gpio.INVALID,
+		"SDC2_D2":      gpio.INVALID,
+		"SDC2_D3":      gpio.INVALID,
+		"SDC2_D4":      gpio.INVALID,
+		"SDC2_D5":      gpio.INVALID,
+		"SDC2_D6":      gpio.INVALID,
+		"SDC2_D7":      gpio.INVALID,
+		"SDC2_DS":      gpio.INVALID,
+		"SDC2_RST":     gpio.INVALID,
+		"SIM_CLK":      gpio.INVALID,
+		"SIM_DATA":     gpio.INVALID,
+		"SIM_DET":      gpio.INVALID,
+		"SIM_PWREN":    gpio.INVALID,
+		"SIM_RST":      gpio.INVALID,
+		"SIM_VPPEN":    gpio.INVALID,
+		"SIM_VPPPP":    gpio.INVALID,
 	*/
-	"SPI0_CLK":  host.INVALID,
-	"SPI0_CS":   host.INVALID,
-	"SPI0_MISO": host.INVALID,
-	"SPI0_MOSI": host.INVALID,
-	"SPI1_CLK":  host.INVALID,
-	"SPI1_CS":   host.INVALID,
-	"SPI1_MISO": host.INVALID,
-	"SPI1_MOSI": host.INVALID,
+	"SPI0_CLK":  gpio.INVALID,
+	"SPI0_CS":   gpio.INVALID,
+	"SPI0_MISO": gpio.INVALID,
+	"SPI0_MOSI": gpio.INVALID,
+	"SPI1_CLK":  gpio.INVALID,
+	"SPI1_CS":   gpio.INVALID,
+	"SPI1_MISO": gpio.INVALID,
+	"SPI1_MOSI": gpio.INVALID,
 	/*
-		"S_CIR_RX":  host.INVALID,
-		"S_I2C_CSK": host.INVALID,
-		"S_I2C_SCK": host.INVALID,
-		"S_I2C_SDA": host.INVALID,
-		"S_I2C_SDA": host.INVALID,
-		"S_JTAG_CK": host.INVALID,
-		"S_JTAG_DI": host.INVALID,
-		"S_JTAG_DO": host.INVALID,
-		"S_JTAG_MS": host.INVALID,
-		"S_PWM":     host.INVALID,
-		"S_RSB_SCK": host.INVALID,
-		"S_RSB_SDA": host.INVALID,
-		"S_UART_RX": host.INVALID,
-		"S_UART_TX": host.INVALID,
-		"TS_CLK":    host.INVALID,
-		"TS_D0":     host.INVALID,
-		"TS_D1":     host.INVALID,
-		"TS_D2":     host.INVALID,
-		"TS_D3":     host.INVALID,
-		"TS_D4":     host.INVALID,
-		"TS_D5":     host.INVALID,
-		"TS_D6":     host.INVALID,
-		"TS_D7":     host.INVALID,
-		"TS_DVLD":   host.INVALID,
-		"TS_ERR":    host.INVALID,
-		"TS_SYNC":   host.INVALID,
+		"S_CIR_RX":  gpio.INVALID,
+		"S_I2C_CSK": gpio.INVALID,
+		"S_I2C_SCK": gpio.INVALID,
+		"S_I2C_SDA": gpio.INVALID,
+		"S_I2C_SDA": gpio.INVALID,
+		"S_JTAG_CK": gpio.INVALID,
+		"S_JTAG_DI": gpio.INVALID,
+		"S_JTAG_DO": gpio.INVALID,
+		"S_JTAG_MS": gpio.INVALID,
+		"S_PWM":     gpio.INVALID,
+		"S_RSB_SCK": gpio.INVALID,
+		"S_RSB_SDA": gpio.INVALID,
+		"S_UART_RX": gpio.INVALID,
+		"S_UART_TX": gpio.INVALID,
+		"TS_CLK":    gpio.INVALID,
+		"TS_D0":     gpio.INVALID,
+		"TS_D1":     gpio.INVALID,
+		"TS_D2":     gpio.INVALID,
+		"TS_D3":     gpio.INVALID,
+		"TS_D4":     gpio.INVALID,
+		"TS_D5":     gpio.INVALID,
+		"TS_D6":     gpio.INVALID,
+		"TS_D7":     gpio.INVALID,
+		"TS_DVLD":   gpio.INVALID,
+		"TS_ERR":    gpio.INVALID,
+		"TS_SYNC":   gpio.INVALID,
 	*/
-	"UART0_RX":  host.INVALID,
-	"UART0_TX":  host.INVALID,
-	"UART1_CTS": host.INVALID,
-	"UART1_RTS": host.INVALID,
-	"UART1_RX":  host.INVALID,
-	"UART1_TX":  host.INVALID,
-	"UART2_CTS": host.INVALID,
-	"UART2_RTS": host.INVALID,
-	"UART2_RX":  host.INVALID,
-	"UART2_TX":  host.INVALID,
-	"UART3_CTS": host.INVALID,
-	"UART3_RTS": host.INVALID,
-	"UART3_RX":  host.INVALID,
-	"UART3_TX":  host.INVALID,
-	"UART4_CTS": host.INVALID,
-	"UART4_RTS": host.INVALID,
-	"UART4_RX":  host.INVALID,
-	"UART4_TX":  host.INVALID,
+	"UART0_RX":  gpio.INVALID,
+	"UART0_TX":  gpio.INVALID,
+	"UART1_CTS": gpio.INVALID,
+	"UART1_RTS": gpio.INVALID,
+	"UART1_RX":  gpio.INVALID,
+	"UART1_TX":  gpio.INVALID,
+	"UART2_CTS": gpio.INVALID,
+	"UART2_RTS": gpio.INVALID,
+	"UART2_RX":  gpio.INVALID,
+	"UART2_TX":  gpio.INVALID,
+	"UART3_CTS": gpio.INVALID,
+	"UART3_RTS": gpio.INVALID,
+	"UART3_RX":  gpio.INVALID,
+	"UART3_TX":  gpio.INVALID,
+	"UART4_CTS": gpio.INVALID,
+	"UART4_RTS": gpio.INVALID,
+	"UART4_RX":  gpio.INVALID,
+	"UART4_TX":  gpio.INVALID,
 }
 
 // Page 23~24
@@ -367,134 +367,134 @@ type Pin struct {
 	group       uint8      // as per register offset calculation; when 0, PL group
 	offset      uint8      // as per register offset calculation
 	name        string     // name as per datasheet
-	defaultPull host.Pull  // default pull at startup
+	defaultPull gpio.Pull  // default pull at startup
 	edge        *sysfs.Pin // Mutable, set once, then never set back to nil
 }
 
 // http://forum.pine64.org/showthread.php?tid=474
 // about number calculation.
 var (
-	PB0  host.PinIO = &Pins[0]   // 32
-	PB1  host.PinIO = &Pins[1]   // 33
-	PB2  host.PinIO = &Pins[2]   // 34
-	PB3  host.PinIO = &Pins[3]   // 35
-	PB4  host.PinIO = &Pins[4]   // 36
-	PB5  host.PinIO = &Pins[5]   // 37
-	PB6  host.PinIO = &Pins[6]   // 38
-	PB7  host.PinIO = &Pins[7]   // 39
-	PB8  host.PinIO = &Pins[8]   // 40
-	PB9  host.PinIO = &Pins[9]   // 41
-	PC0  host.PinIO = &Pins[10]  //
-	PC1  host.PinIO = &Pins[11]  //
-	PC2  host.PinIO = &Pins[12]  //
-	PC3  host.PinIO = &Pins[13]  //
-	PC4  host.PinIO = &Pins[14]  //
-	PC5  host.PinIO = &Pins[15]  //
-	PC6  host.PinIO = &Pins[16]  //
-	PC7  host.PinIO = &Pins[17]  //
-	PC8  host.PinIO = &Pins[18]  //
-	PC9  host.PinIO = &Pins[19]  //
-	PC10 host.PinIO = &Pins[20]  //
-	PC11 host.PinIO = &Pins[21]  //
-	PC12 host.PinIO = &Pins[22]  //
-	PC13 host.PinIO = &Pins[23]  //
-	PC14 host.PinIO = &Pins[24]  //
-	PC15 host.PinIO = &Pins[25]  //
-	PC16 host.PinIO = &Pins[26]  //
-	PD0  host.PinIO = &Pins[27]  //
-	PD1  host.PinIO = &Pins[28]  //
-	PD2  host.PinIO = &Pins[29]  //
-	PD3  host.PinIO = &Pins[30]  //
-	PD4  host.PinIO = &Pins[31]  //
-	PD5  host.PinIO = &Pins[32]  //
-	PD6  host.PinIO = &Pins[33]  //
-	PD7  host.PinIO = &Pins[34]  //
-	PD8  host.PinIO = &Pins[35]  //
-	PD9  host.PinIO = &Pins[36]  //
-	PD10 host.PinIO = &Pins[37]  //
-	PD11 host.PinIO = &Pins[38]  //
-	PD12 host.PinIO = &Pins[39]  //
-	PD13 host.PinIO = &Pins[40]  //
-	PD14 host.PinIO = &Pins[41]  //
-	PD15 host.PinIO = &Pins[42]  //
-	PD16 host.PinIO = &Pins[43]  //
-	PD17 host.PinIO = &Pins[44]  //
-	PD18 host.PinIO = &Pins[45]  //
-	PD19 host.PinIO = &Pins[46]  //
-	PD20 host.PinIO = &Pins[47]  //
-	PD21 host.PinIO = &Pins[48]  //
-	PD22 host.PinIO = &Pins[49]  //
-	PD23 host.PinIO = &Pins[50]  //
-	PD24 host.PinIO = &Pins[51]  //
-	PE0  host.PinIO = &Pins[52]  //
-	PE1  host.PinIO = &Pins[53]  //
-	PE2  host.PinIO = &Pins[54]  //
-	PE3  host.PinIO = &Pins[55]  //
-	PE4  host.PinIO = &Pins[56]  //
-	PE5  host.PinIO = &Pins[57]  //
-	PE6  host.PinIO = &Pins[58]  //
-	PE7  host.PinIO = &Pins[59]  //
-	PE8  host.PinIO = &Pins[60]  //
-	PE9  host.PinIO = &Pins[61]  //
-	PE10 host.PinIO = &Pins[62]  //
-	PE11 host.PinIO = &Pins[63]  //
-	PE12 host.PinIO = &Pins[64]  //
-	PE13 host.PinIO = &Pins[65]  //
-	PE14 host.PinIO = &Pins[66]  //
-	PE15 host.PinIO = &Pins[67]  //
-	PE16 host.PinIO = &Pins[68]  //
-	PE17 host.PinIO = &Pins[69]  //
-	PF0  host.PinIO = &Pins[70]  //
-	PF1  host.PinIO = &Pins[71]  //
-	PF2  host.PinIO = &Pins[72]  //
-	PF3  host.PinIO = &Pins[73]  //
-	PF4  host.PinIO = &Pins[74]  //
-	PF5  host.PinIO = &Pins[75]  //
-	PF6  host.PinIO = &Pins[76]  //
-	PG0  host.PinIO = &Pins[77]  // 192
-	PG1  host.PinIO = &Pins[78]  // 193
-	PG2  host.PinIO = &Pins[79]  // 194
-	PG3  host.PinIO = &Pins[80]  // 195
-	PG4  host.PinIO = &Pins[81]  // 196
-	PG5  host.PinIO = &Pins[82]  // 197
-	PG6  host.PinIO = &Pins[83]  // 198
-	PG7  host.PinIO = &Pins[84]  // 199
-	PG8  host.PinIO = &Pins[85]  // 200
-	PG9  host.PinIO = &Pins[86]  // 201
-	PG10 host.PinIO = &Pins[87]  // 202
-	PG11 host.PinIO = &Pins[88]  // 203
-	PG12 host.PinIO = &Pins[89]  // 204
-	PG13 host.PinIO = &Pins[90]  // 205
-	PH0  host.PinIO = &Pins[91]  // 224
-	PH1  host.PinIO = &Pins[92]  // 225
-	PH2  host.PinIO = &Pins[93]  // 226
-	PH3  host.PinIO = &Pins[94]  // 227
-	PH4  host.PinIO = &Pins[95]  // 228
-	PH5  host.PinIO = &Pins[96]  // 229
-	PH6  host.PinIO = &Pins[97]  // 230
-	PH7  host.PinIO = &Pins[98]  // 232
-	PH8  host.PinIO = &Pins[99]  // 233
-	PH9  host.PinIO = &Pins[100] // 234
-	PH10 host.PinIO = &Pins[101] // 235
-	PH11 host.PinIO = &Pins[102] //
-	PL0  host.PinIO = &Pins[103] // 352; these pins are optional and may not be present.
-	PL1  host.PinIO = &Pins[104] // 353
-	PL2  host.PinIO = &Pins[105] // 357
-	PL3  host.PinIO = &Pins[106] // 358
-	PL4  host.PinIO = &Pins[107] // 359
-	PL5  host.PinIO = &Pins[108] // 360
-	PL6  host.PinIO = &Pins[109] // 361
-	PL7  host.PinIO = &Pins[110] // 362
-	PL8  host.PinIO = &Pins[111] // 363
-	PL9  host.PinIO = &Pins[112] // 364
-	PL10 host.PinIO = &Pins[113] //
-	PL11 host.PinIO = &Pins[114] //
-	PL12 host.PinIO = &Pins[115] //
+	PB0  gpio.PinIO = &Pins[0]   // 32
+	PB1  gpio.PinIO = &Pins[1]   // 33
+	PB2  gpio.PinIO = &Pins[2]   // 34
+	PB3  gpio.PinIO = &Pins[3]   // 35
+	PB4  gpio.PinIO = &Pins[4]   // 36
+	PB5  gpio.PinIO = &Pins[5]   // 37
+	PB6  gpio.PinIO = &Pins[6]   // 38
+	PB7  gpio.PinIO = &Pins[7]   // 39
+	PB8  gpio.PinIO = &Pins[8]   // 40
+	PB9  gpio.PinIO = &Pins[9]   // 41
+	PC0  gpio.PinIO = &Pins[10]  //
+	PC1  gpio.PinIO = &Pins[11]  //
+	PC2  gpio.PinIO = &Pins[12]  //
+	PC3  gpio.PinIO = &Pins[13]  //
+	PC4  gpio.PinIO = &Pins[14]  //
+	PC5  gpio.PinIO = &Pins[15]  //
+	PC6  gpio.PinIO = &Pins[16]  //
+	PC7  gpio.PinIO = &Pins[17]  //
+	PC8  gpio.PinIO = &Pins[18]  //
+	PC9  gpio.PinIO = &Pins[19]  //
+	PC10 gpio.PinIO = &Pins[20]  //
+	PC11 gpio.PinIO = &Pins[21]  //
+	PC12 gpio.PinIO = &Pins[22]  //
+	PC13 gpio.PinIO = &Pins[23]  //
+	PC14 gpio.PinIO = &Pins[24]  //
+	PC15 gpio.PinIO = &Pins[25]  //
+	PC16 gpio.PinIO = &Pins[26]  //
+	PD0  gpio.PinIO = &Pins[27]  //
+	PD1  gpio.PinIO = &Pins[28]  //
+	PD2  gpio.PinIO = &Pins[29]  //
+	PD3  gpio.PinIO = &Pins[30]  //
+	PD4  gpio.PinIO = &Pins[31]  //
+	PD5  gpio.PinIO = &Pins[32]  //
+	PD6  gpio.PinIO = &Pins[33]  //
+	PD7  gpio.PinIO = &Pins[34]  //
+	PD8  gpio.PinIO = &Pins[35]  //
+	PD9  gpio.PinIO = &Pins[36]  //
+	PD10 gpio.PinIO = &Pins[37]  //
+	PD11 gpio.PinIO = &Pins[38]  //
+	PD12 gpio.PinIO = &Pins[39]  //
+	PD13 gpio.PinIO = &Pins[40]  //
+	PD14 gpio.PinIO = &Pins[41]  //
+	PD15 gpio.PinIO = &Pins[42]  //
+	PD16 gpio.PinIO = &Pins[43]  //
+	PD17 gpio.PinIO = &Pins[44]  //
+	PD18 gpio.PinIO = &Pins[45]  //
+	PD19 gpio.PinIO = &Pins[46]  //
+	PD20 gpio.PinIO = &Pins[47]  //
+	PD21 gpio.PinIO = &Pins[48]  //
+	PD22 gpio.PinIO = &Pins[49]  //
+	PD23 gpio.PinIO = &Pins[50]  //
+	PD24 gpio.PinIO = &Pins[51]  //
+	PE0  gpio.PinIO = &Pins[52]  //
+	PE1  gpio.PinIO = &Pins[53]  //
+	PE2  gpio.PinIO = &Pins[54]  //
+	PE3  gpio.PinIO = &Pins[55]  //
+	PE4  gpio.PinIO = &Pins[56]  //
+	PE5  gpio.PinIO = &Pins[57]  //
+	PE6  gpio.PinIO = &Pins[58]  //
+	PE7  gpio.PinIO = &Pins[59]  //
+	PE8  gpio.PinIO = &Pins[60]  //
+	PE9  gpio.PinIO = &Pins[61]  //
+	PE10 gpio.PinIO = &Pins[62]  //
+	PE11 gpio.PinIO = &Pins[63]  //
+	PE12 gpio.PinIO = &Pins[64]  //
+	PE13 gpio.PinIO = &Pins[65]  //
+	PE14 gpio.PinIO = &Pins[66]  //
+	PE15 gpio.PinIO = &Pins[67]  //
+	PE16 gpio.PinIO = &Pins[68]  //
+	PE17 gpio.PinIO = &Pins[69]  //
+	PF0  gpio.PinIO = &Pins[70]  //
+	PF1  gpio.PinIO = &Pins[71]  //
+	PF2  gpio.PinIO = &Pins[72]  //
+	PF3  gpio.PinIO = &Pins[73]  //
+	PF4  gpio.PinIO = &Pins[74]  //
+	PF5  gpio.PinIO = &Pins[75]  //
+	PF6  gpio.PinIO = &Pins[76]  //
+	PG0  gpio.PinIO = &Pins[77]  // 192
+	PG1  gpio.PinIO = &Pins[78]  // 193
+	PG2  gpio.PinIO = &Pins[79]  // 194
+	PG3  gpio.PinIO = &Pins[80]  // 195
+	PG4  gpio.PinIO = &Pins[81]  // 196
+	PG5  gpio.PinIO = &Pins[82]  // 197
+	PG6  gpio.PinIO = &Pins[83]  // 198
+	PG7  gpio.PinIO = &Pins[84]  // 199
+	PG8  gpio.PinIO = &Pins[85]  // 200
+	PG9  gpio.PinIO = &Pins[86]  // 201
+	PG10 gpio.PinIO = &Pins[87]  // 202
+	PG11 gpio.PinIO = &Pins[88]  // 203
+	PG12 gpio.PinIO = &Pins[89]  // 204
+	PG13 gpio.PinIO = &Pins[90]  // 205
+	PH0  gpio.PinIO = &Pins[91]  // 224
+	PH1  gpio.PinIO = &Pins[92]  // 225
+	PH2  gpio.PinIO = &Pins[93]  // 226
+	PH3  gpio.PinIO = &Pins[94]  // 227
+	PH4  gpio.PinIO = &Pins[95]  // 228
+	PH5  gpio.PinIO = &Pins[96]  // 229
+	PH6  gpio.PinIO = &Pins[97]  // 230
+	PH7  gpio.PinIO = &Pins[98]  // 232
+	PH8  gpio.PinIO = &Pins[99]  // 233
+	PH9  gpio.PinIO = &Pins[100] // 234
+	PH10 gpio.PinIO = &Pins[101] // 235
+	PH11 gpio.PinIO = &Pins[102] //
+	PL0  gpio.PinIO = &Pins[103] // 352; these pins are optional and may not be present.
+	PL1  gpio.PinIO = &Pins[104] // 353
+	PL2  gpio.PinIO = &Pins[105] // 357
+	PL3  gpio.PinIO = &Pins[106] // 358
+	PL4  gpio.PinIO = &Pins[107] // 359
+	PL5  gpio.PinIO = &Pins[108] // 360
+	PL6  gpio.PinIO = &Pins[109] // 361
+	PL7  gpio.PinIO = &Pins[110] // 362
+	PL8  gpio.PinIO = &Pins[111] // 363
+	PL9  gpio.PinIO = &Pins[112] // 364
+	PL10 gpio.PinIO = &Pins[113] //
+	PL11 gpio.PinIO = &Pins[114] //
+	PL12 gpio.PinIO = &Pins[115] //
 )
 
 // PinIO implementation.
 
-// Number implements host.PinIO
+// Number implements gpio.PinIO
 //
 // It returns the GPIO pin number as represented by gpio sysfs.
 func (p *Pin) Number() int {
@@ -505,7 +505,7 @@ func (p *Pin) Number() int {
 	return g*32 + int(p.offset)
 }
 
-// String implements host.PinIO
+// String implements gpio.PinIO
 func (p *Pin) String() string {
 	return fmt.Sprintf("%s(%d)", p.name, p.Number())
 }
@@ -548,14 +548,14 @@ func (p *Pin) Function() string {
 	}
 }
 
-func (p *Pin) In(pull host.Pull) error {
+func (p *Pin) In(pull gpio.Pull) error {
 	if gpioMemoryPB == nil {
 		return errors.New("subsystem not initialized")
 	}
 	if !p.setFunction(in) {
 		return fmt.Errorf("failed to set pin %s as input", p.name)
 	}
-	if pull == host.PullNoChange {
+	if pull == gpio.PullNoChange {
 		return nil
 	}
 	off := p.group + 7 + p.offset/16
@@ -564,9 +564,9 @@ func (p *Pin) In(pull host.Pull) error {
 	if p.group == 0 {
 		gpioMemoryPL[off] &^= 3 << shift
 		switch pull {
-		case host.Down:
+		case gpio.Down:
 			gpioMemoryPL[off] = 2 << shift
-		case host.Up:
+		case gpio.Up:
 			gpioMemoryPL[off] = 1 << shift
 		default:
 		}
@@ -574,9 +574,9 @@ func (p *Pin) In(pull host.Pull) error {
 		// Pn_PULL  n*0x24+0x1C Port n Pull Register (n from 1(B) to 7(H))
 		gpioMemoryPB[off] &^= 3 << shift
 		switch pull {
-		case host.Down:
+		case gpio.Down:
 			gpioMemoryPB[off] = 2 << shift
-		case host.Up:
+		case gpio.Up:
 			gpioMemoryPB[off] = 1 << shift
 		default:
 		}
@@ -584,22 +584,22 @@ func (p *Pin) In(pull host.Pull) error {
 	return nil
 }
 
-func (p *Pin) Read() host.Level {
+func (p *Pin) Read() gpio.Level {
 	if p.group == 0 {
-		return host.Level(gpioMemoryPL[4]&(1<<p.offset) != 0)
+		return gpio.Level(gpioMemoryPL[4]&(1<<p.offset) != 0)
 	}
 	// Pn_DAT  n*0x24+0x10  Port n Data Register (n from 1(B) to 7(H))
-	return host.Level(gpioMemoryPB[p.group+4]&(1<<p.offset) != 0)
+	return gpio.Level(gpioMemoryPB[p.group+4]&(1<<p.offset) != 0)
 }
 
-// Edges creates a edge detection loop and implements host.PinIn.
+// Edges creates a edge detection loop and implements gpio.PinIn.
 //
 // This requires opening a gpio sysfs file handle. The pin will be exported at
 // /sys/class/gpio/gpio*/. Note that the pin will not be unexported at
 // shutdown.
 //
 // Not all pins support edge detection Allwinner processors!
-func (p *Pin) Edges() (<-chan host.Level, error) {
+func (p *Pin) Edges() (<-chan gpio.Level, error) {
 	switch p.group {
 	case 0, 1 * 9, 6 * 9, 7 * 9:
 	default:
@@ -614,7 +614,7 @@ func (p *Pin) Edges() (<-chan host.Level, error) {
 			return nil, err
 		}
 	}
-	if err := p.edge.In(host.PullNoChange); err != nil {
+	if err := p.edge.In(gpio.PullNoChange); err != nil {
 		return nil, err
 	}
 	return p.edge.Edges()
@@ -626,12 +626,12 @@ func (p *Pin) DisableEdges() {
 	}
 }
 
-func (p *Pin) Pull() host.Pull {
+func (p *Pin) Pull() gpio.Pull {
 	off := p.group + 7 + p.offset/16
 	var v uint32
 	if p.group == 0 {
 		if gpioMemoryPL == nil {
-			return host.PullNoChange
+			return gpio.PullNoChange
 		}
 		v = gpioMemoryPL[off]
 	} else {
@@ -640,18 +640,18 @@ func (p *Pin) Pull() host.Pull {
 	}
 	switch (v >> (2 * (p.offset % 16))) & 3 {
 	case 0:
-		return host.Float
+		return gpio.Float
 	case 1:
-		return host.Up
+		return gpio.Up
 	case 2:
-		return host.Down
+		return gpio.Down
 	default:
 		// Confused.
-		return host.PullNoChange
+		return gpio.PullNoChange
 	}
 }
 
-func (p *Pin) Out(l host.Level) error {
+func (p *Pin) Out(l gpio.Level) error {
 	if gpioMemoryPB == nil {
 		return errors.New("subsystem not initialized")
 	}
@@ -794,7 +794,7 @@ var gpioMemoryPL []uint32
 // Page 560 UART
 // Page 621 I2S/PCM
 
-var _ host.PinIO = &Pin{}
+var _ gpio.PinIO = &Pin{}
 
 // mapping excludes functions in and out.
 // Datasheet, page 23.

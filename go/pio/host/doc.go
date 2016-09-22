@@ -4,7 +4,8 @@
 
 // Package host defines generic interfaces for host.
 //
-// Subpackage drivers contain the concrete implementations and hal contains the interfaces.
+// Subpackage drivers contain the concrete implementations and hal contains the
+// interfaces.
 //
 // Devices accept interface, constructors return concrete type.
 //

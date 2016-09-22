@@ -9,10 +9,10 @@ import (
 	"io"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
-// SPI implements host.SPI. It registers everything written to it.
+// SPI implements spi.Bus. It registers everything written to it.
 //
 // BUG(maruel): SPI does not support reading yet.
 type SPI struct {
@@ -35,7 +35,7 @@ func (s *SPI) Speed(hz int64) error {
 }
 
 // Configure is a no-op.
-func (s *SPI) Configure(mode host.Mode, bits int) error {
+func (s *SPI) Configure(mode spi.Mode, bits int) error {
 	s.Lock()
 	defer s.Unlock()
 	return nil
@@ -57,4 +57,4 @@ func (s *SPI) Tx(w, r []byte) error {
 	return err
 }
 
-var _ host.SPI = &SPI{}
+var _ spi.Bus = &SPI{}

@@ -12,7 +12,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/host/hal/hosttest"
+	"github.com/maruel/dlibox/go/pio/host/hosttest"
 )
 
 func TestRamp(t *testing.T) {

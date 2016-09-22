@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// bme280 is a small app to read from a BME280.
+// bme280 reads environmental data from a BME280.
 package main
 
 import (
@@ -17,9 +17,9 @@ import (
 	"github.com/kr/pretty"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
-	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
-	"github.com/maruel/dlibox/go/pio/host/hal/hosttest"
+	"github.com/maruel/dlibox/go/pio/host/hosttest"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 )
 
 func read(e devices.Environmental, loop bool) error {
@@ -38,8 +38,8 @@ func read(e devices.Environmental, loop bool) error {
 }
 
 func mainImpl() error {
-	i2c := flag.Int("i", -1, "I²C bus to use")
-	spi := flag.Int("s", -1, "SPI bus to use")
+	i2cId := flag.Int("i", -1, "I²C bus to use")
+	spiId := flag.Int("s", -1, "SPI bus to use")
 	cs := flag.Int("cs", -1, "SPI chip select (CS) line to use")
 	sample1x := flag.Bool("s1", false, "sample at 1x")
 	sample2x := flag.Bool("s2", false, "sample at 2x")
@@ -84,13 +84,13 @@ func mainImpl() error {
 
 	var dev *bme280.Dev
 	var recorder hosttest.I2CRecord
-	if *i2c != -1 {
-		bus, err := sysfs.NewI2C(*i2c)
+	if *i2cId != -1 {
+		bus, err := sysfs.NewI2C(*i2cId)
 		if err != nil {
 			return err
 		}
 		defer bus.Close()
-		var base host.I2C = bus
+		var base i2c.Bus = bus
 		if *record {
 			recorder.Bus = bus
 			base = &recorder
@@ -98,9 +98,9 @@ func mainImpl() error {
 		if dev, err = bme280.NewI2C(base, s, s, s, bme280.S20ms, f); err != nil {
 			return err
 		}
-	} else if *spi != -1 && *cs != -1 {
+	} else if *spiId != -1 && *cs != -1 {
 		// Spec calls for max 10Mhz. In practice so little data is used.
-		bus, err := sysfs.NewSPI(*spi, *cs, 5000000)
+		bus, err := sysfs.NewSPI(*spiId, *cs, 5000000)
 		if err != nil {
 			return err
 		}

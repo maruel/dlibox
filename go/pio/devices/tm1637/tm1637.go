@@ -14,8 +14,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/internal"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 // Clock converts time to a slice of bytes as segments.
@@ -62,8 +62,8 @@ const (
 
 // Dev represents an handle to a tm1637.
 type Dev struct {
-	clk  host.PinOut
-	data host.PinIO
+	clk  gpio.PinOut
+	data gpio.PinIO
 }
 
 // Brightness changes the brightness and/or turns the display on and off.
@@ -113,12 +113,12 @@ func (d *Dev) Write(seg []byte) (int, error) {
 }
 
 // New returns an object that communicates over two pins to a TM1637.
-func New(clk host.PinOut, data host.PinIO) (*Dev, error) {
+func New(clk gpio.PinOut, data gpio.PinIO) (*Dev, error) {
 	// Spec calls to idle at high.
-	if err := clk.Out(host.High); err != nil {
+	if err := clk.Out(gpio.High); err != nil {
 		return nil, err
 	}
-	if err := data.Out(host.High); err != nil {
+	if err := data.Out(gpio.High); err != nil {
 		return nil, err
 	}
 	d := &Dev{clk: clk, data: data}
@@ -139,16 +139,16 @@ var digitToSegment = []byte{
 }
 
 func (d *Dev) start() {
-	d.data.Out(host.Low)
+	d.data.Out(gpio.Low)
 	d.sleepHalfCycle()
-	d.clk.Out(host.Low)
+	d.clk.Out(gpio.Low)
 }
 
 func (d *Dev) stop() {
 	d.sleepHalfCycle()
-	d.clk.Out(host.High)
+	d.clk.Out(gpio.High)
 	d.sleepHalfCycle()
-	d.data.Out(host.High)
+	d.data.Out(gpio.High)
 	d.sleepHalfCycle()
 }
 
@@ -159,25 +159,25 @@ func (d *Dev) writeByte(b byte) (bool, error) {
 		// LSB (!)
 		d.data.Out(b&(1<<byte(i)) != 0)
 		d.sleepHalfCycle()
-		d.clk.Out(host.High)
+		d.clk.Out(gpio.High)
 		d.sleepHalfCycle()
-		d.clk.Out(host.Low)
+		d.clk.Out(gpio.Low)
 	}
 	// 9th clock is ACK.
-	d.data.Out(host.Low)
+	d.data.Out(gpio.Low)
 	time.Sleep(clockHalfCycle)
 	// TODO(maruel): Add.
-	//if err := d.data.In(host.Up); err != nil {
+	//if err := d.data.In(gpio.Up); err != nil {
 	//	return false, err
 	//}
-	d.clk.Out(host.High)
+	d.clk.Out(gpio.High)
 	d.sleepHalfCycle()
-	//ack := d.data.Read() == host.Low
+	//ack := d.data.Read() == gpio.Low
 	//d.sleepHalfCycle()
 	//if err := d.data.Out(); err != nil {
 	//	return false, err
 	//}
-	d.clk.Out(host.Low)
+	d.clk.Out(gpio.Low)
 	return true, nil
 }
 

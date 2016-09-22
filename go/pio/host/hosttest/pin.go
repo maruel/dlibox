@@ -7,10 +7,10 @@ package hosttest
 import (
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
-// Pin implements host.Pin.
+// Pin implements gpio.Pin.
 //
 // Modify its members to simulate hardware events.
 type Pin struct {
@@ -19,9 +19,9 @@ type Pin struct {
 	Fn   string // Should be immutable
 
 	sync.Mutex            // Grab the Mutex before modifying the members to keep it concurrent safe
-	L          host.Level // Used for both input and output
-	P          host.Pull
-	EdgesChan  chan host.Level // Use it to fake edges
+	L          gpio.Level // Used for both input and output
+	P          gpio.Pull
+	EdgesChan  chan gpio.Level // Use it to fake edges
 }
 
 func (p *Pin) String() string {
@@ -37,31 +37,31 @@ func (p *Pin) Function() string {
 }
 
 // In is concurrent safe.
-func (p *Pin) In(pull host.Pull) error {
+func (p *Pin) In(pull gpio.Pull) error {
 	p.Lock()
 	defer p.Unlock()
 	p.P = pull
-	if pull == host.Down {
-		p.L = host.Low
-	} else if pull == host.Up {
-		p.L = host.High
+	if pull == gpio.Down {
+		p.L = gpio.Low
+	} else if pull == gpio.Up {
+		p.L = gpio.High
 	}
 	return nil
 }
 
 // Read is concurrent safe.
-func (p *Pin) Read() host.Level {
+func (p *Pin) Read() gpio.Level {
 	p.Lock()
 	defer p.Unlock()
 	return p.L
 }
 
 // Edges is concurrent safe.
-func (p *Pin) Edges() (<-chan host.Level, error) {
+func (p *Pin) Edges() (<-chan gpio.Level, error) {
 	p.Lock()
 	defer p.Unlock()
 	if p.EdgesChan == nil {
-		p.EdgesChan = make(chan host.Level)
+		p.EdgesChan = make(chan gpio.Level)
 	}
 	return p.EdgesChan, nil
 }
@@ -75,16 +75,16 @@ func (p *Pin) DisableEdges() {
 	}
 }
 
-func (p *Pin) Pull() host.Pull {
+func (p *Pin) Pull() gpio.Pull {
 	return p.P
 }
 
 // Out is concurrent safe.
-func (p *Pin) Out(l host.Level) error {
+func (p *Pin) Out(l gpio.Level) error {
 	p.Lock()
 	defer p.Unlock()
 	p.L = l
 	return nil
 }
 
-var _ host.PinIO = &Pin{}
+var _ gpio.PinIO = &Pin{}

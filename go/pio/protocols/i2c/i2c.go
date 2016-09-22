@@ -2,15 +2,26 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// package i2cdev is an adapter code to directly address an I²C device on a I²C
-// bus without having to continuously specify the address when doing I/O.
-package i2cdev
+// Package i2c defines an I²C bus.
+//
+// It includes an adapter to directly address an I²C device on a I²C bus
+// without having to continuously specify the address when doing I/O. This
+// enables the support of protocols.Bus.
+package i2c
 
-import "github.com/maruel/dlibox/go/pio/host"
+import "github.com/maruel/fuck_dont_use_this/host"
+
+// Bus defines the function a concrete I²C driver must implement.
+//
+// This interface doesn't implement protocols.Bus since a device address must
+// be specified. Use i2cdev.Dev as an adapter to get a Bus compatible object.
+type Bus interface {
+	Tx(addr uint16, w, r []byte) error
+}
 
 // Dev is a device on a I²C bus.
 //
-// It implements host.Bus.
+// It implements protocols.Bus.
 //
 // It saves from repeatedly specifying the device address and implements
 // utility functions.

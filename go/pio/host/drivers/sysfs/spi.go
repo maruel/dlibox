@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
 // SPI is an open SPI bus.
@@ -35,7 +35,7 @@ func newSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
 		s.Close()
 		return nil, err
 	}
-	if err := s.Configure(host.Mode3, 8); err != nil {
+	if err := s.Configure(spi.Mode3, 8); err != nil {
 		s.Close()
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (s *SPI) Speed(hz int64) error {
 	return s.setFlag(spiIOCMaxSpeedHz, uint64(hz))
 }
 
-func (s *SPI) Configure(mode host.Mode, bits int) error {
+func (s *SPI) Configure(mode spi.Mode, bits int) error {
 	if bits < 1 || bits > 256 {
 		return errors.New("invalid bits")
 	}
@@ -85,11 +85,11 @@ func (s *SPI) Tx(w, r []byte) error {
 // Private details.
 
 const (
-	cSHigh    host.Mode = 0x4
-	lSBFirst  host.Mode = 0x8
-	threeWire host.Mode = 0x10
-	loop      host.Mode = 0x20
-	noCS      host.Mode = 0x40
+	cSHigh    spi.Mode = 0x4
+	lSBFirst  spi.Mode = 0x8
+	threeWire spi.Mode = 0x10
+	loop      spi.Mode = 0x20
+	noCS      spi.Mode = 0x40
 )
 
 // spidev driver IOCTL control codes.

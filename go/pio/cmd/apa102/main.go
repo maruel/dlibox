@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// apa102 is a small app to write to a strip of APA102 LED.
+// apa102 writes to a strip of APA102 LED.
 package main
 
 import (
@@ -24,11 +24,11 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
-	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/bitbang"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
-	"github.com/maruel/dlibox/go/pio/host/hal/hosttest"
-	"github.com/maruel/dlibox/go/pio/host/hal/pins"
+	"github.com/maruel/dlibox/go/pio/host/hosttest"
+	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/protocols/spi"
 	"github.com/nfnt/resize"
 )
 
@@ -133,7 +133,7 @@ func mainImpl() error {
 		display = screen.New(*numLights)
 		defer os.Stdout.Write([]byte("\033[0m\n"))
 	} else {
-		var spiBus host.SPI
+		var spiBus spi.Bus
 		if *clk != -1 && *mosi != -1 {
 			if _, err := pins.Init(false); err != nil {
 				return err

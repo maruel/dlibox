@@ -13,8 +13,10 @@
 //     I²C, SPI, GPIO) that can be controlled by the host, i.e. ssd1306 (display
 //     controller), bm280 (environmental sensor), etc. 'devices' contains the
 //     interfaces and subpackages contain contain concrete types.
-//   - pio/host contains all the logic relating to the host itself, the CPU and
-//     buses that are exposed by the host onto which devices can be connected,
-//     i.e.  I²C, SPI, IR, GPIO, etc. 'host' contains the interfaces and
-//     subpackages contain contain concrete types.
+//   - pio/host contains all the implementations relating to the host itself,
+//     the CPU and buses that are exposed by the host onto which devices can be
+//     connected, i.e. I²C, SPI, GPIO, etc. 'host' contains the interfaces
+//     and subpackages contain contain concrete types.
+//   - pio/protocols contains interfaces for all the supported protocols (I²C,
+//     SPI, GPIO, etc).
 package pio

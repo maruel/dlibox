@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// pins is a small app to read the function of each pin.
+// pins prints out the function of each pin.
 package main
 
 import (
@@ -11,10 +11,10 @@ import (
 	"os"
 	"sort"
 
-	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/hal/cpu"
-	"github.com/maruel/dlibox/go/pio/host/hal/headers"
-	"github.com/maruel/dlibox/go/pio/host/hal/pins"
+	"github.com/maruel/dlibox/go/pio/host/cpu"
+	"github.com/maruel/dlibox/go/pio/host/headers"
+	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 func printFunc(invalid bool) {
@@ -32,7 +32,7 @@ func printFunc(invalid bool) {
 	sort.Strings(funcs)
 	for _, name := range funcs {
 		pin := functional[name]
-		if invalid || pin != host.INVALID {
+		if invalid || pin != gpio.INVALID {
 			if pin == nil {
 				fmt.Printf("%-*s: INVALID\n", max, name)
 			} else {

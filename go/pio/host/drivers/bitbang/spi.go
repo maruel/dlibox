@@ -16,23 +16,24 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/internal"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
 // SPI represents a SPI master implemented as bit-banging on 3 or 4 GPIO pins.
 type SPI struct {
-	sck       host.PinOut // Clock
-	sdi       host.PinIn  // MISO
-	sdo       host.PinOut // MOSI
-	csn       host.PinOut // CS
+	sck       gpio.PinOut // Clock
+	sdi       gpio.PinIn  // MISO
+	sdo       gpio.PinOut // MOSI
+	csn       gpio.PinOut // CS
 	lock      sync.Mutex
-	mode      host.Mode
+	mode      spi.Mode
 	bits      int
 	halfCycle time.Duration
 }
 
-// Speed implements host.SPI.
+// Speed implements spi.Bus.
 func (s *SPI) Speed(hz int64) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -40,11 +41,11 @@ func (s *SPI) Speed(hz int64) error {
 	return nil
 }
 
-// Configure implements host.SPI.
-func (s *SPI) Configure(mode host.Mode, bits int) error {
+// Configure implements spi.Bus.
+func (s *SPI) Configure(mode spi.Mode, bits int) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	if mode != host.Mode3 {
+	if mode != spi.Mode3 {
 		return errors.New("not implemented")
 	}
 	s.mode = mode
@@ -52,7 +53,7 @@ func (s *SPI) Configure(mode host.Mode, bits int) error {
 	return nil
 }
 
-// Tx implements host.SPI.
+// Tx implements spi.Bus.
 //
 // BUG(maruel): Implement mode.
 // BUG(maruel): Implement bits.
@@ -64,28 +65,28 @@ func (s *SPI) Tx(w, r []byte) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if s.csn != nil {
-		s.csn.Out(host.Low)
+		s.csn.Out(gpio.Low)
 		s.sleepHalfCycle()
 	}
 	for i := uint(0); i < uint(len(w)*8); i++ {
 		s.sdo.Out(w[i/8]&(1<<(i%8)) != 0)
 		s.sleepHalfCycle()
-		s.sck.Out(host.Low)
+		s.sck.Out(gpio.Low)
 		s.sleepHalfCycle()
 		if len(r) != 0 {
-			if s.sdi.Read() == host.High {
+			if s.sdi.Read() == gpio.High {
 				r[i/8] |= 1 << (i % 8)
 			}
 		}
-		s.sck.Out(host.Low)
+		s.sck.Out(gpio.Low)
 	}
 	if s.csn != nil {
-		s.csn.Out(host.High)
+		s.csn.Out(gpio.High)
 	}
 	return nil
 }
 
-// Write implements host.SPI.
+// Write implements spi.Bus.
 func (s *SPI) Write(d []byte) (int, error) {
 	if err := s.Tx(d, nil); err != nil {
 		return 0, err
@@ -98,21 +99,21 @@ func (s *SPI) Write(d []byte) (int, error) {
 // BUG(maruel): Completely untested.
 //
 // cs can be nil.
-func NewSPI(clk, mosi host.PinOut, miso host.PinIn, cs host.PinOut, speedHz int64) (*SPI, error) {
-	if err := clk.Out(host.High); err != nil {
+func NewSPI(clk, mosi gpio.PinOut, miso gpio.PinIn, cs gpio.PinOut, speedHz int64) (*SPI, error) {
+	if err := clk.Out(gpio.High); err != nil {
 		return nil, err
 	}
-	if err := mosi.Out(host.High); err != nil {
+	if err := mosi.Out(gpio.High); err != nil {
 		return nil, err
 	}
 	if miso != nil {
-		if err := miso.In(host.Up); err != nil {
+		if err := miso.In(gpio.Up); err != nil {
 			return nil, err
 		}
 	}
 	if cs != nil {
 		// Low means active.
-		if err := cs.Out(host.High); err != nil {
+		if err := cs.Out(gpio.High); err != nil {
 			return nil, err
 		}
 	}
@@ -121,7 +122,7 @@ func NewSPI(clk, mosi host.PinOut, miso host.PinIn, cs host.PinOut, speedHz int6
 		sdi:       miso,
 		sdo:       mosi,
 		csn:       cs,
-		mode:      host.Mode3,
+		mode:      spi.Mode3,
 		bits:      8,
 		halfCycle: time.Second / time.Duration(speedHz) / time.Duration(2),
 	}
@@ -135,4 +136,4 @@ func (s *SPI) sleepHalfCycle() {
 	internal.Nanosleep(s.halfCycle)
 }
 
-var _ host.SPI = &SPI{}
+var _ spi.Bus = &SPI{}

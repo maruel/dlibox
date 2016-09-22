@@ -25,9 +25,9 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/ir"
 	"github.com/maruel/dlibox/go/pio/devices/ir/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
-	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
-	"github.com/maruel/dlibox/go/pio/host/hal/pins"
+	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
 )
@@ -117,7 +117,7 @@ func mainImpl() error {
 		if p == nil {
 			return errors.New("no pin 24")
 		}
-		if err := p.In(host.Up); err != nil {
+		if err := p.In(gpio.Up); err != nil {
 			return err
 		}
 		c, err := p.Edges()
@@ -152,7 +152,7 @@ func mainImpl() error {
 		if p == nil {
 			return errors.New("no pin 19")
 		}
-		if err := p.In(host.Down); err != nil {
+		if err := p.In(gpio.Down); err != nil {
 			return err
 		}
 		c, err := p.Edges()
@@ -234,24 +234,24 @@ func irLoop(irBus ir.IR, keys chan<- ir.Key) {
 	}
 }
 
-func buttonLoop(b <-chan host.Level, c chan<- bool) {
+func buttonLoop(b <-chan gpio.Level, c chan<- bool) {
 	for {
 		select {
 		case l := <-b:
 			log.Printf("Bouton: %s", l)
-			c <- l == host.Low
+			c <- l == gpio.Low
 		case <-interrupt.Channel:
 			break
 		}
 	}
 }
 
-func pirLoop(b <-chan host.Level, c chan<- bool) {
+func pirLoop(b <-chan gpio.Level, c chan<- bool) {
 	for {
 		select {
 		case l := <-b:
 			log.Printf("PIR: %s", l)
-			c <- l == host.High
+			c <- l == gpio.High
 		case <-interrupt.Channel:
 			break
 		}

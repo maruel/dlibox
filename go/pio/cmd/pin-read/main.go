@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// pin-read is a small app to read a pin.
+// pin-read reads a pin.
 package main
 
 import (
@@ -14,12 +14,12 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/hal/pins"
+	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
-func printLevel(l host.Level) error {
-	if l == host.Low {
+func printLevel(l gpio.Level) error {
+	if l == gpio.Low {
 		_, err := os.Stdout.Write([]byte{'0', '\n'})
 		return err
 	}
@@ -39,16 +39,16 @@ func mainImpl() error {
 	}
 	log.SetFlags(log.Lmicroseconds)
 
-	//pull := host.PullNoChange
-	pull := host.Float
+	//pull := gpio.PullNoChange
+	pull := gpio.Float
 	if *pullUp {
 		if *pullDown {
 			return errors.New("use only one of -d or -u")
 		}
-		pull = host.Up
+		pull = gpio.Up
 	}
 	if *pullDown {
-		pull = host.Down
+		pull = gpio.Down
 	}
 	if flag.NArg() != 1 {
 		return errors.New("specify pin to read")

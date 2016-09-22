@@ -31,10 +31,10 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
 	"github.com/maruel/dlibox/go/pio/devices/ir/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/cpu"
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
-	"github.com/maruel/dlibox/go/pio/host/hal/cpu"
-	"github.com/maruel/dlibox/go/pio/host/hal/pins"
+	"github.com/maruel/dlibox/go/pio/host/pins"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
 )
@@ -100,7 +100,7 @@ func initPIR(painter *anim1d.Painter, config *PIR) error {
 	if p == nil {
 		return nil
 	}
-	if err := p.In(host.Down); err != nil {
+	if err := p.In(gpio.Down); err != nil {
 		return err
 	}
 	c, err := p.Edges()
@@ -109,7 +109,7 @@ func initPIR(painter *anim1d.Painter, config *PIR) error {
 	}
 	go func() {
 		for {
-			if l := <-c; l == host.High {
+			if l := <-c; l == gpio.High {
 				// TODO(maruel): Locking.
 				painter.SetPattern(string(config.Pattern))
 			}

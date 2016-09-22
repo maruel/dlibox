@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// i2c is a small app to communicate an I²C device.
+// i2c communicates to an I²C device.
 package main
 
 import (
@@ -16,7 +16,7 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
-	"github.com/maruel/dlibox/go/pio/host/hal/i2cdev"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 )
 
 func mainImpl() error {
@@ -71,7 +71,7 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	d := i2cdev.Dev{i, uint16(*addr)}
+	d := i2c.Dev{i, uint16(*addr)}
 	if *write {
 		_, err = d.Write(buf)
 	} else {

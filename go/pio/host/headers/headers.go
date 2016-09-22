@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// package headers contains a table to represent the physical headers found on
+// Package headers contains a table to represent the physical headers found on
 // micro computers.
 package headers
 
@@ -10,16 +10,16 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/drivers/pine64"
 	"github.com/maruel/dlibox/go/pio/host/drivers/rpi"
 	"github.com/maruel/dlibox/go/pio/host/internal"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 // All contains all the on-board headers on a micro computer. The map key is
 // the header name, e.g. "P1" or "EULER" and the value is a slice of slice of
-// pins. For a 2x20 header, it's going to be a slice of [20][2]host.PinIO.
-func All() map[string][][]host.PinIO {
+// pins. For a 2x20 header, it's going to be a slice of [20][2]gpio.PinIO.
+func All() map[string][][]gpio.PinIO {
 	lock.Lock()
 	defer lock.Unlock()
 	initAll()
@@ -27,7 +27,7 @@ func All() map[string][][]host.PinIO {
 }
 
 // IsConnected returns true if the pin is on a header.
-func IsConnected(p host.PinIO) bool {
+func IsConnected(p gpio.PinIO) bool {
 	lock.Lock()
 	defer lock.Unlock()
 	// Populate the map on first use.
@@ -53,7 +53,7 @@ func IsConnected(p host.PinIO) bool {
 
 var (
 	lock          sync.Mutex
-	all           map[string][][]host.PinIO // every known headers as per internal lookup table
+	all           map[string][][]gpio.PinIO // every known headers as per internal lookup table
 	connectedPins map[string]bool           // GPIO pin name to bool
 )
 
@@ -65,7 +65,7 @@ func initAll() {
 			all = pine64.Headers
 		} else {
 			// Implement!
-			all = map[string][][]host.PinIO{}
+			all = map[string][][]gpio.PinIO{}
 		}
 	}
 }
