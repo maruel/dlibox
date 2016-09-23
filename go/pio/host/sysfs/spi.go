@@ -20,36 +20,6 @@ import (
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
-// EnumerateSPI returns the available SPI buses.
-//
-// The first int is the bus number, the second is the chip select line.
-func EnumerateSPI() ([][2]int, error) {
-	// Do not use "/sys/bus/spi/devices/spi" as Raspbian's provided udev rules
-	// only modify the ACL of /dev/spidev* but not the ones in /sys/bus/...
-	prefix := "/dev/spidev"
-	items, err := filepath.Glob(prefix + "*")
-	if err != nil {
-		return nil, err
-	}
-	out := make([][2]int, 0, len(items))
-	for _, item := range items {
-		parts := strings.Split(item[len(prefix):], ".")
-		if len(parts) != 2 {
-			continue
-		}
-		bus, err := strconv.Atoi(parts[0])
-		if err != nil {
-			continue
-		}
-		cs, err := strconv.Atoi(parts[1])
-		if err != nil {
-			continue
-		}
-		out = append(out, [2]int{bus, cs})
-	}
-	return out, nil
-}
-
 // SPI is an open SPI bus.
 type SPI struct {
 	f          *os.File
@@ -236,7 +206,32 @@ func (s *SPI) initPins() {
 	}
 }
 
-var _ spi.Conn = &SPI{}
+func enumerateSPI() ([][2]int, error) {
+	// Do not use "/sys/bus/spi/devices/spi" as Raspbian's provided udev rules
+	// only modify the ACL of /dev/spidev* but not the ones in /sys/bus/...
+	prefix := "/dev/spidev"
+	items, err := filepath.Glob(prefix + "*")
+	if err != nil {
+		return nil, err
+	}
+	out := make([][2]int, 0, len(items))
+	for _, item := range items {
+		parts := strings.Split(item[len(prefix):], ".")
+		if len(parts) != 2 {
+			continue
+		}
+		bus, err := strconv.Atoi(parts[0])
+		if err != nil {
+			continue
+		}
+		cs, err := strconv.Atoi(parts[1])
+		if err != nil {
+			continue
+		}
+		out = append(out, [2]int{bus, cs})
+	}
+	return out, nil
+}
 
 // driverSPI implements drivers.Driver.
 type driverSPI struct {
@@ -253,3 +248,5 @@ func (d *driverSPI) Type() drivers.Type {
 func (d *driverSPI) Init() (bool, error) {
 	return true, nil
 }
+
+var _ spi.Conn = &SPI{}

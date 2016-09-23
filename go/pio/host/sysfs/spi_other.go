@@ -23,3 +23,10 @@ import "errors"
 func NewSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
 	return nil, errors.New("sysfs.spi is not implemented on non-linux OSes")
 }
+
+// EnumerateSPI returns the available SPI buses.
+//
+// The first int is the bus number, the second is the chip select line.
+func EnumerateSPI() ([][2]int, error) {
+	return nil, errors.New("sysfs.spi is not implemented on non-linux OSes")
+}

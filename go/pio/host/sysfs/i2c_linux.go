@@ -17,6 +17,11 @@ func NewI2C(busNumber int) (*I2C, error) {
 	return newI2C(busNumber)
 }
 
+// EnumerateI2C returns the available I²C buses.
+func EnumerateI2C() ([]int, error) {
+	return enumerateI2C()
+}
+
 func init() {
 	drivers.Register(&driverI2C{})
 }

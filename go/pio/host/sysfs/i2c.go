@@ -21,26 +21,6 @@ import (
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
-// EnumerateI2C returns the available I²C buses.
-func EnumerateI2C() ([]int, error) {
-	// Do not use "/sys/bus/i2c/devices/i2c-" as Raspbian's provided udev rules
-	// only modify the ACL of /dev/i2c-* but not the ones in /sys/bus/...
-	prefix := "/dev/i2c-"
-	items, err := filepath.Glob(prefix + "*")
-	if err != nil {
-		return nil, err
-	}
-	out := make([]int, 0, len(items))
-	for _, item := range items {
-		i, err := strconv.Atoi(item[len(prefix):])
-		if err != nil {
-			continue
-		}
-		out = append(out, i)
-	}
-	return out, nil
-}
-
 // I2C is an open I²C bus via sysfs.
 //
 // It can be used to communicate with multiple devices from multiple goroutines.
@@ -294,7 +274,24 @@ type i2cMsg struct {
 	buf    uintptr
 }
 
-var _ i2c.Conn = &I2C{}
+func enumerateI2C() ([]int, error) {
+	// Do not use "/sys/bus/i2c/devices/i2c-" as Raspbian's provided udev rules
+	// only modify the ACL of /dev/i2c-* but not the ones in /sys/bus/...
+	prefix := "/dev/i2c-"
+	items, err := filepath.Glob(prefix + "*")
+	if err != nil {
+		return nil, err
+	}
+	out := make([]int, 0, len(items))
+	for _, item := range items {
+		i, err := strconv.Atoi(item[len(prefix):])
+		if err != nil {
+			continue
+		}
+		out = append(out, i)
+	}
+	return out, nil
+}
 
 // driverI2C implements drivers.Driver.
 type driverI2C struct {
@@ -311,3 +308,5 @@ func (d *driverI2C) Type() drivers.Type {
 func (d *driverI2C) Init() (bool, error) {
 	return true, nil
 }
+
+var _ i2c.Conn = &I2C{}

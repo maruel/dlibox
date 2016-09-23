@@ -18,3 +18,8 @@ import "errors"
 func NewI2C(busNumber int) (*I2C, error) {
 	return nil, errors.New("sysfs.i2c is not supported on this platform")
 }
+
+// EnumerateI2C returns the available I²C buses.
+func EnumerateI2C() ([]int, error) {
+	return nil, errors.New("sysfs.i2c is not supported on this platform")
+}

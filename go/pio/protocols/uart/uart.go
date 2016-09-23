@@ -11,14 +11,14 @@ import (
 )
 
 // Parity determines the parity bit when transmitting, if any.
-type Parity int8
+type Parity byte
 
 const (
-	None  Parity = 0
-	Odd   Parity = 1
-	Even  Parity = 2
-	Mark  Parity = 3
-	Space Parity = 4
+	None  Parity = 'N'
+	Odd   Parity = 'O'
+	Even  Parity = 'E'
+	Mark  Parity = 'M' // always 1
+	Space Parity = 'S' // always 0
 )
 
 // Stop determines what stop bit to use.

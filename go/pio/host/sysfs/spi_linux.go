@@ -22,6 +22,13 @@ func NewSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
 	return newSPI(busNumber, chipSelect, speed)
 }
 
+// EnumerateSPI returns the available SPI buses.
+//
+// The first int is the bus number, the second is the chip select line.
+func EnumerateSPI() ([][2]int, error) {
+	return enumerateSPI()
+}
+
 func init() {
 	drivers.Register(&driverSPI{})
 }
