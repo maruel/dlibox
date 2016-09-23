@@ -17,9 +17,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/devices/ir"
 	"github.com/maruel/dlibox/go/pio/drivers"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/ir"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
@@ -210,8 +210,6 @@ func read(r *bufio.Reader) (string, error) {
 	return string(raw), nil
 }
 
-var _ ir.IR = &Conn{}
-
 // driver implements drivers.Driver.
 type driver struct {
 }
@@ -277,3 +275,5 @@ func getPins() (int, int) {
 	}
 	return in, out
 }
+
+var _ ir.Conn = &Conn{}

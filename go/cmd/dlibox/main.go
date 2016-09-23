@@ -29,7 +29,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/devicestest"
 	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
-	"github.com/maruel/dlibox/go/pio/devices/ir/lirc"
+	"github.com/maruel/dlibox/go/pio/devices/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"

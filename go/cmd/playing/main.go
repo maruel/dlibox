@@ -22,11 +22,11 @@ import (
 	"github.com/maruel/dlibox/go/bw2d"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
-	"github.com/maruel/dlibox/go/pio/devices/ir"
-	"github.com/maruel/dlibox/go/pio/devices/ir/lirc"
+	"github.com/maruel/dlibox/go/pio/devices/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/ir"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
 )
@@ -220,7 +220,7 @@ func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-
 	}
 }
 
-func irLoop(irBus ir.IR, keys chan<- ir.Key) {
+func irLoop(irBus ir.Conn, keys chan<- ir.Key) {
 	c := irBus.Channel()
 	for {
 		select {
