@@ -14,9 +14,20 @@ import (
 type Parity int8
 
 const (
-	None Parity = 0
-	Odd  Parity = 1
-	Even Parity = 2
+	None  Parity = 0
+	Odd   Parity = 1
+	Even  Parity = 2
+	Mark  Parity = 3
+	Space Parity = 4
+)
+
+// Stop determines what stop bit to use.
+type Stop int8
+
+const (
+	One     Stop = 0 // 1 stop bit
+	OneHalf Stop = 1 // 1.5 stop bits
+	Two     Stop = 2 // 2 stop bits
 )
 
 // Conn defines the interface a concrete UART driver must implement.
@@ -25,7 +36,7 @@ type Conn interface {
 	// Speed changes the bus speed.
 	Speed(baud int64) error
 	// Configure changes the communication parameters of the bus.
-	Configure(startBit, stopBit bool, parity Parity, bits int) error
+	Configure(stopBit Stop, parity Parity, bits int) error
 
 	// RX returns the receive pin.
 	RX() gpio.PinIn
