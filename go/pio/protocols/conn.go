@@ -6,7 +6,11 @@ package protocols
 
 import "io"
 
-// Conn defines the interface for a generic bus.
+// Conn defines the interface for a connection on a point-to-point
+// communication channel.
+//
+// The channel may either be write-only or read-write. It may either be
+// half-duplex or full duplex.
 //
 // This is the lowest common denominator for I²C (when talking to a specific
 // device), SPI, UART, etc.
