@@ -23,6 +23,8 @@ import (
 
 // EnumerateI2C returns the available I²C buses.
 func EnumerateI2C() ([]int, error) {
+	// Do not use "/sys/bus/i2c/devices/i2c-" as Raspbian's provided udev rules
+	// only modify the ACL of /dev/i2c-* but not the ones in /sys/bus/...
 	prefix := "/dev/i2c-"
 	items, err := filepath.Glob(prefix + "*")
 	if err != nil {
@@ -52,6 +54,7 @@ type I2C struct {
 }
 
 func newI2C(busNumber int) (*I2C, error) {
+	// Use the devfs path for now.
 	f, err := os.OpenFile(fmt.Sprintf("/dev/i2c-%d", busNumber), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
 		// Try to be helpful here. There are generally two cases:

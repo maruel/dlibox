@@ -6,10 +6,11 @@ package sysfs
 
 import "github.com/maruel/dlibox/go/pio/drivers"
 
-// NewSPI opens a SPI bus via its sysfs interface as described at
-// https://www.kernel.org/doc/Documentation/spi/spidev.
+// NewSPI opens a SPI bus via its devfs interface as described at
+// https://www.kernel.org/doc/Documentation/spi/spidev and
+// https://www.kernel.org/doc/Documentation/spi/spi-summary
 //
-// busNumber is the bus number as exported by sysfs. For example if the path is
+// busNumber is the bus number as exported by deffs. For example if the path is
 // /dev/spidev0.1, busNumber should be 0 and chipSelect should be 1.
 //
 // speed can either be 0 for the default speed or should be in the high Khz or

@@ -24,6 +24,8 @@ import (
 //
 // The first int is the bus number, the second is the chip select line.
 func EnumerateSPI() ([][2]int, error) {
+	// Do not use "/sys/bus/spi/devices/spi" as Raspbian's provided udev rules
+	// only modify the ACL of /dev/spidev* but not the ones in /sys/bus/...
 	prefix := "/dev/spidev"
 	items, err := filepath.Glob(prefix + "*")
 	if err != nil {
@@ -66,6 +68,7 @@ func newSPI(busNumber, chipSelect int, speed int64) (*SPI, error) {
 	if chipSelect < 0 || chipSelect > 255 {
 		return nil, errors.New("invalid chip select")
 	}
+	// Use the devfs path for now.
 	f, err := os.OpenFile(fmt.Sprintf("/dev/spidev%d.%d", busNumber, chipSelect), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
 		return nil, err
