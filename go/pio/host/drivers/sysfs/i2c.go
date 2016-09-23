@@ -115,6 +115,22 @@ func (i *I2C) Tx(addr uint16, w, r []byte) error {
 	return i.ioctl(ioctlRdwr, pp)
 }
 
+func (i *I2C) Speed(hz int64) error {
+	i.l.Lock()
+	defer i.l.Unlock()
+	// One has to resort to kernel driver specific value to be able to achieve
+	// this.
+	//
+	// Raspberry Pi:
+	// - /sys/module/i2c_bcm2708/parameters/baudrate
+	// - /boot/config.txt; dtparam=i2c_baudrate=40000
+	//
+	// Sadly it doesn't seem like Allwinner drivers implement the same
+	// functionality:
+	// - /sys/module/i2c_sunxi/
+	return errors.New("not supported")
+}
+
 // SCL implements i2c.Conn.
 //
 // It will fail if host.Init() wasn't called. host.Init() is transparently

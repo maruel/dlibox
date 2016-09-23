@@ -20,6 +20,8 @@ import (
 // compatible object.
 type Conn interface {
 	Tx(addr uint16, w, r []byte) error
+	// Speed changes the bus speed, if supported.
+	Speed(hz int64) error
 
 	// SCL returns the CLK (clock) pin.
 	SCL() gpio.PinIO

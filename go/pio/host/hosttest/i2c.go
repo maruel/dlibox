@@ -54,6 +54,13 @@ func (i *I2CRecord) Tx(addr uint16, w, r []byte) error {
 	return nil
 }
 
+func (i *I2CRecord) Speed(hz int64) error {
+	if i.Conn != nil {
+		return i.Conn.Speed(hz)
+	}
+	return nil
+}
+
 func (i *I2CRecord) SCL() gpio.PinIO {
 	if i.Conn != nil {
 		return i.Conn.SCL()
@@ -99,6 +106,10 @@ func (i *I2CPlayback) Tx(addr uint16, w, r []byte) error {
 	}
 	copy(r, i.Ops[0].Read)
 	i.Ops = i.Ops[1:]
+	return nil
+}
+
+func (i *I2CPlayback) Speed(hz int64) error {
 	return nil
 }
 

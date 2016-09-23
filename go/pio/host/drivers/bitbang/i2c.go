@@ -9,8 +9,8 @@ package bitbang
 
 import (
 	"errors"
-	"log"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/internal"
@@ -23,13 +23,15 @@ const SkipAddr uint16 = 0xFFFF
 
 // I2C represents an I²C master implemented as bit-banging on 2 GPIO pins.
 type I2C struct {
+	lock      sync.Mutex
 	scl       gpio.PinIO // Clock line
 	sda       gpio.PinIO // Data line
 	halfCycle time.Duration
 }
 
 func (i *I2C) Tx(addr uint16, w, r []byte) error {
-	log.Printf("Tx(%d, %#v, %d)", addr, w, len(r))
+	i.lock.Lock()
+	defer i.lock.Unlock()
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	//syscall.Setpriority(which, who, prio)
@@ -74,6 +76,13 @@ func (i *I2C) Tx(addr uint16, w, r []byte) error {
 	return nil
 }
 
+func (i *I2C) Speed(hz int64) error {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	i.halfCycle = time.Second / time.Duration(hz) / time.Duration(2)
+	return nil
+}
+
 func (i *I2C) SCL() gpio.PinIO {
 	return i.scl
 }
@@ -96,7 +105,6 @@ func (i *I2C) Close() error {
 //   communicated
 // - An arbitrary speed can be used
 func New(clk gpio.PinIO, data gpio.PinIO, speedHz int) (*I2C, error) {
-	log.Printf("bitbang.i2c.New(%s, %s, %d)", clk, data, speedHz)
 	// Spec calls to idle at high. Page 8, section 3.1.1.
 	// Set SCL as pull-up.
 	if err := clk.In(gpio.Up); err != nil {
@@ -221,7 +229,6 @@ func (i *I2C) readByte() (byte, error) {
 		}
 		i.scl.Out(gpio.Low)
 	}
-	log.Printf("0x%x", b)
 	if err := i.sda.Out(gpio.Low); err != nil {
 		return 0, err
 	}
