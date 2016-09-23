@@ -26,7 +26,6 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/bitbang"
-	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 	"github.com/nfnt/resize"
@@ -106,7 +105,7 @@ func mainImpl() error {
 	numLights := flag.Int("n", 150, "number of lights on the strip")
 	intensity := flag.Int("l", 127, "light intensity [1-255]")
 	temperature := flag.Int("t", 5000, "light temperature in °Kelvin [3500-7500]")
-	speed := flag.Int("s", 8000000, "speed in Hz")
+	speed := flag.Int("s", 0, "speed in Hz")
 	pattern := flag.String("p", "\"Rainbow\"", "pattern to show in json; to show black, use '\"#000000\"', don't forget to quote")
 	imgName := flag.String("img", "", "image to load")
 	lineMs := flag.Int("linems", 2, "number of ms to show each line of the image")
@@ -144,18 +143,23 @@ func mainImpl() error {
 			}
 			bus = b
 		} else if *busNumber == -1 {
-			b, err := host.NewSPI()
+			b, err := host.NewSPIAuto()
 			if err != nil {
 				return err
 			}
 			defer b.Close()
 			bus = b
 		} else {
-			b, err := sysfs.NewSPI(*busNumber, 0, int64(*speed))
+			b, err := host.NewSPI(*busNumber, -1)
 			if err != nil {
 				return err
 			}
 			defer b.Close()
+			if *speed != 0 {
+				if err := b.Speed(int64(*speed)); err != nil {
+					return err
+				}
+			}
 			bus = b
 		}
 		log.Printf("Using pins CLK: %s  MOSI: %s", bus.CLK(), bus.MOSI())

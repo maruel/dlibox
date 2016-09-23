@@ -16,7 +16,6 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 )
 
@@ -71,13 +70,13 @@ func mainImpl() error {
 	var i host.I2CCloser
 	var err error
 	if *bus == -1 {
-		i, err = host.NewI2C()
+		i, err = host.NewI2CAuto()
 		if err != nil {
 			return err
 		}
 		defer i.Close()
 	} else {
-		i, err = sysfs.NewI2C(*bus)
+		i, err = host.NewI2C(*bus)
 		if err != nil {
 			return err
 		}

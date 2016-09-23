@@ -23,7 +23,6 @@ import (
 	"github.com/maruel/dlibox/go/bw2d"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/nfnt/resize"
 )
@@ -131,7 +130,7 @@ func mainImpl() error {
 	i2cId := flag.Int("i2c", -1, "specify I²C bus to use")
 	spiId := flag.Int("spi", -1, "specify SPI bus to use")
 	csId := flag.Int("cs", 0, "specify SPI chip select (CS) to use")
-	speed := flag.Int("speed", 4000000, "specify SPI speed in Hz to use")
+	speed := flag.Int("speed", 0, "specify SPI speed in Hz to use")
 	fontName := flag.String("f", "VGA8", "PSF font to use; use psf -l to list them")
 	h := flag.Int("h", 64, "display height")
 	imgName := flag.String("i", "ballerine.gif", "image to load; try bunny.gif")
@@ -154,18 +153,23 @@ func mainImpl() error {
 	// Open the device on the right bus.
 	var s *ssd1306.Dev
 	if *spiId >= 0 {
-		bus, err := sysfs.NewSPI(*spiId, *csId, int64(*speed))
+		bus, err := host.NewSPI(*spiId, *csId)
 		if err != nil {
 			return err
 		}
 		defer bus.Close()
+		if *speed != 0 {
+			if err := bus.Speed(int64(*speed)); err != nil {
+				return err
+			}
+		}
 		log.Printf("Using pins CLK: %s  MOSI: %s  CS: %s", bus.CLK(), bus.MOSI(), bus.CS())
 		s, err = ssd1306.NewSPI(bus, *w, *h, *rotated)
 		if err != nil {
 			return err
 		}
 	} else if *i2cId >= 0 {
-		bus, err := sysfs.NewI2C(*i2cId)
+		bus, err := host.NewI2C(*i2cId)
 		if err != nil {
 			return err
 		}
@@ -177,7 +181,7 @@ func mainImpl() error {
 		}
 	} else {
 		// Get the first I²C bus available.
-		bus, err := host.NewI2C()
+		bus, err := host.NewI2CAuto()
 		if err != nil {
 			return err
 		}

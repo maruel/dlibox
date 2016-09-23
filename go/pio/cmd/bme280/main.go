@@ -17,7 +17,6 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
 )
@@ -88,7 +87,7 @@ func mainImpl() error {
 	var recorder i2ctest.Record
 	if *spiId != -1 && *cs != -1 {
 		// Spec calls for max 10Mhz. In practice so little data is used.
-		bus, err := sysfs.NewSPI(*spiId, *cs, 5000000)
+		bus, err := host.NewSPI(*spiId, *cs)
 		if err != nil {
 			return err
 		}
@@ -98,7 +97,7 @@ func mainImpl() error {
 			return err
 		}
 	} else if *i2cId != -1 {
-		bus, err := sysfs.NewI2C(*i2cId)
+		bus, err := host.NewI2C(*i2cId)
 		if err != nil {
 			return err
 		}
@@ -114,7 +113,7 @@ func mainImpl() error {
 		}
 	} else {
 		// Get the first I²C bus available.
-		bus, err := host.NewI2C()
+		bus, err := host.NewI2CAuto()
 		if err != nil {
 			return err
 		}
