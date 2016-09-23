@@ -13,6 +13,7 @@
 //     I²C, SPI, GPIO) that can be controlled by the host, i.e. ssd1306 (display
 //     controller), bm280 (environmental sensor), etc. 'devices' contains the
 //     interfaces and subpackages contain contain concrete types.
+//   - pio/drivers is a registry of all the loaded device drivers.
 //   - pio/host contains all the implementations relating to the host itself,
 //     the CPU and buses that are exposed by the host onto which devices can be
 //     connected, i.e. I²C, SPI, GPIO, etc. 'host' contains the interfaces
