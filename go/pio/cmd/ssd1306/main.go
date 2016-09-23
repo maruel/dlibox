@@ -23,7 +23,7 @@ import (
 	"github.com/maruel/dlibox/go/bw2d"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/nfnt/resize"
 )
@@ -148,6 +148,8 @@ func mainImpl() error {
 	if flag.NArg() != 0 {
 		return errors.New("unexpected argument, try -help")
 	}
+
+	host.Init()
 
 	// Open the device on the right bus.
 	var s *ssd1306.Dev

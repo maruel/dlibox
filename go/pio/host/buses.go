@@ -8,7 +8,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
+	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
@@ -29,9 +30,7 @@ type SPICloser interface {
 //
 // You can query the return value to determine which pins are being used.
 func NewI2C() (I2CCloser, error) {
-	if _, err := Init(); err != nil {
-		return nil, err
-	}
+	drivers.Init()
 	buses, err := sysfs.EnumerateI2C()
 	if err != nil {
 		return nil, err
@@ -48,9 +47,7 @@ func NewI2C() (I2CCloser, error) {
 //
 // You can query the return value to determine which pins are being used.
 func NewSPI() (SPICloser, error) {
-	if _, err := Init(); err != nil {
-		return nil, err
-	}
+	drivers.Init()
 	buses, err := sysfs.EnumerateSPI()
 	if err != nil {
 		return nil, err

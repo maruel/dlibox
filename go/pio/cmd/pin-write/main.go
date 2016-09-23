@@ -23,10 +23,7 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	p := host.PinByNumber(pin)
-	if p == nil {
-		return errors.New("invalid pin number")
-	}
+
 	l := gpio.Low
 	switch os.Args[2] {
 	case "0":
@@ -35,6 +32,14 @@ func mainImpl() error {
 	default:
 		return errors.New("specify level as 0 or 1")
 	}
+
+	host.Init()
+
+	p := gpio.ByNumber(pin)
+	if p == nil {
+		return errors.New("invalid pin number")
+	}
+
 	return p.Out(l)
 }
 

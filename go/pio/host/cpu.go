@@ -9,6 +9,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 func getMaxSpeedLinux() int64 {
@@ -34,4 +35,5 @@ func getMaxSpeedLinux() int64 {
 
 var (
 	maxSpeed int64 = -1
+	lock     sync.Mutex
 )

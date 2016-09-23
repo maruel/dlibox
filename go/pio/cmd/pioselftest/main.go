@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
@@ -39,7 +39,7 @@ func getPin(s string, useSysfs bool) (gpio.PinIO, error) {
 			return nil, err
 		}
 	} else {
-		p = host.PinByNumber(number)
+		p = gpio.ByNumber(number)
 	}
 	if p == nil {
 		return nil, errors.New("invalid pin number")
@@ -213,17 +213,17 @@ func mainImpl() error {
 		return errors.New("specify the two pins to use; they must be connected together")
 	}
 
-	if !*useSysfs {
-		subsystem, err := host.Init()
-		if err != nil {
-			return err
+	drivers, errs := host.Init()
+	if len(errs) != 0 {
+		fmt.Printf("Got the following errors:\n")
+		for _, err := range errs {
+			fmt.Printf("  - %v\n", err)
 		}
-		fmt.Printf("Using driver: %s\n", subsystem)
-	} else {
-		if err := sysfs.Init(); err != nil {
-			return err
-		}
-		fmt.Printf("Using driver: %s\n", "sysfs")
+		return errors.New("please fix the drivers. Do you need to run as root?")
+	}
+	fmt.Printf("Using drivers:\n")
+	for _, driver := range drivers {
+		fmt.Printf("  - %s\n", driver.String())
 	}
 
 	// On Allwinner CPUs, it's a good idea to test specifically the PLx pins,

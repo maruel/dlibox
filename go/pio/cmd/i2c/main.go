@@ -16,7 +16,7 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 )
 
@@ -42,6 +42,9 @@ func mainImpl() error {
 	if *l <= 0 || *l > 255 {
 		return errors.New("-l must be between 1 and 255")
 	}
+
+	host.Init()
+
 	var buf []byte
 	if *write {
 		if flag.NArg() == 0 {

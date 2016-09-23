@@ -18,34 +18,10 @@ import (
 	"sync"
 
 	"github.com/maruel/dlibox/go/pio/devices/ir"
+	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
-
-// Pins queries the kernel module to determine which GPIO pins are taken by
-// the driver.
-//
-// The return values can be converted to bcm238x.Pin. Return (-1, -1) on
-// failure.
-func Pins() (int, int) {
-	// This is configured in /boot/config.txt as:
-	// dtoverlay=gpio_in_pin=23,gpio_out_pin=22
-	bytes, err := ioutil.ReadFile("/sys/module/lirc_rpi/parameters/gpio_in_pin")
-	if err != nil || len(bytes) == 0 {
-		return -1, -1
-	}
-	in, err := strconv.Atoi(strings.TrimRight(string(bytes), "\n"))
-	if err != nil {
-		return -1, -1
-	}
-	bytes, err = ioutil.ReadFile("/sys/module/lirc_rpi/parameters/gpio_out_pin")
-	if err != nil || len(bytes) == 0 {
-		return -1, -1
-	}
-	out, err := strconv.Atoi(strings.TrimRight(string(bytes), "\n"))
-	if err != nil {
-		return -1, -1
-	}
-	return in, out
-}
 
 // Conn is an open port to lirc.
 type Conn struct {
@@ -98,6 +74,8 @@ func (c *Conn) Codes() map[string][]string {
 	defer c.lock.Unlock()
 	return c.list
 }
+
+//
 
 func (c *Conn) loop(r *bufio.Reader) {
 	defer func() {
@@ -233,3 +211,69 @@ func read(r *bufio.Reader) (string, error) {
 }
 
 var _ ir.IR = &Conn{}
+
+// driver implements drivers.Driver.
+type driver struct {
+}
+
+func (d *driver) String() string {
+	return "lirc"
+}
+
+func (d *driver) Type() drivers.Type {
+	// Return the lowest priority, which is Functional.
+	return drivers.Functional
+}
+
+func (d *driver) Init() (bool, error) {
+	in, out := getPins()
+	if in == -1 && out == -1 {
+		return false, nil
+	}
+	if in != -1 {
+		if pin := gpio.ByNumber(in); pin != nil {
+			gpio.MapFunction("IR_IN", pin)
+		} else {
+			gpio.MapFunction("IR_IN", pins.INVALID)
+		}
+	} else {
+		gpio.MapFunction("IR_IN", pins.INVALID)
+	}
+	if out != -1 {
+		if pin := gpio.ByNumber(out); pin != nil {
+			gpio.MapFunction("IR_OUT", pin)
+		} else {
+			gpio.MapFunction("IR_OUT", pins.INVALID)
+		}
+	} else {
+		gpio.MapFunction("IR_OUT", pins.INVALID)
+	}
+	return true, nil
+}
+
+// getPins queries the kernel module to determine which GPIO pins are taken by
+// the driver.
+//
+// The return values can be converted to bcm238x.Pin. Return (-1, -1) on
+// failure.
+func getPins() (int, int) {
+	// This is configured in /boot/config.txt as:
+	// dtoverlay=gpio_in_pin=23,gpio_out_pin=22
+	bytes, err := ioutil.ReadFile("/sys/module/lirc_rpi/parameters/gpio_in_pin")
+	if err != nil || len(bytes) == 0 {
+		return -1, -1
+	}
+	in, err := strconv.Atoi(strings.TrimRight(string(bytes), "\n"))
+	if err != nil {
+		return -1, -1
+	}
+	bytes, err = ioutil.ReadFile("/sys/module/lirc_rpi/parameters/gpio_out_pin")
+	if err != nil || len(bytes) == 0 {
+		return -1, -1
+	}
+	out, err := strconv.Atoi(strings.TrimRight(string(bytes), "\n"))
+	if err != nil {
+		return -1, -1
+	}
+	return in, out
+}

@@ -9,7 +9,7 @@ import (
 	"image/color"
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/host/hosttest"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
 )
 
 func makeCheckboard(r image.Rectangle) image.Image {
@@ -30,8 +30,8 @@ func TestWrite(t *testing.T) {
 	// the code a little.
 	//
 	// BUG(maruel): This test case exposes that the driver is currently broken.
-	bus := hosttest.I2CPlayback{
-		Ops: []hosttest.I2CIO{
+	bus := i2ctest.Playback{
+		Ops: []i2ctest.IO{
 			// Startup initialization.
 			{
 				Addr:  0x3c,

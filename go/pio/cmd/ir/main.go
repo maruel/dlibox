@@ -18,6 +18,7 @@ import (
 	"os/signal"
 
 	"github.com/maruel/dlibox/go/pio/devices/ir/lirc"
+	"github.com/maruel/dlibox/go/pio/host"
 )
 
 func mainImpl() error {
@@ -30,6 +31,9 @@ func mainImpl() error {
 	if flag.NArg() != 0 {
 		return errors.New("unexpected argument, try -help")
 	}
+
+	host.Init()
+
 	i, err := lirc.New()
 	if err != nil {
 		return err

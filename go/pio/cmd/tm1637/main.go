@@ -16,6 +16,7 @@ import (
 
 	"github.com/maruel/dlibox/go/pio/devices/tm1637"
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 func mainImpl() error {
@@ -102,11 +103,13 @@ func mainImpl() error {
 		segments = tm1637.Digits(digits...)
 	}
 
-	pClk := host.PinByNumber(*clk)
+	host.Init()
+
+	pClk := gpio.ByNumber(*clk)
 	if pClk == nil {
 		return errors.New("specify a valid pin for clock")
 	}
-	pData := host.PinByNumber(*data)
+	pData := gpio.ByNumber(*data)
 	if pData == nil {
 		return errors.New("specify a valid pin for data")
 	}

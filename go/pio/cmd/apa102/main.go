@@ -25,8 +25,9 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/drivers/bitbang"
-	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
+	"github.com/maruel/dlibox/go/pio/host/bitbang"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 	"github.com/nfnt/resize"
 )
@@ -125,6 +126,7 @@ func mainImpl() error {
 	if *temperature > 65535 {
 		return errors.New("max temperature is 65535")
 	}
+	host.Init()
 
 	// Open the display device.
 	var display devices.Display
@@ -134,11 +136,8 @@ func mainImpl() error {
 	} else {
 		var bus spi.Conn
 		if *clk != -1 && *mosi != -1 {
-			if _, err := host.Init(); err != nil {
-				return err
-			}
-			pclk := host.PinByNumber(*clk)
-			pmosi := host.PinByNumber(*mosi)
+			pclk := gpio.ByNumber(*clk)
+			pmosi := gpio.ByNumber(*mosi)
 			b, err := bitbang.NewSPI(pclk, pmosi, nil, nil, int64(*speed))
 			if err != nil {
 				return err

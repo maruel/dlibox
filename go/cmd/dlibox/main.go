@@ -32,7 +32,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/ir/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
@@ -95,7 +95,7 @@ func initIR(painter *anim1d.Painter, config *IR) error {
 }
 
 func initPIR(painter *anim1d.Painter, config *PIR) error {
-	p := host.PinByNumber(config.Pin)
+	p := gpio.ByNumber(config.Pin)
 	if p == nil {
 		return nil
 	}

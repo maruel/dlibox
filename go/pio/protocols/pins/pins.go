@@ -2,7 +2,9 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package pins contains well known pins.
+// Package pins declare well known pins.
+//
+// Pins is about physical pins, not about their logical function.
 //
 // While not a protocol strictly speaking, these are "well known constants".
 package pins

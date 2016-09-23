@@ -54,11 +54,13 @@ func mainImpl() error {
 		return errors.New("specify pin to read")
 	}
 
+	host.Init()
+
 	pin, err := strconv.Atoi(flag.Args()[0])
 	if err != nil {
 		return err
 	}
-	p := host.PinByNumber(pin)
+	p := gpio.ByNumber(pin)
 	if p == nil {
 		return errors.New("specify a valid pin number")
 	}

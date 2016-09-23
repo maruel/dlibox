@@ -17,9 +17,9 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
-	"github.com/maruel/dlibox/go/pio/host/hosttest"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
 )
 
 func read(e devices.Environmental, loop bool) error {
@@ -82,8 +82,10 @@ func mainImpl() error {
 		f = bme280.F16
 	}
 
+	host.Init()
+
 	var dev *bme280.Dev
-	var recorder hosttest.I2CRecord
+	var recorder i2ctest.Record
 	if *spiId != -1 && *cs != -1 {
 		// Spec calls for max 10Mhz. In practice so little data is used.
 		bus, err := sysfs.NewSPI(*spiId, *cs, 5000000)

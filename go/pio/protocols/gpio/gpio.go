@@ -3,9 +3,16 @@
 // that can be found in the LICENSE file.
 
 // Package gpio defines digital pins.
+//
+// The GPIO pins are described in their logical functionality, not in their
+// physical position.
 package gpio
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+	"sync"
+)
 
 // Level is the level of the pin: Low or High.
 type Level bool
@@ -96,3 +103,87 @@ type PinIO interface {
 	// name.
 	Function() string
 }
+
+// ByNumber returns a GPIO pin from its number.
+//
+// Returns nil in case the pin is not present.
+func ByNumber(number int) PinIO {
+	pin, _ := byNumber[number]
+	return pin
+}
+
+// PinByName returns a GPIO pin from its name.
+//
+// This can be strings like GPIO2, PB8, etc.
+//
+// Returns nil in case the pin is not present.
+func ByName(name string) PinIO {
+	pin, _ := byName[name]
+	return pin
+}
+
+// ByFunction returns a GPIO pin from its function.
+//
+// This can be strings like I2C1_SDA, SPI0_MOSI, etc.
+//
+// Returns nil in case there is no pin setup with this function.
+func ByFunction(fn string) PinIO {
+	pin, _ := byFunction[fn]
+	return pin
+}
+
+// All returns all the GPIO pins available on this host.
+//
+// The list is guaranteed to be in order of number.
+//
+// This list excludes non-GPIO pins like GROUND, V3_3, etc.
+func All() []PinIO {
+	// TODO(maruel): Return a copy?
+	return all
+}
+
+// Functional returns a map of all pins implementing hardware provided
+// special functionality, like I²C, SPI, ADC.
+func Functional() map[string]PinIO {
+	// TODO(maruel): Return a copy?
+	return byFunction
+}
+
+// Register registers a GPIO pin.
+//
+// If a pin of the same number was already registered, this pin is ignored.
+func Register(pin PinIO) {
+	lock.Lock()
+	defer lock.Unlock()
+	n := pin.Number()
+	if _, ok := byNumber[n]; ok {
+		return
+	}
+	all = append(all, pin)
+	sort.Sort(all)
+	byNumber[n] = pin
+	byName[pin.String()] = pin
+}
+
+// MapFunction registers a GPIO pin for a specific function.
+func MapFunction(function string, pin PinIO) {
+	lock.Lock()
+	defer lock.Unlock()
+	byFunction[function] = pin
+}
+
+//
+
+var (
+	lock       sync.Mutex
+	all        = pinList{}
+	byNumber   = map[int]PinIO{}
+	byName     = map[string]PinIO{}
+	byFunction = map[string]PinIO{}
+)
+
+type pinList []PinIO
+
+func (p pinList) Len() int           { return len(p) }
+func (p pinList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p pinList) Less(i, j int) bool { return p[i].Number() < p[j].Number() }

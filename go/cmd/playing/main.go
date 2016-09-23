@@ -25,8 +25,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/ir"
 	"github.com/maruel/dlibox/go/pio/devices/ir/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
-	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/drivers/sysfs"
+	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
@@ -113,7 +112,7 @@ func mainImpl() error {
 	}
 
 	if useButton {
-		p := host.PinByNumber(24)
+		p := gpio.ByNumber(24)
 		if p == nil {
 			return errors.New("no pin 24")
 		}
@@ -129,7 +128,7 @@ func mainImpl() error {
 
 	/*
 		// Relays
-		p := host.PinByNumber(17)
+		p := gpio.ByNumber(17)
 		if p == nil {
 			return errors.New("no pin 17")
 		}
@@ -137,7 +136,7 @@ func mainImpl() error {
 			return err
 		}
 		p.SetLow()
-		p = host.PinByNumber(27)
+		p = gpio.ByNumber(27)
 		if p == nil {
 			return errors.New("no pin 27")
 		}
@@ -148,7 +147,7 @@ func mainImpl() error {
 	*/
 
 	if usePir {
-		p := host.PinByNumber(19)
+		p := gpio.ByNumber(19)
 		if p == nil {
 			return errors.New("no pin 19")
 		}

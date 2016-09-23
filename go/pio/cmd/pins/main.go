@@ -12,12 +12,14 @@ import (
 	"sort"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/headers"
+	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 func printFunc(invalid bool) {
 	max := 0
-	functional := host.PinsFunctional()
+	functional := gpio.Functional()
 	funcs := make([]string, 0, len(functional))
 	for f := range functional {
 		if l := len(f); l > 0 && f[0] != '<' {
@@ -43,9 +45,9 @@ func printFunc(invalid bool) {
 func printGPIO(invalid bool) {
 	maxName := 0
 	maxFn := 0
-	all := host.Pins()
+	all := gpio.All()
 	for _, p := range all {
-		if invalid || host.PinIsConnected(p) {
+		if invalid || headers.IsConnected(p) {
 			if l := len(p.String()); l > maxName {
 				maxName = l
 			}
@@ -55,7 +57,7 @@ func printGPIO(invalid bool) {
 		}
 	}
 	for _, p := range all {
-		if host.PinIsConnected(p) {
+		if headers.IsConnected(p) {
 			fmt.Printf("%-*s: %s\n", maxName, p, p.Function())
 		} else if invalid {
 			fmt.Printf("%-*s: %-*s (not connected)\n", maxName, p, maxFn, p.Function())
@@ -64,7 +66,7 @@ func printGPIO(invalid bool) {
 }
 
 func printHardware(invalid bool) {
-	all := host.PinsHeaders()
+	all := headers.All()
 	names := make([]string, 0, len(all))
 	for name := range all {
 		names = append(names, name)
@@ -137,13 +139,19 @@ func mainImpl() error {
 		*gpio = true
 	}
 
-	// Explicitly initialize to catch any error.
-	subsystem, err := host.Init()
-	if err != nil {
-		return err
+	d, errs := host.Init()
+	if len(errs) != 0 {
+		fmt.Printf("Got the following errors:\n")
+		for _, err := range errs {
+			fmt.Printf("  - %v\n", err)
+		}
 	}
 	if *info {
-		fmt.Printf("Subsystem: %s\nMaxSpeed: %dMhz\n", subsystem, host.MaxSpeed()/1000000)
+		fmt.Printf("Using drivers:\n")
+		for _, driver := range d {
+			fmt.Printf("  - %s\n", driver.String())
+		}
+		fmt.Printf("MaxSpeed: %dMhz\n", host.MaxSpeed()/1000000)
 	}
 	if *fun {
 		printFunc(*invalid)

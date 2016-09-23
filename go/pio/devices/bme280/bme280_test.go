@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/maruel/dlibox/go/pio/devices"
-	"github.com/maruel/dlibox/go/pio/host/hosttest"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
 )
 
 // Real data extracted from a device.
@@ -35,8 +35,8 @@ var calib = calibration{
 
 func TestRead(t *testing.T) {
 	// This data was generated with "bme280 -r"
-	bus := hosttest.I2CPlayback{
-		Ops: []hosttest.I2CIO{
+	bus := i2ctest.Playback{
+		Ops: []i2ctest.IO{
 			// Chipd ID detection.
 			{Addr: 0x76, Write: []byte{0xd0}, Read: []byte{0x60}},
 			// Calibration data.
