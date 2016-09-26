@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"image"
+	"image/color"
 	"image/draw"
 	"image/gif"
 	_ "image/png"
@@ -20,10 +21,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/maruel/dlibox/go/bw2d"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
+
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/psf"
 	"github.com/nfnt/resize"
 )
 
@@ -109,20 +112,33 @@ func demo(s *ssd1306.Dev) error {
 	return nil
 }
 
-func convert(s *ssd1306.Dev, src image.Image, f *psf.Font, text string) (*bw2d.Image, error) {
-	// Resize automatically while keeping aspect ratio.
-	src = resize.Thumbnail(uint(s.W), uint(s.H), src, resize.Lanczos3)
-	img, err := bw2d.New(s.W, s.H)
-	if err != nil {
-		return nil, err
+// drawText draws text at the bottom right of img.
+func drawText(img draw.Image, text string) {
+	f := basicfont.Face7x13
+	advance := font.MeasureString(f, text).Ceil()
+	bounds := img.Bounds()
+	if advance > bounds.Dx() {
+		advance = 0
+	} else {
+		advance = bounds.Dx() - advance
 	}
+	drawer := font.Drawer{
+		Dst:  img,
+		Src:  &image.Uniform{color.Gray{255}},
+		Face: f,
+		Dot:  fixed.P(advance, bounds.Dy()-1-f.Descent),
+	}
+	drawer.DrawString(text)
+}
+
+// convert resizes and converts to black and white an image while keeping
+// aspect ratio, put it in a centered image of the same size as the display.
+func convert(s *ssd1306.Dev, src image.Image) (*image.Gray, error) {
+	src = resize.Thumbnail(uint(s.W), uint(s.H), src, resize.Lanczos3)
+	img := image.NewGray(image.Rect(0, 0, s.W, s.H))
 	r := src.Bounds()
-	// Center the image.
 	r = r.Add(image.Point{(s.W - r.Max.X) / 2, (s.H - r.Max.Y) / 2})
 	draw.Draw(img, r, src, image.Point{}, draw.Src)
-	// Use nil instead of bw2d.Off to not print the black pixels, or reverse the
-	// two argument for inverted text.
-	f.Draw(img, 0, s.H-f.H-1, bw2d.On, bw2d.Off, text)
 	return img, nil
 }
 
@@ -131,7 +147,6 @@ func mainImpl() error {
 	spiId := flag.Int("spi", -1, "specify SPI bus to use")
 	csId := flag.Int("cs", 0, "specify SPI chip select (CS) to use")
 	speed := flag.Int("speed", 0, "specify SPI speed in Hz to use")
-	fontName := flag.String("f", "VGA8", "PSF font to use; use psf -l to list them")
 	h := flag.Int("h", 64, "display height")
 	imgName := flag.String("i", "ballerine.gif", "image to load; try bunny.gif")
 	text := flag.String("t", "pio is awesome", "text to display")
@@ -193,13 +208,6 @@ func mainImpl() error {
 		}
 	}
 
-	// Load console font.
-	f, err := psf.Load(*fontName)
-	if err != nil {
-		return err
-	}
-	log.Printf("Font: %dx%d", f.W, f.H)
-
 	// Load image.
 	src, g, err := loadImg(*imgName)
 	if err != nil {
@@ -208,9 +216,10 @@ func mainImpl() error {
 	// If an animated GIF, draw it in a loop.
 	if g != nil {
 		// Resize all the images up front to save on CPU processing.
-		imgs := make([]*bw2d.Image, len(g.Image))
+		imgs := make([]*image.Gray, len(g.Image))
 		for i := range g.Image {
-			imgs[i], err = convert(s, g.Image[i], f, *text)
+			imgs[i], err = convert(s, g.Image[i])
+			drawText(imgs[i], *text)
 			if err != nil {
 				return err
 			}
@@ -218,9 +227,8 @@ func mainImpl() error {
 		for i := 0; g.LoopCount <= 0 || i < g.LoopCount*len(g.Image); i++ {
 			index := i % len(g.Image)
 			c := time.After(time.Duration(10*g.Delay[index]) * time.Millisecond)
-			if _, err := s.Write(imgs[index].Buf); err != nil {
-				return err
-			}
+			img := imgs[index]
+			s.Draw(img.Bounds(), img, image.Point{})
 			<-c
 		}
 		return nil
@@ -228,18 +236,15 @@ func mainImpl() error {
 
 	if src == nil {
 		// Create a blank image.
-		if src, err = bw2d.New(s.W, s.H); err != nil {
-			return err
-		}
+		src = image.NewGray(image.Rect(0, 0, s.W, s.H))
 	}
 
-	img, err := convert(s, src, f, *text)
+	img, err := convert(s, src)
 	if err != nil {
 		return err
 	}
-	if _, err = s.Write(img.Buf); err != nil {
-		return err
-	}
+	drawText(img, *text)
+	s.Draw(img.Bounds(), img, image.Point{})
 	if *demoMode {
 		if err := demo(s); err != nil {
 			return err

@@ -19,18 +19,21 @@ type Display interface {
 	// write must cover exactly the whole screen as a single packed stream of
 	// pixels.
 	io.Writer
-	// ColorModel returns the device native color model. It is generally
-	// color.NRGBA for color display and color.Palette for black and white
-	// display.
+	// ColorModel returns the device native color model.
+	//
+	// It is generally color.NRGBA for a color display.
 	ColorModel() color.Model
-	// Bounds returns the size of the output device. Generally displays should
-	// have Min at {0, 0} but this is not guaranteed in multiple displays setup
-	// or when an instance of this interface represents a section of a larger
-	// logical display.
+	// Bounds returns the size of the output device.
+	//
+	// Generally displays should have Min at {0, 0} but this is not guaranteed in
+	// multiple displays setup or when an instance of this interface represents a
+	// section of a larger logical display.
 	Bounds() image.Rectangle
 	// Draw updates the display with this image starting at 'sp' offset into the
 	// display into 'r'. The code will likely be faster if the image is in the
 	// display's native color format.
+	//
+	// To be compatible with draw.Drawer, this function doesn't return an error.
 	Draw(r image.Rectangle, src image.Image, sp image.Point)
 }
 

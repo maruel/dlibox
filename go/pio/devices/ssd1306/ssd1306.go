@@ -23,6 +23,7 @@ import (
 	"image"
 	"image/color"
 	"io"
+	"log"
 
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
@@ -118,6 +119,8 @@ func newDev(dev io.Writer, w, h int, rotated bool) (*Dev, error) {
 	// https://cdn-shop.adafruit.com/datasheets/SSD1306.pdf
 	// Page 64 has the full recommended flow.
 	// Page 28 lists all the commands.
+	// BUG(maruel): This flow may not recover a controller in a complete
+	// corrupted state. Figure out a more resilient startup init code.
 	init := []byte{
 		0xAE,       // Display off
 		0xD3, 0x00, // Set display offset; 0
@@ -168,6 +171,8 @@ func colorToBit(c color.Color) byte {
 // Draw implements devices.Display.
 //
 // BUG(maruel): It discards any failure. Change devices.Display interface?
+// BUG(maruel): Support r.Min.Y and r.Max.Y not divisible by 8.
+// BUG(maruel): Support sp.Y not divisible by 8.
 func (d *Dev) Draw(r image.Rectangle, src image.Image, sp image.Point) {
 	r = r.Intersect(d.Bounds())
 	srcR := src.Bounds()
@@ -182,22 +187,24 @@ func (d *Dev) Draw(r image.Rectangle, src image.Image, sp image.Point) {
 	deltaX := r.Min.X - srcR.Min.X
 	deltaY := r.Min.Y - srcR.Min.Y
 	pixels := make([]byte, d.W*d.H/8)
-	for sX := srcR.Min.X; sX < srcR.Max.X; sX++ {
-		rX := sX + deltaX
-		for sY := srcR.Min.Y; sY < srcR.Max.Y; sY += 8 {
+	for sY := srcR.Min.Y; sY < srcR.Max.Y; sY += 8 {
+		rY := ((sY + deltaY) / 8) * d.W
+		for sX := srcR.Min.X; sX < srcR.Max.X; sX++ {
+			rX := sX + deltaX
 			c0 := colorToBit(src.At(sX, sY))
-			c1 := colorToBit(src.At(sX+1, sY)) << 1
-			c2 := colorToBit(src.At(sX+2, sY)) << 2
-			c3 := colorToBit(src.At(sX+3, sY)) << 3
-			c4 := colorToBit(src.At(sX+4, sY)) << 4
-			c5 := colorToBit(src.At(sX+5, sY)) << 5
-			c6 := colorToBit(src.At(sX+6, sY)) << 6
-			c7 := colorToBit(src.At(sX+7, sY)) << 7
-			rY := sY + deltaY
-			pixels[rX+rY*d.H/8] = c0 | c1 | c2 | c3 | c4 | c5 | c6 | c7
+			c1 := colorToBit(src.At(sX, sY+1)) << 1
+			c2 := colorToBit(src.At(sX, sY+2)) << 2
+			c3 := colorToBit(src.At(sX, sY+3)) << 3
+			c4 := colorToBit(src.At(sX, sY+4)) << 4
+			c5 := colorToBit(src.At(sX, sY+5)) << 5
+			c6 := colorToBit(src.At(sX, sY+6)) << 6
+			c7 := colorToBit(src.At(sX, sY+7)) << 7
+			pixels[rX+rY] = c0 | c1 | c2 | c3 | c4 | c5 | c6 | c7
 		}
 	}
-	_, _ = d.Write(pixels)
+	if _, err := d.Write(pixels); err != nil {
+		log.Printf("ssd1306: Draw failed: %v", err)
+	}
 }
 
 // Write writes a buffer of pixels to the display.
@@ -209,31 +216,19 @@ func (d *Dev) Write(pixels []byte) (int, error) {
 		return 0, errors.New("invalid pixel stream")
 	}
 
-	// Run everything as one big transaction to reduce downtime on the bus.
+	// Run as 2 big transactions to reduce downtime on the bus. Doing with one
+	// transaction doesn't work (?)
 	hdr := []byte{
 		0x21, 0x00, byte(d.W - 1), // Set column address (Width)
 		0x22, 0x00, byte(d.H/8 - 1), // Set page address (Pages)
 	}
-
-	//*
-	d.w.Write(hdr)
-	d.w.Write(append([]byte{0x40}, pixels...))
-	return 0, nil
-	/*/
-	// TODO(maruel): Use oscilloscope to figure out why this doesn't work.
-	start := []byte{
-		0x40, // Pixel data
+	if _, err := d.w.Write(hdr); err != nil {
+		return 0, err
 	}
-	ios := []host.IO{
-		{host.WriteStop, hdr},
-		{host.Write, start},
-		{host.WriteStop, pixels},
-	}
-	if err := d.w.Tx(ios); err != nil {
+	if _, err := d.w.Write(append([]byte{0x40}, pixels...)); err != nil {
 		return 0, err
 	}
 	return len(pixels), nil
-	//*/
 }
 
 // Scroll scrolls the entire.
