@@ -5,12 +5,11 @@
 package gpiomem
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"syscall"
 	"unsafe"
-
-	"github.com/pkg/errors"
 )
 
 // Mem is the memory mapped CPU I/O registers.
@@ -43,7 +42,7 @@ func openMem(base uint64) (*Mem, error) {
 	// Align at 4Kb then offset the returned uint32 array.
 	i, err := syscall.Mmap(int(f.Fd()), int64(base&^0xFFF), 4096, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
-		return nil, errors.Wrapf(err, "mapping at 0x%x failed", base)
+		return nil, fmt.Errorf("gpiomem: mapping at 0x%x failed: %v", base, err)
 	}
 	return &Mem{i, unsafeRemap(i[base&0xFFF:])}, nil
 }

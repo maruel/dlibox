@@ -5,8 +5,6 @@
 // Package pio is a peripheral I/O library. It contains host, devices, and
 // test packages to emulate the hardware.
 //
-// (Temporary name, hopefully upstreamable)
-//
 //   - pio/cmd contains executables to communicate directly with the devices or
 //     the buses using raw protocols.
 //   - pio/devices contains devices drivers that are connected to a bus (i.e

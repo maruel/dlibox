@@ -5,9 +5,8 @@
 package drivers
 
 import (
+	"fmt"
 	"sync"
-
-	"github.com/pkg/errors"
 )
 
 // Type represent the type of driver.
@@ -97,7 +96,7 @@ func Init() ([]Driver, []error) {
 						return
 					}
 					if err != nil {
-						cE <- errors.Wrapf(err, "%s.Init() failed", d)
+						cE <- fmt.Errorf("drivers: %s.Init() failed: %v", d, err)
 						return
 					}
 					cD <- d

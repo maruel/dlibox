@@ -3,11 +3,13 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
+# Cross compiles an executable to ARM and pushes it to another host.
+
 set -eu
 cd "$(dirname $0)"
 
 if [ "$#" != 2 ]; then
-  echo "usage: $0 <dlibox hostname> <tool name>"
+  echo "usage: $0 <hostname> <tool name>"
   exit 1
 fi
 

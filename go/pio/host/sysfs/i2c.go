@@ -42,9 +42,9 @@ func newI2C(busNumber int) (*I2C, error) {
 		//   edited to enable I²C then the device must be rebooted.
 		// - permission denied. In this case, the user has to be added to plugdev.
 		if os.IsNotExist(err) {
-			return nil, errors.New("I²C is not configured; please follow instructions at https://github.com/maruel/dlibox/tree/master/go/setup")
+			return nil, fmt.Errorf("sysfs-i2c: I²C bus #%d is not configured: %v", busNumber, err)
 		}
-		return nil, fmt.Errorf("are you member of group 'plugdev'? please follow instructions at https://github.com/maruel/dlibox/tree/master/go/setup. %s", err)
+		return nil, fmt.Errorf("sysfs-i2c: are you member of group 'plugdev'? %v", err)
 	}
 	i := &I2C{f: f, busNumber: busNumber}
 

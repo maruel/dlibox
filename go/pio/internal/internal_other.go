@@ -13,7 +13,7 @@ import (
 
 // Nanosleep sleeps for a short amount of time doing a busy loop.
 func Nanosleep(d time.Duration) {
-	// TODO(maruel): That's crappy.
+	// TODO(maruel): That's not optimal.
 	runtime.LockOSThread()
 	for start := time.Now(); time.Since(start) < d; {
 	}

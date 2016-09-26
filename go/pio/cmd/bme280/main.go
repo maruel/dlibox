@@ -13,7 +13,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/kr/pretty"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/host"
@@ -132,7 +131,9 @@ func mainImpl() error {
 	defer dev.Stop()
 	err := read(dev, *loop)
 	if *record {
-		pretty.Printf("%# v\n", recorder.Ops)
+		for _, op := range recorder.Ops {
+			fmt.Printf("%# v\n", op)
+		}
 	}
 	return err
 }
