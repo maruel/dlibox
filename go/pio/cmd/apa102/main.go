@@ -17,10 +17,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
@@ -42,7 +42,7 @@ func findFile(name string) string {
 	}
 	for _, p := range strings.Split(os.Getenv("GOPATH"), ":") {
 		if len(p) != 0 {
-			if p2 := filepath.Join(p, "src/github.com/maruel/dlibox/go/pio/cmd/apa102", name); access(p2) {
+			if p2 := filepath.Join(p, "src/github.com/google/pio/cmd/apa102", name); access(p2) {
 				return p2
 			}
 		}
@@ -106,7 +106,7 @@ func mainImpl() error {
 	intensity := flag.Int("l", 127, "light intensity [1-255]")
 	temperature := flag.Int("t", 5000, "light temperature in °Kelvin [3500-7500]")
 	speed := flag.Int("s", 0, "speed in Hz")
-	pattern := flag.String("p", "\"Rainbow\"", "pattern to show in json; to show black, use '\"#000000\"', don't forget to quote")
+	color := flag.String("color", "208020", "hex encoded color to show")
 	imgName := flag.String("img", "", "image to load")
 	lineMs := flag.Int("linems", 2, "number of ms to show each line of the image")
 	imgLoop := flag.Bool("imgloop", false, "loop the image")
@@ -180,16 +180,21 @@ func mainImpl() error {
 		return nil
 	}
 
-	// Draw a pattern.
-	var p anim1d.SPattern
-	if err := p.UnmarshalJSON([]byte(*pattern)); err != nil {
+	// Shows how to create a color array.
+	rgb, err := strconv.ParseUint(*color, 16, 32)
+	if err != nil {
 		return err
 	}
-	pixels := make(anim1d.Frame, *numLights)
-	p.NextFrame(pixels, 0)
+	r := byte(rgb >> 16)
+	g := byte(rgb >> 8)
+	b := byte(rgb)
 	buf := make([]byte, *numLights*3)
-	pixels.ToRGB(buf)
-	_, err := display.Write(buf)
+	for i := 0; i < len(buf); i += 3 {
+		buf[i] = r
+		buf[i+1] = g
+		buf[i+2] = b
+	}
+	_, err = display.Write(buf)
 	return err
 }
 
