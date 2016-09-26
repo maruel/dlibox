@@ -703,14 +703,14 @@ func (p *Pin) setFunction(f function) bool {
 	if f != in && f != out {
 		return false
 	}
-	if p.edge != nil {
-		p.edge.DisableEdges()
-	}
-	// TODO(maruel): There's a problem where interrupt based edge triggering is
-	// Alt5 but this is only supported on some pins.
+	// Interrupt based edge triggering is Alt5 but this is only supported on some
+	// pins.
+	// TODO(maruel): This check should use a whitelist of pins.
 	if actual := p.function(); actual != in && actual != out && actual != disabled && actual != alt5 {
 		// Pin is in special mode.
 		return false
+	} else if actual == in {
+		p.DisableEdges()
 	}
 	off := p.group + p.offset/8
 	shift := 4 * (p.offset % 8)

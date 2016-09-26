@@ -437,9 +437,10 @@ func (p *Pin) setFunction(f function) bool {
 	if f != in && f != out {
 		return false
 	}
-	p.DisableEdges()
 	if actual := p.function(); actual != in && actual != out {
 		return false
+	} else if actual == in {
+		p.DisableEdges()
 	}
 	// 0x00    RW   GPIO Function Select 0 (GPIO0-9)
 	// 0x04    RW   GPIO Function Select 1 (GPIO10-19)
