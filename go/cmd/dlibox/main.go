@@ -28,13 +28,13 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/devicestest"
-	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
 	"github.com/maruel/dlibox/go/pio/devices/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/psf"
+	"github.com/maruel/dlibox/go/screen"
 	"github.com/maruel/interrupt"
 )
 

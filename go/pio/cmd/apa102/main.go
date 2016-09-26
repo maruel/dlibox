@@ -23,7 +23,6 @@ import (
 
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
-	"github.com/maruel/dlibox/go/pio/devices/devicestest/screen"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/bitbang"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
@@ -98,7 +97,6 @@ func showImage(display devices.Display, img image.Image, sleep time.Duration, lo
 func mainImpl() error {
 	verbose := flag.Bool("v", false, "verbose mode")
 	busNumber := flag.Int("b", -1, "SPI bus to use")
-	fake := flag.Bool("fake", false, "display as ANSI terminal color (intensity and temperature are ignored)")
 	clk := flag.Int("c", -1, "clk pin for bitbanging")
 	mosi := flag.Int("m", -1, "mosi pin for bitbanging")
 
@@ -128,46 +126,40 @@ func mainImpl() error {
 	host.Init()
 
 	// Open the display device.
-	var display devices.Display
-	if *fake {
-		display = screen.New(*numLights)
-		defer os.Stdout.Write([]byte("\033[0m\n"))
-	} else {
-		var bus spi.Conn
-		if *clk != -1 && *mosi != -1 {
-			pclk := gpio.ByNumber(*clk)
-			pmosi := gpio.ByNumber(*mosi)
-			b, err := bitbang.NewSPI(pclk, pmosi, nil, nil, int64(*speed))
-			if err != nil {
-				return err
-			}
-			bus = b
-		} else if *busNumber == -1 {
-			b, err := host.NewSPIAuto()
-			if err != nil {
-				return err
-			}
-			defer b.Close()
-			bus = b
-		} else {
-			b, err := host.NewSPI(*busNumber, -1)
-			if err != nil {
-				return err
-			}
-			defer b.Close()
-			if *speed != 0 {
-				if err := b.Speed(int64(*speed)); err != nil {
-					return err
-				}
-			}
-			bus = b
-		}
-		log.Printf("Using pins CLK: %s  MOSI: %s", bus.CLK(), bus.MOSI())
-		var err error
-		display, err = apa102.New(bus, *numLights, uint8(*intensity), uint16(*temperature))
+	var bus spi.Conn
+	if *clk != -1 && *mosi != -1 {
+		pclk := gpio.ByNumber(*clk)
+		pmosi := gpio.ByNumber(*mosi)
+		b, err := bitbang.NewSPI(pclk, pmosi, nil, nil, int64(*speed))
 		if err != nil {
 			return err
 		}
+		bus = b
+	} else if *busNumber == -1 {
+		b, err := host.NewSPIAuto()
+		if err != nil {
+			return err
+		}
+		defer b.Close()
+		bus = b
+	} else {
+		b, err := host.NewSPI(*busNumber, -1)
+		if err != nil {
+			return err
+		}
+		defer b.Close()
+		if *speed != 0 {
+			if err := b.Speed(int64(*speed)); err != nil {
+				return err
+			}
+		}
+		bus = b
+	}
+	log.Printf("Using pins CLK: %s  MOSI: %s", bus.CLK(), bus.MOSI())
+	var err error
+	display, err := apa102.New(bus, *numLights, uint8(*intensity), uint16(*temperature))
+	if err != nil {
+		return err
 	}
 
 	// Load an image and make it loop through the pixels.
