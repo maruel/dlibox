@@ -270,6 +270,10 @@ func (d *driver) Type() drivers.Type {
 	return drivers.Pins
 }
 
+func (d *driver) Prerequisites() []string {
+	return nil
+}
+
 func (d *driver) Init() (bool, error) {
 	if !internal.IsPine64() {
 		zapPins()
@@ -344,3 +348,5 @@ func (d *driver) Init() (bool, error) {
 	})
 	return true, nil
 }
+
+var _ drivers.Driver = &driver{}

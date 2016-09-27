@@ -159,6 +159,10 @@ func (d *driver) Type() drivers.Type {
 	return drivers.Pins
 }
 
+func (d *driver) Prerequisites() []string {
+	return nil
+}
+
 func (d *driver) Init() (bool, error) {
 	if !internal.IsRaspberryPi() {
 		zapPins()
@@ -268,3 +272,5 @@ func (d *driver) Init() (bool, error) {
 	headers.Register("HDMI", [][]pins.Pin{{HDMI_HOTPLUG_DETECT}})
 	return true, nil
 }
+
+var _ drivers.Driver = &driver{}
