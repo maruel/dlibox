@@ -245,6 +245,10 @@ func (d *driverSPI) Type() drivers.Type {
 	return drivers.Bus
 }
 
+func (d *driverSPI) Prerequisites() []string {
+	return nil
+}
+
 func (d *driverSPI) Init() (bool, error) {
 	return true, nil
 }

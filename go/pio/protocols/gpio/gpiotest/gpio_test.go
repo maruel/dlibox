@@ -51,8 +51,12 @@ var (
 )
 
 func init() {
-	gpio.Register(gpio2)
-	gpio.Register(gpio3)
+	if err := gpio.Register(gpio2); err != nil {
+		panic(err)
+	}
+	if err := gpio.Register(gpio3); err != nil {
+		panic(err)
+	}
 	gpio.MapFunction(gpio2.Function(), gpio2)
 	gpio.MapFunction(gpio3.Function(), gpio3)
 }

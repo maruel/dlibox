@@ -305,6 +305,10 @@ func (d *driverI2C) Type() drivers.Type {
 	return drivers.Bus
 }
 
+func (d *driverI2C) Prerequisites() []string {
+	return nil
+}
+
 func (d *driverI2C) Init() (bool, error) {
 	return true, nil
 }

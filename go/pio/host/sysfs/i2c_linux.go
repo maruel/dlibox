@@ -23,5 +23,5 @@ func EnumerateI2C() ([]int, error) {
 }
 
 func init() {
-	drivers.Register(&driverI2C{})
+	drivers.MustRegister(&driverI2C{})
 }

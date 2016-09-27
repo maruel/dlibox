@@ -7,5 +7,5 @@ package pine64
 import "github.com/maruel/dlibox/go/pio/drivers"
 
 func init() {
-	drivers.Register(&driver{})
+	drivers.MustRegister(&driver{})
 }

@@ -151,18 +151,23 @@ func Functional() map[string]PinIO {
 
 // Register registers a GPIO pin.
 //
-// If a pin of the same number was already registered, this pin is ignored.
-func Register(pin PinIO) {
+// Registering the same pin number or name twice is an error.
+func Register(pin PinIO) error {
 	lock.Lock()
 	defer lock.Unlock()
-	n := pin.Number()
-	if _, ok := byNumber[n]; ok {
-		return
+	number := pin.Number()
+	if _, ok := byNumber[number]; ok {
+		return fmt.Errorf("registering the same pin %d twice", number)
+	}
+	name := pin.String()
+	if _, ok := byName[name]; ok {
+		return fmt.Errorf("registering the same pin %s twice", name)
 	}
 	all = append(all, pin)
 	sort.Sort(all)
-	byNumber[n] = pin
-	byName[pin.String()] = pin
+	byNumber[number] = pin
+	byName[name] = pin
+	return nil
 }
 
 // MapFunction registers a GPIO pin for a specific function.

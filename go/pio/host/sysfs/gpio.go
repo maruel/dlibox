@@ -371,6 +371,10 @@ func (d *driverGPIO) Type() drivers.Type {
 	return drivers.Pins
 }
 
+func (d *driverGPIO) Prerequisites() []string {
+	return nil
+}
+
 // Init initializes GPIO sysfs handling code.
 //
 // Uses gpio sysfs as described at
@@ -428,7 +432,9 @@ func (d *driverGPIO) exportGPIOChip(path string) error {
 			root:   fmt.Sprintf("/sys/class/gpio/gpio%d/", i),
 		}
 		Pins[i] = p
-		gpio.Register(p)
+		// Intentionally ignore any error. In that case, a Processor driver already
+		// registered the pin.
+		_ = gpio.Register(p)
 		// We cannot use gpio.MapFunction() since there is no API to determine this.
 	}
 	return nil

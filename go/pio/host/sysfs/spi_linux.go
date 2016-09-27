@@ -30,5 +30,5 @@ func EnumerateSPI() ([][2]int, error) {
 }
 
 func init() {
-	drivers.Register(&driverSPI{})
+	drivers.MustRegister(&driverSPI{})
 }

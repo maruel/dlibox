@@ -31,5 +31,5 @@ func (e event) makeEvent(f *os.File) (int, error) {
 }
 
 func init() {
-	drivers.Register(&driverGPIO{})
+	drivers.MustRegister(&driverGPIO{})
 }

@@ -964,6 +964,10 @@ func (d *driver) Type() drivers.Type {
 	return drivers.Processor
 }
 
+func (d *driver) Prerequisites() []string {
+	return nil
+}
+
 func (d *driver) Init() (bool, error) {
 	if !internal.IsAllwinner() {
 		return false, nil
@@ -982,10 +986,14 @@ func (d *driver) Init() (bool, error) {
 	}
 
 	for i := range Pins {
-		gpio.Register(&Pins[i])
+		if err := gpio.Register(&Pins[i]); err != nil {
+			return true, err
+		}
 	}
 	for k, v := range functional {
 		gpio.MapFunction(k, v)
 	}
 	return true, nil
 }
+
+var _ drivers.Driver = &driver{}
