@@ -30,8 +30,10 @@ const (
 	Two     Stop = 2 // 2 stop bits
 )
 
-// Conn defines the interface a concrete UART driver must implement.
-type Conn interface {
+// conn defines the interface a concrete UART driver must implement.
+//
+// BUG(maruel): Export once the interface is used and functional.
+type conn interface {
 	protocols.Conn
 	// Speed changes the bus speed.
 	Speed(baud int64) error

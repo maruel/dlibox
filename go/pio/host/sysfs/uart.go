@@ -94,7 +94,8 @@ func (u *uART) CTS() gpio.PinIO {
 	return pins.INVALID
 }
 
-var _ uart.Conn = &uART{}
+// TODO(maruel): Put again once the implementation is functional.
+//var _ uart.Conn = &uART{}
 
 // driverUART implements drivers.Driver.
 type driverUART struct {

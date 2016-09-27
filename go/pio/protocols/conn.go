@@ -20,10 +20,9 @@ type Conn interface {
 	// Tx does a single transaction.
 	//
 	// For full duplex protocols (SPI, UART), the two buffers must have the same
-	// length.
+	// length as both reading and writing happen simultaneously.
 	//
-	// For half duplex protocols (I²C), there is no restriction and r can be nil.
-	//
-	// Warning: 'write' is the first argument.
+	// For half duplex protocols (I²C), there is no restriction as reading
+	// happens after writing, and r can be nil.
 	Tx(w, r []byte) error
 }
