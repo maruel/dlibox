@@ -37,7 +37,13 @@ type Conn interface {
 	Speed(baud int64) error
 	// Configure changes the communication parameters of the bus.
 	Configure(stopBit Stop, parity Parity, bits int) error
+}
 
+// Pins defines the pins that an UART bus interconnect is using on the host.
+//
+// It is expected that a implementer of Conn also implement Pins but this is
+// not a requirement.
+type Pins interface {
 	// RX returns the receive pin.
 	RX() gpio.PinIn
 	// TX returns the transmit pin.

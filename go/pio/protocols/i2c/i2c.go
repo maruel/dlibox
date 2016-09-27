@@ -22,7 +22,13 @@ type Conn interface {
 	Tx(addr uint16, w, r []byte) error
 	// Speed changes the bus speed, if supported.
 	Speed(hz int64) error
+}
 
+// Pins defines the pins that an I²C bus interconnect is using on the host.
+//
+// It is expected that a implementer of Conn also implement Pins but this is
+// not a requirement.
+type Pins interface {
 	// SCL returns the CLK (clock) pin.
 	SCL() gpio.PinIO
 	// SDA returns the DATA pin.

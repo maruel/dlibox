@@ -155,7 +155,9 @@ func mainImpl() error {
 		}
 		bus = b
 	}
-	log.Printf("Using pins CLK: %s  MOSI: %s", bus.CLK(), bus.MOSI())
+	if p, ok := bus.(spi.Pins); ok {
+		log.Printf("Using pins CLK: %s  MOSI: %s  MISO: %s", p.CLK(), p.MOSI(), p.MISO())
+	}
 	var err error
 	display, err := apa102.New(bus, *numLights, uint8(*intensity), uint16(*temperature))
 	if err != nil {

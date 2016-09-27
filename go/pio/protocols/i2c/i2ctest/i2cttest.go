@@ -16,7 +16,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
-// IO registers the I/O that happened on either a real or fake I2C bus.
+// IO registers the I/O that happened on either a real or fake I²C bus.
 type IO struct {
 	Addr  uint16
 	Write []byte
@@ -32,51 +32,50 @@ type Record struct {
 	Ops  []IO
 }
 
-// Tx implements i2c.Conn.
-func (i *Record) Tx(addr uint16, w, r []byte) error {
-	i.Lock.Lock()
-	defer i.Lock.Unlock()
-	if i.Conn == nil {
-		if len(r) != 0 {
+func (r *Record) Tx(addr uint16, w, read []byte) error {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
+	if r.Conn == nil {
+		if len(read) != 0 {
 			return errors.New("read unsupported when no bus is connected")
 		}
 	} else {
-		if err := i.Conn.Tx(addr, w, r); err != nil {
+		if err := r.Conn.Tx(addr, w, read); err != nil {
 			return err
 		}
 	}
 	io := IO{Addr: addr, Write: make([]byte, len(w))}
-	if len(r) != 0 {
-		io.Read = make([]byte, len(r))
+	if len(read) != 0 {
+		io.Read = make([]byte, len(read))
 	}
 	copy(io.Write, w)
-	copy(io.Read, r)
-	i.Ops = append(i.Ops, io)
+	copy(io.Read, read)
+	r.Ops = append(r.Ops, io)
 	return nil
 }
 
-func (i *Record) Speed(hz int64) error {
-	if i.Conn != nil {
-		return i.Conn.Speed(hz)
+func (r *Record) Speed(hz int64) error {
+	if r.Conn != nil {
+		return r.Conn.Speed(hz)
 	}
 	return nil
 }
 
-func (i *Record) SCL() gpio.PinIO {
-	if i.Conn != nil {
-		return i.Conn.SCL()
+func (r *Record) SCL() gpio.PinIO {
+	if p, ok := r.Conn.(i2c.Pins); ok {
+		return p.SCL()
 	}
 	return pins.INVALID
 }
 
-func (i *Record) SDA() gpio.PinIO {
-	if i.Conn != nil {
-		return i.Conn.SDA()
+func (r *Record) SDA() gpio.PinIO {
+	if p, ok := r.Conn.(i2c.Pins); ok {
+		return p.SDA()
 	}
 	return pins.INVALID
 }
 
-// I2CPlayblack implements i2c.Conn and plays back a recorded I/O flow.
+// Playblack implements i2c.Conn and plays back a recorded I/O flow.
 //
 // While "replay" type of unit tests are of limited value, they still present
 // an easy way to do basic code coverage.
@@ -89,38 +88,31 @@ type Playback struct {
 }
 
 // Tx implements i2c.Conn.
-func (i *Playback) Tx(addr uint16, w, r []byte) error {
-	i.Lock.Lock()
-	defer i.Lock.Unlock()
-	if len(i.Ops) == 0 {
+func (p *Playback) Tx(addr uint16, w, r []byte) error {
+	p.Lock.Lock()
+	defer p.Lock.Unlock()
+	if len(p.Ops) == 0 {
 		// log.Fatal() ?
 		return errors.New("unexpected Tx()")
 	}
-	if addr != i.Ops[0].Addr {
-		return fmt.Errorf("unexpected addr %d != %d", addr, i.Ops[0].Addr)
+	if addr != p.Ops[0].Addr {
+		return fmt.Errorf("unexpected addr %d != %d", addr, p.Ops[0].Addr)
 	}
-	if !bytes.Equal(i.Ops[0].Write, w) {
-		return fmt.Errorf("unexpected write %#v != %#v", w, i.Ops[0].Write)
+	if !bytes.Equal(p.Ops[0].Write, w) {
+		return fmt.Errorf("unexpected write %#v != %#v", w, p.Ops[0].Write)
 	}
-	if len(i.Ops[0].Read) != len(r) {
-		return fmt.Errorf("unexpected read buffer length %d != %d", len(r), len(i.Ops[0].Read))
+	if len(p.Ops[0].Read) != len(r) {
+		return fmt.Errorf("unexpected read buffer length %d != %d", len(r), len(p.Ops[0].Read))
 	}
-	copy(r, i.Ops[0].Read)
-	i.Ops = i.Ops[1:]
+	copy(r, p.Ops[0].Read)
+	p.Ops = p.Ops[1:]
 	return nil
 }
 
-func (i *Playback) Speed(hz int64) error {
+func (p *Playback) Speed(hz int64) error {
 	return nil
-}
-
-func (i *Playback) SCL() gpio.PinIO {
-	return pins.INVALID
-}
-
-func (i *Playback) SDA() gpio.PinIO {
-	return pins.INVALID
 }
 
 var _ i2c.Conn = &Record{}
+var _ i2c.Pins = &Record{}
 var _ i2c.Conn = &Playback{}

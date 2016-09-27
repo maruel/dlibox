@@ -32,7 +32,13 @@ type Conn interface {
 	Speed(hz int64) error
 	// Configure changes the communication parameters of the bus.
 	Configure(mode Mode, bits int) error
+}
 
+// Pins defines the pins that a SPI bus interconnect is using on the host.
+//
+// It is expected that a implementer of Conn also implement Pins but this is
+// not a requirement.
+type Pins interface {
 	// CLK returns the SCK (clock) pin.
 	CLK() gpio.PinOut
 	// MOSI returns the SDO (master out, slave in) pin.

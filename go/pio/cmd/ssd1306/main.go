@@ -27,6 +27,8 @@ import (
 
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c"
+	"github.com/maruel/dlibox/go/pio/protocols/spi"
 	"github.com/nfnt/resize"
 )
 
@@ -178,7 +180,9 @@ func mainImpl() error {
 				return err
 			}
 		}
-		log.Printf("Using pins CLK: %s  MOSI: %s  CS: %s", bus.CLK(), bus.MOSI(), bus.CS())
+		if p, ok := bus.(spi.Pins); ok {
+			log.Printf("Using pins CLK: %s  MOSI: %s  CS: %s", p.CLK(), p.MOSI(), p.CS())
+		}
 		s, err = ssd1306.NewSPI(bus, *w, *h, *rotated)
 		if err != nil {
 			return err
@@ -189,7 +193,9 @@ func mainImpl() error {
 			return err
 		}
 		defer bus.Close()
-		log.Printf("Using pins SCL: %s  SDA: %s", bus.SCL(), bus.SDA())
+		if p, ok := bus.(i2c.Pins); ok {
+			log.Printf("Using pins SCL: %s  SDA: %s", p.SCL(), p.SDA())
+		}
 		s, err = ssd1306.NewI2C(bus, *w, *h, *rotated)
 		if err != nil {
 			return err
@@ -201,7 +207,9 @@ func mainImpl() error {
 			return err
 		}
 		defer bus.Close()
-		log.Printf("Using pins SCL: %s  SDA: %s", bus.SCL(), bus.SDA())
+		if p, ok := bus.(i2c.Pins); ok {
+			log.Printf("Using pins SCL: %s  SDA: %s", p.SCL(), p.SDA())
+		}
 		s, err = ssd1306.NewI2C(bus, *w, *h, *rotated)
 		if err != nil {
 			return err

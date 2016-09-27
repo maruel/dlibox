@@ -13,29 +13,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/maruel/dlibox/go/pio/protocols/analog"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 var (
 	// INVALID implements gpio.PinIO and fails on all access.
-	INVALID     invalidPin
-	GROUND      gpio.PinIO   = &pin{name: "GROUND"}
-	V3_3        gpio.PinIO   = &pin{name: "V3_3"}
-	V5          gpio.PinIO   = &pin{name: "V5"}
-	VCC         gpio.PinIO   = &pin{name: "VCC"}         //
-	DC_IN       gpio.PinIO   = &pin{name: "DC_IN"}       //
-	TEMP_SENSOR gpio.PinIO   = &pin{name: "TEMP_SENSOR"} //
-	BAT_PLUS    gpio.PinIO   = &pin{name: "BAT_PLUS"}    //
-	IR_RX       gpio.PinIO   = &pin{name: "IR_RX"}       // IR Data Receive
-	CHARGER_LED gpio.PinIO   = &pin{name: "CHARGER_LED"} //
-	RESET       gpio.PinIO   = &pin{name: "RESET"}       //
-	PWR_SWITCH  gpio.PinIO   = &pin{name: "PWR_SWITCH"}  //
-	X32KFOUT    gpio.PinIO   = &pin{name: "X32KFOUT"}    // Clock output of 32Khz crystal
-	IOVCC       gpio.PinIO   = &pin{name: "IOVCC"}       // Power supply for port A
-	KEY_ADC     analog.PinIO = &pin{name: "KEY_ADC"}     // 6 bits resolution ADC for key application; can work up to 250Hz conversion rate; reference voltage is 2.0V
-	EAROUTP     analog.PinIO = &pin{name: "EAROUTP"}     // Earpiece amplifier negative differential output
-	EAROUTN     analog.PinIO = &pin{name: "EAROUTN"}     // Earpiece amplifier positive differential output
+	INVALID invalidPin
+	GROUND  gpio.PinIO = &BasicPin{Name: "GROUND"}
+	V3_3    gpio.PinIO = &BasicPin{Name: "V3_3"}
+	V5      gpio.PinIO = &BasicPin{Name: "V5"}
 )
 
 // Pin is the minimal common interface shared between gpio.PinIO and
@@ -106,40 +92,58 @@ func (invalidPin) DAC(v int32) error {
 	return invalidPinErr
 }
 
-// pin implements gpio.PinIO.
-type pin struct {
-	invalidPin
-	name string
+// BasicPin implements gpio.PinIO as a non-functional pin.
+type BasicPin struct {
+	Name string
 }
 
-func (p *pin) String() string {
-	return p.name
+func (b *BasicPin) Number() int {
+	return -1
 }
 
-func (p *pin) In(gpio.Pull) error {
-	return fmt.Errorf("%s cannot be used as input", p.name)
+func (b *BasicPin) String() string {
+	return b.Name
 }
 
-func (p *pin) Edges() (<-chan gpio.Level, error) {
-	return nil, fmt.Errorf("%s cannot be used as input", p.name)
+func (b *BasicPin) Function() string {
+	return ""
 }
 
-func (p *pin) Out(gpio.Level) error {
-	return fmt.Errorf("%s cannot be used as output", p.name)
+func (b *BasicPin) In(gpio.Pull) error {
+	return fmt.Errorf("%s cannot be used as input", b.Name)
 }
 
-func (p *pin) ADC() error {
-	return fmt.Errorf("%s cannot be used as analog input", p.name)
+func (b *BasicPin) Read() gpio.Level {
+	return gpio.Low
 }
 
-func (p *pin) Range() (int32, int32) {
+func (b *BasicPin) Edges() (<-chan gpio.Level, error) {
+	return nil, fmt.Errorf("%s cannot be used as input", b.Name)
+}
+
+func (b *BasicPin) DisableEdges() {
+}
+
+func (b *BasicPin) Pull() gpio.Pull {
+	return gpio.PullNoChange
+}
+
+func (b *BasicPin) Out(gpio.Level) error {
+	return fmt.Errorf("%s cannot be used as output", b.Name)
+}
+
+func (b *BasicPin) ADC() error {
+	return fmt.Errorf("%s cannot be used as analog input", b.Name)
+}
+
+func (b *BasicPin) Range() (int32, int32) {
 	return 0, 0
 }
 
-func (p *pin) Measure() int32 {
+func (b *BasicPin) Measure() int32 {
 	return 0
 }
 
-func (p *pin) DAC(v int32) error {
-	return fmt.Errorf("%s cannot be used as analog output", p.name)
+func (b *BasicPin) DAC(v int32) error {
+	return fmt.Errorf("%s cannot be used as analog output", b.Name)
 }

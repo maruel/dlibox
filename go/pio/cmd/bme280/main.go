@@ -18,6 +18,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
+	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
 func read(e devices.Environmental, loop bool) error {
@@ -91,7 +92,9 @@ func mainImpl() error {
 			return err
 		}
 		defer bus.Close()
-		log.Printf("Using pins CLK: %s  MOSI: %s  MISO: %s  CS: %s", bus.CLK(), bus.MOSI(), bus.MISO(), bus.CS())
+		if p, ok := bus.(spi.Pins); ok {
+			log.Printf("Using pins CLK: %s  MOSI: %s  MISO: %s  CS: %s", p.CLK(), p.MOSI(), p.MISO(), p.CS())
+		}
 		if dev, err = bme280.NewSPI(bus, s, s, s, bme280.S20ms, f); err != nil {
 			return err
 		}
@@ -101,7 +104,9 @@ func mainImpl() error {
 			return err
 		}
 		defer bus.Close()
-		log.Printf("Using pins SCL: %s  SDA: %s", bus.SCL(), bus.SDA())
+		if p, ok := bus.(i2c.Pins); ok {
+			log.Printf("Using pins SCL: %s  SDA: %s", p.SCL(), p.SDA())
+		}
 		var base i2c.Conn = bus
 		if *record {
 			recorder.Conn = bus
@@ -117,7 +122,9 @@ func mainImpl() error {
 			return err
 		}
 		defer bus.Close()
-		log.Printf("Using pins SCL: %s  SDA: %s", bus.SCL(), bus.SDA())
+		if p, ok := bus.(i2c.Pins); ok {
+			log.Printf("Using pins SCL: %s  SDA: %s", p.SCL(), p.SDA())
+		}
 		var base i2c.Conn = bus
 		if *record {
 			recorder.Conn = bus

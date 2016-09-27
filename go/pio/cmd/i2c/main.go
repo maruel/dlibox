@@ -21,7 +21,7 @@ import (
 
 func mainImpl() error {
 	addr := flag.Int("a", -1, "I²C device address to query")
-	bus := flag.Int("b", -1, "I²C bus to use")
+	busNumber := flag.Int("b", -1, "I²C bus to use")
 	verbose := flag.Bool("v", false, "verbose mode")
 	write := flag.Bool("w", false, "write instead of reading")
 	reg := flag.Int("r", -1, "register to address")
@@ -67,23 +67,25 @@ func mainImpl() error {
 		buf = make([]byte, *l)
 	}
 
-	var i host.I2CCloser
+	var bus host.I2CCloser
 	var err error
-	if *bus == -1 {
-		i, err = host.NewI2CAuto()
+	if *busNumber == -1 {
+		bus, err = host.NewI2CAuto()
 		if err != nil {
 			return err
 		}
-		defer i.Close()
+		defer bus.Close()
 	} else {
-		i, err = host.NewI2C(*bus)
+		bus, err = host.NewI2C(*busNumber)
 		if err != nil {
 			return err
 		}
-		defer i.Close()
+		defer bus.Close()
 	}
-	log.Printf("Using pins SCL: %s  SDA: %s", i.SCL(), i.SDA())
-	d := i2c.Dev{i, uint16(*addr)}
+	if p, ok := bus.(i2c.Pins); ok {
+		log.Printf("Using pins SCL: %s  SDA: %s", p.SCL(), p.SDA())
+	}
+	d := i2c.Dev{bus, uint16(*addr)}
 	if *write {
 		_, err = d.Write(buf)
 	} else {
