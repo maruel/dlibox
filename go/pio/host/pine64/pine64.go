@@ -7,6 +7,7 @@ package pine64
 import (
 	"github.com/maruel/dlibox/go/pio/drivers"
 	"github.com/maruel/dlibox/go/pio/host/allwinner"
+	"github.com/maruel/dlibox/go/pio/host/allwinner_pl"
 	"github.com/maruel/dlibox/go/pio/host/headers"
 	"github.com/maruel/dlibox/go/pio/host/internal"
 	"github.com/maruel/dlibox/go/pio/protocols/analog"
@@ -27,46 +28,46 @@ var (
 )
 
 var (
-	P1_1  gpio.PinIO = pins.V3_3      // 3.3 volt; max 40mA
-	P1_2  gpio.PinIO = pins.V5        // 5 volt (before filtering)
-	P1_3  gpio.PinIO = allwinner.PH3  //
-	P1_4  gpio.PinIO = pins.V5        //
-	P1_5  gpio.PinIO = allwinner.PH2  //
-	P1_6  gpio.PinIO = pins.GROUND    //
-	P1_7  gpio.PinIO = allwinner.PL10 //
-	P1_8  gpio.PinIO = allwinner.PB0  //
-	P1_9  gpio.PinIO = pins.GROUND    //
-	P1_10 gpio.PinIO = allwinner.PB1  //
-	P1_11 gpio.PinIO = allwinner.PC7  //
-	P1_12 gpio.PinIO = allwinner.PC8  //
-	P1_13 gpio.PinIO = allwinner.PH9  //
-	P1_14 gpio.PinIO = pins.GROUND    //
-	P1_15 gpio.PinIO = allwinner.PC12 //
-	P1_16 gpio.PinIO = allwinner.PC13 //
-	P1_17 gpio.PinIO = pins.V3_3      //
-	P1_18 gpio.PinIO = allwinner.PC14 //
-	P1_19 gpio.PinIO = allwinner.PC0  //
-	P1_20 gpio.PinIO = pins.GROUND    //
-	P1_21 gpio.PinIO = allwinner.PC1  //
-	P1_22 gpio.PinIO = allwinner.PC15 //
-	P1_23 gpio.PinIO = allwinner.PC2  //
-	P1_24 gpio.PinIO = allwinner.PC3  //
-	P1_25 gpio.PinIO = pins.GROUND    //
-	P1_26 gpio.PinIO = allwinner.PH7  //
-	P1_27 gpio.PinIO = allwinner.PL9  //
-	P1_28 gpio.PinIO = allwinner.PL8  //
-	P1_29 gpio.PinIO = allwinner.PH5  //
-	P1_30 gpio.PinIO = pins.GROUND    //
-	P1_31 gpio.PinIO = allwinner.PH6  //
-	P1_32 gpio.PinIO = allwinner.PC4  //
-	P1_33 gpio.PinIO = allwinner.PC5  //
-	P1_34 gpio.PinIO = pins.GROUND    //
-	P1_35 gpio.PinIO = allwinner.PC9  //
-	P1_36 gpio.PinIO = allwinner.PC6  //
-	P1_37 gpio.PinIO = allwinner.PC16 //
-	P1_38 gpio.PinIO = allwinner.PC10 //
-	P1_39 gpio.PinIO = pins.GROUND    //
-	P1_40 gpio.PinIO = allwinner.PC11 //
+	P1_1  gpio.PinIO = pins.V3_3         // 3.3 volt; max 40mA
+	P1_2  gpio.PinIO = pins.V5           // 5 volt (before filtering)
+	P1_3  gpio.PinIO = allwinner.PH3     //
+	P1_4  gpio.PinIO = pins.V5           //
+	P1_5  gpio.PinIO = allwinner.PH2     //
+	P1_6  gpio.PinIO = pins.GROUND       //
+	P1_7  gpio.PinIO = allwinner_pl.PL10 //
+	P1_8  gpio.PinIO = allwinner.PB0     //
+	P1_9  gpio.PinIO = pins.GROUND       //
+	P1_10 gpio.PinIO = allwinner.PB1     //
+	P1_11 gpio.PinIO = allwinner.PC7     //
+	P1_12 gpio.PinIO = allwinner.PC8     //
+	P1_13 gpio.PinIO = allwinner.PH9     //
+	P1_14 gpio.PinIO = pins.GROUND       //
+	P1_15 gpio.PinIO = allwinner.PC12    //
+	P1_16 gpio.PinIO = allwinner.PC13    //
+	P1_17 gpio.PinIO = pins.V3_3         //
+	P1_18 gpio.PinIO = allwinner.PC14    //
+	P1_19 gpio.PinIO = allwinner.PC0     //
+	P1_20 gpio.PinIO = pins.GROUND       //
+	P1_21 gpio.PinIO = allwinner.PC1     //
+	P1_22 gpio.PinIO = allwinner.PC15    //
+	P1_23 gpio.PinIO = allwinner.PC2     //
+	P1_24 gpio.PinIO = allwinner.PC3     //
+	P1_25 gpio.PinIO = pins.GROUND       //
+	P1_26 gpio.PinIO = allwinner.PH7     //
+	P1_27 gpio.PinIO = allwinner_pl.PL9  //
+	P1_28 gpio.PinIO = allwinner_pl.PL8  //
+	P1_29 gpio.PinIO = allwinner.PH5     //
+	P1_30 gpio.PinIO = pins.GROUND       //
+	P1_31 gpio.PinIO = allwinner.PH6     //
+	P1_32 gpio.PinIO = allwinner.PC4     //
+	P1_33 gpio.PinIO = allwinner.PC5     //
+	P1_34 gpio.PinIO = pins.GROUND       //
+	P1_35 gpio.PinIO = allwinner.PC9     //
+	P1_36 gpio.PinIO = allwinner.PC6     //
+	P1_37 gpio.PinIO = allwinner.PC16    //
+	P1_38 gpio.PinIO = allwinner.PC10    //
+	P1_39 gpio.PinIO = pins.GROUND       //
+	P1_40 gpio.PinIO = allwinner.PC11    //
 
 	EULER_1  gpio.PinIO   = pins.V3_3         //
 	EULER_2  gpio.PinIO   = DC_IN             //
@@ -104,7 +105,7 @@ var (
 	EULER_34 gpio.PinIO   = pins.GROUND       //
 
 	EXP_1  gpio.PinIO   = pins.V3_3         //
-	EXP_2  gpio.PinIO   = allwinner.PL7     //
+	EXP_2  gpio.PinIO   = allwinner_pl.PL7  //
 	EXP_3  gpio.PinIO   = CHARGER_LED       //
 	EXP_4  gpio.PinIO   = RESET             //
 	EXP_5  gpio.PinIO   = PWR_SWITCH        //
@@ -130,14 +131,14 @@ var (
 	WIFI_BT_14 gpio.PinIO = allwinner.PG12     //
 	WIFI_BT_15 gpio.PinIO = allwinner.PG5      //
 	WIFI_BT_16 gpio.PinIO = allwinner.PG13     //
-	WIFI_BT_17 gpio.PinIO = allwinner.PL2      //
+	WIFI_BT_17 gpio.PinIO = allwinner_pl.PL2   //
 	WIFI_BT_18 gpio.PinIO = pins.GROUND        //
-	WIFI_BT_19 gpio.PinIO = allwinner.PL3      //
-	WIFI_BT_20 gpio.PinIO = allwinner.PL5      //
+	WIFI_BT_19 gpio.PinIO = allwinner_pl.PL3   //
+	WIFI_BT_20 gpio.PinIO = allwinner_pl.PL5   //
 	WIFI_BT_21 gpio.PinIO = allwinner.X32KFOUT //
-	WIFI_BT_22 gpio.PinIO = allwinner.PL5      //
+	WIFI_BT_22 gpio.PinIO = allwinner_pl.PL5   //
 	WIFI_BT_23 gpio.PinIO = pins.GROUND        //
-	WIFI_BT_24 gpio.PinIO = allwinner.PL6      //
+	WIFI_BT_24 gpio.PinIO = allwinner_pl.PL6   //
 	WIFI_BT_25 gpio.PinIO = VCC                //
 	WIFI_BT_26 gpio.PinIO = IOVCC              //
 
@@ -271,7 +272,7 @@ func (d *driver) Type() drivers.Type {
 }
 
 func (d *driver) Prerequisites() []string {
-	return nil
+	return []string{"allwinner_pl"}
 }
 
 func (d *driver) Init() (bool, error) {

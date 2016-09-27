@@ -160,7 +160,7 @@ func (d *driver) Type() drivers.Type {
 }
 
 func (d *driver) Prerequisites() []string {
-	return nil
+	return []string{"bcm283x"}
 }
 
 func (d *driver) Init() (bool, error) {

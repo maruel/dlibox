@@ -742,18 +742,15 @@ func (d *driver) Init() (bool, error) {
 	// GPIO46 doesn't have interesting alternate function.
 	// GPIO47-GPIO53 are connected to the SDCard.
 
-	// TODO(maruel): Remove all the functional variables.
-	for i := range Pins {
-		if i == 45 {
-			break
-		}
-		if f := Pins[i].Function(); len(f) < 3 || (f[:2] != "In" && f[:3] != "Out") {
-			functional[f] = &Pins[i]
-		}
-	}
+	// TODO(maruel): Remove all the functional variables?
 	for i := range Pins {
 		if err := gpio.Register(&Pins[i]); err != nil {
 			return true, err
+		}
+		if i < 46 {
+			if f := Pins[i].Function(); len(f) < 3 || (f[:2] != "In" && f[:3] != "Out") {
+				functional[f] = &Pins[i]
+			}
 		}
 	}
 	for k, v := range functional {

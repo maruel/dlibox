@@ -94,22 +94,9 @@ func Init() ([]Driver, []error) {
 	if err != nil {
 		return nil, []error{err}
 	}
+	loaded := map[string]struct{}{}
 	for _, drivers := range stages {
-		var wg2 sync.WaitGroup
-		for _, driver := range drivers {
-			wg2.Add(1)
-			go func(d Driver) {
-				defer wg2.Done()
-				if ok, err := d.Init(); ok {
-					if err != nil {
-						cE <- fmt.Errorf("drivers: %s.Init() failed: %v", d, err)
-					} else {
-						cD <- d
-					}
-				}
-			}(driver)
-		}
-		wg2.Wait()
+		loadStage(drivers, loaded, cD, cE)
 	}
 	close(cD)
 	close(cE)
@@ -188,13 +175,14 @@ func getStages() ([][]Driver, error) {
 	return stages, nil
 }
 
-// Create multiple intermediate stages if needed.
+// explodeStages creates multiple intermediate stages if needed.
+//
+// It searches if there's any driver than has dependency on another driver from
+// this stage and creates intermediate stage if so.
 func explodeStages(drivers []Driver) ([][]Driver, error) {
-	// Search if there's any driver than has dependency on a driver from this
-	// stage. This will create multiple intermediate stages.
-	dependencies := map[string][]string{}
+	dependencies := map[string]map[string]struct{}{}
 	for _, d := range drivers {
-		dependencies[d.String()] = []string{}
+		dependencies[d.String()] = map[string]struct{}{}
 	}
 	for _, d := range drivers {
 		name := d.String()
@@ -215,49 +203,79 @@ func explodeStages(drivers []Driver) ([][]Driver, error) {
 			// Dependency between two drivers of the same type. This can happen
 			// when there's a process class driver and a processor specialization
 			// driver. As an example, allwinner->R8, allwinner->A64, etc.
-			dependencies[name] = append(dependencies[name], depName)
-		}
-	}
-
-	// Create a reverse dependency map.
-	reverse := map[string]map[string]struct{}{}
-	for name, deps := range dependencies {
-		if reverse[name] == nil {
-			reverse[name] = map[string]struct{}{}
-		}
-		for _, dep := range deps {
-			if reverse[dep] == nil {
-				reverse[dep] = map[string]struct{}{}
-			}
-			reverse[dep][name] = struct{}{}
+			dependencies[name][depName] = struct{}{}
 		}
 	}
 
 	var stages [][]Driver
-	for len(reverse) != 0 {
+	for len(dependencies) != 0 {
 		// Create a stage.
 		var stage []string
-		for name, deps := range reverse {
+		var l []Driver
+		for name, deps := range dependencies {
 			if len(deps) == 0 {
 				stage = append(stage, name)
-				delete(reverse, name)
+				l = append(l, byName[name])
+				delete(dependencies, name)
 			}
 		}
 		if len(stage) == 0 {
 			return nil, fmt.Errorf("drivers: found cycle(s) in drivers dependencies; %v", dependencies)
 		}
-		l := make([]Driver, 0, len(stage))
-		for _, n := range stage {
-			l = append(l, byName[n])
-		}
 		stages = append(stages, l)
 
 		// Trim off.
 		for _, passed := range stage {
-			for name := range reverse {
-				delete(reverse[name], passed)
+			for name := range dependencies {
+				delete(dependencies[name], passed)
 			}
 		}
 	}
 	return stages, nil
+}
+
+// loadStage loads all the drivers in this stage concurrently.
+func loadStage(drivers []Driver, loaded map[string]struct{}, cD chan<- Driver, cE chan<- error) {
+	var wg sync.WaitGroup
+	// Use int for concurrent access.
+	skip := make([]int, len(drivers))
+	for i, driver := range drivers {
+		// Load only the driver if prerequisites were loaded. They are
+		// guaranteed to be in a previous stage by getStages().
+		for _, dep := range driver.Prerequisites() {
+			if _, ok := loaded[dep]; !ok {
+				skip[i] = 1
+				//log.Printf("drivers: skipping %s because missing %s", driver, dep)
+				break
+			}
+		}
+	}
+
+	for i, driver := range drivers {
+		if skip[i] != 0 {
+			continue
+		}
+		wg.Add(1)
+		go func(d Driver, j int) {
+			defer wg.Done()
+			if ok, err := d.Init(); ok {
+				if err == nil {
+					cD <- d
+					return
+				}
+				cE <- fmt.Errorf("drivers: %s.Init() failed: %v", d, err)
+			} else {
+				//log.Printf("drivers: %s.Init() skipped initialization", d)
+			}
+			skip[j] = 1
+		}(driver, i)
+	}
+	wg.Wait()
+
+	for i, driver := range drivers {
+		if skip[i] != 0 {
+			continue
+		}
+		loaded[driver.String()] = struct{}{}
+	}
 }

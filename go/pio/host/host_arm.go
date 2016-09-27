@@ -7,6 +7,7 @@ package host
 // Make sure CPU and board drivers are registered.
 import (
 	_ "github.com/maruel/dlibox/go/pio/host/allwinner"
+	_ "github.com/maruel/dlibox/go/pio/host/allwinner_pl"
 	_ "github.com/maruel/dlibox/go/pio/host/bcm283x"
 	_ "github.com/maruel/dlibox/go/pio/host/pine64"
 	_ "github.com/maruel/dlibox/go/pio/host/rpi"
