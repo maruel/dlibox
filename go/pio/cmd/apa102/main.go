@@ -41,7 +41,7 @@ func findFile(name string) string {
 	}
 	for _, p := range strings.Split(os.Getenv("GOPATH"), ":") {
 		if len(p) != 0 {
-			if p2 := filepath.Join(p, "src/github.com/google/pio/cmd/apa102", name); access(p2) {
+			if p2 := filepath.Join(p, "src/github.com/maruel/dlibox/go/pio/cmd/apa102", name); access(p2) {
 				return p2
 			}
 		}

@@ -213,16 +213,24 @@ func mainImpl() error {
 		return errors.New("specify the two pins to use; they must be connected together")
 	}
 
-	drivers, errs := host.Init()
-	if len(errs) != 0 {
-		fmt.Printf("Got the following errors:\n")
-		for _, err := range errs {
-			fmt.Printf("  - %v\n", err)
+	state, err := host.Init()
+	if err != nil {
+		return err
+	}
+	var finalErr error
+	if len(state.Failed) != 0 {
+		fmt.Printf("Drivers failed to load:\n")
+		for _, f := range state.Failed {
+			fmt.Printf("  - %s: %v\n", f.D, f.Err)
 		}
-		return errors.New("please fix the drivers. Do you need to run as root?")
+		finalErr = errors.New("please fix the drivers. Do you need to run as root?")
 	}
 	fmt.Printf("Using drivers:\n")
-	for _, driver := range drivers {
+	for _, driver := range state.Loaded {
+		fmt.Printf("  - %s\n", driver.String())
+	}
+	fmt.Printf("Drivers skipped:\n")
+	for _, driver := range state.Skipped {
 		fmt.Printf("  - %s\n", driver.String())
 	}
 
@@ -253,6 +261,9 @@ func mainImpl() error {
 	}
 	if err2 := p2.In(gpio.PullNoChange); err2 != nil {
 		fmt.Printf("(Exit) Failed to reset %s as input: %s\n", p1, err2)
+	}
+	if err == nil {
+		return finalErr
 	}
 	return err
 }

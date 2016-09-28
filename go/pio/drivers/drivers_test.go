@@ -31,18 +31,15 @@ func TestInitSimple(t *testing.T) {
 	if len(byName) != 1 {
 		t.Fatalf("%v", byName)
 	}
-	actual, errs := Init()
-	if len(errs) != 0 || len(actual) != 1 {
-		t.Fatalf("%v, %v", actual, errs)
+	state, err := Init()
+	if err != nil || len(state.Loaded) != 1 {
+		t.Fatalf("%v, %v", state, err)
 	}
 
 	// Call a second time, should return the same data.
-	actual2, errs2 := Init()
-	if len(errs2) != 0 {
-		t.Fatalf("%v", errs2)
-	}
-	if len(actual2) != len(actual) || actual2[0] != actual[0] {
-		t.Fatalf("%v", actual2)
+	state2, err2 := Init()
+	if err2 != nil || len(state2.Loaded) != len(state.Loaded) || state2.Loaded[0] != state.Loaded[0] {
+		t.Fatalf("%v, %v", state2, err2)
 	}
 }
 
@@ -56,8 +53,8 @@ func TestInitSkip(t *testing.T) {
 			err:     nil,
 		},
 	})
-	if actual, errs := Init(); len(errs) != 0 || len(actual) != 0 {
-		t.Fatalf("%v, %v", actual, errs)
+	if state, err := Init(); err != nil || len(state.Loaded) != 0 {
+		t.Fatalf("%v, %v", state, err)
 	}
 }
 
@@ -71,8 +68,8 @@ func TestInitErr(t *testing.T) {
 			err:     errors.New("oops"),
 		},
 	})
-	if actual, errs := Init(); len(errs) != 1 || len(actual) != 0 {
-		t.Fatalf("%v, %v", actual, errs)
+	if state, err := Init(); err != nil || len(state.Loaded) != 0 || len(state.Failed) != 1 {
+		t.Fatalf("%v, %v", state, err)
 	}
 }
 
@@ -93,8 +90,8 @@ func TestInitBadOrder(t *testing.T) {
 			err:     nil,
 		},
 	})
-	if actual, errs := Init(); len(errs) != 1 || len(actual) != 0 {
-		t.Fatalf("%v, %v", actual, errs)
+	if state, err := Init(); err == nil || len(state.Loaded) != 0 {
+		t.Fatalf("%v, %v", state, err)
 	}
 }
 
@@ -108,8 +105,8 @@ func TestInitMissing(t *testing.T) {
 			err:     nil,
 		},
 	})
-	if actual, errs := Init(); len(errs) != 1 || len(actual) != 0 {
-		t.Fatalf("%v, %v", actual, errs)
+	if state, err := Init(); err == nil || len(state.Loaded) != 0 {
+		t.Fatalf("%v, %v", state, err)
 	}
 }
 
@@ -325,7 +322,7 @@ func reset() {
 		allDrivers[i] = nil
 	}
 	byName = map[string]Driver{}
-	actualDrivers = nil
+	state = nil
 }
 
 func initTest(drivers []Driver) {

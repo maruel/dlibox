@@ -8,6 +8,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 	"sort"
 
@@ -128,7 +130,14 @@ func mainImpl() error {
 	hardware := flag.Bool("h", false, "print hardware pins (e.g. P1_1)")
 	info := flag.Bool("i", false, "show general information")
 	invalid := flag.Bool("n", false, "show not connected/INVALID pins")
+	verbose := flag.Bool("v", false, "enable verbose logs")
 	flag.Parse()
+
+	if !*verbose {
+		log.SetOutput(ioutil.Discard)
+	}
+	log.SetFlags(0)
+
 	if *all {
 		*fun = true
 		*gpio = true
@@ -139,17 +148,24 @@ func mainImpl() error {
 		*gpio = true
 	}
 
-	d, errs := host.Init()
-	if len(errs) != 0 {
+	state, err := host.Init()
+	if err != nil {
+		return err
+	}
+	if len(state.Failed) != 0 {
 		fmt.Printf("Got the following errors:\n")
-		for _, err := range errs {
-			fmt.Printf("  - %v\n", err)
+		for _, f := range state.Failed {
+			fmt.Printf("  - %s: %v\n", f.D, f.Err)
 		}
 	}
 	if *info {
 		fmt.Printf("Using drivers:\n")
-		for _, driver := range d {
+		for _, driver := range state.Loaded {
 			fmt.Printf("  - %s\n", driver.String())
+		}
+		log.Printf("Skipped drivers:")
+		for _, driver := range state.Skipped {
+			log.Printf("  - %s", driver.String())
 		}
 		fmt.Printf("MaxSpeed: %dMhz\n", host.MaxSpeed()/1000000)
 	}

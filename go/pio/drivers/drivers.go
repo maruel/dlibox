@@ -53,6 +53,19 @@ type Driver interface {
 	Init() (bool, error)
 }
 
+// DriverFailure is a driver that failed loaded.
+type DriverFailure struct {
+	D   Driver
+	Err error
+}
+
+// State is the state of loaded device drivers.
+type State struct {
+	Loaded  []Driver
+	Skipped []Driver
+	Failed  []DriverFailure
+}
+
 // Init initially all the relevant drivers.
 //
 // Drivers are started concurrently for Type.
@@ -64,44 +77,52 @@ type Driver interface {
 //
 // Users will want to use host.Init(), which guarantees a baseline of included
 // drivers.
-func Init() ([]Driver, []error) {
-	lockActual.Lock()
-	defer lockActual.Unlock()
-	if actualDrivers != nil {
-		return actualDrivers, nil
+func Init() (*State, error) {
+	lockState.Lock()
+	defer lockState.Unlock()
+	if state != nil {
+		return state, nil
 	}
-	actualDrivers = []Driver{}
-	var errs []error
+	state = &State{}
 	cD := make(chan Driver)
-	cE := make(chan error)
-	var wg1 sync.WaitGroup
-	wg1.Add(1)
+	cS := make(chan Driver)
+	cE := make(chan DriverFailure)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		defer wg1.Done()
+		defer wg.Done()
 		for d := range cD {
-			actualDrivers = append(actualDrivers, d)
+			state.Loaded = append(state.Loaded, d)
 		}
 	}()
-	wg1.Add(1)
+	wg.Add(1)
 	go func() {
-		defer wg1.Done()
-		for err := range cE {
-			errs = append(errs, err)
+		defer wg.Done()
+		for d := range cS {
+			state.Skipped = append(state.Skipped, d)
+		}
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for f := range cE {
+			state.Failed = append(state.Failed, f)
 		}
 	}()
 
 	stages, err := getStages()
 	if err != nil {
-		return nil, []error{err}
+		return state, err
 	}
 	loaded := map[string]struct{}{}
 	for _, drivers := range stages {
-		loadStage(drivers, loaded, cD, cE)
+		loadStage(drivers, loaded, cD, cS, cE)
 	}
 	close(cD)
+	close(cS)
 	close(cE)
-	wg1.Wait()
-	return actualDrivers, errs
+	wg.Wait()
+	return state, nil
 }
 
 // Register registers a driver to be initialized automatically on Init().
@@ -110,9 +131,9 @@ func Init() ([]Driver, []error) {
 //
 // Can't call Register() while Init() is running.
 func Register(d Driver) error {
-	lockActual.Lock()
-	loaded := actualDrivers != nil
-	lockActual.Unlock()
+	lockState.Lock()
+	loaded := state != nil
+	lockState.Unlock()
 	if loaded {
 		return errors.New("drivers: can't call Register() after Init()")
 	}
@@ -139,11 +160,11 @@ func MustRegister(d Driver) {
 //
 
 var (
-	lockDrivers   sync.Mutex
-	allDrivers    [nbPriorities][]Driver
-	byName        = map[string]Driver{}
-	lockActual    sync.Mutex
-	actualDrivers []Driver
+	lockDrivers sync.Mutex
+	allDrivers  [nbPriorities][]Driver
+	byName      = map[string]Driver{}
+	lockState   sync.Mutex
+	state       *State
 )
 
 // getStages returns a set of stages to load the drivers.
@@ -235,7 +256,7 @@ func explodeStages(drivers []Driver) ([][]Driver, error) {
 }
 
 // loadStage loads all the drivers in this stage concurrently.
-func loadStage(drivers []Driver, loaded map[string]struct{}, cD chan<- Driver, cE chan<- error) {
+func loadStage(drivers []Driver, loaded map[string]struct{}, cD chan<- Driver, cS chan<- Driver, cE chan<- DriverFailure) {
 	var wg sync.WaitGroup
 	// Use int for concurrent access.
 	skip := make([]int, len(drivers))
@@ -253,6 +274,7 @@ func loadStage(drivers []Driver, loaded map[string]struct{}, cD chan<- Driver, c
 
 	for i, driver := range drivers {
 		if skip[i] != 0 {
+			cS <- driver
 			continue
 		}
 		wg.Add(1)
@@ -263,8 +285,9 @@ func loadStage(drivers []Driver, loaded map[string]struct{}, cD chan<- Driver, c
 					cD <- d
 					return
 				}
-				cE <- fmt.Errorf("drivers: %s.Init() failed: %v", d, err)
+				cE <- DriverFailure{d, fmt.Errorf("drivers: %s.Init() failed: %v", d, err)}
 			} else {
+				cS <- d
 				//log.Printf("drivers: %s.Init() skipped initialization", d)
 			}
 			skip[j] = 1

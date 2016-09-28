@@ -23,7 +23,7 @@ import (
 //
 // The only difference is that by calling host.Init(), you are guaranteed to
 // have all the drivers implemented in this library to be implicitly loaded.
-func Init() ([]drivers.Driver, []error) {
+func Init() (*drivers.State, error) {
 	return drivers.Init()
 }
 
