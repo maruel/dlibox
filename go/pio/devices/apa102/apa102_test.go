@@ -10,8 +10,10 @@ import (
 	"image"
 	"image/color"
 	"io/ioutil"
+	"log"
 	"testing"
 
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/spi/spitest"
 )
 
@@ -503,6 +505,32 @@ func TestDrawRGBA(t *testing.T) {
 		t.Fatalf("%#v != %#v", expectedi250t5000, buf.Bytes())
 	}
 }
+
+//
+
+func Example() {
+	if _, err := host.Init(); err != nil {
+		log.Fatalf("failed to initialize pio: %v", err)
+	}
+	bus, err := host.NewSPIAuto()
+	if err != nil {
+		log.Fatalf("failed to open SPI: %v", err)
+	}
+	defer bus.Close()
+	// Opens a strip of 150 lights are 50% intensity with color temperature at
+	// 5000 Kelvin.
+	dev, err := New(bus, 150, 127, 5000)
+	if err != nil {
+		log.Fatalf("failed to open apa102: %v", err)
+	}
+	img := image.NewNRGBA(image.Rect(0, 0, dev.Bounds().Dy(), 1))
+	for x := 0; x < img.Rect.Max.X; x++ {
+		img.SetNRGBA(x, 0, color.NRGBA{uint8(x), uint8(255 - x), 0, 255})
+	}
+	dev.Draw(dev.Bounds(), img, image.Point{})
+}
+
+//
 
 func BenchmarkWriteWhite(b *testing.B) {
 	pixels := make([]byte, 150*3)

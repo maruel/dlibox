@@ -15,9 +15,10 @@ import (
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
-var (
-	LEDs []*LED
-)
+// LEDs is all the leds discovered on this host via sysfs.
+//
+// Depending on the user context, the LEDs may be read-only or writeable.
+var LEDs []*LED
 
 // LEDByName returns a *LED for the LED name, if any.
 //
@@ -36,6 +37,7 @@ func LEDByName(name string) (*LED, error) {
 	return nil, errors.New("invalid LED name")
 }
 
+// LED represents one LED on the system.
 type LED struct {
 	number int
 	name   string

@@ -11,6 +11,12 @@ The documentation is at:
 The main author is [Marc-Antoine Ruel](https://github.com/maruel).
 
 
+## Design
+
+See [DESIGN.md](DESIGN.md) for the goals, requirements and driver lifetime
+management.
+
+
 ## Contributions
 
 We gladly accept contributions via GitHub pull requests, as long as the author

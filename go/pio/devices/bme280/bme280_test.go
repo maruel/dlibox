@@ -5,9 +5,12 @@
 package bme280
 
 import (
+	"fmt"
+	"log"
 	"testing"
 
 	"github.com/maruel/dlibox/go/pio/devices"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
 )
 
@@ -133,6 +136,28 @@ func TestCalibrationInt(t *testing.T) {
 		t.Fatalf("humidity %d", humi)
 	}
 }
+
+//
+
+func Example() {
+	if _, err := host.Init(); err != nil {
+		log.Fatalf("failed to initialize pio: %v", err)
+	}
+	bus, err := host.NewI2CAuto()
+	if err != nil {
+		log.Fatalf("failed to open I²C: %v", err)
+	}
+	defer bus.Close()
+	dev, err := NewI2C(bus, O2x, O2x, O2x, S20ms, FOff)
+	if err != nil {
+		log.Fatalf("failed to initialize bme280: %v", err)
+	}
+	env := devices.Environment{}
+	dev.Read(&env)
+	fmt.Printf("%6.3f°C %7.3fkPa %6.2f%%rH\n", float32(env.MilliCelcius)*0.001, float32(env.Pascal)*0.001, float32(env.Humidity)*0.01)
+}
+
+//
 
 var epsilon float32 = 0.00000001
 

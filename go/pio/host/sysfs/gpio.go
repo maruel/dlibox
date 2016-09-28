@@ -20,6 +20,9 @@ import (
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
+// Pins is all the pins exported by GPIO sysfs.
+var Pins map[int]*Pin
+
 // PinByNumber returns a *Pin for the pin number, if any.
 func PinByNumber(i int) (*Pin, error) {
 	p, ok := Pins[i]
@@ -32,6 +35,7 @@ func PinByNumber(i int) (*Pin, error) {
 	return p, nil
 }
 
+// Pin represents one GPIO pin as found by sysfs.
 type Pin struct {
 	number int
 	name   string
@@ -336,10 +340,7 @@ func (p *Pin) edgeLoop(started *sync.WaitGroup) {
 
 //
 
-var (
-	exportHandle io.Writer    // handle to /sys/class/gpio/export
-	Pins         map[int]*Pin // Pins is all the pins exported by GPIO sysfs.
-)
+var exportHandle io.Writer // handle to /sys/class/gpio/export
 
 const (
 	dUnknown = 0

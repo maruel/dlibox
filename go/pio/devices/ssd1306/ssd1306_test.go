@@ -7,8 +7,14 @@ package ssd1306
 import (
 	"image"
 	"image/color"
+	"log"
 	"testing"
 
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
+
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
 )
 
@@ -153,4 +159,33 @@ func TestWrite(t *testing.T) {
 		t.Fatalf("Unconsumed I/O: %# v", bus.Ops)
 	}
 	//pretty.Printf("%# v\n", bus)
+}
+
+//
+
+func Example() {
+	if _, err := host.Init(); err != nil {
+		log.Fatalf("failed to initialize pio: %v", err)
+	}
+	bus, err := host.NewI2CAuto()
+	if err != nil {
+		log.Fatalf("failed to open I²C: %v", err)
+	}
+	defer bus.Close()
+	dev, err := NewI2C(bus, 128, 64, false)
+	if err != nil {
+		log.Fatalf("failed to initialize ssd1306: %v", err)
+	}
+
+	// Draw on it.
+	f := basicfont.Face7x13
+	img := image.NewGray(dev.Bounds())
+	drawer := font.Drawer{
+		Dst:  img,
+		Src:  &image.Uniform{color.Gray{255}},
+		Face: f,
+		Dot:  fixed.P(0, img.Bounds().Dy()-1-f.Descent),
+	}
+	drawer.DrawString("Hello from pio!")
+	dev.Draw(dev.Bounds(), img, image.Point{})
 }
