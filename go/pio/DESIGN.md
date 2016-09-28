@@ -22,7 +22,7 @@ and its tooling have the following properties:
   package on [golang.org](https://golang.org).
 
 Many packages, both generic like [embd](https://github.com/kidoman/embd),
-[gobot](https://github.com/hybridgroup/gobot/ and specialized (various one-off
+[gobot](https://github.com/hybridgroup/gobot) and specialized (various one-off
 drivers), were created to fill the space but there isn’t one clear winner or a
 cohesive design pattern that scales to multiple platforms. Many have either
 grown organically or have incomplete implementation. Most have a primitive
@@ -48,10 +48,12 @@ library that can be maintained on the long term.
 * Coverage:
   * Each driver must implement and expose as much of the underlying device
     capability as possible and relevant.
-  * [host/](host/) must implement a large base of common platforms. This is in
-    addition to extensibility.
-  * Interfacing for common OS provided functionality (i.e. sysfs) and emulated
-    ones (i.e. bitbang).
+  * [cmd/](cmd/) implements useful directly usable tool.
+  * [devices/](devices/) implements common device drivers.
+  * [host/](host/) must implement a large base of common platforms that _just
+    work_. This is in addition to extensibility.
+  * Interfacing for common OS provided functionality (i.e. [sysfs](host/sysfs))
+    and emulated ones (i.e. [bitbang](host/bitbang)).
 * Simplicity:
   * Static typing is *thoroughly used*, to reduce the risk of runtime failure.
   * Minimal coding is needed to accomplish a task.
@@ -62,11 +64,11 @@ library that can be maintained on the long term.
   * The library must be stable without precluding core refactoring.
   * Breakage in the API should happen at a yearly parce at most once the library
     got to a stable state.
-* Strong distinction about the driver (as a user of a `Conn`` instance) and an
+* Strong distinction about the driver (as a user of a `Conn` instance) and an
   application writer (as a user of a device driver). It's the application that
   controls the object's lifetime.
 * Strong distinction between _enablers_ and _devices_. See
-  [Background](#Background) below.
+  [Background](#background) below.
 
 
 ## Requirements
@@ -74,7 +76,7 @@ library that can be maintained on the long term.
 All the code must fit these requirements:
 
 * The code must be Go idiomatic.
-  * Constructors (NewXXX) return concrete type.
+  * Constructor `NewXXX()` returns an object of concrete type.
   * Functions accept interfaces.
   * Leverage standard interfaces like
     [io.Writer](https://golang.org/pkg/io/#Writer) and
@@ -171,7 +173,7 @@ DETERMINED_ amount of time.
 ### Contributing a new driver
 
 A new proposed driver must be first implemented out of tree and fit all the
-items in [Requirements](#Requirements) listed above. First propose it as
+items in [Requirements](#requirements) listed above. First propose it as
 Experimental, then promote it to Stable.
 
 
