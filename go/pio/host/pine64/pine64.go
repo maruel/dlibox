@@ -300,7 +300,7 @@ func (d *driver) Init() (bool, error) {
 		{P1_33, P1_34},
 		{P1_35, P1_36},
 		{P1_37, P1_38},
-		{P1_39, P1_20},
+		{P1_39, P1_40},
 	})
 	headers.Register("EULER", [][]pins.Pin{
 		{EULER_1, EULER_2},

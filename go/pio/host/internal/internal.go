@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode"
 )
 
 //
@@ -20,34 +21,52 @@ var (
 	osRelease map[string]string
 )
 
-func readAndSplit(path string) map[string]string {
-	bytes, err := ioutil.ReadFile("/proc/cpuinfo")
-	if err != nil {
-		return nil
-	}
+func splitSemiColon(content string) map[string]string {
+	// Strictly speaking this format isn't ok, there can be multiple group.
 	out := map[string]string{}
-	for _, line := range strings.Split(string(bytes), "\n") {
+	for _, line := range strings.Split(content, "\n") {
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) != 2 {
 			continue
 		}
-		key := strings.TrimSpace(parts[0])
+		// This format may have space around the ':'.
+		key := strings.TrimRightFunc(parts[0], unicode.IsSpace)
 		if len(key) == 0 || key[0] == '#' {
 			continue
 		}
-		// Ignore duplicate keys
-		if len(out[key]) == 0 {
-			s := strings.TrimSpace(parts[1])
-			if len(s) > 2 && s[0] == '"' && s[len(s)-1] == '"' {
-				// Not exactly 100% right but #closeenough. See for more details
-				// https://www.freedesktop.org/software/systemd/man/os-release.html
-				s, err = strconv.Unquote(s[1 : len(s)-2])
-				if err != nil {
-					continue
-				}
-			}
-			out[key] = s
+		// Ignore duplicate keys.
+		// TODO(maruel): Keep them all.
+		if _, ok := out[key]; !ok {
+			// Trim on both side, trailing space was observed on "Features" value.
+			out[key] = strings.TrimFunc(parts[1], unicode.IsSpace)
 		}
+	}
+	return out
+}
+
+func splitStrict(content string) map[string]string {
+	out := map[string]string{}
+	for _, line := range strings.Split(content, "\n") {
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := parts[0]
+		if len(key) == 0 || key[0] == '#' {
+			continue
+		}
+		// Overwrite previous key.
+		value := parts[1]
+		if len(value) > 2 && value[0] == '"' && value[len(value)-1] == '"' {
+			// Not exactly 100% right but #closeenough. See for more details
+			// https://www.freedesktop.org/software/systemd/man/os-release.html
+			var err error
+			value, err = strconv.Unquote(value)
+			if err != nil {
+				continue
+			}
+		}
+		out[key] = value
 	}
 	return out
 }
@@ -56,10 +75,8 @@ func makeCPUInfo() map[string]string {
 	lock.Lock()
 	defer lock.Unlock()
 	if cpuInfo == nil {
-		// Technically speaking, cpuinfo doesn't contain quotes and os-release
-		// doesn't contain duplicate keys. Make it more strictly correct if needed.
-		if m := readAndSplit("/proc/cpuinfo"); m != nil {
-			cpuInfo = m
+		if bytes, err := ioutil.ReadFile("/proc/cpuinfo"); err == nil {
+			cpuInfo = splitSemiColon(string(bytes))
 		} else {
 			cpuInfo = map[string]string{}
 		}
@@ -71,10 +88,8 @@ func makeOSRelease() map[string]string {
 	lock.Lock()
 	defer lock.Unlock()
 	if osRelease == nil {
-		// Technically speaking, cpuinfo doesn't contain quotes and os-release
-		// doesn't contain duplicate keys. Make it more strictly correct if needed.
-		if m := readAndSplit("/etc/os-release"); m != nil {
-			osRelease = m
+		if bytes, err := ioutil.ReadFile("/etc/os-release"); err == nil {
+			osRelease = splitStrict(string(bytes))
 		} else {
 			osRelease = map[string]string{}
 		}
