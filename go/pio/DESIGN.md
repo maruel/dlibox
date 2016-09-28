@@ -1,6 +1,13 @@
 # pio - design
 
 
+pio is a peripheral I/O library in Go. The documentation, including examples, is at:
+[![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio)
+
+It is recommended to look at the stand alone executables in [cmd/](cmd/) for use
+cases.
+
+
 ## Abstract
 
 Go developped a fairly large hardware hacker community in because the language
@@ -14,13 +21,15 @@ and its tooling have the following properties:
   old) makes it easy to apt-get install on arm64, or arm32 users have access to
   package on [golang.org](https://golang.org).
 
-Many packages both generic ([embd](https://github.com/kidoman/embd),
-[gobot](https://github.com/hybridgroup/gobot/) and specialized (various one-off
-drivers) were created to fill the space but there isn’t one clear winner or a
+Many packages, both generic like [embd](https://github.com/kidoman/embd),
+[gobot](https://github.com/hybridgroup/gobot/ and specialized (various one-off
+drivers), were created to fill the space but there isn’t one clear winner or a
 cohesive design pattern that scales to multiple platforms. Many have either
-grown organically or have incomplete implementation. A effort is in progress to
-create a generic set of interface at [exp/io](https://golang.org/x/exp/io) but
-this doesn't span the actual implementations.
+grown organically or have incomplete implementation. Most have a primitive
+driver loading mechanism but is generally not flexible enough. A effort is in
+progress to create a generic set of interface at
+[exp/io](https://golang.org/x/exp/io) but this doesn't span the actual
+implementations.
 
 This document exposes a design to create a cohesive and definitive common
 library that can be maintained on the long term.
@@ -28,7 +37,7 @@ library that can be maintained on the long term.
 
 ## Goals
 
-* Not abstract more than absolutely needed.
+* Not more abstract than absolutely needed.
 * Extensible:
   * Users can provide additional drivers that are seamlessly loaded
     with a structured ordering of priority.
@@ -39,7 +48,7 @@ library that can be maintained on the long term.
 * Coverage:
   * Each driver must implement and expose as much of the underlying device
     capability as possible and relevant.
-  * `pio/host` must implement a large base of common platforms. This is in
+  * [host/](host/) must implement a large base of common platforms. This is in
     addition to extensibility.
   * Interfacing for common OS provided functionality (i.e. sysfs) and emulated
     ones (i.e. bitbang).
@@ -53,10 +62,11 @@ library that can be maintained on the long term.
   * The library must be stable without precluding core refactoring.
   * Breakage in the API should happen at a yearly parce at most once the library
     got to a stable state.
-* Strong distinction about the driver (as a user of a `Conn`) and an application
-  writer (as a user of a device driver). It's the application that controls the
-  object's lifetime.
-* Strong distinction between _enablers_ and _devices_. See `Background` below.
+* Strong distinction about the driver (as a user of a `Conn`` instance) and an
+  application writer (as a user of a device driver). It's the application that
+  controls the object's lifetime.
+* Strong distinction between _enablers_ and _devices_. See
+  [Background](#Background) below.
 
 
 ## Requirements
@@ -83,8 +93,8 @@ All the code must fit these requirements:
   * Include self-test to confirm the library physically works for devices other
     than write-only devices.
 * Usability
-  * Provide a standalone executable in `cmd/` to expose the functionality. It
-    is acceptable to only expose a small subset of the functionality but the
+  * Provide a standalone executable in [cmd/](cmd/) to expose the functionality.
+    It is acceptable to only expose a small subset of the functionality but the
     tool must have purpose.
 * Performance
   * Drivers controling an output device must have a fast path that can be used
@@ -93,13 +103,13 @@ All the code must fit these requirements:
     higher level interface when found in the stdlib, i.e.
     [image.Image](https://golang.org/pkg/image/#Image)
   * No floating point arithmetic is tolerated in the library. It is acceptable
-    in the tools in `cmd/` but should not be abused.
+    in the tools in [cmd/](cmd/) but should not be abused.
   * Drivers must be implemented with performance in mind.
   * Benchmark must be implemented for non trivial processing.
 * Code must compile on all OSes, with minimal use of OS-specific thunk as
   strictly as needed.
 * Struct implementing an interface must validate at compile time with `var _
-  <Interface> = &<Type>`.
+  <Interface> = &<Type>{}`.
 * No code under the GPL, LGPL or APL license will be accepted.
   * Users are free to use the library in commercial projects.
 
@@ -108,8 +118,8 @@ All the code must fit these requirements:
 
 Proper driver lifetime management is key to the success of this project. There
 must be clear expectations to add, update and remove drivers for the core
-project. As described in `Risks` below, poor drivers or high churn rate will
-destroy the value proposition.
+project. As described in [Risks](#Risk) below, poor drivers or high churn rate
+will destroy the value proposition.
 
 This is critical as drivers can be silently broken by seemingly innocuous
 changes. Because the testing story of hardware is significantly harder than
@@ -119,14 +129,15 @@ that must be asserted.
 
 ### Experimental
 
-Any driver can be requested to be added to the library under `experimental/`
-directory. The following process must be followed:
+Any driver can be requested to be added to the library under
+[experimental/](experimental/) directory. The following process must be
+followed:
 * One or multiple developers have created a driver out of tree.
 * The driver is deemed to work.
 * The driver meets minimal quality bar under the promise of being improved.
 * Follows [CONTRIBUTING.md](CONTRIBUTING.md) demand.
-* Create a Pull Request for integration under `experimental/` and respond to the
-  code review.
+* Create a Pull Request for integration under [experimental/](experimental/) and
+  respond to the code review.
 
 At this point, it is available for use to everyone but is not loaded defacto.
 There is no API compatibility guarantee.
@@ -140,8 +151,9 @@ be followed:
   feature requests and bug reports.
   * There could be a threshold, > _TO BE DETERMINED_ lines, where more than one
     owner is required.
-  * They commit to support the driver for the foreseeable future and do code
-    reviews to keep the driver quality to the expected standard.
+  * Contributors commit to support the driver for the foreseeable future and
+    **promptly** do code reviews to keep the driver quality to the expected
+    standard.
 * There are multiple reports that the driver is functioning as expected.
 * If another driver exists for an intersecting class of devices, the other
   driver must enter deprecation phase.
@@ -152,29 +164,29 @@ be followed:
 
 A driver can be subsumed by a newer driver with a better core implementation or
 a new breaking API. The previous driver must be deprecated, moved back to
-`experimental/` and announced to be deleted after _TO BE DETERMINED_ amount of
-time.
+[experimental/](experimental/) and announced to be deleted after _TO BE
+DETERMINED_ amount of time.
 
 
 ### Contributing a new driver
 
 A new proposed driver must be first implemented out of tree and fit all the
-items in `Requirements` listed above. First propose it as Experimental, then
-promote it to Stable.
+items in [Requirements](#Requirements) listed above. First propose it as
+Experimental, then promote it to Stable.
 
 
 ## Background
 
 #### Classes of hardware
 
-This document distinguishes two classes of work:
-* The enablers. They are what make the interconnects work, so that you can then
+This document distinguishes two classes of drivers:
+
+* Enablers. They are what make the interconnects work, so that you can then
   use real stuff. That's buses (I²C, SPI, GPIO, BT, UART). This is what can be
   used as point-to-point protocols. They enable you to do something but are not
   the essence of what you want to do.
-* The devices. They are the end goal, to do something. It is the functional
-  part. There are multiple subclasses of devices like sensors, write-only
-  devices, etc.
+* Devices. They are the end goal, to do something functional. There are multiple
+  subclasses of devices like sensors, write-only devices, etc.
 
 The enablers is what will break or make this project. Nobody want to do them
 but they are needed. You need a large base of enablers so people can use
@@ -190,8 +202,10 @@ about. So enablers need to be a great HAL -> the right hardware abstraction
 layer (not too deep, not too light) is the core here.
 
 Devices need common interfaces to help with application developers (like
-`devices.Display` and `devices.Environmental`) but the lack of core repository
-and coherency is less dramatic.
+[devices.Display](https://godoc.org/github.com/maruel/dlibox/go/pio/devices#Display)
+and
+[devices.Environmental](https://godoc.org/github.com/maruel/dlibox/go/pio/devices#Environmental))
+but the lack of core repository and coherency is less dramatic.
 
 
 ## Success criteria
@@ -210,13 +224,14 @@ and coherency is less dramatic.
 * Poor usability of the core interfaces.
 
 
-## Contributions
+### Contributors
 
 * Lack of API stability; high churn rate.
 * Poor fitting of the core interfaces.
 * No uptake in external contribution.
 * Poor quality of contribution.
-* Duplicate drivers, without a clear way to define the right way.
+* Duplicate ways to accomplish the same thing, without a clear way to define the
+  right way.
 
 
 ## Detailed design
@@ -225,16 +240,19 @@ and coherency is less dramatic.
 
 The core of extensibility is implemented as an in-process driver registry. The
 things that make it work are:
-* Clear priority classes via `driver.Type`. Each category is loaded one after
-  the other so a driver of a type can assume that all relevant drivers of lower
-  level types were fully loaded.
+* Clear priority classes via
+  [drivers.Type](https://godoc.org/github.com/maruel/dlibox/go/pio/drivers#Type).
+  Each category is loaded one after the other so a driver of a type can assume
+  that all relevant drivers of lower level types were fully loaded.
 * Native way to skip a driver on unrelated platform.
   * At compile time via conditional compilation.
-  * At runtime via early Init() exit.
+  * At runtime via early `Init()` exit.
 * Native way to return the state of all registered drivers. The ones loaded, the
   ones skipped and the ones that failed.
-* Native way to declare inter-driver dependency. A specialized `Processor`
-  driver may dependent on generic `Processor` driver and the drivers will be
-  loaded sequentially.
+* Native way to declare inter-driver dependency. A specialized
+  [Processor](https://godoc.org/github.com/maruel/dlibox/go/pio/drivers#Type)
+  driver may dependent on generic
+  [Processor](https://godoc.org/github.com/maruel/dlibox/go/pio/drivers#Type)
+  driver and the drivers will be loaded sequentially.
 * In another other case, the drivers are loaded in parallel for minimum total
   latency.
