@@ -197,9 +197,9 @@ func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-
 			}
 
 		case t := <-env:
-			f.Draw(img, 0, f.H, bw2d.On, bw2d.Off, fmt.Sprintf("%6.3f°C", float32(t.MilliCelcius)*0.001))
-			f.Draw(img, 0, f.H*2, bw2d.On, bw2d.Off, fmt.Sprintf("%7.3fkPa", float32(t.Pascal)*0.001))
-			f.Draw(img, 0, f.H*3, bw2d.On, bw2d.Off, fmt.Sprintf("%6.2f%%rH", float32(t.Humidity)*0.01))
+			f.Draw(img, 0, f.H, bw2d.On, bw2d.Off, fmt.Sprintf("%8s", t.Temperature))
+			f.Draw(img, 0, f.H*2, bw2d.On, bw2d.Off, fmt.Sprintf("%9s", t.Pressure))
+			f.Draw(img, 0, f.H*3, bw2d.On, bw2d.Off, fmt.Sprintf("%10s", t.Humidity))
 
 		case s := <-keys:
 			f.Draw(img, 0, f.H*6, bw2d.On, bw2d.Off, string(s))

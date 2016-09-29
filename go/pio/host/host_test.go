@@ -59,7 +59,7 @@ func ExampleNewI2CAuto() {
 	}
 	env := devices.Environment{}
 	dev.Read(&env)
-	fmt.Printf("%6.3f°C %7.3fkPa %6.2f%%rH\n", float32(env.MilliCelcius)*0.001, float32(env.Pascal)*0.001, float32(env.Humidity)*0.01)
+	fmt.Printf("%8s %10s %9s\n", env.Temperature, env.Pressure, env.Humidity)
 }
 
 func ExampleNewSPIAuto() {
@@ -82,7 +82,7 @@ func ExampleNewSPIAuto() {
 	}
 	env := devices.Environment{}
 	dev.Read(&env)
-	fmt.Printf("%6.3f°C %7.3fkPa %6.2f%%rH\n", float32(env.MilliCelcius)*0.001, float32(env.Pascal)*0.001, float32(env.Humidity)*0.01)
+	fmt.Printf("%8s %10s %9s\n", env.Temperature, env.Pressure, env.Humidity)
 }
 
 func TestInit(t *testing.T) {

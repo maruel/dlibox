@@ -5,6 +5,7 @@
 package devices
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"io"
@@ -37,11 +38,62 @@ type Display interface {
 	Draw(r image.Rectangle, src image.Image, sp image.Point)
 }
 
+// Milli is a fixed point value with 0.001 precision.
+type Milli int32
+
+func (m Milli) Float64() float64 {
+	return float64(m) * .001
+}
+
+func (m Milli) String() string {
+	return fmt.Sprintf("%d.%03d", m/1000, m%1000)
+}
+
+// Celcius is a temperature at a precision of 0.001°C.
+//
+// Expected range is [-273150, >1000000]
+//
+// BUG(maruel): Add function to convert to Fahrenheit for my American friends.
+type Celcius Milli
+
+func (c Celcius) Float64() float64 {
+	return Milli(c).Float64()
+}
+
+func (c Celcius) String() string {
+	return Milli(c).String() + "°C"
+}
+
+// KPascal is pressure at precision of 1Pa.
+//
+// Expected range is [0, >1000000].
+type KPascal Milli
+
+func (k KPascal) Float64() float64 {
+	return Milli(k).Float64()
+}
+
+func (k KPascal) String() string {
+	return Milli(k).String() + "KPa"
+}
+
+// RelativeHumidity is humidity level in %rH with 0.01%rH precision.
+type RelativeHumidity int32
+
+// Float64 returns the value in %.
+func (r RelativeHumidity) Float64() float64 {
+	return float64(r) * .01
+}
+
+func (r RelativeHumidity) String() string {
+	return fmt.Sprintf("%d.%02d%%rH", r/100, r%100)
+}
+
 // Environment represents measurements from an environmental sensor.
 type Environment struct {
-	MilliCelcius int32 // 0.001°C; range [-273150, >1000000]
-	Pascal       int32 // 1Pa; range [0, >1000000]
-	Humidity     int32 // 0.01%rH or 0.1milli-rH; range [0, 10000]
+	Temperature Celcius
+	Pressure    KPascal
+	Humidity    RelativeHumidity
 }
 
 // Environmental represents an environmental sensor.

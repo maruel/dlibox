@@ -27,7 +27,7 @@ func read(e devices.Environmental, loop bool) error {
 		if err := e.Read(&env); err != nil {
 			return err
 		}
-		fmt.Printf("%6.3f°C %7.3fkPa %6.2f%%rH\n", float32(env.MilliCelcius)*0.001, float32(env.Pascal)*0.001, float32(env.Humidity)*0.01)
+		fmt.Printf("%8s %10s %9s\n", env.Temperature, env.Pressure, env.Humidity)
 		if !loop {
 			break
 		}

@@ -90,10 +90,11 @@ All the code must fit these requirements:
   * Driver must use the real chip name, not a marketing name by a third party.
     Don't use `dotstar` (as marketed by Adafruit), use `apa102` (as published
     by APA Electronic co. LTD.).
+  * A link to the datasheet should be included in the package doc.
 * Testability
-  * Code must be testable and tested.
-  * Include self-test to confirm the library physically works for devices other
-    than write-only devices.
+  * Code must be testable and tested without a driver.
+  * Include smoke-test (working with a real device) to confirm the library
+    physically works for devices other than write-only devices.
 * Usability
   * Provide a standalone executable in [cmd/](cmd/) to expose the functionality.
     It is acceptable to only expose a small subset of the functionality but the
@@ -104,8 +105,12 @@ All the code must fit these requirements:
   * Drivers controling an output device must have a generic path accepting
     higher level interface when found in the stdlib, i.e.
     [image.Image](https://golang.org/pkg/image/#Image)
-  * No floating point arithmetic is tolerated in the library. It is acceptable
-    in the tools in [cmd/](cmd/) but should not be abused.
+  * Floating point arithmetic should only be used when absolutely necesary in
+    the driver code. Most of the cases can be replaced with fixed point
+    arithmetic, for example
+    [devices.Milli](https://godoc.org/github.com/maruel/dlibox/go/pio/devices#Milli).
+    Floating point arithmetic is acceptable in the unit tests and tools in
+    [cmd/](cmd/) but should not be abused.
   * Drivers must be implemented with performance in mind.
   * Benchmark must be implemented for non trivial processing.
 * Code must compile on all OSes, with minimal use of OS-specific thunk as

@@ -91,13 +91,13 @@ func (d *Dev) Read(env *devices.Environment) error {
 	hRaw := int32(buf[6])<<8 | int32(buf[7])
 
 	t, tFine := d.c.compensateTempInt(tRaw)
-	env.MilliCelcius = t * 10
+	env.Temperature = devices.Celcius(t * 10)
 
 	p := d.c.compensatePressureInt64(pRaw, tFine)
-	env.Pascal = (int32(p) + 127) / 256
+	env.Pressure = devices.KPascal((int32(p) + 127) / 256)
 
 	h := d.c.compensateHumidityInt(hRaw, tFine)
-	env.Humidity = (int32(h)*100 + 511) / 1024
+	env.Humidity = devices.RelativeHumidity((int32(h)*100 + 511) / 1024)
 	return nil
 }
 
@@ -364,88 +364,3 @@ func (c *calibration) compensateHumidityInt(raw, tFine int32) uint32 {
 	}
 	return uint32(x >> 12)
 }
-
-// Page 50
-
-// compensatePressureInt32 returns pressure in Pa. Output value of "96386"
-// equals 96386 Pa = 963.86 hPa
-//
-// "Compensating the pressure value with 32 bit integer has an accuracy of
-// typically 1 Pa"
-//
-// raw has 20 bits of resolution.
-//
-// BUG(maruel): Output is incorrect.
-func (c *calibration) compensatePressureInt32(raw, tFine int32) uint32 {
-	x := tFine>>1 - 64000
-	y := (((x >> 2) * (x >> 2)) >> 11) * int32(c.p6)
-	y += (x * int32(c.p5)) << 1
-	y = y>>2 + int32(c.p4)<<16
-	x = (((int32(c.p3) * (((x >> 2) * (x >> 2)) >> 13)) >> 3) + ((int32(c.p2) * x) >> 1)) >> 18
-	x = ((32768 + x) * int32(c.p1)) >> 15
-	if x == 0 {
-		return 0
-	}
-	p := ((uint32(int32(1048576)-raw) - uint32(y>>12)) * 3125)
-	if p < 0x80000000 {
-		p = (p << 1) / uint32(x)
-	} else {
-		p = (p / uint32(x)) * 2
-	}
-	x = (int32(c.p9) * int32(((p>>3)*(p>>3))>>13)) >> 12
-	y = (int32(p>>2) * int32(c.p8)) >> 13
-	return uint32(int32(p) + ((x + y + int32(c.p7)) >> 4))
-}
-
-// Page 49
-
-// compensateTempFloat returns temperature in °C. Output value of "51.23"
-// equals 51.23 °C.
-//
-// raw has 20 bits of resolution.
-func (c *calibration) compensateTempFloat(raw int32) (float32, int32) {
-	x := (float64(raw)/16384. - float64(c.t1)/1024.) * float64(c.t2)
-	y := (float64(raw)/131072. - float64(c.t1)/8192.) * float64(c.t3)
-	tFine := int32(x + y)
-	return float32((x + y) / 5120.), tFine
-}
-
-// compensateHumidityFloat returns pressure in Pa. Output value of "96386.2"
-// equals 96386.2 Pa = 963.862 hPa.
-//
-// raw has 20 bits of resolution.
-func (c *calibration) compensatePressureFloat(raw, tFine int32) float32 {
-	x := float64(tFine)*0.5 - 64000.
-	y := x * x * float64(c.p6) / 32768.
-	y += x * float64(c.p5) * 2.
-	y = y*0.25 + float64(c.p4)*65536.
-	x = (float64(c.p3)*x*x/524288. + float64(c.p2)*x) / 524288.
-	x = (1. + x/32768.) * float64(c.p1)
-	if x <= 0 {
-		return 0
-	}
-	p := float64(1048576 - raw)
-	p = (p - y/4096.) * 6250. / x
-	x = float64(c.p9) * p * p / 2147483648.
-	y = p * float64(c.p8) / 32768.
-	return float32(p+(x+y+float64(c.p7))/16.) / 1000.
-}
-
-// compensateHumidityFloat returns humidity in %rH. Output value of "46.332"
-// represents 46.332 %rH.
-//
-// raw has 16 bits of resolution.
-func (c *calibration) compensateHumidityFloat(raw, tFine int32) float32 {
-	h := float64(tFine - 76800)
-	h = (float64(raw) - float64(c.h4)*64. + float64(c.h5)/16384.*h) * float64(c.h2) / 65536. * (1. + float64(c.h6)/67108864.*h*(1.+float64(c.h3)/67108864.*h))
-	h *= 1. - float64(c.h1)*h/524288.
-	if h > 100. {
-		return 100.
-	}
-	if h < 0. {
-		return 0.
-	}
-	return float32(h)
-}
-
-var _ devices.Environmental = &Dev{}
