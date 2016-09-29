@@ -11,7 +11,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
@@ -136,7 +136,7 @@ func (l *LED) open() error {
 	return err
 }
 
-// driverLED implements drivers.Driver.
+// driverLED implements pio.Driver.
 type driverLED struct {
 }
 
@@ -144,8 +144,8 @@ func (d *driverLED) String() string {
 	return "sysfs-leds"
 }
 
-func (d *driverLED) Type() drivers.Type {
-	return drivers.Pins
+func (d *driverLED) Type() pio.Type {
+	return pio.Pins
 }
 
 func (d *driverLED) Prerequisites() []string {

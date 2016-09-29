@@ -243,7 +243,7 @@ but the lack of core repository and coherency is less dramatic.
 The core of extensibility is implemented as an in-process driver registry. The
 things that make it work are:
 * Clear priority classes via
-  [drivers.Type](https://godoc.org/github.com/maruel/dlibox/go/pio/drivers#Type).
+  [pio.Type](https://godoc.org/github.com/maruel/dlibox/go/pio#Type).
   Each category is loaded one after the other so a driver of a type can assume
   that all relevant drivers of lower level types were fully loaded.
 * Native way to skip a driver on unrelated platform.
@@ -252,9 +252,9 @@ things that make it work are:
 * Native way to return the state of all registered drivers. The ones loaded, the
   ones skipped and the ones that failed.
 * Native way to declare inter-driver dependency. A specialized
-  [Processor](https://godoc.org/github.com/maruel/dlibox/go/pio/drivers#Type)
+  [Processor](https://godoc.org/github.com/maruel/dlibox/go/pio#Type)
   driver may dependent on generic
-  [Processor](https://godoc.org/github.com/maruel/dlibox/go/pio/drivers#Type)
+  [Processor](https://godoc.org/github.com/maruel/dlibox/go/pio#Type)
   driver and the drivers will be loaded sequentially.
 * In another other case, the drivers are loaded in parallel for minimum total
   latency.

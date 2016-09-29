@@ -4,7 +4,7 @@
 
 package sysfs
 
-import "github.com/maruel/dlibox/go/pio/drivers"
+import "github.com/maruel/dlibox/go/pio"
 
 // NewI2C opens an I²C bus via its sysfs interface as described at
 // https://www.kernel.org/doc/Documentation/i2c/dev-interface.
@@ -23,5 +23,5 @@ func EnumerateI2C() ([]int, error) {
 }
 
 func init() {
-	drivers.MustRegister(&driverI2C{})
+	pio.MustRegister(&driverI2C{})
 }

@@ -4,8 +4,8 @@
 
 package sysfs
 
-import "github.com/maruel/dlibox/go/pio/drivers"
+import "github.com/maruel/dlibox/go/pio"
 
 func init() {
-	drivers.MustRegister(&driverLED{})
+	pio.MustRegister(&driverLED{})
 }

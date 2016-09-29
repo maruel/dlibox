@@ -8,7 +8,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio"
 )
 
 type event [1]syscall.EpollEvent
@@ -31,5 +31,5 @@ func (e event) makeEvent(f *os.File) (int, error) {
 }
 
 func init() {
-	drivers.MustRegister(&driverGPIO{})
+	pio.MustRegister(&driverGPIO{})
 }

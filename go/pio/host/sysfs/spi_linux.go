@@ -4,7 +4,7 @@
 
 package sysfs
 
-import "github.com/maruel/dlibox/go/pio/drivers"
+import "github.com/maruel/dlibox/go/pio"
 
 // NewSPI opens a SPI bus via its devfs interface as described at
 // https://www.kernel.org/doc/Documentation/spi/spidev and
@@ -30,5 +30,5 @@ func EnumerateSPI() ([][2]int, error) {
 }
 
 func init() {
-	drivers.MustRegister(&driverSPI{})
+	pio.MustRegister(&driverSPI{})
 }

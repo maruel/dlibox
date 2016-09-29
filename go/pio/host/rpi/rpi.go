@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host/bcm283x"
 	"github.com/maruel/dlibox/go/pio/host/headers"
 	"github.com/maruel/dlibox/go/pio/host/internal"
@@ -147,7 +147,7 @@ func zapPins() {
 	HDMI_HOTPLUG_DETECT = pins.INVALID
 }
 
-// driver implements drivers.Driver.
+// driver implements pio.Driver.
 type driver struct {
 }
 
@@ -155,8 +155,8 @@ func (d *driver) String() string {
 	return "rpi"
 }
 
-func (d *driver) Type() drivers.Type {
-	return drivers.Pins
+func (d *driver) Type() pio.Type {
+	return pio.Pins
 }
 
 func (d *driver) Prerequisites() []string {
@@ -273,4 +273,4 @@ func (d *driver) Init() (bool, error) {
 	return true, nil
 }
 
-var _ drivers.Driver = &driver{}
+var _ pio.Driver = &driver{}

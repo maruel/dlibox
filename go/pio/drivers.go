@@ -4,7 +4,7 @@
 
 //go:generate stringer -type Type
 
-package drivers
+package pio
 
 import (
 	"errors"
@@ -129,7 +129,7 @@ func Init() (*State, error) {
 //
 // The d.String() value must be unique across all registered drivers.
 //
-// Can't call Register() while Init() is running.
+// It is an error to call Register() after Init() was called.
 func Register(d Driver) error {
 	lockState.Lock()
 	loaded := state != nil

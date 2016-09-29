@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
@@ -293,7 +293,7 @@ func enumerateI2C() ([]int, error) {
 	return out, nil
 }
 
-// driverI2C implements drivers.Driver.
+// driverI2C implements pio.Driver.
 type driverI2C struct {
 }
 
@@ -301,8 +301,8 @@ func (d *driverI2C) String() string {
 	return "sysfs-i2c"
 }
 
-func (d *driverI2C) Type() drivers.Type {
-	return drivers.Bus
+func (d *driverI2C) Type() pio.Type {
+	return pio.Bus
 }
 
 func (d *driverI2C) Prerequisites() []string {

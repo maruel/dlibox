@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
@@ -233,7 +233,7 @@ func enumerateSPI() ([][2]int, error) {
 	return out, nil
 }
 
-// driverSPI implements drivers.Driver.
+// driverSPI implements pio.Driver.
 type driverSPI struct {
 }
 
@@ -241,8 +241,8 @@ func (d *driverSPI) String() string {
 	return "sysfs-spi"
 }
 
-func (d *driverSPI) Type() drivers.Type {
-	return drivers.Bus
+func (d *driverSPI) Type() pio.Type {
+	return pio.Bus
 }
 
 func (d *driverSPI) Prerequisites() []string {

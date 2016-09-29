@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/uart"
@@ -97,7 +97,7 @@ func (u *uART) CTS() gpio.PinIO {
 // TODO(maruel): Put again once the implementation is functional.
 //var _ uart.Conn = &uART{}
 
-// driverUART implements drivers.Driver.
+// driverUART implements pio.Driver.
 type driverUART struct {
 }
 
@@ -105,8 +105,8 @@ func (d *driverUART) String() string {
 	return "sysfs-uart"
 }
 
-func (d *driverUART) Type() drivers.Type {
-	return drivers.Bus
+func (d *driverUART) Type() pio.Type {
+	return pio.Bus
 }
 
 func (d *driverUART) Init() (bool, error) {

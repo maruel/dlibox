@@ -5,7 +5,7 @@
 package pine64
 
 import (
-	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host/allwinner"
 	"github.com/maruel/dlibox/go/pio/host/allwinner_pl"
 	"github.com/maruel/dlibox/go/pio/host/headers"
@@ -259,7 +259,7 @@ func zapPins() {
 	WIFI_BT_26 = pins.INVALID
 }
 
-// driver implements drivers.Driver.
+// driver implements pio.Driver.
 type driver struct {
 }
 
@@ -267,8 +267,8 @@ func (d *driver) String() string {
 	return "pine64"
 }
 
-func (d *driver) Type() drivers.Type {
-	return drivers.Pins
+func (d *driver) Type() pio.Type {
+	return pio.Pins
 }
 
 func (d *driver) Prerequisites() []string {
@@ -350,4 +350,4 @@ func (d *driver) Init() (bool, error) {
 	return true, nil
 }
 
-var _ drivers.Driver = &driver{}
+var _ pio.Driver = &driver{}

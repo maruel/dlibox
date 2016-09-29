@@ -17,7 +17,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/ir"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
@@ -210,7 +210,7 @@ func read(r *bufio.Reader) (string, error) {
 	return string(raw), nil
 }
 
-// driver implements drivers.Driver.
+// driver implements pio.Driver.
 type driver struct {
 }
 
@@ -218,9 +218,9 @@ func (d *driver) String() string {
 	return "lirc"
 }
 
-func (d *driver) Type() drivers.Type {
+func (d *driver) Type() pio.Type {
 	// Return the lowest priority, which is Functional.
-	return drivers.Functional
+	return pio.Functional
 }
 
 func (d *driver) Init() (bool, error) {

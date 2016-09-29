@@ -4,8 +4,8 @@
 
 package allwinner
 
-import "github.com/maruel/dlibox/go/pio/drivers"
+import "github.com/maruel/dlibox/go/pio"
 
 func init() {
-	drivers.MustRegister(&driver{})
+	pio.MustRegister(&driver{})
 }

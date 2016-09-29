@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host/internal"
 	"github.com/maruel/dlibox/go/pio/host/internal/gpiomem"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
@@ -665,7 +665,7 @@ func getBaseAddress() uint64 {
 	return 0x3F200000
 }
 
-// driver implements drivers.Driver.
+// driver implements pio.Driver.
 type driver struct {
 }
 
@@ -673,8 +673,8 @@ func (d *driver) String() string {
 	return "bcm283x"
 }
 
-func (d *driver) Type() drivers.Type {
-	return drivers.Processor
+func (d *driver) Type() pio.Type {
+	return pio.Processor
 }
 
 func (d *driver) Prerequisites() []string {
@@ -759,4 +759,4 @@ func (d *driver) Init() (bool, error) {
 	return true, nil
 }
 
-var _ drivers.Driver = &driver{}
+var _ pio.Driver = &driver{}

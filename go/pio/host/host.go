@@ -13,18 +13,18 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
-// Init calls drivers.Init() and returns it as-is.
+// Init calls pio.Init() and returns it as-is.
 //
 // The only difference is that by calling host.Init(), you are guaranteed to
 // have all the drivers implemented in this library to be implicitly loaded.
-func Init() (*drivers.State, error) {
-	return drivers.Init()
+func Init() (*pio.State, error) {
+	return pio.Init()
 }
 
 // I2CCloser is a generic I2C bus that can be closed.

@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/drivers"
+	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
@@ -359,7 +359,7 @@ func readInt(path string) (int, error) {
 	return strconv.Atoi(string(raw[:len(raw)-1]))
 }
 
-// driverGPIO implements drivers.Driver.
+// driverGPIO implements pio.Driver.
 type driverGPIO struct {
 }
 
@@ -367,9 +367,9 @@ func (d *driverGPIO) String() string {
 	return "sysfs-gpio"
 }
 
-func (d *driverGPIO) Type() drivers.Type {
+func (d *driverGPIO) Type() pio.Type {
 	// It intentionally load later than processors.
-	return drivers.Pins
+	return pio.Pins
 }
 
 func (d *driverGPIO) Prerequisites() []string {

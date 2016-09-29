@@ -5,17 +5,24 @@
 // Package pio is a peripheral I/O library. It contains host, devices, and
 // test packages to emulate the hardware.
 //
-//   - pio/cmd contains executables to communicate directly with the devices or
-//     the buses using raw protocols.
-//   - pio/devices contains devices drivers that are connected to a bus (i.e
-//     I²C, SPI, GPIO) that can be controlled by the host, i.e. ssd1306 (display
+// pio acts as a registry of drivers.
+//
+// Every device driver should register itself in their package init() function
+// by calling pio.Register().
+//
+// The user call pio.Init() on startup to initialize all the registered drivers
+// in the correct order all at once.
+//
+//   - cmd/ contains executables to communicate directly with the devices or the
+//     buses using raw protocols.
+//   - devices/ contains devices drivers that are connected to a bus (i.e I²C,
+//     SPI, GPIO) that can be controlled by the host, i.e. ssd1306 (display
 //     controller), bm280 (environmental sensor), etc. 'devices' contains the
 //     interfaces and subpackages contain contain concrete types.
-//   - pio/drivers is a registry of all the loaded device drivers.
-//   - pio/host contains all the implementations relating to the host itself,
-//     the CPU and buses that are exposed by the host onto which devices can be
+//   - host/ contains all the implementations relating to the host itself, the
+//     CPU and buses that are exposed by the host onto which devices can be
 //     connected, i.e. I²C, SPI, GPIO, etc. 'host' contains the interfaces
 //     and subpackages contain contain concrete types.
-//   - pio/protocols contains interfaces for all the supported protocols (I²C,
-//     SPI, GPIO, etc).
+//   - protocols/ contains interfaces for all the supported protocols (I²C, SPI,
+//     GPIO, etc).
 package pio
