@@ -509,9 +509,6 @@ func TestDrawRGBA(t *testing.T) {
 //
 
 func Example() {
-	if _, err := host.Init(); err != nil {
-		log.Fatalf("failed to initialize pio: %v", err)
-	}
 	bus, err := host.NewSPIAuto()
 	if err != nil {
 		log.Fatalf("failed to open SPI: %v", err)

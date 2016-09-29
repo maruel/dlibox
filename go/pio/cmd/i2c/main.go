@@ -42,7 +42,9 @@ func mainImpl() error {
 		return errors.New("-l must be between 1 and 255")
 	}
 
-	host.Init()
+	if _, err := host.Init(); err != nil {
+		return err
+	}
 
 	var buf []byte
 	if *write {

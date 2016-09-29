@@ -136,7 +136,7 @@ func drawText(img draw.Image, text string) {
 // convert resizes and converts to black and white an image while keeping
 // aspect ratio, put it in a centered image of the same size as the display.
 func convert(s *ssd1306.Dev, src image.Image) (*image.Gray, error) {
-	src = resize.Thumbnail(uint(s.W), uint(s.H), src, resize.Lanczos3)
+	src = resize.Thumbnail(uint(s.W), uint(s.H), src, resize.Bicubic)
 	img := image.NewGray(image.Rect(0, 0, s.W, s.H))
 	r := src.Bounds()
 	r = r.Add(image.Point{(s.W - r.Max.X) / 2, (s.H - r.Max.Y) / 2})
@@ -165,7 +165,9 @@ func mainImpl() error {
 		return errors.New("unexpected argument, try -help")
 	}
 
-	host.Init()
+	if _, err := host.Init(); err != nil {
+		return err
+	}
 
 	// Open the device on the right bus.
 	var s *ssd1306.Dev

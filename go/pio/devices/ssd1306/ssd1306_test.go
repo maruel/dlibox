@@ -164,9 +164,6 @@ func TestWrite(t *testing.T) {
 //
 
 func Example() {
-	if _, err := host.Init(); err != nil {
-		log.Fatalf("failed to initialize pio: %v", err)
-	}
 	bus, err := host.NewI2CAuto()
 	if err != nil {
 		log.Fatalf("failed to open I²C: %v", err)

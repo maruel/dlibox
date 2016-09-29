@@ -123,7 +123,9 @@ func mainImpl() error {
 	if *temperature > 65535 {
 		return errors.New("max temperature is 65535")
 	}
-	host.Init()
+	if _, err := host.Init(); err != nil {
+		return err
+	}
 
 	// Open the display device.
 	var bus spi.Conn

@@ -54,7 +54,9 @@ func mainImpl() error {
 		return errors.New("specify pin to read")
 	}
 
-	host.Init()
+	if _, err := host.Init(); err != nil {
+		return err
+	}
 
 	pin, err := strconv.Atoi(flag.Args()[0])
 	if err != nil {

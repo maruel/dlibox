@@ -81,7 +81,9 @@ func mainImpl() error {
 		f = bme280.F16
 	}
 
-	host.Init()
+	if _, err := host.Init(); err != nil {
+		return err
+	}
 
 	var dev *bme280.Dev
 	var recorder i2ctest.Record

@@ -42,7 +42,9 @@ type SPICloser interface {
 //
 
 func newI2CAutoLinux() (I2CCloser, error) {
-	Init()
+	if _, err := Init(); err != nil {
+		return nil, err
+	}
 	buses, err := sysfs.EnumerateI2C()
 	if err != nil {
 		return nil, err
@@ -56,7 +58,9 @@ func newI2CAutoLinux() (I2CCloser, error) {
 }
 
 func newSPIAutoLinux() (SPICloser, error) {
-	Init()
+	if _, err := Init(); err != nil {
+		return nil, err
+	}
 	buses, err := sysfs.EnumerateSPI()
 	if err != nil {
 		return nil, err

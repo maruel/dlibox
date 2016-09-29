@@ -103,7 +103,9 @@ func mainImpl() error {
 		segments = tm1637.Digits(digits...)
 	}
 
-	host.Init()
+	if _, err := host.Init(); err != nil {
+		return err
+	}
 
 	pClk := gpio.ByNumber(*clk)
 	if pClk == nil {

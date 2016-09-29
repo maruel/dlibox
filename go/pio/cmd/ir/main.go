@@ -32,7 +32,9 @@ func mainImpl() error {
 		return errors.New("unexpected argument, try -help")
 	}
 
-	host.Init()
+	if _, err := host.Init(); err != nil {
+		return err
+	}
 
 	i, err := lirc.New()
 	if err != nil {

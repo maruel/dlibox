@@ -33,7 +33,9 @@ func mainImpl() error {
 		return errors.New("specify level as 0 or 1")
 	}
 
-	host.Init()
+	if _, err := host.Init(); err != nil {
+		return err
+	}
 
 	p := gpio.ByNumber(pin)
 	if p == nil {
