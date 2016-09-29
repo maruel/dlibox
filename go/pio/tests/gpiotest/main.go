@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// pioselftest verifies that basic GPIO pin functionality work.
+// gpiotest verifies that basic GPIO pin functionality work.
 package main
 
 import (
@@ -270,7 +270,7 @@ func mainImpl() error {
 
 func main() {
 	if err := mainImpl(); err != nil {
-		fmt.Fprintf(os.Stderr, "pioselfcheck: %s.\n", err)
+		fmt.Fprintf(os.Stderr, "gpiotest: %s.\n", err)
 		os.Exit(1)
 	}
 }

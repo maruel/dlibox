@@ -1,4 +1,4 @@
-# pioselftest
+# gpiotest
 
 Verifies that the library physically work. It requires the user to connect two
 GPIO pins together and provide their pin number at the command line.
@@ -6,7 +6,7 @@ GPIO pins together and provide their pin number at the command line.
 Sample output running on a Raspberry Pi:
 
 ```
-$ pioselftest 12 6
+$ gpiotest 12 6
 Using drivers:
   - bcm283x
   - rpi

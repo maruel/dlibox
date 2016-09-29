@@ -23,8 +23,8 @@ import (
 
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
+	"github.com/maruel/dlibox/go/pio/experimental/bitbang"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/bitbang"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 	"github.com/nfnt/resize"

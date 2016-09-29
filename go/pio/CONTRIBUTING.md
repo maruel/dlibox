@@ -24,6 +24,12 @@ All submissions, including submissions by project members, require review. We
 use Github pull requests for this purpose.
 
 
+### Code quality
+
+All submissions, including submissions by project members, require abiding to
+high code quality. See [DESIGN.md](DESIGN.md) for the expectations.
+
+
 ### The small print
 
 Contributions made by corporations are covered by a different agreement than

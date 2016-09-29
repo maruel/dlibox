@@ -4,7 +4,7 @@
 pio is a peripheral I/O library in Go. The documentation, including examples, is at:
 [![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio)
 
-It is recommended to look at the stand alone executables in [cmd/](cmd/) for use
+It is recommended to look at the standalone executables in [cmd/](cmd/) for use
 cases.
 
 
@@ -21,15 +21,13 @@ and its tooling have the following properties:
   old) makes it easy to apt-get install on arm64, or arm32 users have access to
   package on [golang.org](https://golang.org).
 
-Many packages, both generic like [embd](https://github.com/kidoman/embd),
-[gobot](https://github.com/hybridgroup/gobot) and specialized (various one-off
-drivers), were created to fill the space but there isn’t one clear winner or a
-cohesive design pattern that scales to multiple platforms. Many have either
-grown organically or have incomplete implementation. Most have a primitive
-driver loading mechanism but is generally not flexible enough. A effort is in
-progress to create a generic set of interface at
-[exp/io](https://golang.org/x/exp/io) but this doesn't span the actual
-implementations.
+Many Go packages, both generic and specialized, were created to fill the space
+but there isn’t one clear winner or a cohesive design pattern that scales to
+multiple platforms. Many have either grown organically or have incomplete
+implementation. Most have a primitive driver loading mechanism but is generally
+not flexible enough. A effort is in progress to create a generic set of
+interface at [exp/io](https://golang.org/x/exp/io) but this doesn't span the
+actual implementations.
 
 This document exposes a design to create a cohesive and definitive common
 library that can be maintained on the long term.
@@ -93,12 +91,16 @@ All the code must fit these requirements:
   * A link to the datasheet should be included in the package doc.
 * Testability
   * Code must be testable and tested without a driver.
-  * Include smoke-test (working with a real device) to confirm the library
-    physically works for devices other than write-only devices.
+  * When relevant, include a smoke test, a test testing a real device, to
+    confirm the library physically works for devices other than write-only
+    devices. These are located under [tests/](tests/).
 * Usability
   * Provide a standalone executable in [cmd/](cmd/) to expose the functionality.
     It is acceptable to only expose a small subset of the functionality but the
     tool must have purpose.
+  * Provide a `func Example()` along your test to describe basic usage of your
+    driver. See the official [testing
+    package](https://golang.org/pkg/testing/#hdr-Examples) for more details.
 * Performance
   * Drivers controling an output device must have a fast path that can be used
     to directly write in the device's native format.
@@ -118,7 +120,6 @@ All the code must fit these requirements:
 * Struct implementing an interface must validate at compile time with `var _
   <Interface> = &<Type>{}`.
 * No code under the GPL, LGPL or APL license will be accepted.
-  * Users are free to use the library in commercial projects.
 
 
 ## Driver lifetime management
@@ -141,18 +142,23 @@ Any driver can be requested to be added to the library under
 followed:
 * One or multiple developers have created a driver out of tree.
 * The driver is deemed to work.
-* The driver meets minimal quality bar under the promise of being improved.
-* Follows [CONTRIBUTING.md](CONTRIBUTING.md) demand.
+* The driver meets minimal quality bar under the promise of being improved. See
+  [Requirements](#requirements) for the extensive list.
+* Follows [CONTRIBUTING.md](CONTRIBUTING.md) demands.
 * Create a Pull Request for integration under [experimental/](experimental/) and
   respond to the code review.
 
-At this point, it is available for use to everyone but is not loaded defacto.
-There is no API compatibility guarantee.
+At this point, it is available for use to everyone but is not loaded defacto by
+[host.Init()](https://godoc.org/github.com/maruel/dlibox/go/pio/host#Init).
+
+There is no API compatibility guarantee for drivers under
+[experimental/](experimental/).
 
 
 ### Stable
 
-A driver in experimental can be promoted to stable. The following process must
+A driver in [experimental/](experimental/) can be promoted to stable in either
+[devices/](devices/) or [host/](host/) as relevant. The following process must
 be followed:
 * Declare at least one (or multiple) owners that are responsive to reply to
   feature requests and bug reports.
@@ -179,7 +185,7 @@ DETERMINED_ amount of time.
 
 A new proposed driver must be first implemented out of tree and fit all the
 items in [Requirements](#requirements) listed above. First propose it as
-Experimental, then promote it to Stable.
+[Experimental](#experimental), then ask to promote it to [Stable](#stable).
 
 
 ## Background
@@ -217,18 +223,24 @@ but the lack of core repository and coherency is less dramatic.
 
 ## Success criteria
 
-* Preferred library used by first time Go users and by experts
+* Preferred library used by first time Go users and by experts.
 * Becomes the defacto HAL library.
 * Becomes the central link for hardware support.
 
 
 ## Risks
 
+The risks below are being addressed via a strong commitment to [driver lifetime
+management](#driver-lifetime-management) and having a high quality bar via an
+explicit list of [requirements](#requirements).
+
+
 ### Users
 
 * The library is rejected by users as being too cryptic or hard to use.
 * The device drivers are unreliable or non functional, as observed by users.
 * Poor usability of the core interfaces.
+* Missing drivers.
 
 
 ### Contributors
