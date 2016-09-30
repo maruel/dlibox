@@ -39,6 +39,52 @@ type SPICloser interface {
 	spi.Conn
 }
 
+// MaxSpeed returns the processor maximum speed in Hz.
+//
+// Returns 0 if it couldn't be calculated.
+func MaxSpeed() int64 {
+	if isLinux {
+		return getMaxSpeedLinux()
+	}
+	return 0
+}
+
+// NewI2C opens an I²C bus using the most appropriate driver.
+func NewI2C(busNumber int) (I2CCloser, error) {
+	if isLinux {
+		return sysfs.NewI2C(busNumber)
+	}
+	return nil, errors.New("no i²c driver found")
+}
+
+// NewSPI opens an SPI bus using the most appropriate driver.
+func NewSPI(busNumber, cs int) (SPICloser, error) {
+	if isLinux {
+		return sysfs.NewSPI(busNumber, cs, 0)
+	}
+	return nil, errors.New("no spi driver found")
+}
+
+// NewI2CAuto opens the first available I²C bus.
+//
+// You can query the return value to determine which pins are being used.
+func NewI2CAuto() (I2CCloser, error) {
+	if isLinux {
+		return newI2CAutoLinux()
+	}
+	return nil, errors.New("no i²c driver found")
+}
+
+// NewSPIAuto opens the first available SPI bus.
+//
+// You can query the return value to determine which pins are being used.
+func NewSPIAuto() (SPICloser, error) {
+	if isLinux {
+		return newSPIAutoLinux()
+	}
+	return nil, errors.New("no spi driver found")
+}
+
 //
 
 func newI2CAutoLinux() (I2CCloser, error) {

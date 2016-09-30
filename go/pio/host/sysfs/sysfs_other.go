@@ -4,6 +4,6 @@
 
 // +build !linux
 
-package host
+package sysfs
 
 const isLinux = false

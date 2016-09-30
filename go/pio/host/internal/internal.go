@@ -7,11 +7,104 @@ package internal
 
 import (
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"unicode"
 )
+
+// IsArmbian returns true if running on a Armbian distribution.
+//
+// http://www.armbian.com/
+func IsArmbian() bool {
+	if isArm && isLinux {
+		// This is iffy at best.
+		// Armbian presents itself as debian in /etc/os-release.
+		_, err := os.Stat("/etc/armbian.txt")
+		return err == nil
+	}
+	return false
+}
+
+// IsRaspbian returns true if running on a Raspbian distribution.
+//
+// https://raspbian.org/
+func IsRaspbian() bool {
+	if isArm && isLinux {
+		id, _ := OSRelease()["ID"]
+		return id == "raspbian"
+	}
+	return false
+}
+
+// CPU
+
+// IsBCM283x returns true if running on a Broadcom bcm283x based CPU.
+func IsBCM283x() bool {
+	if isArm {
+		//_, err := os.Stat("/sys/bus/platform/drivers/bcm2835_thermal")
+		//return err == nil
+		hardware, ok := CPUInfo()["Hardware"]
+		return ok && strings.HasPrefix(hardware, "BCM")
+	}
+	return false
+}
+
+// IsAllwinner returns true if running on an Allwinner based CPU.
+//
+// https://en.wikipedia.org/wiki/Allwinner_Technology
+func IsAllwinner() bool {
+	if isArm {
+		// TODO(maruel): This is too vague.
+		hardware, ok := CPUInfo()["Hardware"]
+		return ok && strings.HasPrefix(hardware, "sun")
+		// /sys/class/sunxi_info/sys_info
+	}
+	return false
+}
+
+// CPUInfo returns parsed data from /proc/cpuinfo.
+func CPUInfo() map[string]string {
+	if isLinux {
+		return makeCPUInfoLinux()
+	}
+	return cpuInfo
+}
+
+// CPUInfo returns parsed data from /etc/os-release.
+func OSRelease() map[string]string {
+	if isLinux {
+		return makeOSReleaseLinux()
+	}
+	return osRelease
+}
+
+// Board
+
+// IsRaspberryPi returns true if running on a raspberry pi board.
+//
+// https://www.raspberrypi.org/
+func IsRaspberryPi() bool {
+	if isArm {
+		// This is iffy at best.
+		_, err := os.Stat("/sys/bus/platform/drivers/raspberrypi-firmware")
+		return err == nil
+	}
+	return false
+}
+
+// IsPine64 returns true if running on a pine64 board.
+//
+// https://www.pine64.org/
+func IsPine64() bool {
+	if isArm {
+		// This is iffy at best.
+		_, err := os.Stat("/boot/pine64.dtb")
+		return err == nil
+	}
+	return false
+}
 
 //
 
@@ -71,7 +164,7 @@ func splitStrict(content string) map[string]string {
 	return out
 }
 
-func makeCPUInfo() map[string]string {
+func makeCPUInfoLinux() map[string]string {
 	lock.Lock()
 	defer lock.Unlock()
 	if cpuInfo == nil {
@@ -84,7 +177,7 @@ func makeCPUInfo() map[string]string {
 	return cpuInfo
 }
 
-func makeOSRelease() map[string]string {
+func makeOSReleaseLinux() map[string]string {
 	lock.Lock()
 	defer lock.Unlock()
 	if osRelease == nil {

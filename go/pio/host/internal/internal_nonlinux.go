@@ -6,12 +6,4 @@
 
 package internal
 
-// CPUInfo returns parsed data from /proc/cpuinfo.
-func CPUInfo() map[string]string {
-	return cpuInfo
-}
-
-// CPUInfo returns parsed data from /etc/os-release.
-func OSRelease() map[string]string {
-	return osRelease
-}
+const isLinux = false

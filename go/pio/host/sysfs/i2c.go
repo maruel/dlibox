@@ -33,6 +33,28 @@ type I2C struct {
 	sda       gpio.PinIO
 }
 
+// NewI2C opens an I²C bus via its sysfs interface as described at
+// https://www.kernel.org/doc/Documentation/i2c/dev-interface.
+//
+// busNumber is the bus number as exported by sysfs. For example if the path is
+// /dev/i2c-1, busNumber should be 1.
+//
+// The resulting object is safe for concurent use.
+func NewI2C(busNumber int) (*I2C, error) {
+	if isLinux {
+		return newI2C(busNumber)
+	}
+	return nil, errors.New("sysfs.i2c is not supported on this platform")
+}
+
+// EnumerateI2C returns the available I²C buses.
+func EnumerateI2C() ([]int, error) {
+	if isLinux {
+		return enumerateI2C()
+	}
+	return nil, errors.New("sysfs.i2c is not supported on this platform")
+}
+
 func newI2C(busNumber int) (*I2C, error) {
 	// Use the devfs path for now.
 	f, err := os.OpenFile(fmt.Sprintf("/dev/i2c-%d", busNumber), os.O_RDWR, os.ModeExclusive)
@@ -311,6 +333,12 @@ func (d *driverI2C) Prerequisites() []string {
 
 func (d *driverI2C) Init() (bool, error) {
 	return true, nil
+}
+
+func init() {
+	if isLinux {
+		pio.MustRegister(&driverI2C{})
+	}
 }
 
 var _ i2c.Conn = &I2C{}

@@ -69,8 +69,14 @@ type PinIn interface {
 	// Edges returns a channel that sends level changes.
 	//
 	// Behavior is undefined if In() wasn't used before.
+	//
+	// BUG(maruel): Still undecided on the form of edge detection and this
+	// function may be refactored.
 	Edges() (<-chan Level, error)
 	// DisableEdges() closes a previous Edges() channel and stops polling.
+	//
+	// BUG(maruel): This function is the equivalent of In(PullNoChange). As such,
+	// it is redundant.
 	DisableEdges()
 	// Pull returns the internal pull resistor if the pin is set as input pin.
 	// Returns PullNoChange if the value cannot be read.

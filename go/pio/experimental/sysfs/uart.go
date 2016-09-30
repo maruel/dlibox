@@ -12,13 +12,13 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio"
+	"github.com/maruel/dlibox/go/pio/experimental/protocols/uart"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
-	"github.com/maruel/dlibox/go/pio/protocols/uart"
 )
 
-// enumerateUART returns the available serial buses.
-func enumerateUART() ([]int, error) {
+// EnumerateUART returns the available serial buses.
+func EnumerateUART() ([]int, error) {
 	// Do not use "/sys/class/tty/ttyS0/" as these are all owned by root.
 	prefix := "/dev/ttyS"
 	items, err := filepath.Glob(prefix + "*")
@@ -36,66 +36,64 @@ func enumerateUART() ([]int, error) {
 	return out, nil
 }
 
-// uART is an open serial bus via sysfs.
+// UART is an open serial bus via sysfs.
 //
-// TODO(maruel): It's not yet implemented so nothing is exported for now.
-// Should probably defer to an already working library like
-// https://github.com/tarm/serial
-type uART struct {
+// TODO(maruel): It's not yet implemented. Should probably defer to an already
+// working library like https://github.com/tarm/serial
+type UART struct {
 	f         *os.File
 	busNumber int
 }
 
-func newUART(busNumber int) (*uART, error) {
+func newUART(busNumber int) (*UART, error) {
 	// Use the devfs path for now.
 	f, err := os.OpenFile(fmt.Sprintf("/dev/ttyS%d", busNumber), os.O_RDWR, os.ModeExclusive)
 	if err != nil {
 		return nil, err
 	}
-	u := &uART{f: f, busNumber: busNumber}
+	u := &UART{f: f, busNumber: busNumber}
 	return u, nil
 }
 
-func (u *uART) Close() error {
+func (u *UART) Close() error {
 	err := u.f.Close()
 	u.f = nil
 	return err
 }
 
-func (u *uART) Configure(stopBit uart.Stop, parity uart.Parity, bits int) error {
+func (u *UART) Configure(stopBit uart.Stop, parity uart.Parity, bits int) error {
 	return errors.New("not implemented")
 }
 
-func (u *uART) Write(b []byte) (int, error) {
+func (u *UART) Write(b []byte) (int, error) {
 	return 0, errors.New("not implemented")
 }
 
-func (u *uART) Tx(w, r []byte) error {
+func (u *UART) Tx(w, r []byte) error {
 	return errors.New("not implemented")
 }
 
-func (u *uART) Speed(hz int64) error {
+func (u *UART) Speed(hz int64) error {
 	return errors.New("not implemented")
 }
 
-func (u *uART) RX() gpio.PinIn {
+func (u *UART) RX() gpio.PinIn {
 	return pins.INVALID
 }
 
-func (u *uART) TX() gpio.PinOut {
+func (u *UART) TX() gpio.PinOut {
 	return pins.INVALID
 }
 
-func (u *uART) RTS() gpio.PinIO {
+func (u *UART) RTS() gpio.PinIO {
 	return pins.INVALID
 }
 
-func (u *uART) CTS() gpio.PinIO {
+func (u *UART) CTS() gpio.PinIO {
 	return pins.INVALID
 }
 
-// TODO(maruel): Put again once the implementation is functional.
-//var _ uart.Conn = &uART{}
+var _ uart.Conn = &UART{}
 
 // driverUART implements pio.Driver.
 type driverUART struct {

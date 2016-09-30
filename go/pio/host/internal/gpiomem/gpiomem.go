@@ -5,6 +5,7 @@
 package gpiomem
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -18,7 +19,38 @@ type Mem struct {
 	Uint32 []uint32
 }
 
-func openGPIO() (*Mem, error) {
+// Close unmaps the I/O registers.
+func (m *Mem) Close() error {
+	u := m.Uint8
+	m.Uint8 = nil
+	m.Uint32 = nil
+	return syscall.Munmap(u)
+}
+
+// OpenGPIO returns a CPU specific memory mapping of the CPU I/O registers using
+// /dev/gpiomem.
+//
+// /dev/gpiomem is only supported on Raspbian Jessie via a specific kernel
+// driver.
+func OpenGPIO() (*Mem, error) {
+	if isLinux {
+		return openGPIOLinux()
+	}
+	return nil, errors.New("/dev/gpiomem is not support on this platform")
+}
+
+// OpenMem returns a memory mapped view of arbitrary kernel memory range using
+// /dev/mem.
+func OpenMem(base uint64) (*Mem, error) {
+	if isLinux {
+		return openMemLinux(base)
+	}
+	return nil, errors.New("/dev/mem is not support on this platform")
+}
+
+//
+
+func openGPIOLinux() (*Mem, error) {
 	f, err := os.OpenFile("/dev/gpiomem", os.O_RDWR|os.O_SYNC, 0)
 	if err != nil {
 		return nil, err
@@ -33,7 +65,7 @@ func openGPIO() (*Mem, error) {
 	return &Mem{i, unsafeRemap(i)}, nil
 }
 
-func openMem(base uint64) (*Mem, error) {
+func openMemLinux(base uint64) (*Mem, error) {
 	f, err := os.OpenFile("/dev/mem", os.O_RDWR|os.O_SYNC, 0)
 	if err != nil {
 		return nil, err
@@ -45,14 +77,6 @@ func openMem(base uint64) (*Mem, error) {
 		return nil, fmt.Errorf("gpiomem: mapping at 0x%x failed: %v", base, err)
 	}
 	return &Mem{i, unsafeRemap(i[base&0xFFF:])}, nil
-}
-
-// Close unmaps the I/O registers.
-func (m *Mem) Close() error {
-	u := m.Uint8
-	m.Uint8 = nil
-	m.Uint32 = nil
-	return syscall.Munmap(u)
 }
 
 func unsafeRemap(i []byte) []uint32 {
