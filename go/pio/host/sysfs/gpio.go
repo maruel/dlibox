@@ -290,10 +290,6 @@ func (p *Pin) edgeLoop(started *sync.WaitGroup) {
 	started.Done()
 	var b [1]byte
 	for {
-		if _, err := p.fValue.Seek(0, 0); err != nil {
-			log.Printf("edgeLoop() ended: %v\n", err)
-			return
-		}
 		for {
 			p.lock.Lock()
 			c := p.edges
@@ -301,15 +297,15 @@ func (p *Pin) edgeLoop(started *sync.WaitGroup) {
 			if c == nil {
 				return
 			}
+			if _, err := p.fValue.Seek(0, 0); err != nil {
+				log.Printf("edgeLoop() ended: %v\n", err)
+				return
+			}
 			if nr, err := p.event.wait(p.epollFd); err != nil {
 				log.Printf("edgeLoop() ended: %v\n", err)
 				return
 			} else if nr < 1 {
 				continue
-			}
-			if _, err := p.fValue.Seek(0, 0); err != nil {
-				log.Printf("edgeLoop() ended: %v\n", err)
-				return
 			}
 			if _, err := p.fValue.Read(b[:]); err != nil {
 				log.Printf("edgeLoop() ended: %v\n", err)
