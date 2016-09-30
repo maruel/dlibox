@@ -1,22 +1,21 @@
-# pio - design
+# pio - Design
 
 
-pio is a peripheral I/O library in Go. The documentation, including examples, is at:
+pio is a peripheral I/O library in Go. The documentation, including examples, is at
 [![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio)
-
-It is recommended to look at the standalone executables in [cmd/](cmd/) for use
-cases.
+Usage and HowTos can be found at [USAGE.md](USAGE.md).
 
 
 ## Abstract
 
-Go developped a fairly large hardware hacker community in because the language
-and its tooling have the following properties:
+Go developped a fairly large hardware hacker community in part because the
+language and its tooling have the following properties:
 
 * Easy to cross compile to Arm/Linux via `GOOS=linux GOARCH=arm go build .`.
 * Significantly faster to execute than python.
 * Significantly lighter in term of memory use than Java or node.js.
-* Builds reasonably fast on Arm.
+* Significantly more productive to code than C/C++.
+* Builds reasonably fast on ARM.
 * Fairly good OS level support: Debian pre-provided Go package (albeit a tad
   old) makes it easy to apt-get install on arm64, or arm32 users have access to
   package on [golang.org](https://golang.org).
@@ -26,8 +25,8 @@ but there isn’t one clear winner or a cohesive design pattern that scales to
 multiple platforms. Many have either grown organically or have incomplete
 implementation. Most have a primitive driver loading mechanism but is generally
 not flexible enough. A effort is in progress to create a generic set of
-interface at [exp/io](https://golang.org/x/exp/io) but this doesn't span the
-actual implementations.
+interface at [exp/io](https://golang.org/x/exp/io) but doesn't span the actual
+device drivers implementations.
 
 This document exposes a design to create a cohesive and definitive common
 library that can be maintained on the long term.
@@ -35,16 +34,18 @@ library that can be maintained on the long term.
 
 ## Goals
 
-* Not more abstract than absolutely needed.
+* Not more abstract than absolutely needed. Use concrete types whenever
+  possible.
 * Extensible:
   * Users can provide additional drivers that are seamlessly loaded
     with a structured ordering of priority.
 * Performance:
-  * Execution must be as performant as possible.
-  * Overhead must be as minimal as possible, i.e. irrelevant driver must not be
-    attempted to be loaded.
+  * Execution as performant as possible.
+  * Overhead as minimal as possible, i.e. irrelevant driver are not be
+    attempted to be loaded, uses memory mapped GPIO registers instead of sysfs
+    whenever possible, etc.
 * Coverage:
-  * Each driver must implement and expose as much of the underlying device
+  * Each driver implements and exposes as much of the underlying device
     capability as possible and relevant.
   * [cmd/](cmd/) implements useful directly usable tool.
   * [devices/](devices/) implements common device drivers.
@@ -59,12 +60,13 @@ library that can be maintained on the long term.
   * Include fakes for buses and device interfaces to simplify the life of
     device driver developers.
 * Stability
-  * The library must be stable without precluding core refactoring.
+  * API must be stable without precluding core refactoring.
   * Breakage in the API should happen at a yearly parce at most once the library
     got to a stable state.
-* Strong distinction about the driver (as a user of a `Conn` instance) and an
-  application writer (as a user of a device driver). It's the application that
-  controls the object's lifetime.
+* Strong distinction about the driver (as a user of a
+  [Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols#Conn)
+  instance) and an application writer (as a user of a device driver). It's the
+  _application_ that controls the objects' lifetime.
 * Strong distinction between _enablers_ and _devices_. See
   [Background](#background) below.
 
@@ -90,10 +92,9 @@ All the code must fit these requirements:
     by APA Electronic co. LTD.).
   * A link to the datasheet should be included in the package doc.
 * Testability
-  * Code must be testable and tested without a driver.
-  * When relevant, include a smoke test, a test testing a real device, to
-    confirm the library physically works for devices other than write-only
-    devices. These are located under [tests/](tests/).
+  * Code must be testable and tested without a device.
+  * When relevant, include a smoke test under [tests/](tests/). The smoke test
+    tests a real device to confirm the driver physically works for devices.
 * Usability
   * Provide a standalone executable in [cmd/](cmd/) to expose the functionality.
     It is acceptable to only expose a small subset of the functionality but the
@@ -113,10 +114,11 @@ All the code must fit these requirements:
     [devices.Milli](https://godoc.org/github.com/maruel/dlibox/go/pio/devices#Milli).
     Floating point arithmetic is acceptable in the unit tests and tools in
     [cmd/](cmd/) but should not be abused.
-  * Drivers must be implemented with performance in mind.
-  * Benchmark must be implemented for non trivial processing.
+  * Drivers must be implemented with performance in mind. For example I²C
+    operations should be batched to minimize overhead.
+  * Benchmark must be implemented for non trivial processing running on the host.
 * Code must compile on all OSes, with minimal use of OS-specific thunk as
-  strictly as needed.
+  strictly needed.
 * Struct implementing an interface must validate at compile time with `var _
   <Interface> = &<Type>{}`.
 * No code under the GPL, LGPL or APL license will be accepted.
@@ -197,9 +199,10 @@ This document distinguishes two classes of drivers:
 * Enablers. They are what make the interconnects work, so that you can then
   use real stuff. That's buses (I²C, SPI, GPIO, BT, UART). This is what can be
   used as point-to-point protocols. They enable you to do something but are not
-  the essence of what you want to do.
+  the essence of what you want to do. They can also be MCUs like AVR, ESP8266,
+  etc.
 * Devices. They are the end goal, to do something functional. There are multiple
-  subclasses of devices like sensors, write-only devices, etc.
+  subclasses of devices like sensors, output devices, etc.
 
 The enablers is what will break or make this project. Nobody want to do them
 but they are needed. You need a large base of enablers so people can use

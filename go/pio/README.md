@@ -1,8 +1,8 @@
 # pio
 
-pio is a peripheral I/O library in Go. The documentation, including examples, is at:
-[![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio)
-and usage can be found at [USAGE.md](USAGE.md).
+pio is a peripheral I/O library in Go. The documentation, including examples, is at
+[![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio).
+Usage and HowTos can be found at [USAGE.md](USAGE.md).
 
 
 ## Installation
@@ -13,7 +13,7 @@ pio includes many ready-to-use tools!
 go get github.com/maruel/dlibox/go/pio/cmd/...
 ```
 
-To cross-compile and send an executable to your micro computer:
+To cross-compile and send an executable to your ARM based micro computer:
 
 ```bash
 cd $GOPATH/src/github.com/maruel/dlibox/go/pio/cmd/bme280
@@ -78,7 +78,8 @@ is in [AUTHORS](AUTHORS) and [CONTRIBUTORS](CONTRIBUTORS).
 ## Design
 
 See [DESIGN.md](DESIGN.md) for the goals, requirements and driver lifetime
-management.
+management. It is a required reading (it's okay to skim a bit) before
+contribution.
 
 
 ## Contributions

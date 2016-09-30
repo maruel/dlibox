@@ -46,9 +46,9 @@ In addition, it may return an error when there's a structural issue, for example
 two drivers with the same name were registered. This is a catastrophic failure.
 
 The package [host](https://godoc.org/github.com/maruel/dlibox/go/pio/host)
-**register** all the drivers under [host/](host/).
+registers all the drivers under [host/](host/).
 
-Calling
+**Tip:** Calling
 [host.NewI2CAuto()](https://godoc.org/github.com/maruel/dlibox/go/pio/host#example-NewI2CAuto)
 or
 [host.NewSPIAuto()](https://godoc.org/github.com/maruel/dlibox/go/pio/host#NewSPIAuto)
@@ -71,7 +71,7 @@ via a [bus driver](https://godoc.org/github.com/maruel/dlibox/go/pio/host).
 
 An
 [i2c.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/i2c#Conn)
-is not a
+is **not** a
 [protocols.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols#Conn).
 This is because an I²C bus is **not** a point-to-point connection but instead is
 a real bus where multiple devices can be connected simultaneously, like an USB
