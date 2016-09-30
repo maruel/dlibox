@@ -1,6 +1,8 @@
 # pio - Design
 
 
+Help page for _device driver developers_.
+
 pio is a peripheral I/O library in Go. The documentation, including examples, is at
 [![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio)
 Usage and HowTos can be found at [USAGE.md](USAGE.md).
@@ -24,9 +26,7 @@ Many Go packages, both generic and specialized, were created to fill the space
 but there isn’t one clear winner or a cohesive design pattern that scales to
 multiple platforms. Many have either grown organically or have incomplete
 implementation. Most have a primitive driver loading mechanism but is generally
-not flexible enough. A effort is in progress to create a generic set of
-interface at [exp/io](https://golang.org/x/exp/io) but doesn't span the actual
-device drivers implementations.
+not flexible enough.
 
 This document exposes a design to create a cohesive and definitive common
 library that can be maintained on the long term.
@@ -73,7 +73,12 @@ library that can be maintained on the long term.
 
 ## Requirements
 
-All the code must fit these requirements:
+All the code must fit the following requirements.
+
+**Fear not!** We know the list _is_ daunting but as you create your pull request
+to add something at [experimental/](experimental/), we'll happily guide you in
+the process to help improve the code to meet the expected standard. The end goal
+is to write quality maintainable code and use this as a learning experience.
 
 * The code must be Go idiomatic.
   * Constructor `NewXXX()` returns an object of concrete type.

@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// gpiotest verifies that basic GPIO pin functionality work.
+// gpio-test verifies that basic GPIO pin functionality work.
 package main
 
 import (
@@ -213,25 +213,8 @@ func mainImpl() error {
 		return errors.New("specify the two pins to use; they must be connected together")
 	}
 
-	state, err := host.Init()
-	if err != nil {
+	if _, err := host.Init(); err != nil {
 		return err
-	}
-	var finalErr error
-	if len(state.Failed) != 0 {
-		fmt.Printf("Drivers failed to load:\n")
-		for _, f := range state.Failed {
-			fmt.Printf("  - %s: %v\n", f.D, f.Err)
-		}
-		finalErr = errors.New("please fix the drivers. Do you need to run as root?")
-	}
-	fmt.Printf("Using drivers:\n")
-	for _, driver := range state.Loaded {
-		fmt.Printf("  - %s\n", driver.String())
-	}
-	fmt.Printf("Drivers skipped:\n")
-	for _, driver := range state.Skipped {
-		fmt.Printf("  - %s\n", driver.String())
 	}
 
 	// On Allwinner CPUs, it's a good idea to test specifically the PLx pins,
@@ -262,15 +245,12 @@ func mainImpl() error {
 	if err2 := p2.In(gpio.PullNoChange); err2 != nil {
 		fmt.Printf("(Exit) Failed to reset %s as input: %s\n", p1, err2)
 	}
-	if err == nil {
-		return finalErr
-	}
 	return err
 }
 
 func main() {
 	if err := mainImpl(); err != nil {
-		fmt.Fprintf(os.Stderr, "gpiotest: %s.\n", err)
+		fmt.Fprintf(os.Stderr, "gpio-test: %s.\n", err)
 		os.Exit(1)
 	}
 }

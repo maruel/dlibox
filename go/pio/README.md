@@ -7,19 +7,25 @@ Usage and HowTos can be found at [USAGE.md](USAGE.md).
 
 ## Installation
 
+_For end users_:
+
 pio includes many ready-to-use tools!
 
 ```bash
 go get github.com/maruel/dlibox/go/pio/cmd/...
 ```
 
-To cross-compile and send an executable to your ARM based micro computer:
+To cross-compile and send an executable to your ARM based micro computer (e.g.
+Raspberry Pi):
 
 ```bash
 cd $GOPATH/src/github.com/maruel/dlibox/go/pio/cmd/bme280
 GOOS=linux GOARCH=arm go build .
 scp bme280 raspberrypi:.
 ```
+
+The pio project doesn't release binaries, you are expected to build from
+sources.
 
 
 ## State
@@ -31,6 +37,8 @@ frequently.
 
 
 ## Usage
+
+_For application developpers_:
 
 Here's a complete example to get the current temperature, barometric pressure
 and relative humidity using a bme280:
@@ -48,16 +56,21 @@ import (
 )
 
 func main() {
+  // Open a handle to the first available I²C bus:
   bus, err := host.NewI2CAuto()
   if err != nil {
     log.Fatal(err)
   }
   defer bus.Close()
+
+  // Open a handle to a bme280 connected on the I²C bus:
   dev, err := bme280.NewI2C(bus, bme280.O2x, bme280.O2x, bme280.O2x, bme280.S500ms, bme280.FOff)
   if err != nil {
     log.Fatal(err)
   }
   defer dev.Close()
+
+  // Read temperature from the sensor:
   var env devices.Environment
   if err = dev.Read(&env); err != nil {
     log.Fatal(err)
@@ -77,9 +90,11 @@ is in [AUTHORS](AUTHORS) and [CONTRIBUTORS](CONTRIBUTORS).
 
 ## Design
 
+_For device drivers developpers_:
+
 See [DESIGN.md](DESIGN.md) for the goals, requirements and driver lifetime
-management. It is a required reading (it's okay to skim a bit) before
-contribution.
+management. It is a required reading (it's okay to skim a bit but don't tell
+anyone, shhh!) before contribution.
 
 
 ## Contributions

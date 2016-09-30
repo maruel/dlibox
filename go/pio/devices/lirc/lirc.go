@@ -2,9 +2,6 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package lirc implements InfraRed receiver support through native linux lirc.
-//
-// See http://www.lirc.org/ for details about daemon configuration.
 package lirc
 
 import (

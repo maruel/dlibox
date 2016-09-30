@@ -167,8 +167,8 @@ func (s *Settings) ResetDefault() {
 	}
 	s.IR = IR{
 		Mapping: map[ir.Key]Pattern{
-			ir.KeyNumeric0: "\"#000000\"",
-			ir.Key100Plus:  "\"#ffffff\"",
+			ir.KEY_NUMERIC_0: "\"#000000\"",
+			ir.KEY_100PLUS:   "\"#ffffff\"",
 		},
 	}
 	s.PatternSettings.ResetDefault()

@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// pin-read reads a pin.
+// gpio-read reads a GPIO pin.
 package main
 
 import (
@@ -51,7 +51,7 @@ func mainImpl() error {
 		pull = gpio.Down
 	}
 	if flag.NArg() != 1 {
-		return errors.New("specify pin to read")
+		return errors.New("specify GPIO pin to read")
 	}
 
 	if _, err := host.Init(); err != nil {
@@ -64,7 +64,7 @@ func mainImpl() error {
 	}
 	p := gpio.ByNumber(pin)
 	if p == nil {
-		return errors.New("specify a valid pin number")
+		return errors.New("specify a valid GPIO pin number")
 	}
 	if err = p.In(pull); err != nil {
 		return err
@@ -88,7 +88,7 @@ func mainImpl() error {
 
 func main() {
 	if err := mainImpl(); err != nil {
-		fmt.Fprintf(os.Stderr, "pin-read: %s.\n", err)
+		fmt.Fprintf(os.Stderr, "gpio-read: %s.\n", err)
 		os.Exit(1)
 	}
 }

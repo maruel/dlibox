@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// pin-write sets a digital pin to low or high.
+// gpio-write sets a GPIO pin to low or high.
 package main
 
 import (
@@ -17,7 +17,7 @@ import (
 
 func mainImpl() error {
 	if len(os.Args) != 3 {
-		return errors.New("specify pin to write to and its level (0 or 1)")
+		return errors.New("specify GPIO pin to write to and its level (0 or 1)")
 	}
 	pin, err := strconv.Atoi(os.Args[1])
 	if err != nil {
@@ -39,7 +39,7 @@ func mainImpl() error {
 
 	p := gpio.ByNumber(pin)
 	if p == nil {
-		return errors.New("invalid pin number")
+		return errors.New("invalid GPIO pin number")
 	}
 
 	return p.Out(l)
@@ -47,7 +47,7 @@ func mainImpl() error {
 
 func main() {
 	if err := mainImpl(); err != nil {
-		fmt.Fprintf(os.Stderr, "pin-write: %s.\n", err)
+		fmt.Fprintf(os.Stderr, "gpio-write: %s.\n", err)
 		os.Exit(1)
 	}
 }

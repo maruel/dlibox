@@ -39,29 +39,33 @@
 //
 // IR
 //
-// Exposed as /dev/lirc0. Can be enabled with:
-//     dtoverlay=lirc-rpi,gpio_out_pin=17,gpio_in_pin=18,gpio_in_pull=down
+// Raspbian has a specific device tree overlay named "lirc-rpi" to enable
+// hardware based decoding of IR signals. This loads a kernel module that
+// exposes itself at /dev/lirc0. You can add the following in your
+// /boot/config.txt:
+//
+//     dtoverlay=lirc-rpi,gpio_out_pin=5,gpio_in_pin=13,gpio_in_pull=high
 //
 // Default pins 17 and 18 clashes with SPI1 so change the pin if you plan to
-// enable both SPI host.
+// enable both SPI buses.
 //
-// IR/Debugging
+// See
+// https://github.com/raspberrypi/firmware/blob/master/boot/overlays/README for
+// more details on configuring the kernel module.
 //
-//     # Detect your remote
-//     irrecord -a -d /var/run/lirc/lircd ~/lircd.conf
-//     # Grep for key names you found to find the remote in the remotes library
-//     grep -R '<hex value>' /usr/share/lirc/remotes/
-//     # Listen and send command to the server
-//     nc -U /var/run/lirc/lircd
-//     # List all valid key names
-//     irrecord -l
-//     grep -hoER '(BTN|KEY)_\w+' /usr/share/lirc/remotes | sort | uniq | less
+// /etc/lirc/hardware.conf
 //
-// Keys are listed at
-// http://www.lirc.org/api-docs/html/input__map_8inc_source.html
+// Once the kernel module is configure, you need to point lircd to it. Run the
+// following as root to point lircd to use lirc_rpi kernel module:
 //
-// Source at:
+//    sed -i s'/DRIVER="UNCONFIGURED"/DRIVER="default"/' /etc/lirc/hardware.conf
+//    sed -i s'/DEVICE=""/DEVICE="\/dev\/lirc0"/' /etc/lirc/hardware.conf
+//    sed -i s'/MODULES=""/MODULES="lirc_rpi"/' /etc/lirc/hardware.conf
+//
+// IR/Sources
+//
 // https://github.com/raspberrypi/linux/blob/rpi-4.8.y/drivers/staging/media/lirc/lirc_rpi.c
+//
 // Someone made a version that supports multiple devices:
 // https://github.com/bengtmartensson/lirc_rpi
 //
