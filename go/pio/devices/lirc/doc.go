@@ -27,7 +27,7 @@
 // Keys are listed at
 // http://www.lirc.org/api-docs/html/input__map_8inc_source.html
 //
-// IR/Debugging
+// Debugging
 //
 // Here's a quick recipe to train a remote:
 //
