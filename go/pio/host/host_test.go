@@ -22,18 +22,17 @@ func ExampleInit() {
 	}
 	fmt.Printf("Using drivers:\n")
 	for _, driver := range state.Loaded {
-		fmt.Printf("  - %s\n", driver.String())
+		fmt.Printf("- %s\n", driver)
 	}
 	fmt.Printf("Drivers skipped:\n")
-	for _, driver := range state.Skipped {
-		fmt.Printf("  - %s\n", driver.String())
+	for _, failure := range state.Skipped {
+		fmt.Printf("- %s: %s\n", failure.D, failure.Err)
 	}
-	if len(state.Failed) != 0 {
-		// Having drivers failing to load may not require process termination.
-		fmt.Printf("Drivers failed to load:\n")
-		for _, f := range state.Failed {
-			fmt.Printf("  - %s: %v\n", f.D, f.Err)
-		}
+	// Having drivers failing to load may not require process termination. It
+	// is possible to continue to run in partial failure mode.
+	fmt.Printf("Drivers failed to load:\n")
+	for _, failure := range state.Failed {
+		fmt.Printf("- %s: %v\n", failure.D, failure.Err)
 	}
 
 	// Use pins, buses, devices, etc.

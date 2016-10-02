@@ -5,6 +5,8 @@
 package pine64
 
 import (
+	"errors"
+
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host/allwinner"
 	"github.com/maruel/dlibox/go/pio/host/allwinner_pl"
@@ -278,7 +280,7 @@ func (d *driver) Prerequisites() []string {
 func (d *driver) Init() (bool, error) {
 	if !internal.IsPine64() {
 		zapPins()
-		return false, nil
+		return false, errors.New("pine64 board not detected")
 	}
 	headers.Register("P1", [][]pins.Pin{
 		{P1_1, P1_2},

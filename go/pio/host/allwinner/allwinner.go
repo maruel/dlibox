@@ -862,7 +862,7 @@ func (d *driver) Prerequisites() []string {
 
 func (d *driver) Init() (bool, error) {
 	if !internal.IsAllwinner() {
-		return false, nil
+		return false, errors.New("Allwinner CPU not detected")
 	}
 	mem, err := gpiomem.OpenMem(getBaseAddress())
 	if err != nil {

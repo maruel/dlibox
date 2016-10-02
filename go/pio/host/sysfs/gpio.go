@@ -383,6 +383,8 @@ func (d *driverGPIO) Prerequisites() []string {
 // The main drawback of GPIO sysfs is that it doesn't expose internal pull
 // resistor and it is much slower than using memory mapped hardware registers.
 func (d *driverGPIO) Init() (bool, error) {
+	// This driver is only registered on linux, so there is no legitimate time to
+	// skip it.
 	f, err := os.OpenFile("/sys/class/gpio/export", os.O_WRONLY, 0600)
 	if err != nil {
 		return true, err

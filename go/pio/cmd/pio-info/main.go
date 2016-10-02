@@ -8,30 +8,72 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
 
+	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host"
 )
+
+type failures []pio.DriverFailure
+
+func (f failures) Len() int           { return len(f) }
+func (f failures) Less(i, j int) bool { return f[i].D.String() < f[j].D.String() }
+func (f failures) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
+
+func printOrdered(drivers []pio.DriverFailure) {
+	if len(drivers) == 0 {
+		fmt.Print("  <none>\n")
+	} else {
+		list := failures(drivers)
+		sort.Sort(list)
+		max := 0
+		for _, f := range list {
+			if m := len(f.D.String()); m > max {
+				max = m
+			}
+		}
+		for _, f := range list {
+			fmt.Printf("- %-*s: %v\n", max, f.D, f.Err)
+		}
+	}
+}
 
 func mainImpl() error {
 	state, err := host.Init()
 	if err != nil {
 		return err
 	}
-	if len(state.Failed) != 0 {
-		fmt.Printf("Drivers failed to load:\n")
-		for _, f := range state.Failed {
-			fmt.Printf("  - %s: %v\n", f.D, f.Err)
-			err = f.Err
+
+	fmt.Printf("Drivers loaded:\n")
+	if len(state.Loaded) == 0 {
+		fmt.Print("  <none>\n")
+	} else {
+		names := make([]string, 0, len(state.Loaded))
+		m := make(map[string]pio.Driver, len(state.Loaded))
+		max := 0
+		for _, d := range state.Loaded {
+			n := d.String()
+			if m := len(n); m > max {
+				max = m
+			}
+			names = append(names, n)
+			m[n] = d
+		}
+		sort.Strings(names)
+		for _, d := range names {
+			p := m[d].Prerequisites()
+			if len(p) != 0 {
+				fmt.Printf("- %-*s: %s\n", max, d, p)
+			} else {
+				fmt.Printf("- %s\n", d)
+			}
 		}
 	}
-	fmt.Printf("Using drivers:\n")
-	for _, driver := range state.Loaded {
-		fmt.Printf("  - %s\n", driver.String())
-	}
+
 	fmt.Printf("Drivers skipped:\n")
-	for _, driver := range state.Skipped {
-		fmt.Printf("  - %s\n", driver.String())
-	}
+	printOrdered(state.Skipped)
+	fmt.Printf("Drivers failed to load:\n")
+	printOrdered(state.Failed)
 	return err
 }
 

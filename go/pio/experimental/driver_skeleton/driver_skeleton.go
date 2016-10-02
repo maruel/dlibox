@@ -69,7 +69,7 @@ func (d *driver) Prerequisites() []string {
 
 func (d *driver) Init() (bool, error) {
 	// FIXME: If the driver is not needed, do the following:
-	// return false, nil
+	// return false, errors.New("not running on a skeleton")
 
 	// FIXME: Add implementation.
 

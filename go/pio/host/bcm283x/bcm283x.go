@@ -683,7 +683,7 @@ func (d *driver) Prerequisites() []string {
 
 func (d *driver) Init() (bool, error) {
 	if !internal.IsBCM283x() {
-		return false, nil
+		return false, errors.New("bcm283x CPU not detected")
 	}
 	mem, err := gpiomem.OpenGPIO()
 	if err != nil {

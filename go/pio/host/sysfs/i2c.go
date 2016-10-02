@@ -332,6 +332,9 @@ func (d *driverI2C) Prerequisites() []string {
 }
 
 func (d *driverI2C) Init() (bool, error) {
+	// This driver is only registered on linux, so there is no legitimate time to
+	// skip it.
+	// BUG(maruel): Enumerate on startup and check for permission.
 	return true, nil
 }
 

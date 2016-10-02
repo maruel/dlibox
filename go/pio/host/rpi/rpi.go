@@ -7,6 +7,7 @@
 package rpi
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -166,7 +167,7 @@ func (d *driver) Prerequisites() []string {
 func (d *driver) Init() (bool, error) {
 	if !internal.IsRaspberryPi() {
 		zapPins()
-		return false, nil
+		return false, errors.New("Raspberry Pi board not detected")
 	}
 
 	// Initialize Version.

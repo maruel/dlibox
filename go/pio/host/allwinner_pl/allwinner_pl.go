@@ -332,7 +332,8 @@ func (d *driver) Prerequisites() []string {
 
 func (d *driver) Init() (bool, error) {
 	if !internal.IsAllwinner() {
-		return false, nil
+		// BUG(maruel): Fix detection, need to specifically look for A64!
+		return false, errors.New("A64 CPU not detected")
 	}
 	mem, err := gpiomem.OpenMem(getBaseAddress())
 	if err != nil {

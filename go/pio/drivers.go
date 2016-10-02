@@ -48,8 +48,18 @@ type Driver interface {
 	// Prerequisites returns a list of drivers that must be successfully loaded
 	// first before attempting to load this driver.
 	Prerequisites() []string
-	// Init initializes the driver. It should return false, nil when the driver
-	// is irrelevant on the platform.
+	// Init initializes the driver.
+	//
+	// A driver may enter one of the three following state: loaded successfully,
+	// was skipped as irrelevant on this host, failed to load.
+	//
+	// On success, it must return true, nil.
+	//
+	// When irrelevant (skipped), it must return false, errors.New(<reason>).
+	//
+	// On failure, it must return true, errors.New(<reason>). The failure must
+	// state why it failed, for example an expected OS provided driver couldn't
+	// be opened, e.g. /dev/gpiomem on Raspbian.
 	Init() (bool, error)
 }
 
@@ -62,7 +72,7 @@ type DriverFailure struct {
 // State is the state of loaded device drivers.
 type State struct {
 	Loaded  []Driver
-	Skipped []Driver
+	Skipped []DriverFailure
 	Failed  []DriverFailure
 }
 
@@ -85,7 +95,7 @@ func Init() (*State, error) {
 	}
 	state = &State{}
 	cD := make(chan Driver)
-	cS := make(chan Driver)
+	cS := make(chan DriverFailure)
 	cE := make(chan DriverFailure)
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -142,7 +152,7 @@ func Register(d Driver) error {
 	defer lockDrivers.Unlock()
 	n := d.String()
 	if _, ok := byName[n]; ok {
-		return fmt.Errorf("drivers.Register(%s): driver with same name was already registered", d)
+		return fmt.Errorf("drivers.Register(%q): driver with same name was already registered", d)
 	}
 	byName[n] = d
 	t := d.Type()
@@ -211,11 +221,11 @@ func explodeStages(drivers []Driver) ([][]Driver, error) {
 		for _, depName := range d.Prerequisites() {
 			dep, ok := byName[depName]
 			if !ok {
-				return nil, fmt.Errorf("drivers: unsatified dependency %#v->%#v; it is missing; skipping", name, depName)
+				return nil, fmt.Errorf("drivers: unsatified dependency %q->%q; it is missing; skipping", name, depName)
 			}
 			dt := dep.Type()
 			if dt > t {
-				return nil, fmt.Errorf("drivers: inversed dependency %#v(%s)->%#v(%s); skipping", name, t, depName, dt)
+				return nil, fmt.Errorf("drivers: inversed dependency %q(%q)->%q(%q); skipping", name, t, depName, dt)
 			}
 			if dt < t {
 				// Staging already takes care of this.
@@ -256,25 +266,24 @@ func explodeStages(drivers []Driver) ([][]Driver, error) {
 }
 
 // loadStage loads all the drivers in this stage concurrently.
-func loadStage(drivers []Driver, loaded map[string]struct{}, cD chan<- Driver, cS chan<- Driver, cE chan<- DriverFailure) {
+func loadStage(drivers []Driver, loaded map[string]struct{}, cD chan<- Driver, cS chan<- DriverFailure, cE chan<- DriverFailure) {
 	var wg sync.WaitGroup
 	// Use int for concurrent access.
-	skip := make([]int, len(drivers))
+	skip := make([]error, len(drivers))
 	for i, driver := range drivers {
 		// Load only the driver if prerequisites were loaded. They are
 		// guaranteed to be in a previous stage by getStages().
 		for _, dep := range driver.Prerequisites() {
 			if _, ok := loaded[dep]; !ok {
-				skip[i] = 1
-				//log.Printf("drivers: skipping %s because missing %s", driver, dep)
+				skip[i] = fmt.Errorf("dependency not loaded: %q", dep)
 				break
 			}
 		}
 	}
 
 	for i, driver := range drivers {
-		if skip[i] != 0 {
-			cS <- driver
+		if err := skip[i]; err != nil {
+			cS <- DriverFailure{driver, err}
 			continue
 		}
 		wg.Add(1)
@@ -285,18 +294,21 @@ func loadStage(drivers []Driver, loaded map[string]struct{}, cD chan<- Driver, c
 					cD <- d
 					return
 				}
-				cE <- DriverFailure{d, fmt.Errorf("drivers: %s.Init() failed: %v", d, err)}
+				cE <- DriverFailure{d, err}
 			} else {
-				cS <- d
-				//log.Printf("drivers: %s.Init() skipped initialization", d)
+				// Do not assert that err != nil, as this is hard to test thoroughly.
+				cS <- DriverFailure{d, err}
+				if err != nil {
+					err = errors.New("no reason was given")
+				}
+				skip[j] = err
 			}
-			skip[j] = 1
 		}(driver, i)
 	}
 	wg.Wait()
 
 	for i, driver := range drivers {
-		if skip[i] != 0 {
+		if skip[i] != nil {
 			continue
 		}
 		loaded[driver.String()] = struct{}{}
