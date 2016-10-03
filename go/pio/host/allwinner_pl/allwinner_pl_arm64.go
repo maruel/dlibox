@@ -2,8 +2,10 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// +build !arm,!arm64
+package allwinner_pl
 
-package internal
+import "github.com/maruel/dlibox/go/pio"
 
-const isArm = false
+func init() {
+	pio.MustRegister(&driver{})
+}

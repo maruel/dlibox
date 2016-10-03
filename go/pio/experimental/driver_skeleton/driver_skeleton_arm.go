@@ -10,6 +10,8 @@
 // information. For example, rename to _linux.go for code only relevant when
 // running on linux, _windows.go for Windows, _darwin.go for OSX, etc.
 //
+// FIXME: _arm.go really means arm 32 bits. Use _arm64.go for arm64.
+//
 // FIXME: Don't forget to remove all the FIXME comments before sending your PR!
 // Otherwise the PR will me immediately refused.
 
