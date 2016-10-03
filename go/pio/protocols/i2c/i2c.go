@@ -10,6 +10,8 @@
 package i2c
 
 import (
+	"fmt"
+
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
@@ -44,6 +46,10 @@ type Pins interface {
 type Dev struct {
 	Conn Conn
 	Addr uint16
+}
+
+func (d *Dev) String() string {
+	return fmt.Sprintf("%s(%d)", d.Conn, d.Addr)
 }
 
 // Tx does a transaction by adding the device's address to each command.

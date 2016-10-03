@@ -9,6 +9,7 @@ package bitbang
 
 import (
 	"errors"
+	"fmt"
 	"runtime"
 	"sync"
 	"time"
@@ -27,6 +28,10 @@ type I2C struct {
 	scl       gpio.PinIO // Clock line
 	sda       gpio.PinIO // Data line
 	halfCycle time.Duration
+}
+
+func (i *I2C) String() string {
+	return fmt.Sprintf("bitbang/i2c(%s, %s)", i.scl, i.sda)
 }
 
 func (i *I2C) Tx(addr uint16, w, r []byte) error {

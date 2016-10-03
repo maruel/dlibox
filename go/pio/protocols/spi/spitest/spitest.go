@@ -30,6 +30,10 @@ func (r *RecordRaw) Close() error {
 	return nil
 }
 
+func (r *RecordRaw) String() string {
+	return "recordraw"
+}
+
 // Speed is a no-op.
 func (r *RecordRaw) Speed(hz int64) error {
 	return nil
@@ -68,6 +72,10 @@ type Record struct {
 	Conn spi.Conn // Conn can be nil if only writes are being recorded.
 	Lock sync.Mutex
 	Ops  []IO
+}
+
+func (r *Record) String() string {
+	return "record"
 }
 
 func (r *Record) Write(d []byte) (int, error) {
@@ -148,6 +156,10 @@ func (r *Record) CS() gpio.PinOut {
 type Playback struct {
 	Lock sync.Mutex
 	Ops  []IO
+}
+
+func (p *Playback) String() string {
+	return "playback"
 }
 
 func (p *Playback) Write(d []byte) (int, error) {

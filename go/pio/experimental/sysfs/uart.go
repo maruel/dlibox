@@ -61,6 +61,10 @@ func (u *UART) Close() error {
 	return err
 }
 
+func (u *UART) String() string {
+	return "uart"
+}
+
 func (u *UART) Configure(stopBit uart.Stop, parity uart.Parity, bits int) error {
 	return errors.New("not implemented")
 }

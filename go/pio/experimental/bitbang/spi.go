@@ -13,6 +13,7 @@ package bitbang
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -31,6 +32,10 @@ type SPI struct {
 	mode      spi.Mode
 	bits      int
 	halfCycle time.Duration
+}
+
+func (s *SPI) String() string {
+	return fmt.Sprintf("bitbang/spi(%s, %s, %s, %s)", s.sck, s.sdi, s.sdo, s.csn)
 }
 
 // Speed implements spi.Conn.

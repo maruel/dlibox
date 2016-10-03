@@ -94,6 +94,10 @@ func (s *SPI) Close() error {
 	return err
 }
 
+func (s *SPI) String() string {
+	return fmt.Sprintf("SPI%d.%d", s.busNumber, s.chipSelect)
+}
+
 func (s *SPI) Speed(hz int64) error {
 	if hz < 1000 {
 		return errors.New("invalid speed")

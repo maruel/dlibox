@@ -14,6 +14,8 @@ import "io"
 //
 // This is the lowest common denominator for I²C (when talking to a specific
 // device), SPI, UART, etc.
+//
+// It is expected (but not enforced) that all Conn implement fmt.Stringer.
 type Conn interface {
 	// io.Writer can be used for a write-only device.
 	io.Writer

@@ -91,6 +91,10 @@ func (i *I2C) Close() error {
 	return err
 }
 
+func (i *I2C) String() string {
+	return fmt.Sprintf("I2C%d", i.busNumber)
+}
+
 // Tx execute a transaction as a single operation unit.
 func (i *I2C) Tx(addr uint16, w, r []byte) error {
 	if addr >= 0x400 || (addr >= 0x80 && i.fn&func10BIT_ADDR == 0) {

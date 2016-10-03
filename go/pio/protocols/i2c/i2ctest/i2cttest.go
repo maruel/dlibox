@@ -32,6 +32,10 @@ type Record struct {
 	Ops  []IO
 }
 
+func (r *Record) String() string {
+	return "record"
+}
+
 func (r *Record) Tx(addr uint16, w, read []byte) error {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
@@ -85,6 +89,10 @@ func (r *Record) SDA() gpio.PinIO {
 type Playback struct {
 	Lock sync.Mutex
 	Ops  []IO
+}
+
+func (p *Playback) String() string {
+	return "playback"
 }
 
 // Tx implements i2c.Conn.
