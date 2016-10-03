@@ -11,6 +11,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host/internal"
@@ -112,26 +113,50 @@ func (p *Pin) Function() string {
 	}
 }
 
-func (p *Pin) In(pull gpio.Pull) error {
+// In implemented gpio.PinIn.
+//
+// This requires opening a gpio sysfs file handle. The pin will be exported at
+// /sys/class/gpio/gpio*/. Note that the pin will not be unexported at
+// shutdown.
+//
+// Not all pins support edge detection Allwinner processors!
+func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 	if gpioMemory == nil {
 		return errors.New("subsystem not initialized")
 	}
 	if !p.setFunction(in) {
 		return fmt.Errorf("failed to set pin %s as input", p.name)
 	}
-	if pull == gpio.PullNoChange {
-		return nil
+	if pull != gpio.PullNoChange {
+		off := 7 + p.offset/16
+		shift := 2 * (p.offset % 16)
+		// Do it in a way that is concurrent safe.
+		gpioMemory[off] &^= 3 << shift
+		switch pull {
+		case gpio.Down:
+			gpioMemory[off] = 2 << shift
+		case gpio.Up:
+			gpioMemory[off] = 1 << shift
+		default:
+		}
 	}
-	off := 7 + p.offset/16
-	shift := 2 * (p.offset % 16)
-	// Do it in a way that is concurrent safe.
-	gpioMemory[off] &^= 3 << shift
-	switch pull {
-	case gpio.Down:
-		gpioMemory[off] = 2 << shift
-	case gpio.Up:
-		gpioMemory[off] = 1 << shift
-	default:
+	if edge != gpio.None {
+		// This is a race condition but this is fine; at worst PinByNumber() is
+		// called twice but it is guaranteed to return the same value. p.edge is
+		// never set to nil.
+		if p.edge == nil {
+			var err error
+			if p.edge, err = sysfs.PinByNumber(p.Number()); err != nil {
+				return err
+			}
+		}
+		if err := p.edge.In(gpio.PullNoChange, edge); err != nil {
+			return err
+		}
+	} else if p.edge != nil {
+		if err := p.edge.In(gpio.PullNoChange, edge); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -141,33 +166,12 @@ func (p *Pin) Read() gpio.Level {
 	return gpio.Level(gpioMemory[4]&(1<<p.offset) != 0)
 }
 
-// Edges creates a edge detection loop and implements gpio.PinIn.
-//
-// This requires opening a gpio sysfs file handle. The pin will be exported at
-// /sys/class/gpio/gpio*/. Note that the pin will not be unexported at
-// shutdown.
-//
-// Not all pins support edge detection Allwinner processors!
-func (p *Pin) Edges() (<-chan gpio.Level, error) {
-	// This is a race condition but this is fine; at worst PinByNumber() is called
-	// twice but it is guaranteed to return the same value. p.edge is never set
-	// to nil.
-	if p.edge == nil {
-		var err error
-		if p.edge, err = sysfs.PinByNumber(p.Number()); err != nil {
-			return nil, err
-		}
-	}
-	if err := p.edge.In(gpio.PullNoChange); err != nil {
-		return nil, err
-	}
-	return p.edge.Edges()
-}
-
-func (p *Pin) DisableEdges() {
+// WaitForEdge does edge detection and implements gpio.PinIn.
+func (p *Pin) WaitForEdge(timeout time.Duration) bool {
 	if p.edge != nil {
-		p.edge.DisableEdges()
+		return p.edge.WaitForEdge(timeout)
 	}
+	return false
 }
 
 func (p *Pin) Pull() gpio.Pull {
@@ -235,8 +239,6 @@ func (p *Pin) setFunction(f function) bool {
 	if actual := p.function(); actual != in && actual != out && actual != disabled && actual != alt5 {
 		// Pin is in special mode.
 		return false
-	} else if actual == in {
-		p.DisableEdges()
 	}
 	off := p.offset / 8
 	shift := 4 * (p.offset % 8)

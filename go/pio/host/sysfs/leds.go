@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
@@ -62,9 +63,12 @@ func (l *LED) Function() string {
 	return "LED/Off"
 }
 
-func (l *LED) In(pull gpio.Pull) error {
+func (l *LED) In(pull gpio.Pull, edge gpio.Edge) error {
 	if pull != gpio.Float || pull != gpio.PullNoChange {
-		return errors.New("pull not supported on LED")
+		return errors.New("pull is not supported on LED")
+	}
+	if edge != gpio.None {
+		return errors.New("edge is not supported on LED")
 	}
 	return nil
 }
@@ -89,12 +93,8 @@ func (l *LED) Read() gpio.Level {
 	return gpio.Low
 }
 
-func (l *LED) Edges() (<-chan gpio.Level, error) {
-	// That's actually not true, let's uevent (?)
-	return nil, errors.New("a LED cannot be edge triggered")
-}
-
-func (l *LED) DisableEdges() {
+func (l *LED) WaitForEdge(timeout time.Duration) bool {
+	return false
 }
 
 func (l *LED) Pull() gpio.Pull {
@@ -176,3 +176,5 @@ func (d *driverLED) Init() (bool, error) {
 	}
 	return true, nil
 }
+
+var _ gpio.PinIO = &LED{}

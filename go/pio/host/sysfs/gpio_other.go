@@ -13,7 +13,7 @@ import (
 
 type event struct{}
 
-func (e event) wait(ep int) (int, error) {
+func (e event) wait(ep, timeoutms int) (int, error) {
 	return 0, errors.New("unreachable code")
 }
 

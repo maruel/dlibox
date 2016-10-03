@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 )
 
 // Level is the level of the pin: Low or High.
@@ -52,12 +53,38 @@ func (i Pull) String() string {
 	return pullName[pullIndex[i]:pullIndex[i+1]]
 }
 
+// Edge specifies if an input pin should have edge detection enabled.
+//
+// Only enable it when needed, since this causes system interrupts.
+type Edge uint8
+
+const (
+	None    Edge = 0
+	Rising  Edge = 1
+	Falling Edge = 2
+	Both    Edge = 3
+)
+
+const edgeName = "NoneRisingFallingBoth"
+
+var edgeIndex = [...]uint8{0, 4, 10, 17, 21}
+
+func (i Edge) String() string {
+	if i >= Edge(len(edgeIndex)-1) {
+		return fmt.Sprintf("Edge(%d)", i)
+	}
+	return edgeName[edgeIndex[i]:edgeIndex[i+1]]
+}
+
 // PinIn is an input GPIO pin.
 //
 // It may optionally support internal pull resistor and edge based triggering.
 type PinIn interface {
 	// In setups a pin as an input.
-	In(pull Pull) error
+	//
+	// If WaitForEdge() is planned to be called, make sure to use one of the Edge
+	// value. Otherwise, use None to not generated unneeded hardware interrupts.
+	In(pull Pull, edge Edge) error
 	// Read return the current pin level.
 	//
 	// Behavior is undefined if In() wasn't used before.
@@ -66,18 +93,24 @@ type PinIn interface {
 	// if another process on the host messes up with the pin after In() was
 	// called. In this case, call In() again.
 	Read() Level
-	// Edges returns a channel that sends level changes.
+	// WaitForEdge() waits for the next edge or immediately return if an edge
+	// occured since the last call.
 	//
-	// Behavior is undefined if In() wasn't used before.
+	// Only waits for the kind of edge as specified in a previous In() call.
+	// Behavior is undefined if In() with a value other than None wasn't called
+	// before.
 	//
-	// BUG(maruel): Still undecided on the form of edge detection and this
-	// function may be refactored.
-	Edges() (<-chan Level, error)
-	// DisableEdges() closes a previous Edges() channel and stops polling.
+	// Returns true if an edge was detected during or before this call. Return
+	// false if the timeout occured or In() was called while waiting, causing the
+	// function to exit.
 	//
-	// BUG(maruel): This function is the equivalent of In(PullNoChange). As such,
-	// it is redundant.
-	DisableEdges()
+	// Multiple edges may or may not accumulate between two calls to
+	// WaitForEdge(). The behavior in this case is undefined.
+	//
+	// It is not required to call Read() to reset the edge detection.
+	//
+	// Specify -1 to effectively disable timeout.
+	WaitForEdge(timeout time.Duration) bool
 	// Pull returns the internal pull resistor if the pin is set as input pin.
 	// Returns PullNoChange if the value cannot be read.
 	Pull() Pull

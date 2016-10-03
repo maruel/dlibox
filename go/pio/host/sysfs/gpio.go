@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -42,14 +41,13 @@ type Pin struct {
 	root   string // Something like /sys/class/gpio/gpio%d/
 
 	lock       sync.Mutex
-	direction  int             // Cache of the last known direction
-	fDirection *os.File        // handle to /sys/class/gpio/gpio*/direction; never closed
-	fEdge      *os.File        // handle to /sys/class/gpio/gpio*/edge; never closed
-	fValue     *os.File        // handle to /sys/class/gpio/gpio*/value; never closed
-	epollFd    int             // Never closed
-	event      event           // Initialized once
-	edges      chan gpio.Level // Closed when edges are terminated
-	wg         sync.WaitGroup  // Set when Edges() is running
+	direction  direction // Cache of the last known direction
+	edge       gpio.Edge //
+	fDirection *os.File  // handle to /sys/class/gpio/gpio*/direction; never closed
+	fEdge      *os.File  // handle to /sys/class/gpio/gpio*/edge; never closed
+	fValue     *os.File  // handle to /sys/class/gpio/gpio*/value; never closed
+	epollFd    int       // Never closed
+	event      event     // Initialized once
 }
 
 func (p *Pin) String() string {
@@ -63,16 +61,13 @@ func (p *Pin) Number() int {
 func (p *Pin) Function() string {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	// TODO(maruel): There's an internal bug which causes p.direction to be invalid (!?)
-	// Need to figure it out ASAP.
+	// TODO(maruel): There's an internal bug which causes p.direction to be
+	// invalid (!?) Need to figure it out ASAP.
 	if err := p.open(); err != nil {
 		return err.Error()
 	}
 	var buf [4]byte
-	if _, err := p.fDirection.Seek(0, 0); err != nil {
-		return err.Error()
-	}
-	if _, err := p.fDirection.Read(buf[:]); err != nil {
+	if err := seekWrite(p.fDirection, buf[:]); err != nil {
 		return err.Error()
 	}
 	if buf[0] == 'i' && buf[1] == 'n' {
@@ -89,30 +84,77 @@ func (p *Pin) Function() string {
 }
 
 // In setups a pin as an input.
-func (p *Pin) In(pull gpio.Pull) error {
+func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 	if pull != gpio.PullNoChange && pull != gpio.Float {
 		return errors.New("not implemented")
 	}
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	if p.direction == dIn {
-		return nil
+	changed := false
+	if p.direction != dIn {
+		if err := p.open(); err != nil {
+			return err
+		}
+		if err := seekWrite(p.fDirection, bIn); err != nil {
+			return err
+		}
+		p.direction = dIn
+		changed = true
 	}
-	if err := p.open(); err != nil {
-		return err
+	// Assume that when the pin was switched, the driver doesn't recall if edge
+	// triggering was enabled.
+	if changed || edge != p.edge {
+		if edge != gpio.None {
+			var err error
+			if p.fEdge == nil {
+				p.fEdge, err = os.OpenFile(p.root+"edge", os.O_RDWR|os.O_APPEND, 0600)
+				if err != nil {
+					return err
+				}
+			}
+			if p.epollFd == 0 {
+				if p.epollFd, err = p.event.makeEvent(p.fValue); err != nil {
+					return err
+				}
+			}
+			var b []byte
+			switch edge {
+			case gpio.Rising:
+				b = bRising
+			case gpio.Falling:
+				b = bFalling
+			case gpio.Both:
+				b = bBoth
+			}
+			if err := seekWrite(p.fEdge, b); err != nil {
+				return err
+			}
+		} else {
+			if p.fEdge != nil {
+				if err := seekWrite(p.fEdge, bNone); err != nil {
+					return err
+				}
+			}
+		}
+		p.edge = edge
 	}
-	if _, err := p.fDirection.Seek(0, 0); err != nil {
-		return err
+	if p.edge != gpio.None {
+		// Flush accumulated events if any.
+		// BUG(maruel): Wake up any WaitForEdge() waiting for an edge.
+		for {
+			// Only loop if nr == -1, which means that a signal was received.
+			nr, err := p.event.wait(p.epollFd, 0)
+			if nr == 0 || err != nil {
+				break
+			}
+		}
 	}
-	if _, err := p.fDirection.Write([]byte("in")); err != nil {
-		return err
-	}
-	p.direction = dIn
 	return nil
 }
 
 func (p *Pin) Read() gpio.Level {
-	var buf [2]byte
+	// There's no lock here.
+	var buf [4]byte
 	if _, err := p.fValue.Seek(0, 0); err != nil {
 		// Error.
 		//fmt.Printf("%s: %v", p, err)
@@ -133,49 +175,40 @@ func (p *Pin) Read() gpio.Level {
 	return gpio.Low
 }
 
-// Edges creates a edge detection loop and implements gpio.PinIn.
-//
-// It is the function that opens the gpio sysfs file handle for /edge.
-func (p *Pin) Edges() (<-chan gpio.Level, error) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	if p.edges != nil {
-		return nil, errors.New("must call DisableEdges() between Edges()")
-	}
-	var err error
-	if p.fEdge == nil {
-		p.fEdge, err = os.OpenFile(p.root+"edge", os.O_RDWR|os.O_APPEND, 0600)
-		if err != nil {
-			return nil, err
-		}
-	}
+// WaitForEdge does edge detection, returns once one is detected and implements
+// gpio.PinIn.
+func (p *Pin) WaitForEdge(timeout time.Duration) bool {
+	// Run lockless, as the normal use is to call in a busy loop.
 	if p.epollFd == 0 {
-		if p.epollFd, err = p.event.makeEvent(p.fValue); err != nil {
-			return nil, err
+		return false
+	}
+	var ms int
+	if timeout == -1 {
+		ms = -1
+	} else {
+		ms = int(timeout / time.Millisecond)
+	}
+	start := time.Now()
+	for {
+		nr, err := p.event.wait(p.epollFd, ms)
+		if err != nil {
+			return false
+		}
+		if nr == 1 {
+			return true
+		}
+		// A signal occurred.
+		if timeout != -1 {
+			ms = int((timeout - time.Since(start)) / time.Millisecond)
+		}
+		if ms <= 0 {
+			return false
 		}
 	}
-	if _, err := p.fEdge.Seek(0, 0); err != nil {
-		return nil, err
-	}
-	if _, err = p.fEdge.Write([]byte("both")); err != nil {
-		return nil, err
-	}
-	p.edges = make(chan gpio.Level)
-	p.wg.Add(1)
-	var started sync.WaitGroup
-	started.Add(1)
-	go p.edgeLoop(&started)
-	started.Wait()
-	return p.edges, nil
 }
 
-// DisableEdges stops a previous Edges() call.
-func (p *Pin) DisableEdges() {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	p.disableEdge()
-}
-
+// Pull returns gpio.PullNoChange since gpio sysfs has no support for input
+// pull resistor.
 func (p *Pin) Pull() gpio.Pull {
 	return gpio.PullNoChange
 }
@@ -188,37 +221,27 @@ func (p Pin) Out(l gpio.Level) error {
 		if err := p.open(); err != nil {
 			return err
 		}
-		// Cancel any outstanding edge detection.
-		p.disableEdge()
-
 		// "To ensure glitch free operation, values "low" and "high" may be written
 		// to configure the GPIO as an output with that initial value."
-		if _, err := p.fDirection.Seek(0, 0); err != nil {
-			return err
-		}
 		var d []byte
 		if l == gpio.Low {
-			d = []byte("low")
+			d = bLow
 		} else {
-			d = []byte("high")
+			d = bHigh
 		}
-		if _, err := p.fDirection.Write(d); err != nil {
+		if err := seekWrite(p.fDirection, d); err != nil {
 			return err
 		}
 		p.direction = dOut
 		return nil
 	}
-	if _, err := p.fValue.Seek(0, 0); err != nil {
-		return nil
-	}
-	var d [2]byte
+	var d [1]byte
 	if l == gpio.Low {
 		d[0] = '0'
 	} else {
 		d[0] = '1'
 	}
-	_, err := p.fValue.Write(d[:])
-	return err
+	return seekWrite(p.fValue, d[:])
 }
 
 //
@@ -260,88 +283,26 @@ func (p *Pin) open() error {
 	return err
 }
 
-// disableEdge disable the edge detection setting for the pin, if any.
-func (p *Pin) disableEdge() error {
-	if p.direction != dIn {
-		return errors.New("pin wasn't set as input first")
-	}
-	if p.edges != nil {
-		// Drain it if needed. This works because p.edges is not buffered.
-		select {
-		case <-p.edges:
-		default:
-		}
-		// Only after it is safe to close.
-		close(p.edges)
-		p.edges = nil
-		if _, err := p.fEdge.Seek(0, 0); err != nil {
-			return err
-		}
-		if _, err := p.fEdge.Write([]byte("none")); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (p *Pin) edgeLoop(started *sync.WaitGroup) {
-	defer p.wg.Done()
-	last := p.Read()
-	started.Done()
-	var b [1]byte
-	for {
-		for {
-			p.lock.Lock()
-			c := p.edges
-			p.lock.Unlock()
-			if c == nil {
-				return
-			}
-			if _, err := p.fValue.Seek(0, 0); err != nil {
-				log.Printf("edgeLoop() ended: %v\n", err)
-				return
-			}
-			if nr, err := p.event.wait(p.epollFd); err != nil {
-				log.Printf("edgeLoop() ended: %v\n", err)
-				return
-			} else if nr < 1 {
-				continue
-			}
-			if _, err := p.fValue.Read(b[:]); err != nil {
-				log.Printf("edgeLoop() ended: %v\n", err)
-				return
-			}
-			break
-		}
-		p.lock.Lock()
-		c := p.edges
-		p.lock.Unlock()
-		if c == nil {
-			return
-		}
-		// Make sure to ignore spurious wake up.
-		if b[0] == '1' {
-			if last != gpio.High {
-				c <- gpio.High
-				last = gpio.High
-			}
-		} else {
-			if last != gpio.Low {
-				c <- gpio.Low
-				last = gpio.Low
-			}
-		}
-	}
-}
-
 //
 
 var exportHandle io.Writer // handle to /sys/class/gpio/export
 
+type direction int
+
 const (
-	dUnknown = 0
-	dIn      = 1
-	dOut     = 2
+	dUnknown direction = 0
+	dIn      direction = 1
+	dOut     direction = 2
+)
+
+var (
+	bIn      = []byte("in")
+	bLow     = []byte("high")
+	bHigh    = []byte("low")
+	bNone    = []byte("none")
+	bRising  = []byte("rising")
+	bFalling = []byte("falling")
+	bBoth    = []byte("both")
 )
 
 func readInt(path string) (int, error) {
@@ -353,6 +314,14 @@ func readInt(path string) (int, error) {
 		return 0, errors.New("invalid value")
 	}
 	return strconv.Atoi(string(raw[:len(raw)-1]))
+}
+
+func seekWrite(f *os.File, b []byte) error {
+	if _, err := f.Seek(0, 0); err != nil {
+		return err
+	}
+	_, err := f.Write(b)
+	return err
 }
 
 // driverGPIO implements pio.Driver.

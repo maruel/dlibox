@@ -328,13 +328,14 @@ func main() {
     fmt.Printf("%s: %s\n", p, p.Function())
 
     // Set it as input, with an internal pull down resistor:
-    if err = p.In(gpio.Down); err != nil {
+    if err = p.In(gpio.Down, gpio.Both); err != nil {
         log.Fatal(err)
     }
 
     // Wait for edges as detected by the hardware, and print the value read:
-    for l := range p.Edges() {
-        fmt.Printf("-> %s\n", l)
+    for {
+        p.WaitForEdge()
+        fmt.Printf("-> %s\n", p.Read())
     }
 }
 ```

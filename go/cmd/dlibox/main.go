@@ -99,16 +99,13 @@ func initPIR(painter *anim1d.Painter, config *PIR) error {
 	if p == nil {
 		return nil
 	}
-	if err := p.In(gpio.Down); err != nil {
-		return err
-	}
-	c, err := p.Edges()
-	if err != nil {
+	if err := p.In(gpio.Down, gpio.Both); err != nil {
 		return err
 	}
 	go func() {
 		for {
-			if l := <-c; l == gpio.High {
+			p.WaitForEdge(-1)
+			if p.Read() == gpio.High {
 				// TODO(maruel): Locking.
 				painter.SetPattern(string(config.Pattern))
 			}

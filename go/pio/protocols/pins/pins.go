@@ -12,6 +12,7 @@ package pins
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
@@ -53,7 +54,7 @@ func (invalidPin) Function() string {
 	return ""
 }
 
-func (invalidPin) In(gpio.Pull) error {
+func (invalidPin) In(gpio.Pull, gpio.Edge) error {
 	return invalidPinErr
 }
 
@@ -61,11 +62,8 @@ func (invalidPin) Read() gpio.Level {
 	return gpio.Low
 }
 
-func (invalidPin) Edges() (<-chan gpio.Level, error) {
-	return nil, invalidPinErr
-}
-
-func (invalidPin) DisableEdges() {
+func (invalidPin) WaitForEdge(timeout time.Duration) bool {
+	return false
 }
 
 func (invalidPin) Pull() gpio.Pull {
@@ -109,7 +107,7 @@ func (b *BasicPin) Function() string {
 	return ""
 }
 
-func (b *BasicPin) In(gpio.Pull) error {
+func (b *BasicPin) In(gpio.Pull, gpio.Edge) error {
 	return fmt.Errorf("%s cannot be used as input", b.Name)
 }
 
@@ -117,11 +115,8 @@ func (b *BasicPin) Read() gpio.Level {
 	return gpio.Low
 }
 
-func (b *BasicPin) Edges() (<-chan gpio.Level, error) {
-	return nil, fmt.Errorf("%s cannot be used as input", b.Name)
-}
-
-func (b *BasicPin) DisableEdges() {
+func (b *BasicPin) WaitForEdge(timeout time.Duration) bool {
+	return false
 }
 
 func (b *BasicPin) Pull() gpio.Pull {

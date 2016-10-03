@@ -116,13 +116,14 @@ func mainImpl() error {
 		if p == nil {
 			return errors.New("no pin 24")
 		}
-		if err := p.In(gpio.Up); err != nil {
+		if err := p.In(gpio.Up, gpio.Both); err != nil {
 			return err
 		}
-		c, err := p.Edges()
-		if err != nil {
-			return err
-		}
+		c := make(chan gpio.Level)
+		go func() {
+			p.WaitForEdge(-1)
+			c <- p.Read()
+		}()
 		go buttonLoop(c, button)
 	}
 
@@ -151,13 +152,14 @@ func mainImpl() error {
 		if p == nil {
 			return errors.New("no pin 19")
 		}
-		if err := p.In(gpio.Down); err != nil {
+		if err := p.In(gpio.Down, gpio.Both); err != nil {
 			return err
 		}
-		c, err := p.Edges()
-		if err != nil {
-			return err
-		}
+		c := make(chan gpio.Level)
+		go func() {
+			p.WaitForEdge(-1)
+			c <- p.Read()
+		}()
 		go pirLoop(c, motion)
 	}
 

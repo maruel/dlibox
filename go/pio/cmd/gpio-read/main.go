@@ -66,19 +66,17 @@ func mainImpl() error {
 	if p == nil {
 		return errors.New("specify a valid GPIO pin number")
 	}
-	if err = p.In(pull); err != nil {
+	edge := gpio.None
+	if *edges {
+		edge = gpio.Both
+	}
+	if err = p.In(pull, edge); err != nil {
 		return err
 	}
 	if *edges {
-		c, err := p.Edges()
-		defer p.DisableEdges()
-		if err != nil {
-			return err
-		}
 		for {
-			if err = printLevel(<-c); err != nil {
-				return err
-			}
+			p.WaitForEdge(-1)
+			printLevel(p.Read())
 		}
 	} else {
 		return printLevel(p.Read())

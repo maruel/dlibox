@@ -11,6 +11,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host/internal"
@@ -296,7 +297,16 @@ func (p *Pin) Function() string {
 // possible to 'read back' what value was specified for each pin.
 //
 // Will fail if requesting to change a pin that is set to special functionality.
-func (p *Pin) In(pull gpio.Pull) error {
+//
+// Using edge detection requires opening a gpio sysfs file handle. On Raspbian,
+// make sure the user is member of group 'gpio'. The pin will be exported at
+// /sys/class/gpio/gpio*/. Note that the pin will not be unexported at
+// shutdown.
+//
+// For edge detection, the processor samples the input at its CPU clock rate
+// and looks for '011' to rising and '100' for falling detection to avoid
+// glitches. Because gpio sysfs is used, the latency is unpredictable.
+func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 	if gpioMemory32 == nil {
 		return errors.New("subsystem not initialized")
 	}
@@ -330,6 +340,24 @@ func (p *Pin) In(pull gpio.Pull) error {
 		gpioMemory32[37] = 0
 		gpioMemory32[offset] = 0
 	}
+	if edge != gpio.None {
+		// This is a race condition but this is fine; at worst PinByNumber() is
+		// called twice but it is guaranteed to return the same value. p.edge is
+		// never set to nil.
+		if p.edge == nil {
+			var err error
+			if p.edge, err = sysfs.PinByNumber(p.Number()); err != nil {
+				return err
+			}
+		}
+		if err := p.edge.In(gpio.PullNoChange, edge); err != nil {
+			return err
+		}
+	} else if p.edge != nil {
+		if err := p.edge.In(gpio.PullNoChange, edge); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -342,35 +370,12 @@ func (p *Pin) Read() gpio.Level {
 	return gpio.Level((gpioMemory32[13+p.number/32] & (1 << uint(p.number&31))) != 0)
 }
 
-// Edges creates a edge detection loop and implements gpio.PinIn.
-//
-// This requires opening a gpio sysfs file handle. Make sure the user is member
-// of group 'gpio'. The pin will be exported at /sys/class/gpio/gpio*/. Note
-// that the pin will not be unexported at shutdown.
-//
-// For edge detection, the processor samples the input at its CPU clock rate
-// and looks for '011' to rising and '100' for falling detection to avoid
-// glitches. Because gpio sysfs is used, the latency is unpredictable.
-func (p *Pin) Edges() (<-chan gpio.Level, error) {
-	// This is a race condition but this is fine; at worst PinByNumber() is called
-	// twice but it is guaranteed to return the same value. p.edge is never set
-	// to nil.
-	if p.edge == nil {
-		var err error
-		if p.edge, err = sysfs.PinByNumber(p.Number()); err != nil {
-			return nil, err
-		}
-	}
-	if err := p.edge.In(gpio.PullNoChange); err != nil {
-		return nil, err
-	}
-	return p.edge.Edges()
-}
-
-func (p *Pin) DisableEdges() {
+// WaitForEdge does edge detection and implements gpio.PinIn.
+func (p *Pin) WaitForEdge(timeout time.Duration) bool {
 	if p.edge != nil {
-		p.edge.DisableEdges()
+		return p.edge.WaitForEdge(timeout)
 	}
+	return false
 }
 
 // Pull implemented gpio.PinIO.
@@ -439,8 +444,6 @@ func (p *Pin) setFunction(f function) bool {
 	}
 	if actual := p.function(); actual != in && actual != out {
 		return false
-	} else if actual == in {
-		p.DisableEdges()
 	}
 	// 0x00    RW   GPIO Function Select 0 (GPIO0-9)
 	// 0x04    RW   GPIO Function Select 1 (GPIO10-19)

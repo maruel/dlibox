@@ -6,7 +6,9 @@
 package gpiotest
 
 import (
+	"errors"
 	"sync"
+	"time"
 
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
@@ -38,7 +40,7 @@ func (p *Pin) Function() string {
 }
 
 // In is concurrent safe.
-func (p *Pin) In(pull gpio.Pull) error {
+func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 	p.Lock()
 	defer p.Unlock()
 	p.P = pull
@@ -47,7 +49,16 @@ func (p *Pin) In(pull gpio.Pull) error {
 	} else if pull == gpio.Up {
 		p.L = gpio.High
 	}
-	return nil
+	if edge != gpio.None && p.EdgesChan == nil {
+		return errors.New("please set p.EdgesChan first")
+	}
+	for {
+		select {
+		case <-p.EdgesChan:
+		default:
+			return nil
+		}
+	}
 }
 
 // Read is concurrent safe.
@@ -57,22 +68,17 @@ func (p *Pin) Read() gpio.Level {
 	return p.L
 }
 
-// Edges is concurrent safe.
-func (p *Pin) Edges() (<-chan gpio.Level, error) {
-	p.Lock()
-	defer p.Unlock()
-	if p.EdgesChan == nil {
-		p.EdgesChan = make(chan gpio.Level)
+func (p *Pin) WaitForEdge(timeout time.Duration) bool {
+	if timeout == -1 {
+		p.Out(<-p.EdgesChan)
+		return true
 	}
-	return p.EdgesChan, nil
-}
-
-func (p *Pin) DisableEdges() {
-	p.Lock()
-	defer p.Unlock()
-	if p.EdgesChan != nil {
-		close(p.EdgesChan)
-		p.EdgesChan = nil
+	select {
+	case <-time.After(timeout):
+		return false
+	case l := <-p.EdgesChan:
+		p.Out(l)
+		return true
 	}
 }
 

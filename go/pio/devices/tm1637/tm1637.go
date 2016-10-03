@@ -167,7 +167,7 @@ func (d *Dev) writeByte(b byte) (bool, error) {
 	d.data.Out(gpio.Low)
 	time.Sleep(clockHalfCycle)
 	// TODO(maruel): Add.
-	//if err := d.data.In(gpio.Up); err != nil {
+	//if err := d.data.In(gpio.Up, gpio.None); err != nil {
 	//	return false, err
 	//}
 	d.clk.Out(gpio.High)
