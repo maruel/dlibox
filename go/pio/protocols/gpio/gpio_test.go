@@ -63,6 +63,12 @@ func ExamplePinOut() {
 	}
 }
 
+func TestInvalid(t *testing.T) {
+	if INVALID.In(Float, None) != invalidPinErr {
+		t.Fail()
+	}
+}
+
 func TestAreInGPIOTest(t *testing.T) {
 	// Real tests are in gpiotest due to cyclic dependency.
 }

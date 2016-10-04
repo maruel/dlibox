@@ -25,4 +25,7 @@ func TestBasic(t *testing.T) {
 	if r[0] != 12 {
 		t.Fail()
 	}
+	if err := p.Speed(0); err != nil {
+		t.Fatal(err)
+	}
 }

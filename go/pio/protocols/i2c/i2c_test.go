@@ -36,6 +36,12 @@ func ExampleDev() {
 	}
 }
 
+func TestInvalid(t *testing.T) {
+	if _, err := New(-1); err == nil {
+		t.Fail()
+	}
+}
+
 func TestAreInI2CTest(t *testing.T) {
 	// Real tests are in i2ctest due to cyclic dependency.
 }

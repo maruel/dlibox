@@ -34,6 +34,12 @@ func ExampleDev() {
 	}
 }
 
+func TestInvalid(t *testing.T) {
+	if _, err := New(-1, -1); err == nil {
+		t.Fail()
+	}
+}
+
 func TestAreInSPITest(t *testing.T) {
 	// Real tests are in spitest due to cyclic dependency.
 }
