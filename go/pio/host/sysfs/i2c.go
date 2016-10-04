@@ -19,7 +19,6 @@ import (
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // I2C is an open I²C bus via sysfs.
@@ -164,10 +163,10 @@ func (i *I2C) initPins() {
 	i.l.Lock()
 	if i.scl == nil {
 		if i.scl = gpio.ByFunction(fmt.Sprintf("I2C%d_SCL", i.busNumber)); i.scl == nil {
-			i.scl = pins.INVALID
+			i.scl = gpio.INVALID
 		}
 		if i.sda = gpio.ByFunction(fmt.Sprintf("I2C%d_SDA", i.busNumber)); i.sda == nil {
-			i.sda = pins.INVALID
+			i.sda = gpio.INVALID
 		}
 	}
 	i.l.Unlock()
@@ -327,9 +326,11 @@ func (d *driverI2C) Init() (bool, error) {
 		if err != nil {
 			continue
 		}
-		i2c.Register(fmt.Sprintf("I2C%d", bus), bus, func() (i2c.ConnCloser, error) {
+		if err := i2c.Register(fmt.Sprintf("I2C%d", bus), bus, func() (i2c.ConnCloser, error) {
 			return NewI2C(bus)
-		})
+		}); err != nil {
+			return true, err
+		}
 	}
 	return true, nil
 }

@@ -11,8 +11,19 @@ import (
 	"sort"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/headers"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
+
+func printPin(fn string, p pins.Pin) {
+	name, pos := headers.Position(p)
+	if name != "" {
+		fmt.Printf("  %-4s: %-10s found on header %s, #%d\n", fn, p, name, pos)
+	} else {
+		fmt.Printf("  %-4s: %-10s\n", fn, p)
+	}
+}
 
 func mainImpl() error {
 	if _, err := host.Init(); err != nil {
@@ -31,11 +42,11 @@ func mainImpl() error {
 			fmt.Printf("  Failed to open: %v\n", err)
 			continue
 		}
-		if p, ok := bus.(spi.Pins); ok {
-			fmt.Printf("  CLK : %s\n", p.CLK())
-			fmt.Printf("  MOSI: %s\n", p.MOSI())
-			fmt.Printf("  MISO: %s\n", p.MISO())
-			fmt.Printf("  CS  : %s\n", p.CS())
+		if pins, ok := bus.(spi.Pins); ok {
+			printPin("CLK", pins.CLK())
+			printPin("MOSI", pins.MOSI())
+			printPin("MISO", pins.MISO())
+			printPin("CS", pins.CS())
 		}
 		bus.Close()
 	}

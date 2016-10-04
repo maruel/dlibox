@@ -9,88 +9,31 @@
 // While not a protocol strictly speaking, these are "well known constants".
 package pins
 
-import (
-	"errors"
-	"fmt"
-	"time"
-
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-)
+import "fmt"
 
 var (
-	// INVALID implements gpio.PinIO and fails on all access.
-	INVALID invalidPin
-	GROUND  gpio.PinIO = &BasicPin{Name: "GROUND"}
-	V3_3    gpio.PinIO = &BasicPin{Name: "V3_3"}
-	V5      gpio.PinIO = &BasicPin{Name: "V5"}
+	INVALID Pin = &BasicPin{Name: "INVALID"}
+	GROUND  Pin = &BasicPin{Name: "GROUND"}
+	V3_3    Pin = &BasicPin{Name: "V3_3"}
+	V5      Pin = &BasicPin{Name: "V5"}
 )
 
 // Pin is the minimal common interface shared between gpio.PinIO and
 // analog.PinIO.
 type Pin interface {
 	fmt.Stringer
+	// Number returns the logical pin number or a negative number if the pin is
+	// not a GPIO, e.g. GROUND, V3_3, etc.
 	Number() int
+	// Function returns a user readable string representation of what the pin is
+	// configured to do. Common case is In and Out but it can be bus specific pin
+	// name.
 	Function() string
 }
 
 //
 
-// invalidPinErr is returned when trying to use INVALID.
-var invalidPinErr = errors.New("invalid pin")
-
-// invalidPin implements PinIO for compability but fails on all access.
-type invalidPin struct {
-}
-
-func (invalidPin) Number() int {
-	return -1
-}
-
-func (invalidPin) String() string {
-	return "INVALID"
-}
-
-func (invalidPin) Function() string {
-	return ""
-}
-
-func (invalidPin) In(gpio.Pull, gpio.Edge) error {
-	return invalidPinErr
-}
-
-func (invalidPin) Read() gpio.Level {
-	return gpio.Low
-}
-
-func (invalidPin) WaitForEdge(timeout time.Duration) bool {
-	return false
-}
-
-func (invalidPin) Pull() gpio.Pull {
-	return gpio.PullNoChange
-}
-
-func (invalidPin) Out(gpio.Level) error {
-	return invalidPinErr
-}
-
-func (invalidPin) ADC() error {
-	return invalidPinErr
-}
-
-func (invalidPin) Range() (int32, int32) {
-	return 0, 0
-}
-
-func (invalidPin) Measure() int32 {
-	return 0
-}
-
-func (invalidPin) DAC(v int32) error {
-	return invalidPinErr
-}
-
-// BasicPin implements gpio.PinIO as a non-functional pin.
+// BasicPin implements Pin as a non-functional pin.
 type BasicPin struct {
 	Name string
 }
@@ -105,40 +48,4 @@ func (b *BasicPin) String() string {
 
 func (b *BasicPin) Function() string {
 	return ""
-}
-
-func (b *BasicPin) In(gpio.Pull, gpio.Edge) error {
-	return fmt.Errorf("%s cannot be used as input", b.Name)
-}
-
-func (b *BasicPin) Read() gpio.Level {
-	return gpio.Low
-}
-
-func (b *BasicPin) WaitForEdge(timeout time.Duration) bool {
-	return false
-}
-
-func (b *BasicPin) Pull() gpio.Pull {
-	return gpio.PullNoChange
-}
-
-func (b *BasicPin) Out(gpio.Level) error {
-	return fmt.Errorf("%s cannot be used as output", b.Name)
-}
-
-func (b *BasicPin) ADC() error {
-	return fmt.Errorf("%s cannot be used as analog input", b.Name)
-}
-
-func (b *BasicPin) Range() (int32, int32) {
-	return 0, 0
-}
-
-func (b *BasicPin) Measure() int32 {
-	return 0
-}
-
-func (b *BasicPin) DAC(v int32) error {
-	return fmt.Errorf("%s cannot be used as analog output", b.Name)
 }

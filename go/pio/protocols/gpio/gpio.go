@@ -9,10 +9,13 @@
 package gpio
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // Level is the level of the pin: Low or High.
@@ -80,6 +83,7 @@ func (i Edge) String() string {
 //
 // It may optionally support internal pull resistor and edge based triggering.
 type PinIn interface {
+	pins.Pin
 	// In setups a pin as an input.
 	//
 	// If WaitForEdge() is planned to be called, make sure to use one of the Edge
@@ -118,6 +122,7 @@ type PinIn interface {
 
 // PinOut is an output GPIO pin.
 type PinOut interface {
+	pins.Pin
 	// Out sets a pin as output if it wasn't already and sets the initial value.
 	//
 	// After the initial call to ensure that the pin has been set as output, it
@@ -130,18 +135,55 @@ type PinOut interface {
 // It may fail at either input and or output, for example ground, vcc and other
 // similar pins.
 type PinIO interface {
-	fmt.Stringer
-	PinIn
-	PinOut
-
-	// Number returns the logical pin number or a negative number if the pin is
-	// not a GPIO, e.g. GROUND, V3_3, etc.
-	Number() int
-	// Function returns a user readable string representation of what the pin is
-	// configured to do. Common case is In and Out but it can be bus specific pin
-	// name.
-	Function() string
+	pins.Pin
+	In(pull Pull, edge Edge) error
+	Read() Level
+	WaitForEdge(timeout time.Duration) bool
+	Pull() Pull
+	Out(l Level) error
 }
+
+// INVALID implements PinIO and fails on all access.
+var INVALID PinIO = invalidPin{}
+
+// BasicPin implements Pin as a non-functional pin.
+type BasicPin struct {
+	Name string
+}
+
+func (b *BasicPin) Number() int {
+	return -1
+}
+
+func (b *BasicPin) String() string {
+	return b.Name
+}
+
+func (b *BasicPin) Function() string {
+	return ""
+}
+
+func (b *BasicPin) In(Pull, Edge) error {
+	return fmt.Errorf("%s cannot be used as input", b.Name)
+}
+
+func (b *BasicPin) Read() Level {
+	return Low
+}
+
+func (b *BasicPin) WaitForEdge(timeout time.Duration) bool {
+	return false
+}
+
+func (b *BasicPin) Pull() Pull {
+	return PullNoChange
+}
+
+func (b *BasicPin) Out(Level) error {
+	return fmt.Errorf("%s cannot be used as output", b.Name)
+}
+
+//
 
 // ByNumber returns a GPIO pin from its number.
 //
@@ -217,6 +259,45 @@ func MapFunction(function string, pin PinIO) {
 }
 
 //
+
+// invalidPinErr is returned when trying to use INVALID.
+var invalidPinErr = errors.New("invalid pin")
+
+// invalidPin implements PinIO for compability but fails on all access.
+type invalidPin struct {
+}
+
+func (invalidPin) Number() int {
+	return -1
+}
+
+func (invalidPin) String() string {
+	return "INVALID"
+}
+
+func (invalidPin) Function() string {
+	return ""
+}
+
+func (invalidPin) In(Pull, Edge) error {
+	return invalidPinErr
+}
+
+func (invalidPin) Read() Level {
+	return Low
+}
+
+func (invalidPin) WaitForEdge(timeout time.Duration) bool {
+	return false
+}
+
+func (invalidPin) Pull() Pull {
+	return PullNoChange
+}
+
+func (invalidPin) Out(Level) error {
+	return invalidPinErr
+}
 
 var (
 	lock       sync.Mutex

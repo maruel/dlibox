@@ -17,7 +17,6 @@ import (
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/ir"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // Conn is an open port to lirc.
@@ -229,19 +228,19 @@ func (d *driver) Init() (bool, error) {
 		if pin := gpio.ByNumber(in); pin != nil {
 			gpio.MapFunction("IR_IN", pin)
 		} else {
-			gpio.MapFunction("IR_IN", pins.INVALID)
+			gpio.MapFunction("IR_IN", gpio.INVALID)
 		}
 	} else {
-		gpio.MapFunction("IR_IN", pins.INVALID)
+		gpio.MapFunction("IR_IN", gpio.INVALID)
 	}
 	if out != -1 {
 		if pin := gpio.ByNumber(out); pin != nil {
 			gpio.MapFunction("IR_OUT", pin)
 		} else {
-			gpio.MapFunction("IR_OUT", pins.INVALID)
+			gpio.MapFunction("IR_OUT", gpio.INVALID)
 		}
 	} else {
-		gpio.MapFunction("IR_OUT", pins.INVALID)
+		gpio.MapFunction("IR_OUT", gpio.INVALID)
 	}
 	return true, nil
 }

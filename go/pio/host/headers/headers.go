@@ -23,40 +23,62 @@ func All() map[string][][]pins.Pin {
 	return allHeaders
 }
 
+// Position returns the position on a pin if found.
+//
+// The header and the pin number. Pin numbers are 1-based.
+func Position(p pins.Pin) (string, int) {
+	lock.Lock()
+	defer lock.Unlock()
+	pos := byPin[p.String()]
+	return pos.name, pos.number
+}
+
 // IsConnected returns true if the pin is on a header.
 func IsConnected(p pins.Pin) bool {
 	lock.Lock()
 	defer lock.Unlock()
-	// Populate the map on first use.
-	if connectedPins == nil {
-		connectedPins = map[string]bool{}
-		for name, header := range allHeaders {
-			for i, line := range header {
-				for j, pin := range line {
-					if pin == nil || len(pin.String()) == 0 {
-						fmt.Printf("%s[%d][%d]\n", name, i, j)
-					}
-					connectedPins[pin.String()] = true
-				}
-			}
-		}
-	}
-	b, _ := connectedPins[p.String()]
-	return b
+	return connected[p.String()]
 }
 
 // Register registers a physical header.
-func Register(name string, pins [][]pins.Pin) {
+func Register(name string, pins [][]pins.Pin) error {
 	lock.Lock()
 	defer lock.Unlock()
 	// TODO(maruel): Copy the slices?
+	if _, ok := allHeaders[name]; ok {
+		return fmt.Errorf("header %q was already registered", name)
+	}
+	for i, line := range pins {
+		for j, pin := range line {
+			if pin == nil || len(pin.String()) == 0 {
+				return fmt.Errorf("missing pin [%d][%d]\n", i+1, j+1)
+			}
+		}
+	}
+
 	allHeaders[name] = pins
+	number := 1
+	for _, line := range pins {
+		for _, pin := range line {
+			n := pin.String()
+			byPin[n] = position{name, number}
+			connected[n] = true
+			number++
+		}
+	}
+	return nil
 }
 
 //
 
+type position struct {
+	name   string // Header name
+	number int    // Pin number
+}
+
 var (
-	lock          sync.Mutex
-	allHeaders    = map[string][][]pins.Pin{} // every known headers as per internal lookup table
-	connectedPins map[string]bool             // GPIO pin name to bool
+	lock       sync.Mutex
+	allHeaders = map[string][][]pins.Pin{} // every known headers as per internal lookup table
+	byPin      = map[string]position{}     // GPIO pin name to position
+	connected  = map[string]bool{}         // GPIO pin name to position
 )

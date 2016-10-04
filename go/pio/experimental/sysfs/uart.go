@@ -14,7 +14,6 @@ import (
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/experimental/protocols/uart"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // EnumerateUART returns the available serial buses.
@@ -82,19 +81,19 @@ func (u *UART) Speed(hz int64) error {
 }
 
 func (u *UART) RX() gpio.PinIn {
-	return pins.INVALID
+	return gpio.INVALID
 }
 
 func (u *UART) TX() gpio.PinOut {
-	return pins.INVALID
+	return gpio.INVALID
 }
 
 func (u *UART) RTS() gpio.PinIO {
-	return pins.INVALID
+	return gpio.INVALID
 }
 
 func (u *UART) CTS() gpio.PinIO {
-	return pins.INVALID
+	return gpio.INVALID
 }
 
 var _ uart.Conn = &UART{}

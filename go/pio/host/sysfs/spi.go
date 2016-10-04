@@ -17,7 +17,6 @@ import (
 
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
@@ -206,16 +205,16 @@ func (s *SPI) ioctl(op uint, arg unsafe.Pointer) error {
 func (s *SPI) initPins() {
 	if s.clk == nil {
 		if s.clk = gpio.ByFunction(fmt.Sprintf("SPI%d_CLK", s.busNumber)); s.clk == nil {
-			s.clk = pins.INVALID
+			s.clk = gpio.INVALID
 		}
 		if s.miso = gpio.ByFunction(fmt.Sprintf("SPI%d_MISO", s.busNumber)); s.miso == nil {
-			s.miso = pins.INVALID
+			s.miso = gpio.INVALID
 		}
-		if s.mosi = gpio.ByFunction(fmt.Sprintf("SPI%d_MISO", s.busNumber)); s.mosi == nil {
-			s.mosi = pins.INVALID
+		if s.mosi = gpio.ByFunction(fmt.Sprintf("SPI%d_MOSI", s.busNumber)); s.mosi == nil {
+			s.mosi = gpio.INVALID
 		}
 		if s.cs = gpio.ByFunction(fmt.Sprintf("SPI%d_CS%d", s.busNumber, s.chipSelect)); s.cs == nil {
-			s.cs = pins.INVALID
+			s.cs = gpio.INVALID
 		}
 	}
 }
@@ -261,10 +260,11 @@ func (d *driverSPI) Init() (bool, error) {
 		if err != nil {
 			continue
 		}
-		spi.Register(fmt.Sprintf("SPI%d.%d", bus, cs), bus, cs, func() (spi.ConnCloser, error) {
+		if err := spi.Register(fmt.Sprintf("SPI%d.%d", bus, cs), bus, cs, func() (spi.ConnCloser, error) {
 			return NewSPI(bus, cs)
-		})
-
+		}); err != nil {
+			return true, err
+		}
 	}
 	return true, nil
 }

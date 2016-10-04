@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/protocolstest"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
@@ -103,28 +102,28 @@ func (r *Record) CLK() gpio.PinOut {
 	if p, ok := r.Conn.(spi.Pins); ok {
 		return p.CLK()
 	}
-	return pins.INVALID
+	return gpio.INVALID
 }
 
 func (r *Record) MOSI() gpio.PinOut {
 	if p, ok := r.Conn.(spi.Pins); ok {
 		return p.MOSI()
 	}
-	return pins.INVALID
+	return gpio.INVALID
 }
 
 func (r *Record) MISO() gpio.PinIn {
 	if p, ok := r.Conn.(spi.Pins); ok {
 		return p.MISO()
 	}
-	return pins.INVALID
+	return gpio.INVALID
 }
 
 func (r *Record) CS() gpio.PinOut {
 	if p, ok := r.Conn.(spi.Pins); ok {
 		return p.CS()
 	}
-	return pins.INVALID
+	return gpio.INVALID
 }
 
 // Playblack implements spi.Conn and plays back a recorded I/O flow.

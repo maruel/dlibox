@@ -11,8 +11,19 @@ import (
 	"sort"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/headers"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
+
+func printPin(fn string, p pins.Pin) {
+	name, pos := headers.Position(p)
+	if name != "" {
+		fmt.Printf("  %-3s: %-10s found on header %s, #%d\n", fn, p, name, pos)
+	} else {
+		fmt.Printf("  %-3s: %-10s\n", fn, p)
+	}
+}
 
 func mainImpl() error {
 	if _, err := host.Init(); err != nil {
@@ -32,8 +43,8 @@ func mainImpl() error {
 			continue
 		}
 		if p, ok := bus.(i2c.Pins); ok {
-			fmt.Printf("  SCL: %s\n", p.SCL())
-			fmt.Printf("  SDA: %s\n", p.SDA())
+			printPin("SCL", p.SCL())
+			printPin("SDA", p.SDA())
 		}
 		bus.Close()
 	}

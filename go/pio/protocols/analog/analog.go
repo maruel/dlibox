@@ -5,10 +5,16 @@
 // Package analog defines analog pins, both DAC and ADC.
 package analog
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
+)
 
 // ADC is an analog-to-digital-conversion input.
 type ADC interface {
+	pins.Pin
 	// In setups a pin as an input.
 	ADC() error
 	// Range returns the maximum supported range [min, max] of the values.
@@ -25,6 +31,7 @@ type ADC interface {
 
 // DAC is an digital-to-analog-conversion output.
 type DAC interface {
+	pins.Pin
 	// DAC sets a pin as output if it wasn't already and sets the value.
 	//
 	// After the initial call to ensure that the pin has been set as output, it
@@ -37,15 +44,82 @@ type DAC interface {
 // It may fail at either input and or output, for example ground, vcc and other
 // similar pins.
 type PinIO interface {
-	fmt.Stringer
-	ADC
-	DAC
+	pins.Pin
+	ADC() error
+	Range() (int32, int32)
+	Measure() int32
+	DAC(v int32) error
+}
 
-	// Number returns the logical pin number or a negative number if the pin is
-	// not a GPIO, e.g. GROUND, V3_3, etc.
-	Number() int
-	// Function returns a user readable string representation of what the pin is
-	// configured to do. Common case is ADC and DAC but it can be bus specific pin
-	// name.
-	Function() string
+// INVALID implements PinIO and fails on all access.
+var INVALID PinIO = invalidPin{}
+
+// BasicPin implements Pin as a non-functional pin.
+type BasicPin struct {
+	Name string
+}
+
+func (b *BasicPin) Number() int {
+	return -1
+}
+
+func (b *BasicPin) String() string {
+	return b.Name
+}
+
+func (b *BasicPin) Function() string {
+	return ""
+}
+
+func (b *BasicPin) ADC() error {
+	return fmt.Errorf("%s cannot be used as ADC", b.Name)
+}
+
+func (b *BasicPin) Range() (int32, int32) {
+	return 0, 0
+}
+
+func (b *BasicPin) Measure() int32 {
+	return 0
+}
+
+func (b *BasicPin) DAC(v int32) error {
+	return fmt.Errorf("%s cannot be used as DAC", b.Name)
+}
+
+//
+
+// invalidPinErr is returned when trying to use INVALID.
+var invalidPinErr = errors.New("invalid pin")
+
+// invalidPin implements PinIO for compability but fails on all access.
+type invalidPin struct {
+}
+
+func (invalidPin) Number() int {
+	return -1
+}
+
+func (invalidPin) String() string {
+	return "INVALID"
+}
+
+func (invalidPin) Function() string {
+	return ""
+}
+
+func (invalidPin) ADC() error {
+	return invalidPinErr
+}
+
+func (invalidPin) Range() (int32, int32) {
+	return 0, 0
+}
+
+func (invalidPin) Measure() int32 {
+	return 0
+}
+
+func (invalidPin) DAC(v int32) error {
+	return invalidPinErr
 }

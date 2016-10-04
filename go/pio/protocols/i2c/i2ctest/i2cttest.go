@@ -13,7 +13,6 @@ import (
 
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // IO registers the I/O that happened on either a real or fake I²C bus.
@@ -69,14 +68,14 @@ func (r *Record) SCL() gpio.PinIO {
 	if p, ok := r.Conn.(i2c.Pins); ok {
 		return p.SCL()
 	}
-	return pins.INVALID
+	return gpio.INVALID
 }
 
 func (r *Record) SDA() gpio.PinIO {
 	if p, ok := r.Conn.(i2c.Pins); ok {
 		return p.SDA()
 	}
-	return pins.INVALID
+	return gpio.INVALID
 }
 
 // Playblack implements i2c.Conn and plays back a recorded I/O flow.

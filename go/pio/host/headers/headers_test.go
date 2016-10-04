@@ -19,13 +19,13 @@ func TestAll(t *testing.T) {
 
 func TestIsConnected(t *testing.T) {
 	if !IsConnected(pins.V3_3) {
-		t.Fail()
+		t.Fatal("V3_3 should be connected")
 	}
 	if IsConnected(pins.V5) {
-		t.Fail()
+		t.Fatal("V5 should not be connected")
 	}
 	if !IsConnected(gpio2) {
-		t.Fail()
+		t.Fatal("GPIO2 should be connected")
 	}
 }
 
@@ -37,10 +37,10 @@ var (
 )
 
 func init() {
-	allHeaders = map[string][][]pins.Pin{
-		"P1": {
-			{pins.GROUND, pins.V3_3},
-			{gpio2, gpio3},
-		},
+	if err := Register("P1", [][]pins.Pin{
+		{pins.GROUND, pins.V3_3},
+		{gpio2, gpio3},
+	}); err != nil {
+		panic(err)
 	}
 }
