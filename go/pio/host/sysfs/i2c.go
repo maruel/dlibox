@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -43,14 +44,6 @@ type I2C struct {
 func NewI2C(busNumber int) (*I2C, error) {
 	if isLinux {
 		return newI2C(busNumber)
-	}
-	return nil, errors.New("sysfs.i2c is not supported on this platform")
-}
-
-// EnumerateI2C returns the available I²C buses.
-func EnumerateI2C() ([]int, error) {
-	if isLinux {
-		return enumerateI2C()
 	}
 	return nil, errors.New("sysfs.i2c is not supported on this platform")
 }
@@ -300,25 +293,6 @@ type i2cMsg struct {
 	buf    uintptr
 }
 
-func enumerateI2C() ([]int, error) {
-	// Do not use "/sys/bus/i2c/devices/i2c-" as Raspbian's provided udev rules
-	// only modify the ACL of /dev/i2c-* but not the ones in /sys/bus/...
-	prefix := "/dev/i2c-"
-	items, err := filepath.Glob(prefix + "*")
-	if err != nil {
-		return nil, err
-	}
-	out := make([]int, 0, len(items))
-	for _, item := range items {
-		i, err := strconv.Atoi(item[len(prefix):])
-		if err != nil {
-			continue
-		}
-		out = append(out, i)
-	}
-	return out, nil
-}
-
 // driverI2C implements pio.Driver.
 type driverI2C struct {
 }
@@ -338,7 +312,25 @@ func (d *driverI2C) Prerequisites() []string {
 func (d *driverI2C) Init() (bool, error) {
 	// This driver is only registered on linux, so there is no legitimate time to
 	// skip it.
-	// BUG(maruel): Enumerate on startup and check for permission.
+
+	// Do not use "/sys/bus/i2c/devices/i2c-" as Raspbian's provided udev rules
+	// only modify the ACL of /dev/i2c-* but not the ones in /sys/bus/...
+	prefix := "/dev/i2c-"
+	items, err := filepath.Glob(prefix + "*")
+	if err != nil {
+		return true, err
+	}
+	// Make sure they are registered in order.
+	sort.Strings(items)
+	for _, item := range items {
+		bus, err := strconv.Atoi(item[len(prefix):])
+		if err != nil {
+			continue
+		}
+		i2c.Register(fmt.Sprintf("I2C%d", bus), bus, func() (i2c.ConnCloser, error) {
+			return NewI2C(bus)
+		})
+	}
 	return true, nil
 }
 

@@ -172,7 +172,7 @@ func mainImpl() error {
 	// Open the device on the right bus.
 	var s *ssd1306.Dev
 	if *spiId >= 0 {
-		bus, err := host.NewSPI(*spiId, *csId)
+		bus, err := spi.New(*spiId, *csId)
 		if err != nil {
 			return err
 		}
@@ -183,33 +183,21 @@ func mainImpl() error {
 			}
 		}
 		if p, ok := bus.(spi.Pins); ok {
+			// TODO(maruel): Print where the pins are located.
 			log.Printf("Using pins CLK: %s  MOSI: %s  CS: %s", p.CLK(), p.MOSI(), p.CS())
 		}
 		s, err = ssd1306.NewSPI(bus, *w, *h, *rotated)
 		if err != nil {
 			return err
 		}
-	} else if *i2cId >= 0 {
-		bus, err := host.NewI2C(*i2cId)
-		if err != nil {
-			return err
-		}
-		defer bus.Close()
-		if p, ok := bus.(i2c.Pins); ok {
-			log.Printf("Using pins SCL: %s  SDA: %s", p.SCL(), p.SDA())
-		}
-		s, err = ssd1306.NewI2C(bus, *w, *h, *rotated)
-		if err != nil {
-			return err
-		}
 	} else {
-		// Get the first I²C bus available.
-		bus, err := host.NewI2CAuto()
+		bus, err := i2c.New(*i2cId)
 		if err != nil {
 			return err
 		}
 		defer bus.Close()
 		if p, ok := bus.(i2c.Pins); ok {
+			// TODO(maruel): Print where the pins are located.
 			log.Printf("Using pins SCL: %s  SDA: %s", p.SCL(), p.SDA())
 		}
 		s, err = ssd1306.NewI2C(bus, *w, *h, *rotated)

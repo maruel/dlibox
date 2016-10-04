@@ -4,19 +4,22 @@
 
 package protocols
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 // Conn defines the interface for a connection on a point-to-point
 // communication channel.
 //
-// The channel may either be write-only or read-write. It may either be
-// half-duplex or full duplex.
+// The channel may either be write-only or read-write, either half-duplex or
+// full duplex.
 //
-// This is the lowest common denominator for I²C (when talking to a specific
-// device), SPI, UART, etc.
-//
-// It is expected (but not enforced) that all Conn implement fmt.Stringer.
+// This is the lowest common denominator for all point-to-point communication
+// channels.
 type Conn interface {
+	// Every connection has a name, e.g. "SPI0.1", "I2C1.76", "COM6", etc.
+	fmt.Stringer
 	// io.Writer can be used for a write-only device.
 	io.Writer
 	// Tx does a single transaction.

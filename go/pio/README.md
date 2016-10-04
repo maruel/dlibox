@@ -12,6 +12,15 @@ The documentation is split into 3 sections:
   the list of supported hardware and hopefully contribute to the project.
 
 
+## Philosophy
+
+1. Optimize for usability.
+2. At usability expense, the user can chose to optimize for performance.
+3. Use a divide and conquer approach. Each component has exactly one
+   responsibility.
+4. The driver's writer pleasure is dead last.
+
+
 ## Users
 
 pio includes many ready-to-use tools!
@@ -45,8 +54,13 @@ import (
 )
 
 func main() {
+    // Load all the drivers:
+    if _, err := host.Init(); err != nil {
+        log.Fatal(err)
+    }
+
     // Open a handle to the first available I²C bus:
-    bus, err := host.NewI2CAuto()
+    bus, err := i2c.New(-1)
     if err != nil {
         log.Fatal(err)
     }

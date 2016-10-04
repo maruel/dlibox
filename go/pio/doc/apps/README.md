@@ -69,14 +69,6 @@ the same name were registered. This is a catastrophic failure.
 The package [host](https://godoc.org/github.com/maruel/dlibox/go/pio/host)
 registers all the drivers under [host/](../../host/).
 
-**Tip:** Calling
-[host.NewI2CAuto()](https://godoc.org/github.com/maruel/dlibox/go/pio/host#example-NewI2CAuto)
-or
-[host.NewSPIAuto()](https://godoc.org/github.com/maruel/dlibox/go/pio/host#NewSPIAuto)
-implicitly calls
-[host.Init()](https://godoc.org/github.com/maruel/dlibox/go/pio/host#Init) on
-your behalf, to save you some typing.
-
 
 ## Connection
 
@@ -109,9 +101,9 @@ via
 [i2c.Dev](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/i2c#Dev):
 
 ```go
-bus, _ := host.NewI2CAuto()
+bus, _ := i2c.New(-1)
 dev := i2c.Dev{bus, 0x76}
-var _ protocols.Bus = dev
+var _ protocols.Conn = &dev
 ```
 
 Since many devices have their address hardcoded, it's up to the device driver to
@@ -264,8 +256,13 @@ func convertAndResizeAndCenter(w, h int, src image.Image) *image.Gray {
 }
 
 func main() {
+    // Load all the drivers:
+    if _, err := host.Init(); err != nil {
+        log.Fatal(err)
+    }
+
     // Open a handle to the first available I²C bus:
-    bus, err := host.NewI2CAuto()
+    bus, err := i2c.New(-1)
     if err != nil {
         log.Fatal(err)
     }
@@ -330,7 +327,7 @@ import (
 )
 
 func main() {
-    // Using GPIO requires explicit host.Init() call:
+    // Load all the drivers:
     if _, err := host.Init(); err != nil {
         log.Fatal(err)
     }
@@ -376,8 +373,13 @@ import (
 )
 
 func main() {
+    // Load all the drivers:
+    if _, err := host.Init(); err != nil {
+        log.Fatal(err)
+    }
+
     // Open a handle to the first available I²C bus:
-    bus, err := host.NewI2CAuto()
+    bus, err := i2c.New(-1)
     if err != nil {
         log.Fatal(err)
     }

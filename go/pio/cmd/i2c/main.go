@@ -69,21 +69,11 @@ func mainImpl() error {
 		buf = make([]byte, *l)
 	}
 
-	var bus host.I2CCloser
-	var err error
-	if *busNumber == -1 {
-		bus, err = host.NewI2CAuto()
-		if err != nil {
-			return err
-		}
-		defer bus.Close()
-	} else {
-		bus, err = host.NewI2C(*busNumber)
-		if err != nil {
-			return err
-		}
-		defer bus.Close()
+	bus, err := i2c.New(*busNumber)
+	if err != nil {
+		return err
 	}
+	defer bus.Close()
 	if p, ok := bus.(i2c.Pins); ok {
 		log.Printf("Using pins SCL: %s  SDA: %s", p.SCL(), p.SDA())
 	}

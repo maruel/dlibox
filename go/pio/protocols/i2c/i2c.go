@@ -10,12 +10,17 @@
 package i2c
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"sync"
 
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 // Conn defines the function a concrete I²C driver must implement.
+//
+// This interface is consummed by a device driver for a device sitting on a bus.
 //
 // This interface doesn't implement protocols.Conn since a device address must
 // be specified. Use i2cdev.Dev as an adapter to get a protocols.Conn
@@ -24,6 +29,14 @@ type Conn interface {
 	Tx(addr uint16, w, r []byte) error
 	// Speed changes the bus speed, if supported.
 	Speed(hz int64) error
+}
+
+// ConnCloser is an I²C bus that can be closed.
+//
+// This interface is meant to be handled by the application.
+type ConnCloser interface {
+	io.Closer
+	Conn
 }
 
 // Pins defines the pins that an I²C bus interconnect is using on the host.
@@ -103,3 +116,64 @@ func (d *Dev) WriteRegUint16(reg byte, v uint16) error {
 	_, err := d.Write([]byte{reg, byte(v >> 16), byte(v)})
 	return err
 }
+
+// All returns all the I²C buses available on this host.
+func All() map[string]Opener {
+	// TODO(maruel): Return a copy?
+	return byName
+}
+
+// New returns an open handle to the first available I²C bus.
+//
+// Specify busNumber -1 to get the first available bus. This is the recommended
+// value.
+func New(busNumber int) (ConnCloser, error) {
+	if busNumber == -1 {
+		if first == nil {
+			return nil, errors.New("no I²C bus found")
+		}
+		return first()
+	}
+	bus, ok := byNumber[busNumber]
+	if !ok {
+		return nil, fmt.Errorf("no I²C bus %d", busNumber)
+	}
+	return bus()
+}
+
+// Opener opens an I²C bus.
+type Opener func() (ConnCloser, error)
+
+// Register registers an I²C bus.
+//
+// Registering the same bus name twice is an error.
+func Register(name string, busNumber int, opener Opener) error {
+	lock.Lock()
+	defer lock.Unlock()
+	if _, ok := byName[name]; ok {
+		return fmt.Errorf("registering the same I²C bus %s twice", name)
+	}
+	if busNumber != -1 {
+		if _, ok := byNumber[busNumber]; ok {
+			return fmt.Errorf("registering the same I²C bus %d twice", busNumber)
+		}
+	}
+
+	if first == nil {
+		first = opener
+	}
+	byName[name] = opener
+	if busNumber != -1 {
+		byNumber[busNumber] = opener
+	}
+	return nil
+}
+
+//
+
+var (
+	lock     sync.Mutex
+	byName   = map[string]Opener{}
+	byNumber = map[int]Opener{}
+	first    Opener
+)

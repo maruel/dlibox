@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
 )
 
@@ -18,7 +19,7 @@ func Example() {
 	if _, err := host.Init(); err != nil {
 		log.Fatalf("failed to initialize pio: %v", err)
 	}
-	bus, err := host.NewI2CAuto()
+	bus, err := i2c.New(-1)
 	if err != nil {
 		log.Fatalf("failed to open I²C: %v", err)
 	}

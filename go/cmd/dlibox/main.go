@@ -31,15 +31,16 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c"
+	"github.com/maruel/dlibox/go/pio/protocols/spi"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/dlibox/go/screen"
 	"github.com/maruel/interrupt"
 )
 
 func initDisplay() (devices.Display, error) {
-	i2cBus, err := sysfs.NewI2C(1)
+	i2cBus, err := i2c.New(-1)
 	if err != nil {
 		return nil, err
 	}
@@ -186,11 +187,14 @@ func mainImpl() error {
 		fps = 30
 		properties = append(properties, "fake=1")
 	} else {
-		spiBus, err := sysfs.NewSPI(0, 0, config.Settings.APA102.SPIspeed)
+		spiBus, err := spi.New(-1, -1)
 		if err != nil {
 			log.Printf("SPI failed: %v", err)
 			leds = &devicestest.Display{image.NewNRGBA(image.Rect(0, 0, config.Settings.APA102.NumberLights, 1))}
 		} else {
+			if err = spiBus.Speed(config.Settings.APA102.SPIspeed); err != nil {
+				log.Printf("%s.Speed() failed: %v", spiBus, err)
+			}
 			defer spiBus.Close()
 			if leds, err = apa102.New(spiBus, config.Settings.APA102.NumberLights, 255, 6500); err != nil {
 				return err

@@ -6,6 +6,11 @@
 package spi
 
 import (
+	"errors"
+	"fmt"
+	"io"
+	"sync"
+
 	"github.com/maruel/dlibox/go/pio/protocols"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
@@ -34,6 +39,14 @@ type Conn interface {
 	Configure(mode Mode, bits int) error
 }
 
+// ConnCloser is a SPI bus that can be closed.
+//
+// This interface is meant to be handled by the application.
+type ConnCloser interface {
+	io.Closer
+	Conn
+}
+
 // Pins defines the pins that a SPI bus interconnect is using on the host.
 //
 // It is expected that a implementer of Conn also implement Pins but this is
@@ -48,3 +61,73 @@ type Pins interface {
 	// CS returns the CSN (chip select) pin.
 	CS() gpio.PinOut
 }
+
+// All returns all the SPI buses available on this host.
+func All() map[string]Opener {
+	lock.Lock()
+	defer lock.Unlock()
+	// TODO(maruel): Return a copy?
+	return byName
+}
+
+// New returns an open handle to the bus and CS line.
+//
+// Specify busNumber -1 to get the first available bus and its first CS line.
+// This is the recommended value.
+func New(busNumber, cs int) (ConnCloser, error) {
+	if busNumber == -1 {
+		if first == nil {
+			return nil, errors.New("no SPI bus found")
+		}
+		return first()
+	}
+	bus, ok := byNumber[busNumber]
+	if !ok {
+		return nil, fmt.Errorf("no SPI bus %d found", busNumber)
+	}
+	opener, ok := bus[cs]
+	if !ok {
+		return nil, fmt.Errorf("no SPI bus %d.%d found", busNumber, cs)
+	}
+	return opener()
+}
+
+// Opener opens an SPI bus.
+type Opener func() (ConnCloser, error)
+
+// Register registers a SPI bus.
+//
+// Registering the same bus name twice is an error.
+func Register(name string, busNumber, cs int, opener Opener) error {
+	lock.Lock()
+	defer lock.Unlock()
+	if _, ok := byName[name]; ok {
+		return fmt.Errorf("registering the same SPI bus %s twice", name)
+	}
+	if busNumber != -1 {
+		if _, ok := byNumber[busNumber]; !ok {
+			byNumber[busNumber] = map[int]Opener{}
+		}
+		if _, ok := byNumber[busNumber][cs]; ok {
+			return fmt.Errorf("registering the same SPI bus %d.%d twice", busNumber, cs)
+		}
+	}
+
+	if first == nil {
+		first = opener
+	}
+	byName[name] = opener
+	if busNumber != -1 {
+		byNumber[busNumber][cs] = opener
+	}
+	return nil
+}
+
+//
+
+var (
+	lock     sync.Mutex
+	byName   = map[string]Opener{}
+	byNumber = map[int]map[int]Opener{}
+	first    Opener
+)

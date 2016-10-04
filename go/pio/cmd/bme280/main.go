@@ -89,42 +89,26 @@ func mainImpl() error {
 	var recorder i2ctest.Record
 	if *spiId != -1 && *cs != -1 {
 		// Spec calls for max 10Mhz. In practice so little data is used.
-		bus, err := host.NewSPI(*spiId, *cs)
+		bus, err := spi.New(*spiId, *cs)
 		if err != nil {
 			return err
 		}
 		defer bus.Close()
 		if p, ok := bus.(spi.Pins); ok {
+			// TODO(maruel): Print where the pins are located.
 			log.Printf("Using pins CLK: %s  MOSI: %s  MISO: %s  CS: %s", p.CLK(), p.MOSI(), p.MISO(), p.CS())
 		}
 		if dev, err = bme280.NewSPI(bus, s, s, s, bme280.S20ms, f); err != nil {
 			return err
 		}
-	} else if *i2cId != -1 {
-		bus, err := host.NewI2C(*i2cId)
-		if err != nil {
-			return err
-		}
-		defer bus.Close()
-		if p, ok := bus.(i2c.Pins); ok {
-			log.Printf("Using pins SCL: %s  SDA: %s", p.SCL(), p.SDA())
-		}
-		var base i2c.Conn = bus
-		if *record {
-			recorder.Conn = bus
-			base = &recorder
-		}
-		if dev, err = bme280.NewI2C(base, s, s, s, bme280.S20ms, f); err != nil {
-			return err
-		}
 	} else {
-		// Get the first I²C bus available.
-		bus, err := host.NewI2CAuto()
+		bus, err := i2c.New(*i2cId)
 		if err != nil {
 			return err
 		}
 		defer bus.Close()
 		if p, ok := bus.(i2c.Pins); ok {
+			// TODO(maruel): Print where the pins are located.
 			log.Printf("Using pins SCL: %s  SDA: %s", p.SCL(), p.SDA())
 		}
 		var base i2c.Conn = bus

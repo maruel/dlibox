@@ -13,7 +13,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/spi"
 	"github.com/maruel/dlibox/go/pio/protocols/spi/spitest"
 )
 
@@ -325,7 +325,7 @@ func TestRampMonotonic(t *testing.T) {
 
 func TestDevEmpty(t *testing.T) {
 	buf := bytes.Buffer{}
-	d, _ := New(&spitest.RecordRaw{W: &buf}, 0, 255, 6500)
+	d, _ := New(spitest.NewRecordRaw(&buf), 0, 255, 6500)
 	if n, err := d.Write([]byte{}); n != 0 || err != nil {
 		t.Fatalf("%d %v", n, err)
 	}
@@ -336,7 +336,7 @@ func TestDevEmpty(t *testing.T) {
 
 func TestDevLen(t *testing.T) {
 	buf := bytes.Buffer{}
-	d, _ := New(&spitest.RecordRaw{W: &buf}, 1, 255, 6500)
+	d, _ := New(spitest.NewRecordRaw(&buf), 1, 255, 6500)
 	if n, err := d.Write([]byte{0}); n != 0 || err != errLength {
 		t.Fatalf("%d %v", n, err)
 	}
@@ -359,7 +359,7 @@ func TestDev(t *testing.T) {
 		{0x00, 0x00, 0x01, 0x00},
 		{0x00, 0x00, 0x00, 0x00},
 	}
-	d, _ := New(&spitest.RecordRaw{W: &buf}, len(colors), 255, 6500)
+	d, _ := New(spitest.NewRecordRaw(&buf), len(colors), 255, 6500)
 	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
 		t.Fatalf("%d %v", n, err)
 	}
@@ -402,7 +402,7 @@ func TestDevIntensity(t *testing.T) {
 		{0x00, 0x00, 0x01, 0x00},
 		{0x00, 0x00, 0x00, 0x00},
 	}
-	d, _ := New(&spitest.RecordRaw{W: &buf}, len(colors), 127, 6500)
+	d, _ := New(spitest.NewRecordRaw(&buf), len(colors), 127, 6500)
 	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
 		t.Fatalf("%d %v", n, err)
 	}
@@ -428,7 +428,7 @@ func TestDevIntensity(t *testing.T) {
 func TesttDevLong(t *testing.T) {
 	buf := bytes.Buffer{}
 	colors := make([]color.NRGBA, 256)
-	d, _ := New(&spitest.RecordRaw{W: &buf}, len(colors), 255, 6500)
+	d, _ := New(spitest.NewRecordRaw(&buf), len(colors), 255, 6500)
 	if n, err := d.Write(ToRGB(colors)); n != len(colors)*3 || err != nil {
 		t.Fatalf("%d %v", n, err)
 	}
@@ -463,7 +463,7 @@ func TestDevTemperatureWarm(t *testing.T) {
 		// Test all intensity code paths.
 		pixels[i] = uint8(i << 2)
 	}
-	d, _ := New(&spitest.RecordRaw{W: &buf}, len(pixels)/3, 250, 5000)
+	d, _ := New(spitest.NewRecordRaw(&buf), len(pixels)/3, 250, 5000)
 	if n, err := d.Write(pixels); n != len(pixels) || err != nil {
 		t.Fatalf("%d %v", n, err)
 	}
@@ -482,7 +482,7 @@ func TestDrawNRGBA(t *testing.T) {
 		img.Pix[4*i+3] = 0
 	}
 	buf := bytes.Buffer{}
-	d, _ := New(&spitest.RecordRaw{W: &buf}, 16, 250, 5000)
+	d, _ := New(spitest.NewRecordRaw(&buf), 16, 250, 5000)
 	d.Draw(d.Bounds(), img, image.Point{})
 	if !bytes.Equal(expectedi250t5000, buf.Bytes()) {
 		t.Fatalf("%#v != %#v", expectedi250t5000, buf.Bytes())
@@ -499,7 +499,7 @@ func TestDrawRGBA(t *testing.T) {
 		img.Pix[4*i+3] = 0xFF
 	}
 	buf := bytes.Buffer{}
-	d, _ := New(&spitest.RecordRaw{W: &buf}, 16, 250, 5000)
+	d, _ := New(spitest.NewRecordRaw(&buf), 16, 250, 5000)
 	d.Draw(d.Bounds(), img, image.Point{})
 	if !bytes.Equal(expectedi250t5000, buf.Bytes()) {
 		t.Fatalf("%#v != %#v", expectedi250t5000, buf.Bytes())
@@ -509,7 +509,7 @@ func TestDrawRGBA(t *testing.T) {
 //
 
 func Example() {
-	bus, err := host.NewSPIAuto()
+	bus, err := spi.New(-1, -1)
 	if err != nil {
 		log.Fatalf("failed to open SPI: %v", err)
 	}
@@ -534,7 +534,7 @@ func BenchmarkWriteWhite(b *testing.B) {
 	for i := range pixels {
 		pixels[i] = 0xFF
 	}
-	d, _ := New(&spitest.RecordRaw{W: ioutil.Discard}, len(pixels)/3, 255, 6500)
+	d, _ := New(spitest.NewRecordRaw(ioutil.Discard), len(pixels)/3, 255, 6500)
 	_, _ = d.Write(pixels)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -547,7 +547,7 @@ func BenchmarkWriteDim(b *testing.B) {
 	for i := range pixels {
 		pixels[i] = 1
 	}
-	d, _ := New(&spitest.RecordRaw{W: ioutil.Discard}, len(pixels)/3, 255, 6500)
+	d, _ := New(spitest.NewRecordRaw(ioutil.Discard), len(pixels)/3, 255, 6500)
 	_, _ = d.Write(pixels)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -557,7 +557,7 @@ func BenchmarkWriteDim(b *testing.B) {
 
 func BenchmarkWriteBlack(b *testing.B) {
 	pixels := make([]byte, 150*3)
-	d, _ := New(&spitest.RecordRaw{W: ioutil.Discard}, len(pixels)/3, 255, 6500)
+	d, _ := New(spitest.NewRecordRaw(ioutil.Discard), len(pixels)/3, 255, 6500)
 	_, _ = d.Write(pixels)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -570,7 +570,7 @@ func BenchmarkWriteColorful(b *testing.B) {
 	for i := range pixels {
 		pixels[i] = uint8(i) + uint8(i>>8)
 	}
-	d, _ := New(&spitest.RecordRaw{W: ioutil.Discard}, len(pixels)/3, 250, 5000)
+	d, _ := New(spitest.NewRecordRaw(ioutil.Discard), len(pixels)/3, 250, 5000)
 	_, _ = d.Write(pixels)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -584,7 +584,7 @@ func BenchmarkDrawNRGBAColorful(b *testing.B) {
 	for i := range img.Pix {
 		img.Pix[i] = uint8(i) + uint8(i>>8)
 	}
-	d, _ := New(&spitest.RecordRaw{W: ioutil.Discard}, img.Bounds().Max.X, 250, 5000)
+	d, _ := New(spitest.NewRecordRaw(ioutil.Discard), img.Bounds().Max.X, 250, 5000)
 	r := d.Bounds()
 	p := image.Point{}
 	d.Draw(r, img, p)
@@ -600,7 +600,7 @@ func BenchmarkDrawRGBAColorful(b *testing.B) {
 	for i := range img.Pix {
 		img.Pix[i] = uint8(i) + uint8(i>>8)
 	}
-	d, _ := New(&spitest.RecordRaw{W: ioutil.Discard}, img.Bounds().Max.X, 250, 5000)
+	d, _ := New(spitest.NewRecordRaw(ioutil.Discard), img.Bounds().Max.X, 250, 5000)
 	r := d.Bounds()
 	p := image.Point{}
 	d.Draw(r, img, p)
@@ -616,7 +616,7 @@ func BenchmarkWriteColorfulVariation(b *testing.B) {
 	for i := range pixels {
 		pixels[i] = uint8(i) + uint8(i>>8)
 	}
-	d, _ := New(&spitest.RecordRaw{W: ioutil.Discard}, len(pixels)/3, 250, 5000)
+	d, _ := New(spitest.NewRecordRaw(ioutil.Discard), len(pixels)/3, 250, 5000)
 	_, _ = d.Write(pixels)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

@@ -2,32 +2,53 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package i2ctest is meant to be used to test drivers over a fake I²C bus.
-package i2ctest
+package protocolstest
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
+	"github.com/maruel/dlibox/go/pio/protocols"
 )
 
-// IO registers the I/O that happened on either a real or fake I²C bus.
+// RecordRaw implements protocols.Conn. It sends everything written to it to W.
+type RecordRaw struct {
+	Lock sync.Mutex
+	W    io.Writer
+}
+
+func (r *RecordRaw) String() string {
+	return "recordraw"
+}
+
+func (r *RecordRaw) Write(b []byte) (int, error) {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
+	return r.W.Write(b)
+}
+
+func (r *RecordRaw) Tx(w, read []byte) error {
+	if len(read) != 0 {
+		return errors.New("not implemented")
+	}
+	_, err := r.Write(w)
+	return err
+}
+
+// IO registers the I/O that happened on either a real or fake connection.
 type IO struct {
-	Addr  uint16
 	Write []byte
 	Read  []byte
 }
 
-// Record implements i2c.Conn that records everything written to it.
+// Record implements protocols.Conn that records everything written to it.
 //
 // This can then be used to feed to Playback to do "replay" based unit tests.
 type Record struct {
-	Conn i2c.Conn // Conn can be nil if only writes are being recorded.
+	Conn protocols.Conn // Conn can be nil if only writes are being recorded.
 	Lock sync.Mutex
 	Ops  []IO
 }
@@ -36,7 +57,14 @@ func (r *Record) String() string {
 	return "record"
 }
 
-func (r *Record) Tx(addr uint16, w, read []byte) error {
+func (r *Record) Write(d []byte) (int, error) {
+	if err := r.Tx(d, nil); err != nil {
+		return 0, err
+	}
+	return len(d), nil
+}
+
+func (r *Record) Tx(w, read []byte) error {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
 	if r.Conn == nil {
@@ -44,11 +72,11 @@ func (r *Record) Tx(addr uint16, w, read []byte) error {
 			return errors.New("read unsupported when no bus is connected")
 		}
 	} else {
-		if err := r.Conn.Tx(addr, w, read); err != nil {
+		if err := r.Conn.Tx(w, read); err != nil {
 			return err
 		}
 	}
-	io := IO{Addr: addr, Write: make([]byte, len(w))}
+	io := IO{Write: make([]byte, len(w))}
 	if len(read) != 0 {
 		io.Read = make([]byte, len(read))
 	}
@@ -58,28 +86,7 @@ func (r *Record) Tx(addr uint16, w, read []byte) error {
 	return nil
 }
 
-func (r *Record) Speed(hz int64) error {
-	if r.Conn != nil {
-		return r.Conn.Speed(hz)
-	}
-	return nil
-}
-
-func (r *Record) SCL() gpio.PinIO {
-	if p, ok := r.Conn.(i2c.Pins); ok {
-		return p.SCL()
-	}
-	return pins.INVALID
-}
-
-func (r *Record) SDA() gpio.PinIO {
-	if p, ok := r.Conn.(i2c.Pins); ok {
-		return p.SDA()
-	}
-	return pins.INVALID
-}
-
-// Playblack implements i2c.Conn and plays back a recorded I/O flow.
+// Playblack implements protocols.Conn and plays back a recorded I/O flow.
 //
 // While "replay" type of unit tests are of limited value, they still present
 // an easy way to do basic code coverage.
@@ -92,16 +99,19 @@ func (p *Playback) String() string {
 	return "playback"
 }
 
-// Tx implements i2c.Conn.
-func (p *Playback) Tx(addr uint16, w, r []byte) error {
+func (p *Playback) Write(d []byte) (int, error) {
+	if err := p.Tx(d, nil); err != nil {
+		return 0, err
+	}
+	return len(d), nil
+}
+
+func (p *Playback) Tx(w, r []byte) error {
 	p.Lock.Lock()
 	defer p.Lock.Unlock()
 	if len(p.Ops) == 0 {
 		// log.Fatal() ?
 		return errors.New("unexpected Tx()")
-	}
-	if addr != p.Ops[0].Addr {
-		return fmt.Errorf("unexpected addr %d != %d", addr, p.Ops[0].Addr)
 	}
 	if !bytes.Equal(p.Ops[0].Write, w) {
 		return fmt.Errorf("unexpected write %#v != %#v", w, p.Ops[0].Write)
@@ -114,10 +124,6 @@ func (p *Playback) Tx(addr uint16, w, r []byte) error {
 	return nil
 }
 
-func (p *Playback) Speed(hz int64) error {
-	return nil
-}
-
-var _ i2c.Conn = &Record{}
-var _ i2c.Pins = &Record{}
-var _ i2c.Conn = &Playback{}
+var _ protocols.Conn = &RecordRaw{}
+var _ protocols.Conn = &Record{}
+var _ protocols.Conn = &Playback{}

@@ -1,0 +1,50 @@
+// Copyright 2016 Marc-Antoine Ruel. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+// spi-list lists all SPI buses.
+package main
+
+import (
+	"fmt"
+	"os"
+	"sort"
+
+	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/spi"
+)
+
+func mainImpl() error {
+	if _, err := host.Init(); err != nil {
+		return err
+	}
+	all := spi.All()
+	names := make([]string, 0, len(all))
+	for name := range all {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		fmt.Printf("%s:\n", name)
+		bus, err := all[name]()
+		if err != nil {
+			fmt.Printf("  Failed to open: %v\n", err)
+			continue
+		}
+		if p, ok := bus.(spi.Pins); ok {
+			fmt.Printf("  CLK : %s\n", p.CLK())
+			fmt.Printf("  MOSI: %s\n", p.MOSI())
+			fmt.Printf("  MISO: %s\n", p.MISO())
+			fmt.Printf("  CS  : %s\n", p.CS())
+		}
+		bus.Close()
+	}
+	return nil
+}
+
+func main() {
+	if err := mainImpl(); err != nil {
+		fmt.Fprintf(os.Stderr, "spi-list: %s.\n", err)
+		os.Exit(1)
+	}
+}

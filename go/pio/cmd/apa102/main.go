@@ -137,15 +137,8 @@ func mainImpl() error {
 			return err
 		}
 		bus = b
-	} else if *busNumber == -1 {
-		b, err := host.NewSPIAuto()
-		if err != nil {
-			return err
-		}
-		defer b.Close()
-		bus = b
 	} else {
-		b, err := host.NewSPI(*busNumber, -1)
+		b, err := spi.New(*busNumber, 0)
 		if err != nil {
 			return err
 		}
@@ -158,6 +151,7 @@ func mainImpl() error {
 		bus = b
 	}
 	if p, ok := bus.(spi.Pins); ok {
+		// TODO(maruel): Print where the pins are located.
 		log.Printf("Using pins CLK: %s  MOSI: %s  MISO: %s", p.CLK(), p.MOSI(), p.MISO())
 	}
 	var err error

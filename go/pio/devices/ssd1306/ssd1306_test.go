@@ -14,7 +14,7 @@ import (
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
 
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
 )
 
@@ -164,7 +164,7 @@ func TestWrite(t *testing.T) {
 //
 
 func Example() {
-	bus, err := host.NewI2CAuto()
+	bus, err := i2c.New(-1)
 	if err != nil {
 		log.Fatalf("failed to open I²C: %v", err)
 	}

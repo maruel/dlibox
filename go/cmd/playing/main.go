@@ -24,8 +24,8 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/devices/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
-	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/ir"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
@@ -77,7 +77,7 @@ func mainImpl() error {
 		return err
 	}
 
-	i, err := sysfs.NewI2C(1)
+	i, err := i2c.New(-1)
 	if err != nil {
 		return err
 	}

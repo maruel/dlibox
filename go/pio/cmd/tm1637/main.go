@@ -115,6 +115,7 @@ func mainImpl() error {
 	if pData == nil {
 		return errors.New("specify a valid pin for data")
 	}
+	// TODO(maruel): Print where the pins are located.
 	d, err := tm1637.New(pClk, pData)
 	if err != nil {
 		return err
