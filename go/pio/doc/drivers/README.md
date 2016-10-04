@@ -62,7 +62,7 @@ library that can be maintained on the long term.
   * Breakage in the API should happen at a yearly parce at most once the library
     got to a stable state.
 * Strong distinction about the driver (as a user of a
-  [Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols#Conn)
+  [protocols.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols#Conn)
   instance) and an application writer (as a user of a device driver). It's the
   _application_ that controls the objects' lifetime.
 * Strong distinction between _enablers_ and _devices_. See
@@ -150,7 +150,7 @@ followed:
 * The driver is deemed to work.
 * The driver meets minimal quality bar under the promise of being improved. See
   [Requirements](#requirements) for the extensive list.
-* Follows [CONTRIBUTING.md](CONTRIBUTING.md) demands.
+* Follow [CONTRIBUTING.md](CONTRIBUTING.md) demands.
 * Create a Pull Request for integration under
   [experimental/](../../experimental/) and respond to the code review.
 

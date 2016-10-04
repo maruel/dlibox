@@ -1,7 +1,9 @@
 # pio - Application developpers
 
 Documentation for _application developers_ who want to write Go applications
-leveraging `pio`. The API documentation, including examples, is at
+leveraging `pio`.
+
+The complete API documentation, including examples, is at
 [![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio).
 
 
@@ -65,7 +67,7 @@ return an error when there's a structural issue, for example two drivers with
 the same name were registered. This is a catastrophic failure.
 
 The package [host](https://godoc.org/github.com/maruel/dlibox/go/pio/host)
-registers all the drivers under [host/](host/).
+registers all the drivers under [host/](../../host/).
 
 **Tip:** Calling
 [host.NewI2CAuto()](https://godoc.org/github.com/maruel/dlibox/go/pio/host#example-NewI2CAuto)
@@ -183,8 +185,10 @@ construct an I²C or a SPI bus over raw GPIO pins via
 
 ## Samples
 
-Please look at the device driver documentation for further examples. Tools in
-[cmd/](cmd/) can also be used as the basis of your projects.
+Please look at the device driver documentation for further examples.
+
+You are encouraged to look at tools in [cmd/](cmd/). These can be used as the
+basis of your projects.
 
 
 ### IR (infra red remote)

@@ -3,11 +3,12 @@
 pio is a peripheral I/O library in Go.
 
 The documentation is split into 3 sections:
-* [docs/users/](docs/users/) for users who need ready-to-use tools.
-* [docs/apps/](docs/apps/) for application writers to want to use `pio` as a
-  library. The API documentation, including examples, is at
-  [![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio).
-* [docs/drivers/](docs/drivers/) for device driver writers who want to expand
+* [doc/users/](doc/users/) for users who need ready-to-use tools.
+* [doc/apps/](doc/apps/) for application writers to want to use `pio` as a
+  library.
+  * The complete API documentation, including examples, is at
+    [![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio).
+* [doc/drivers/](doc/drivers/) for device driver writers who want to expand
   the list of supported hardware and hopefully contribute to the project.
 
 
@@ -19,7 +20,7 @@ pio includes many ready-to-use tools!
 go get github.com/maruel/dlibox/go/pio/cmd/...
 ```
 
-See [docs/users/](docs/users/) for more info on:
+See [doc/users/](doc/users/) for more info on:
 
 * Configuring the host
 * Using the included tools
@@ -27,7 +28,7 @@ See [docs/users/](docs/users/) for more info on:
 
 ## Application developpers
 
-For [application developpers](docs/apps/), to get a quick feel, here's a
+For [application developpers](doc/apps/), to get a quick feel, here's a
 complete example to get the current temperature, barometric pressure and
 relative humidity using a bme280:
 
@@ -77,20 +78,20 @@ driver registry and common bus interfaces. See this page for requirements to
 submit contributions.
 
 
-### Authors
+## Authors
 
 The main author is [Marc-Antoine Ruel](https://github.com/maruel). The full list
 is in [AUTHORS](AUTHORS) and [CONTRIBUTORS](CONTRIBUTORS).
 
 
-### Contributions
+## Contributions
 
 We gladly accept contributions via GitHub pull requests, as long as the author
 has signed the Google Contributor License. Please see
 [doc/drivers/CONTRIBUTING.md](doc/drivers/CONTRIBUTING.md) for more details.
 
 
-### Disclaimer
+## Disclaimer
 
 This is not an official Google product (experimental or otherwise), it
 is just code that happens to be owned by Google.

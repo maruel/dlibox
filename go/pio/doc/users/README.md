@@ -22,7 +22,7 @@ sudo apt-get install golang
 
 to get the Go toolchain installed.
 
-Otherwise, get it from https://golang.org.
+Otherwise, get it from https://golang.org/dl/.
 
 
 ### Installation
@@ -35,14 +35,19 @@ go get -u github.com/maruel/dlibox/go/pio/cmd/...
 
 ## Cross-compiling
 
-To have faster builds, you may build on a desktop and send the executables to
-your ARM based micro computer (e.g.  Raspberry Pi). A tool `push.sh` is
+To have faster builds, you may wish to build on a desktop and send the
+executables to your ARM based micro computer (e.g.  Raspberry Pi).
+[push.sh](https://github.com/maruel/dlibox/blob/master/go/pio/cmd/push.sh) is
 included to wrap this:
 
 ```bash
 cd $GOPATH/src/github.com/maruel/dlibox/go/pio/cmd
 ./push.sh raspberrypi bme280
 ```
+
+It is basically a wrapper around `GOOS=linux GOARCH=arm go build .; scp <exe>
+<host>:.`
+
 
 ### Configuring the host
 
