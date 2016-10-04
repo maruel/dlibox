@@ -1,7 +1,9 @@
-# pio - Usage
+# pio - Application developpers
 
+Documentation for _application developers_ who want to write Go applications
+leveraging `pio`. The API documentation, including examples, is at
+[![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio).
 
-Help page for _application developers_.
 
 
 ## Introduction
@@ -20,14 +22,23 @@ pins](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/analog),
 [UART](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/uart), I2S
 and PWM.
 
-* The interfaces are defined in [protocols/](protocols/).
-* The concrete objects _implementing_ the interfaces are in [host/](host/).
+* The interfaces are defined in [protocols/](../../protocols/).
+* The concrete objects _implementing_ the interfaces are in
+  [host/](../../host/).
 * The device drivers _using_ these interfaces are located in
-  [devices/](devices/).
+  [devices/](../../devices/).
 
 A device can be connected on a bus, let's say a strip of LED connected over SPI.
 You need to connect the device driver of the LEDs to the SPI bus handle in your
 application.
+
+
+## State
+
+The library is **not stable** yet and breaking changes continously happen.
+Please version the libary using [one of go vendoring
+tools](https://github.com/golang/go/wiki/PackageManagementTools) and sync
+frequently.
 
 
 ## Initialization
@@ -176,7 +187,7 @@ Please look at the device driver documentation for further examples. Tools in
 [cmd/](cmd/) can also be used as the basis of your projects.
 
 
-### IR
+### IR (infra red remote)
 
 _Purpose:_ display IR remote keys.
 
@@ -337,5 +348,49 @@ func main() {
         p.WaitForEdge()
         fmt.Printf("-> %s\n", p.Read())
     }
+}
+```
+
+
+## Measuring weather
+
+_Purpose:_ gather temperature, pressure and relative humidity.
+
+This sample uses a
+[bme280](https://godoc.org/github.com/maruel/dlibox/go/pio/devices/bme280).
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+
+    "github.com/maruel/dlibox/go/pio/devices"
+    "github.com/maruel/dlibox/go/pio/devices/bme280"
+    "github.com/maruel/dlibox/go/pio/host"
+)
+
+func main() {
+    // Open a handle to the first available I²C bus:
+    bus, err := host.NewI2CAuto()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer bus.Close()
+
+    // Open a handle to a bme280 connected on the I²C bus:
+    dev, err := bme280.NewI2C(bus, bme280.O2x, bme280.O2x, bme280.O2x, bme280.S500ms, bme280.FOff)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer dev.Close()
+
+    // Read temperature from the sensor:
+    var env devices.Environment
+    if err = dev.Read(&env); err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf("%8s %10s %9s\n", env.Temperature, env.Pressure, env.Humidity)
 }
 ```

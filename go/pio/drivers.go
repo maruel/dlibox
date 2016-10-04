@@ -2,8 +2,6 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-//go:generate stringer -type Type
-
 package pio
 
 import (
@@ -32,6 +30,17 @@ const (
 	Device
 	nbPriorities
 )
+
+const typeName = "ProcessorPinsFunctionalBusDevicenbPriorities"
+
+var typeIndex = [...]uint8{0, 9, 13, 23, 26, 32, 44}
+
+func (i Type) String() string {
+	if i < 0 || i >= Type(len(typeIndex)-1) {
+		return fmt.Sprintf("Type(%d)", i)
+	}
+	return typeName[typeIndex[i]:typeIndex[i+1]]
+}
 
 // Driver is an implementation for a protocol.
 type Driver interface {

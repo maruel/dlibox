@@ -1,13 +1,17 @@
 # pio
 
-pio is a peripheral I/O library in Go. The documentation, including examples, is at
-[![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio).
-Usage and HowTos can be found at [USAGE.md](USAGE.md).
+pio is a peripheral I/O library in Go.
+
+The documentation is split into 3 sections:
+* [docs/users/](docs/users/) for users who need ready-to-use tools.
+* [docs/apps/](docs/apps/) for application writers to want to use `pio` as a
+  library. The API documentation, including examples, is at
+  [![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio).
+* [docs/drivers/](docs/drivers/) for device driver writers who want to expand
+  the list of supported hardware and hopefully contribute to the project.
 
 
-## Installation
-
-_For end users_:
+## Users
 
 pio includes many ready-to-use tools!
 
@@ -15,25 +19,17 @@ pio includes many ready-to-use tools!
 go get github.com/maruel/dlibox/go/pio/cmd/...
 ```
 
-To cross-compile and send an executable to your ARM based micro computer (e.g.
-Raspberry Pi):
+See [docs/users/](docs/users/) for more info on:
 
-```bash
-cd $GOPATH/src/github.com/maruel/dlibox/go/pio/cmd/bme280
-GOOS=linux GOARCH=arm go build .
-scp bme280 raspberrypi:.
-```
-
-The pio project doesn't release binaries, you are expected to build from
-sources.
+* Configuring the host
+* Using the included tools
 
 
-## Usage
+## Application developpers
 
-_For application developpers_:
-
-Here's a complete example to get the current temperature, barometric pressure
-and relative humidity using a bme280:
+For [application developpers](docs/apps/), to get a quick feel, here's a
+complete example to get the current temperature, barometric pressure and
+relative humidity using a bme280:
 
 ```go
 package main
@@ -71,24 +67,14 @@ func main() {
 }
 ```
 
-See more examples at [USAGE.md](USAGE.md#samples)!
+See more examples at [doc/apps/](doc/apps/#samples)!
 
 
-### State
+## Device drivers developpers
 
-The library is **not stable** yet and breaking changes continously happen.
-Please version the libary using [one of go vendoring
-tools](https://github.com/golang/go/wiki/PackageManagementTools) and sync
-frequently.
-
-
-## Design
-
-_For device drivers developpers_:
-
-See [DESIGN.md](DESIGN.md) for the goals, requirements and driver lifetime
-management. It is a required reading (it's okay to skim a bit but don't tell
-anyone, shhh!) before contribution.
+For [device drivers developpers](doc/drivers/), `pio` provides an extensible
+driver registry and common bus interfaces. See this page for requirements to
+submit contributions.
 
 
 ### Authors
@@ -101,7 +87,7 @@ is in [AUTHORS](AUTHORS) and [CONTRIBUTORS](CONTRIBUTORS).
 
 We gladly accept contributions via GitHub pull requests, as long as the author
 has signed the Google Contributor License. Please see
-[CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+[doc/drivers/CONTRIBUTING.md](doc/drivers/CONTRIBUTING.md) for more details.
 
 
 ### Disclaimer

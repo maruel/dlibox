@@ -1,11 +1,8 @@
-# pio - Design
+# pio - Device driver developpers
 
-
-Help page for _device driver developers_.
-
-pio is a peripheral I/O library in Go. The documentation, including examples, is at
-[![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio)
-Usage and HowTos can be found at [USAGE.md](USAGE.md).
+Documentation for _device driver developers_ who either wants to developper a
+device driver in their own code base or want to submit a contribution to extend
+the supported hardware.
 
 
 ## Abstract
@@ -47,12 +44,13 @@ library that can be maintained on the long term.
 * Coverage:
   * Each driver implements and exposes as much of the underlying device
     capability as possible and relevant.
-  * [cmd/](cmd/) implements useful directly usable tool.
-  * [devices/](devices/) implements common device drivers.
-  * [host/](host/) must implement a large base of common platforms that _just
-    work_. This is in addition to extensibility.
-  * Interfacing for common OS provided functionality (i.e. [sysfs](host/sysfs))
-    and emulated ones (i.e. [bitbang](host/bitbang)).
+  * [cmd/](../../cmd/) implements useful directly usable tool.
+  * [devices/](../../devices/) implements common device drivers.
+  * [host/](../../host/) must implement a large base of common platforms that
+    _just work_. This is in addition to extensibility.
+  * Interfacing for common OS provided functionality (i.e.
+    [sysfs](../../host/sysfs)) and emulated ones (i.e.
+    [bitbang](../../experimental/bitbang)).
 * Simplicity:
   * Static typing is *thoroughly used*, to reduce the risk of runtime failure.
   * Minimal coding is needed to accomplish a task.
@@ -76,9 +74,10 @@ library that can be maintained on the long term.
 All the code must fit the following requirements.
 
 **Fear not!** We know the list _is_ daunting but as you create your pull request
-to add something at [experimental/](experimental/), we'll happily guide you in
-the process to help improve the code to meet the expected standard. The end goal
-is to write quality maintainable code and use this as a learning experience.
+to add something at [experimental/](../../experimental/), we'll happily guide
+you in the process to help improve the code to meet the expected standard. The
+end goal is to write quality maintainable code and use this as a learning
+experience.
 
 * The code must be Go idiomatic.
   * Constructor `NewXXX()` returns an object of concrete type.
@@ -98,12 +97,12 @@ is to write quality maintainable code and use this as a learning experience.
   * A link to the datasheet should be included in the package doc.
 * Testability
   * Code must be testable and tested without a device.
-  * When relevant, include a smoke test under [tests/](tests/). The smoke test
-    tests a real device to confirm the driver physically works for devices.
+  * When relevant, include a smoke test under [tests/](../../tests/). The smoke
+    test tests a real device to confirm the driver physically works for devices.
 * Usability
-  * Provide a standalone executable in [cmd/](cmd/) to expose the functionality.
-    It is acceptable to only expose a small subset of the functionality but the
-    tool must have purpose.
+  * Provide a standalone executable in [cmd/](../../cmd/) to expose the
+    functionality.  It is acceptable to only expose a small subset of the
+    functionality but the tool must have purpose.
   * Provide a `func Example()` along your test to describe basic usage of your
     driver. See the official [testing
     package](https://golang.org/pkg/testing/#hdr-Examples) for more details.
@@ -118,7 +117,7 @@ is to write quality maintainable code and use this as a learning experience.
     arithmetic, for example
     [devices.Milli](https://godoc.org/github.com/maruel/dlibox/go/pio/devices#Milli).
     Floating point arithmetic is acceptable in the unit tests and tools in
-    [cmd/](cmd/) but should not be abused.
+    [cmd/](../../cmd/) but should not be abused.
   * Drivers must be implemented with performance in mind. For example I²C
     operations should be batched to minimize overhead.
   * Benchmark must be implemented for non trivial processing running on the host.
@@ -145,28 +144,28 @@ that must be asserted.
 ### Experimental
 
 Any driver can be requested to be added to the library under
-[experimental/](experimental/) directory. The following process must be
+[experimental/](../../experimental/) directory. The following process must be
 followed:
 * One or multiple developers have created a driver out of tree.
 * The driver is deemed to work.
 * The driver meets minimal quality bar under the promise of being improved. See
   [Requirements](#requirements) for the extensive list.
 * Follows [CONTRIBUTING.md](CONTRIBUTING.md) demands.
-* Create a Pull Request for integration under [experimental/](experimental/) and
-  respond to the code review.
+* Create a Pull Request for integration under
+  [experimental/](../../experimental/) and respond to the code review.
 
 At this point, it is available for use to everyone but is not loaded defacto by
 [host.Init()](https://godoc.org/github.com/maruel/dlibox/go/pio/host#Init).
 
 There is no API compatibility guarantee for drivers under
-[experimental/](experimental/).
+[experimental/](../../experimental/).
 
 
 ### Stable
 
-A driver in [experimental/](experimental/) can be promoted to stable in either
-[devices/](devices/) or [host/](host/) as relevant. The following process must
-be followed:
+A driver in [experimental/](../../experimental/) can be promoted to stable in
+either [devices/](../../devices/) or [host/](../../host/) as relevant. The
+following process must be followed:
 * Declare at least one (or multiple) owners that are responsive to reply to
   feature requests and bug reports.
   * There could be a threshold, > _TO BE DETERMINED_ lines, where more than one
@@ -184,7 +183,7 @@ be followed:
 
 A driver can be subsumed by a newer driver with a better core implementation or
 a new breaking API. The previous driver must be deprecated, moved back to
-[experimental/](experimental/) and announced to be deleted after _TO BE
+[experimental/](../../experimental/) and announced to be deleted after _TO BE
 DETERMINED_ amount of time.
 
 
