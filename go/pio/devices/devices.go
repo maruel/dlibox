@@ -64,6 +64,21 @@ func (c Celcius) String() string {
 	return Milli(c).String() + "°C"
 }
 
+func (c Celcius) ToF() Fahrenheit {
+	return Fahrenheit((c*9+2)/5 + 32000)
+}
+
+// Fahrenheit is a unit used in the United States.
+type Fahrenheit Milli
+
+func (f Fahrenheit) Float64() float64 {
+	return Milli(f).Float64()
+}
+
+func (f Fahrenheit) String() string {
+	return Milli(f).String() + "°F"
+}
+
 // KPascal is pressure at precision of 1Pa.
 //
 // Expected range is [0, >1000000].
