@@ -28,7 +28,8 @@ The documentation is split into 3 sections:
      [bcm283x.GPIO2](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x#Pin)
      or
      [bcm283x.I2C1_SDA](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x#pkg-variables)
-     to refer to the exact same pin when I²C bus #1 is enabled.
+     to refer to the exact same pin when I²C bus #1 is enabled on a Raspberry
+     Pi.
 3. At usability expense, the user can chose to optimize for performance.
    * Ex:
      [apa102.Dev](https://godoc.org/github.com/maruel/dlibox/go/pio/devices/apa102#Dev)
