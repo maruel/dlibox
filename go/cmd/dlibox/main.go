@@ -156,6 +156,11 @@ func mainImpl() error {
 		properties = append(properties, "profiled=1")
 	}
 
+	// Initialize pio.
+	if _, err := host.Init(); err != nil {
+		return err
+	}
+
 	// Config.
 	config := ConfigMgr{}
 	config.ResetDefault()

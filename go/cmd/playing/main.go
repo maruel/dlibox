@@ -24,6 +24,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/devices/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/ir"
@@ -62,6 +63,11 @@ func mainImpl() error {
 		log.SetOutput(ioutil.Discard)
 	}
 	log.SetFlags(log.Lmicroseconds)
+
+	// Initialize pio.
+	if _, err := host.Init(); err != nil {
+		return err
+	}
 
 	button := make(chan bool)
 	motion := make(chan bool)
