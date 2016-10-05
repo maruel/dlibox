@@ -109,7 +109,7 @@ func mainImpl() error {
 	go displayLoop(s, f8, img, button, motion, env, keys)
 
 	if useBME280 {
-		b, err := bme280.NewI2C(i, bme280.O4x, bme280.O4x, bme280.O4x, bme280.S20ms, bme280.F4)
+		b, err := bme280.NewI2C(i, nil)
 		if err != nil {
 			return err
 		}

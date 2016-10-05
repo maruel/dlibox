@@ -56,7 +56,7 @@ func TestRead(t *testing.T) {
 			{Addr: 0x76, Write: []byte{0xf7}, Read: []byte{0x4a, 0x52, 0xc0, 0x80, 0x96, 0xc0, 0x7a, 0x76}},
 		},
 	}
-	dev, err := NewI2C(&bus, O4x, O4x, O4x, S20ms, FOff)
+	dev, err := NewI2C(&bus, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,12 +145,14 @@ func Example() {
 		log.Fatalf("failed to open I²C: %v", err)
 	}
 	defer bus.Close()
-	dev, err := NewI2C(bus, O2x, O2x, O2x, S20ms, FOff)
+	dev, err := NewI2C(bus, nil)
 	if err != nil {
 		log.Fatalf("failed to initialize bme280: %v", err)
 	}
 	env := devices.Environment{}
-	dev.Sense(&env)
+	if err := dev.Sense(&env); err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("%8s %10s %9s\n", env.Temperature, env.Pressure, env.Humidity)
 }
 

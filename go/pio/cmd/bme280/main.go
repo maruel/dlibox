@@ -16,10 +16,21 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/pio/host/headers"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
+	"github.com/maruel/dlibox/go/pio/protocols/pins"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
+
+func printPin(fn string, p pins.Pin) {
+	name, pos := headers.Position(p)
+	if name != "" {
+		log.Printf("  %-4s: %-10s found on header %s, #%d\n", fn, p, name, pos)
+	} else {
+		log.Printf("  %-4s: %-10s\n", fn, p)
+	}
+}
 
 func read(e devices.Environmental, loop bool) error {
 	for {
@@ -58,6 +69,7 @@ func mainImpl() error {
 	}
 	log.SetFlags(log.Lmicroseconds)
 
+	opts := bme280.Opts{Standby: bme280.S20ms}
 	s := bme280.O4x
 	if *sample1x {
 		s = bme280.O1x
@@ -70,15 +82,17 @@ func mainImpl() error {
 	} else if *sample16x {
 		s = bme280.O16x
 	}
-	f := bme280.FOff
+	opts.Temperature = s
+	opts.Pressure = s
+	opts.Humidity = s
 	if *filter2x {
-		f = bme280.F2
+		opts.Filter = bme280.F2
 	} else if *filter4x {
-		f = bme280.F4
+		opts.Filter = bme280.F4
 	} else if *filter8x {
-		f = bme280.F8
+		opts.Filter = bme280.F8
 	} else if *filter16x {
-		f = bme280.F16
+		opts.Filter = bme280.F16
 	}
 
 	if _, err := host.Init(); err != nil {
@@ -95,10 +109,12 @@ func mainImpl() error {
 		}
 		defer bus.Close()
 		if p, ok := bus.(spi.Pins); ok {
-			// TODO(maruel): Print where the pins are located.
-			log.Printf("Using pins CLK: %s  MOSI: %s  MISO: %s  CS: %s", p.CLK(), p.MOSI(), p.MISO(), p.CS())
+			printPin("CLK", p.CLK())
+			printPin("MOSI", p.MOSI())
+			printPin("MISO", p.MISO())
+			printPin("CS", p.CS())
 		}
-		if dev, err = bme280.NewSPI(bus, s, s, s, bme280.S20ms, f); err != nil {
+		if dev, err = bme280.NewSPI(bus, &opts); err != nil {
 			return err
 		}
 	} else {
@@ -108,15 +124,15 @@ func mainImpl() error {
 		}
 		defer bus.Close()
 		if p, ok := bus.(i2c.Pins); ok {
-			// TODO(maruel): Print where the pins are located.
-			log.Printf("Using pins SCL: %s  SDA: %s", p.SCL(), p.SDA())
+			printPin("SCL", p.SCL())
+			printPin("SDA", p.SDA())
 		}
 		var base i2c.Conn = bus
 		if *record {
 			recorder.Conn = bus
 			base = &recorder
 		}
-		if dev, err = bme280.NewI2C(base, s, s, s, bme280.S20ms, f); err != nil {
+		if dev, err = bme280.NewI2C(base, &opts); err != nil {
 			return err
 		}
 	}

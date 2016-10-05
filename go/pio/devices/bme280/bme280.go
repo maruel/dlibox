@@ -108,18 +108,30 @@ func (d *Dev) Stop() error {
 	return d.writeCommands([]byte{0xF4, byte(sleep)})
 }
 
+// Opts is optional options to pass to the constructor.
+//
+// Recommended (and default) values are O4x for oversampling, S20ms for standby
+// and FOff for filter if planing to call frequently, else use S500ms to get a
+// bit more than one reading per second.
+//
+// BUG(maruel): Remove the Standby flag and replace with a
+// WaitForNextSample(time.Duration). Then use the closest value automatically.
+type Opts struct {
+	Temperature Oversampling
+	Pressure    Oversampling
+	Humidity    Oversampling
+	Standby     Standby
+	Filter      Filter
+}
+
 // NewI2C returns an object that communicates over I²C to BME280 environmental
 // sensor.
 //
-// Recommended values are O4x for oversampling, S20ms for standby and FOff for
-// filter if planing to call frequently, else use S500ms to get a bit more than
-// one reading per second.
-//
 // It is recommended to call Stop() when done with the device so it stops
 // sampling.
-func NewI2C(i i2c.Conn, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
+func NewI2C(i i2c.Conn, opts *Opts) (*Dev, error) {
 	d := &Dev{d: &i2c.Dev{i, 0x76}, isSPI: false}
-	if err := d.makeDev(temperature, pressure, humidity, standby, filter); err != nil {
+	if err := d.makeDev(opts); err != nil {
 		return nil, err
 	}
 	return d, nil
@@ -139,13 +151,13 @@ func NewI2C(i i2c.Conn, temperature, pressure, humidity Oversampling, standby St
 //
 // BUG(maruel): This code was not tested yet, still waiting for a SPI enabled
 // device in the mail.
-func NewSPI(s spi.Conn, temperature, pressure, humidity Oversampling, standby Standby, filter Filter) (*Dev, error) {
+func NewSPI(s spi.Conn, opts *Opts) (*Dev, error) {
 	// It works both in Mode0 and Mode3.
 	if err := s.Configure(spi.Mode3, 8); err != nil {
 		return nil, err
 	}
 	d := &Dev{d: s, isSPI: true}
-	if err := d.makeDev(temperature, pressure, humidity, standby, filter); err != nil {
+	if err := d.makeDev(opts); err != nil {
 		return nil, err
 	}
 	return d, nil
@@ -169,16 +181,27 @@ const (
 	im_update status = 1 // set when NVM data are being copied to image registers
 )
 
-func (d *Dev) makeDev(temperature, pressure, humidity Oversampling, standby Standby, filter Filter) error {
+var defaults = Opts{
+	Temperature: O4x,
+	Pressure:    O4x,
+	Humidity:    O4x,
+	Standby:     S20ms,
+	Filter:      FOff,
+}
+
+func (d *Dev) makeDev(opts *Opts) error {
+	if opts == nil {
+		opts = &defaults
+	}
 	config := []byte{
 		// ctrl_meas; put it to sleep otherwise the config update may be ignored.
-		0xF4, byte(temperature)<<5 | byte(pressure)<<2 | byte(sleep),
+		0xF4, byte(opts.Temperature)<<5 | byte(opts.Pressure)<<2 | byte(sleep),
 		// ctrl_hum
-		0xF2, byte(humidity),
+		0xF2, byte(opts.Humidity),
 		// config
-		0xF5, byte(standby)<<5 | byte(filter)<<2,
+		0xF5, byte(opts.Standby)<<5 | byte(opts.Filter)<<2,
 		// ctrl_meas
-		0xF4, byte(temperature)<<5 | byte(pressure)<<2 | byte(normal),
+		0xF4, byte(opts.Temperature)<<5 | byte(opts.Pressure)<<2 | byte(normal),
 	}
 
 	// The device starts in 2ms as per datasheet. No need to wait for boot to be
