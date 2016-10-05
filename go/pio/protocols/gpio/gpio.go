@@ -189,6 +189,8 @@ func (b *BasicPin) Out(Level) error {
 //
 // Returns nil in case the pin is not present.
 func ByNumber(number int) PinIO {
+	lock.Lock()
+	defer lock.Unlock()
 	pin, _ := byNumber[number]
 	return pin
 }
@@ -199,6 +201,8 @@ func ByNumber(number int) PinIO {
 //
 // Returns nil in case the pin is not present.
 func ByName(name string) PinIO {
+	lock.Lock()
+	defer lock.Unlock()
 	pin, _ := byName[name]
 	return pin
 }
@@ -209,6 +213,8 @@ func ByName(name string) PinIO {
 //
 // Returns nil in case there is no pin setup with this function.
 func ByFunction(fn string) PinIO {
+	lock.Lock()
+	defer lock.Unlock()
 	pin, _ := byFunction[fn]
 	return pin
 }
@@ -219,15 +225,26 @@ func ByFunction(fn string) PinIO {
 //
 // This list excludes non-GPIO pins like GROUND, V3_3, etc.
 func All() []PinIO {
-	// TODO(maruel): Return a copy?
-	return all
+	lock.Lock()
+	defer lock.Unlock()
+	out := make(pinList, 0, len(byNumber))
+	for _, p := range byNumber {
+		out = append(out, p)
+	}
+	sort.Sort(out)
+	return out
 }
 
 // Functional returns a map of all pins implementing hardware provided
 // special functionality, like I²C, SPI, ADC.
 func Functional() map[string]PinIO {
-	// TODO(maruel): Return a copy?
-	return byFunction
+	lock.Lock()
+	defer lock.Unlock()
+	out := make(map[string]PinIO, len(byFunction))
+	for k, v := range byFunction {
+		out[k] = v
+	}
+	return out
 }
 
 // Register registers a GPIO pin.
@@ -244,10 +261,36 @@ func Register(pin PinIO) error {
 	if _, ok := byName[name]; ok {
 		return fmt.Errorf("registering the same pin %s twice", name)
 	}
-	all = append(all, pin)
-	sort.Sort(all)
+
 	byNumber[number] = pin
 	byName[name] = pin
+	return nil
+}
+
+// Unregister removes a previously registered pin.
+//
+// This can happen when a pin is exposed via an USB device and the device is
+// unplugged.
+func Unregister(name string, number int, function string) error {
+	lock.Lock()
+	defer lock.Unlock()
+	if _, ok := byName[name]; !ok {
+		return errors.New("unknown name")
+	}
+	if _, ok := byNumber[number]; !ok {
+		return errors.New("unknown number")
+	}
+	if function != "" {
+		if _, ok := byFunction[function]; !ok {
+			return errors.New("unknown function")
+		}
+	}
+
+	delete(byName, name)
+	delete(byNumber, number)
+	if function != "" {
+		delete(byFunction, function)
+	}
 	return nil
 }
 
@@ -301,7 +344,6 @@ func (invalidPin) Out(Level) error {
 
 var (
 	lock       sync.Mutex
-	all        = pinList{}
 	byNumber   = map[int]PinIO{}
 	byName     = map[string]PinIO{}
 	byFunction = map[string]PinIO{}

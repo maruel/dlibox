@@ -66,8 +66,11 @@ type Pins interface {
 func All() map[string]Opener {
 	lock.Lock()
 	defer lock.Unlock()
-	// TODO(maruel): Return a copy?
-	return byName
+	out := make(map[string]Opener, len(byName))
+	for k, v := range byName {
+		out[k] = v
+	}
+	return out
 }
 
 // New returns an open handle to the bus and CS line.
@@ -75,19 +78,9 @@ func All() map[string]Opener {
 // Specify busNumber -1 to get the first available bus and its first CS line.
 // This is the recommended value.
 func New(busNumber, cs int) (ConnCloser, error) {
-	if busNumber == -1 {
-		if first == nil {
-			return nil, errors.New("no SPI bus found")
-		}
-		return first()
-	}
-	bus, ok := byNumber[busNumber]
-	if !ok {
-		return nil, fmt.Errorf("no SPI bus %d found", busNumber)
-	}
-	opener, ok := bus[cs]
-	if !ok {
-		return nil, fmt.Errorf("no SPI bus %d.%d found", busNumber, cs)
+	opener, err := find(busNumber, cs)
+	if err != nil {
+		return nil, err
 	}
 	return opener()
 }
@@ -123,7 +116,60 @@ func Register(name string, busNumber, cs int, opener Opener) error {
 	return nil
 }
 
+// Unregister removes a previously registered SPI bus.
 //
+// This can happen when a SPI bus is exposed via an USB device and the device is
+// unplugged.
+func Unregister(name string, busNumber int) error {
+	lock.Lock()
+	defer lock.Unlock()
+	_, ok := byName[name]
+	if !ok {
+		return errors.New("unknown name")
+	}
+	if _, ok := byNumber[busNumber]; !ok {
+		return errors.New("unknown number")
+	}
+
+	delete(byName, name)
+	delete(byNumber, busNumber)
+	first = nil
+	/* TODO(maruel): Figure out a way.
+	if first == bus {
+		first = nil
+		last := ""
+		for name, b := range byName {
+			if last == "" || last > name {
+				last = name
+				first = b
+			}
+		}
+	}
+	*/
+	return nil
+}
+
+//
+
+func find(busNumber, cs int) (Opener, error) {
+	lock.Lock()
+	defer lock.Unlock()
+	if busNumber == -1 {
+		if first == nil {
+			return nil, errors.New("no SPI bus found")
+		}
+		return first, nil
+	}
+	bus, ok := byNumber[busNumber]
+	if !ok {
+		return nil, fmt.Errorf("no SPI bus %d found", busNumber)
+	}
+	opener, ok := bus[cs]
+	if !ok {
+		return nil, fmt.Errorf("no SPI bus %d.%d found", busNumber, cs)
+	}
+	return opener, nil
+}
 
 var (
 	lock     sync.Mutex
