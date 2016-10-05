@@ -63,7 +63,7 @@ maintenance.
   instance) and an application writer (as a user of a device driver). It's the
   _application_ that controls the objects' lifetime.
 * Strong distinction between _enablers_ and _devices_. See
-  [Background](#background) below.
+  [Background](README.md#background).
 
 
 ## Success criteria
@@ -76,8 +76,8 @@ maintenance.
 ## Risks
 
 The risks below are being addressed via a strong commitment to [driver lifetime
-management](#driver-lifetime-management) and having a high quality bar via an
-explicit list of [requirements](#requirements).
+management](README.md#driver-lifetime-management) and having a high quality bar
+via an explicit list of [requirements](README.md#requirements).
 
 The enablers (boards, CPU, buses) is what will break or make this project.
 Nobody want to do them but they are needed. You need a large base of enablers so

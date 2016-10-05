@@ -57,7 +57,9 @@ common base is
 which is a purely generic pin. This describes GROUND,
 VCC, etc. Each pin is registered by the relevant device driver at initialization
 time and has a unique name. The same pin may be present multiple times on a
-header. The only pins not registered are the INVALID ones. There's one generic
+header.
+
+The only pins not registered are the INVALID ones. There's one generic
 at
 [pins.INVALID](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/pins#INVALID)
 and two specialized,
@@ -66,7 +68,7 @@ and
 [gpio.INVALID](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/gpio#INVALID).
 
 
-## Edge based triggering in the case of memory mapped GPIO registers
+## Edge based triggering and input pull resistor
 
 CPU drivers can have immediate access to the GPIO pins by leveraging memory
 mapped GPIO registers. The main problem with this approach is that one looses
@@ -76,6 +78,8 @@ memory for everything _except_ for edge detection. The CPU drivers has the job
 of hiding this fact to the users and make the dual-use transparent.
 
 Using CPU specific drivers enable changing input pull resistor, which sysfs
-notoriously doesn't expose. This setup enables the best of both world, low
-latency read and write, and CPU-less edge detection, all without the user
-knowing about the intricate details.
+notoriously doesn't expose.
+
+The setup described above enables the best of both world, low latency read and
+write, and CPU-less edge detection, all without the user knowing about the
+intricate details!
