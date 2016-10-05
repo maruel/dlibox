@@ -25,10 +25,10 @@ The documentation is split into 3 sections:
 3. ... yet don't get in the way of platform specificity.
    * Ex: A user can use statically typed global variables
      [rpi.P1_3](https://godoc.org/github.com/maruel/dlibox/go/pio/host/rpi#pkg-variables),
-     [bcm283x](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x#Pin)
+     [bcm283x.GPIO2](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x#Pin)
      or
-     [bcm283x](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x#pkg-variables)
-     to refer to the same precise pin when I²C bus #1 is enabled.
+     [bcm283x.I2C1_SDA](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x#pkg-variables)
+     to refer to the exact same pin when I²C bus #1 is enabled.
 3. At usability expense, the user can chose to optimize for performance.
    * Ex: apa102 exposes both high level
      [draw.Image](https://golang.org/pkg/image/draw/#Image) to draw an image and
