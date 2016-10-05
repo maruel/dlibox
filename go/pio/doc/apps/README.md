@@ -385,7 +385,7 @@ func main() {
     }
     defer bus.Close()
 
-    // Open a handle to a bme280 connected on the I²C bus:
+    // Open a handle to a bme280 connected on the I²C bus using default settings:
     dev, err := bme280.NewI2C(bus, nil)
     if err != nil {
         log.Fatal(err)
