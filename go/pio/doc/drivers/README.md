@@ -10,8 +10,8 @@ the supported hardware.
 Go developped a fairly large hardware hacker community in part because the
 language and its tooling have the following properties:
 
-* Easy to cross compile to Arm/Linux via `GOOS=linux GOARCH=arm go build .`.
-* Significantly faster to execute than python.
+* Easy to cross compile to ARM/Linux via `GOOS=linux GOARCH=arm go build .`.
+* Significantly faster to execute than python and node.js.
 * Significantly lighter in term of memory use than Java or node.js.
 * Significantly more productive to code than C/C++.
 * Builds reasonably fast on ARM.
@@ -19,20 +19,20 @@ language and its tooling have the following properties:
   old) makes it easy to apt-get install on arm64, or arm32 users have access to
   package on [golang.org](https://golang.org).
 
-Many Go packages, both generic and specialized, were created to fill the space
-but there isn’t one clear winner or a cohesive design pattern that scales to
-multiple platforms. Many have either grown organically or have incomplete
-implementation. Most have a primitive driver loading mechanism but is generally
-not flexible enough.
-
-This document exposes a design to create a cohesive and definitive common
-library that can be maintained on the long term.
+Many Go packages, both generic and specialized, were created to fill the space.
+This library came out of the desire to have a _designed_ API (contrary to
+growing organically) with strict [code requirements](#requirements) and a
+[strong, opiniated philosophy](../../#philosophy) to enable long term
+maintenance.
 
 
 ## Goals
 
 * Not more abstract than absolutely needed. Use concrete types whenever
   possible.
+* Orthogonality and composability
+  * Each component must own an orthogonal part of the platform and each
+    components can be composed together.
 * Extensible:
   * Users can provide additional drivers that are seamlessly loaded
     with a structured ordering of priority.
@@ -42,17 +42,16 @@ library that can be maintained on the long term.
     attempted to be loaded, uses memory mapped GPIO registers instead of sysfs
     whenever possible, etc.
 * Coverage:
+  * Be as OS agnostic as possible. Abstract OS specific concepts like
+    [sysfs](https://godoc.org/github.com/maruel/dlibox/go/pio/host/sysfs).
   * Each driver implements and exposes as much of the underlying device
     capability as possible and relevant.
   * [cmd/](../../cmd/) implements useful directly usable tool.
   * [devices/](../../devices/) implements common device drivers.
   * [host/](../../host/) must implement a large base of common platforms that
     _just work_. This is in addition to extensibility.
-  * Interfacing for common OS provided functionality (i.e.
-    [sysfs](../../host/sysfs)) and emulated ones (i.e.
-    [bitbang](../../experimental/bitbang)).
 * Simplicity:
-  * Static typing is *thoroughly used*, to reduce the risk of runtime failure.
+  * Static typing is _thoroughly used_, to reduce the risk of runtime failure.
   * Minimal coding is needed to accomplish a task.
   * Use of the library is defacto portable.
   * Include fakes for buses and device interfaces to simplify the life of
@@ -76,7 +75,7 @@ All the code must fit the following requirements.
 **Fear not!** We know the list _is_ daunting but as you create your pull request
 to add something at [experimental/](../../experimental/), we'll happily guide
 you in the process to help improve the code to meet the expected standard. The
-end goal is to write quality maintainable code and use this as a learning
+end goal is to write *high quality maintainable code* and use this as a learning
 experience.
 
 * The code must be Go idiomatic.
@@ -86,15 +85,18 @@ experience.
     [io.Writer](https://golang.org/pkg/io/#Writer) and
     [image.Image](https://golang.org/pkg/image/#Image) where possible.
   * No `interface{}` unless strictly required.
-  * Minimal use of factories.
-  * No `init()` code that accesses peripherals on process startup.
+  * Minimal use of factories except for protocol level registries.
+  * No `init()` code that accesses peripherals on process startup. These belongs
+    to
+    [Driver.Init()](https://godoc.org/github.com/maruel/dlibox/go/pio#Driver).
 * Exact naming
   * Driver for a chipset must have the name of the chipset or the chipset
     family. Don't use `oleddisplay`, use `ssd1306`.
   * Driver must use the real chip name, not a marketing name by a third party.
-    Don't use `dotstar` (as marketed by Adafruit), use `apa102` (as published
+    Don't use `dotstar` (as marketed by Adafruit), use `apa102` (as created
     by APA Electronic co. LTD.).
-  * A link to the datasheet should be included in the package doc.
+  * A link to the datasheet must be included in the package doc unless NDA'ed
+    or inaccessible.
 * Testability
   * Code must be testable and tested without a device.
   * When relevant, include a smoke test under [tests/](../../tests/). The smoke
@@ -102,16 +104,17 @@ experience.
 * Usability
   * Provide a standalone executable in [cmd/](../../cmd/) to expose the
     functionality.  It is acceptable to only expose a small subset of the
-    functionality but the tool must have purpose.
+    functionality but _the tool must have purpose_.
   * Provide a `func Example()` along your test to describe basic usage of your
     driver. See the official [testing
     package](https://golang.org/pkg/testing/#hdr-Examples) for more details.
 * Performance
   * Drivers controling an output device must have a fast path that can be used
-    to directly write in the device's native format.
+    to directly write in the device's native format, e.g.
+    [io.Writer](https://golang.org/pkg/io/#Writer).
   * Drivers controling an output device must have a generic path accepting
-    higher level interface when found in the stdlib, i.e.
-    [image.Image](https://golang.org/pkg/image/#Image)
+    higher level interface when found in the stdlib, e.g.
+    [image.Image](https://golang.org/pkg/image/#Image).
   * Floating point arithmetic should only be used when absolutely necesary in
     the driver code. Most of the cases can be replaced with fixed point
     arithmetic, for example
@@ -125,7 +128,7 @@ experience.
   strictly needed.
 * Struct implementing an interface must validate at compile time with `var _
   <Interface> = &<Type>{}`.
-* No code under the GPL, LGPL or APL license will be accepted.
+* License is Apache v2.0.
 
 
 ## Driver lifetime management
@@ -200,12 +203,12 @@ items in [Requirements](#requirements) listed above. First propose it as
 
 This document distinguishes two classes of drivers:
 
-* Enablers. They are what make the interconnects work, so that you can then
+* Enablers: they are what make the interconnects work, so that you can then
   use real stuff. That's buses (I²C, SPI, GPIO, BT, UART). This is what can be
   used as point-to-point protocols. They enable you to do something but are not
   the essence of what you want to do. They can also be MCUs like AVR, ESP8266,
   etc.
-* Devices. They are the end goal, to do something functional. There are multiple
+* Devices: they are the end goal, to do something functional. There are multiple
   subclasses of devices like sensors, output devices, etc.
 
 The enablers is what will break or make this project. Nobody want to do them

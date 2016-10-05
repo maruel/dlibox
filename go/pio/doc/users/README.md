@@ -3,6 +3,12 @@
 Documentation for _users_ who want ready-to-use tools.
 
 
+## Functionality included
+
+[cmd/](../../cmd/) contains all the tools. Take a look first to see the included
+functionality.
+
+
 ## Installing locally
 
 The `pio` project doesn't release binaries at the moment, you are expected to
@@ -11,18 +17,10 @@ build from sources.
 
 ### Prerequisite
 
-First, make sure to have Go installed.
+First, make sure to have Go installed. Get it from https://golang.org/dl/.
 
 If you are running a Debian based distribution (Raspbian, Ubuntu, etc), you can
-run:
-
-```bash
-sudo apt-get install golang
-```
-
-to get the Go toolchain installed.
-
-Otherwise, get it from https://golang.org/dl/.
+run `sudo apt-get install golang` to get the Go toolchain installed.
 
 
 ### Installation

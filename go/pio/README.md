@@ -14,16 +14,47 @@ The documentation is split into 3 sections:
 
 ## Philosophy
 
-1. Optimize for usability.
-2. At usability expense, the user can chose to optimize for performance.
-3. Use a divide and conquer approach. Each component has exactly one
+1. Optimize for simplicity, correctness and usability in that order.
+   * Ex: everything, interfaces and structs, uses strict typing, there's no
+     `interface{}` in sight.
+2. OS agnostic. Clear separation of interfaces in [protocols/](protocols),
+   enablers in [host/](host) and device drivers in [devices/](devices).
+   * Ex: no devfs or sysfs path in sight.
+   * Ex: conditional compilation enables only the relevant drivers to be loaded
+     on each platform.
+3. ... yet don't get in the way of platform specificity.
+   * Ex: A user can use statically typed global variables
+     [rpi.P1_3](https://godoc.org/github.com/maruel/dlibox/go/pio/host/rpi#pkg-variables),
+     [bcm283x](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x#Pin)
+     or
+     [bcm283x](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x#pkg-variables)
+     to refer to the same precise pin when I²C bus #1 is enabled.
+3. At usability expense, the user can chose to optimize for performance.
+   * Ex: apa102 exposes both high level
+     [draw.Image](https://golang.org/pkg/image/draw/#Image) to draw an image and
+     low level [io.Writer](https://golang.org/pkg/io/#Writer) to write raw RGB
+     24 bits pixels. The user choose.
+4. Use a divide and conquer approach. Each component has exactly one
    responsibility.
-4. The driver's writer pleasure is dead last.
+   * Ex: instead of having a driver per "platform", there's a driver per
+     "component": one for the CPU, one for the board headers, one for each
+     buses and sensors, etc.
+5. Extensible via a driver registry.
+   * Ex: a user can inject a custom driver to expose more pins, headers, etc. An
+     USB device (like an FT232H) can expose headers _in addition_ to the headers
+     found on the host.
+6. The drivers must use the fastest possible implementation.
+   * Ex: both
+     [allwinner](https://godoc.org/github.com/maruel/dlibox/go/pio/host/allwinner)
+     and
+     [bcm283x](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x)
+     leverage sysfs to expose interrupt driven edge detection, yet use memory
+     mapped GPIO registers to single-cycle reads and writes.
 
 
 ## Users
 
-pio includes many ready-to-use tools!
+pio includes [many ready-to-use tools](cmd)!
 
 ```bash
 go get github.com/maruel/dlibox/go/pio/cmd/...
@@ -37,8 +68,10 @@ See [doc/users/](doc/users/) for more info on:
 
 ## Application developpers
 
-For [application developpers](doc/apps/), to get a quick feel, here's a
-complete example to get the current temperature, barometric pressure and
+For [application developpers](doc/apps/), `pio` provides OS-independent bus
+numbering. For example, the *following code will behave exactly the same if you
+run it on a Raspberr Pi or run it on Windows with a FT232H connected over USB*!
+This complete example gets the current temperature, barometric pressure and
 relative humidity using a bme280:
 
 ```go
@@ -82,7 +115,7 @@ func main() {
 }
 ```
 
-See more examples at [doc/apps/](doc/apps/#samples)!
+See more examples at [doc/apps/SAMPLES.md](doc/apps/SAMPLES.md)!
 
 
 ## Device drivers developpers
