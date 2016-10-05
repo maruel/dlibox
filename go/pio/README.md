@@ -30,7 +30,9 @@ The documentation is split into 3 sections:
      [bcm283x.I2C1_SDA](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x#pkg-variables)
      to refer to the exact same pin when I²C bus #1 is enabled.
 3. At usability expense, the user can chose to optimize for performance.
-   * Ex: apa102 exposes both high level
+   * Ex:
+     [apa102.Dev](https://godoc.org/github.com/maruel/dlibox/go/pio/devices/apa102#Dev)
+     exposes both high level
      [draw.Image](https://golang.org/pkg/image/draw/#Image) to draw an image and
      low level [io.Writer](https://golang.org/pkg/io/#Writer) to write raw RGB
      24 bits pixels. The user choose.
@@ -39,7 +41,8 @@ The documentation is split into 3 sections:
    * Ex: instead of having a driver per "platform", there's a driver per
      "component": one for the CPU, one for the board headers, one for each
      buses and sensors, etc.
-5. Extensible via a driver registry.
+5. Extensible via a [driver
+   registry](https://godoc.org/github.com/maruel/dlibox/go/pio#Register).
    * Ex: a user can inject a custom driver to expose more pins, headers, etc. An
      USB device (like an FT232H) can expose headers _in addition_ to the headers
      found on the host.
@@ -48,8 +51,8 @@ The documentation is split into 3 sections:
      [allwinner](https://godoc.org/github.com/maruel/dlibox/go/pio/host/allwinner)
      and
      [bcm283x](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x)
-     leverage sysfs to expose interrupt driven edge detection, yet use memory
-     mapped GPIO registers to single-cycle reads and writes.
+     leverage sysfs gpio to expose interrupt driven edge detection, yet use
+     memory mapped GPIO registers to single-cycle reads and writes.
 
 
 ## Users
@@ -70,9 +73,9 @@ See [doc/users/](doc/users/) for more info on:
 
 For [application developpers](doc/apps/), `pio` provides OS-independent bus
 numbering. For example, the *following code will behave exactly the same if you
-run it on a Raspberr Pi or run it on Windows with a FT232H connected over USB*!
-This complete example gets the current temperature, barometric pressure and
-relative humidity using a bme280:
+run it on a Raspberry Pi or on Windows with a FT232H connected over USB*!  This
+complete example gets the current temperature, barometric pressure and relative
+humidity using a bme280:
 
 ```go
 package main
@@ -92,7 +95,8 @@ func main() {
         log.Fatal(err)
     }
 
-    // Open a handle to the first available I²C bus:
+    // Open a handle to the first available I²C bus. It could be a via FT232H
+    // over USB or an I²C bus exposed on the host's headers, it doesn't matter.
     bus, err := i2c.New(-1)
     if err != nil {
         log.Fatal(err)
