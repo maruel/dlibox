@@ -187,7 +187,7 @@ See [SAMPLES.md](SAMPLES.md) for various examples.
 You can load out of tree drivers for devices but more importantly even for
 buses, GPIO pins, headers, etc. Let's say you have a driver that exposes an I²C
 bus over a REST API to a remote device, that lives in repository
-github.com/foo/bar, you can do the following:
+github.com/example/virtual_i2c, you can do the following:
 
 ```go
 package main
@@ -195,7 +195,7 @@ package main
 import (
     "log"
 
-    "github.com/foo/bar"
+    "github.com/example/virtual_i2c"
     "github.com/maruel/dlibox/go/pio"
     "github.com/maruel/dlibox/go/pio/host"
     "github.com/maruel/dlibox/go/pio/protocols/i2c"
@@ -203,18 +203,18 @@ import (
 
 type driver struct{}
 
-func (d *driver) String() string          { return "foo/bar" }
+func (d *driver) String() string          { return "virtual_i2c" }
 func (d *driver) Type() pio.Type          { return pio.Bus }
 func (d *driver) Prerequisites() []string { return nil }
 
 func (d *driver) Init() (bool, error) {
     // Load the driver. Note that drivers are loaded *concurrently* by pio.
-    if err := bar.Load(); err != nil {
+    if err := virtual_i2c.Load(); err != nil {
         return true, err
     }
     err := i2c.Register("foo", 10, func() (i2c.ConnCloser, error) {
         // You may have to create a struct to convert the API:
-        return bar.Open()
+        return virtual_i2c.Open()
     })
     // If this Init() function returns an error, it will be in the state
     // returned by host.Init():
