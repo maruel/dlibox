@@ -180,3 +180,63 @@ construct an I²C or a SPI bus over raw GPIO pins via
 ## Samples
 
 See [SAMPLES.md](SAMPLES.md) for various examples.
+
+
+## Using out-of-tree drivers
+
+You can load out of tree drivers for devices but more importantly even for
+buses, GPIO pins, headers, etc. Let's say you have a driver that exposes an I²C
+bus over a REST API to a remote device, that lives in repository
+github.com/foo/bar, you can do the following:
+
+```go
+package main
+
+import (
+    "log"
+
+    "github.com/foo/bar"
+    "github.com/maruel/dlibox/go/pio"
+    "github.com/maruel/dlibox/go/pio/host"
+    "github.com/maruel/dlibox/go/pio/protocols/i2c"
+)
+
+type driver struct{}
+
+func (d *driver) String() string          { return "foo/bar" }
+func (d *driver) Type() pio.Type          { return pio.Bus }
+func (d *driver) Prerequisites() []string { return nil }
+
+func (d *driver) Init() (bool, error) {
+    // Load the driver. Note that drivers are loaded *concurrently* by pio.
+    if err := bar.Load(); err != nil {
+        return true, err
+    }
+    err := i2c.Register("foo", 10, func() (i2c.ConnCloser, error) {
+        // You may have to create a struct to convert the API:
+        return bar.Open()
+    })
+    // If this Init() function returns an error, it will be in the state
+    // returned by host.Init():
+    return true, err
+}
+
+func main() {
+    // Register your driver in the registry:
+    if _, err := drivers.Register(driver); err != nil {
+        log.Fatal(err)
+    }
+    // Initialize normally. Your driver will be loaded:
+    if _, err := host.Init(); err != nil {
+        log.Fatal(err)
+    }
+
+    bus, err := i2c.New(10)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer bus.Close()
+
+    // Use your bus driver like if it had been provided by pio.
+}
+```

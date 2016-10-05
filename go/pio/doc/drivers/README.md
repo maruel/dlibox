@@ -22,7 +22,7 @@ language and its tooling have the following properties:
 Many Go packages, both generic and specialized, were created to fill the space.
 This library came out of the desire to have a _designed_ API (contrary to
 growing organically) with strict [code requirements](#requirements) and a
-[strong, opiniated philosophy](../../#philosophy) to enable long term
+[strong, opinionated philosophy](../../#philosophy) to enable long term
 maintenance.
 
 
