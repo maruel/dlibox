@@ -407,3 +407,9 @@ func (d *driverGPIO) exportGPIOChip(path string) error {
 	}
 	return nil
 }
+
+func init() {
+	if isLinux {
+		pio.MustRegister(&driverGPIO{})
+	}
+}

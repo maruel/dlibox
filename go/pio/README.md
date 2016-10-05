@@ -75,7 +75,7 @@ func main() {
 
     // Read temperature from the sensor:
     var env devices.Environment
-    if err = dev.Read(&env); err != nil {
+    if err = dev.Sense(&env); err != nil {
         log.Fatal(err)
     }
     fmt.Printf("%8s %10s %9s\n", env.Temperature, env.Pressure, env.Humidity)

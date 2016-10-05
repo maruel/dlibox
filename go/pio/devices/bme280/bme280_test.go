@@ -61,8 +61,8 @@ func TestRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	env := devices.Environment{}
-	if err := dev.Read(&env); err != nil {
-		t.Fatalf("Read(): %v", err)
+	if err := dev.Sense(&env); err != nil {
+		t.Fatalf("Sense(): %v", err)
 	}
 	if env.Temperature != 23720 {
 		t.Fatalf("temp %d", env.Temperature)
@@ -150,7 +150,7 @@ func Example() {
 		log.Fatalf("failed to initialize bme280: %v", err)
 	}
 	env := devices.Environment{}
-	dev.Read(&env)
+	dev.Sense(&env)
 	fmt.Printf("%8s %10s %9s\n", env.Temperature, env.Pressure, env.Humidity)
 }
 

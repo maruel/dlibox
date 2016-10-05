@@ -7,6 +7,7 @@ package sysfs
 import (
 	"fmt"
 	"log"
+	"testing"
 
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
@@ -24,4 +25,10 @@ func ExampleLEDByName() {
 		log.Fatalf("failed to find LED: %v", err)
 	}
 	led.Out(gpio.Low)
+}
+
+func TestLEDByName(t *testing.T) {
+	if _, err := LEDByName("FOO"); err == nil {
+		t.Fail()
+	}
 }

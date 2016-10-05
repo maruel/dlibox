@@ -4,4 +4,8 @@
 
 package host
 
+import (
+	_ "github.com/maruel/dlibox/go/pio/host/sysfs"
+)
+
 const isLinux = true

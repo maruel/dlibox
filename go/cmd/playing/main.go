@@ -270,7 +270,7 @@ func sensorLoop(b *bme280.Dev, c chan<- *devices.Environment) {
 	defer tick.Stop()
 	for {
 		env := &devices.Environment{}
-		if err := b.Read(env); err != nil {
+		if err := b.Sense(env); err != nil {
 			log.Fatal(err)
 		}
 		c <- env

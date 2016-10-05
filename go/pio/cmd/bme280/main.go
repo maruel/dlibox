@@ -24,7 +24,7 @@ import (
 func read(e devices.Environmental, loop bool) error {
 	for {
 		var env devices.Environment
-		if err := e.Read(&env); err != nil {
+		if err := e.Sense(&env); err != nil {
 			return err
 		}
 		fmt.Printf("%8s %10s %9s\n", env.Temperature, env.Pressure, env.Humidity)

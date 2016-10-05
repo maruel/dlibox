@@ -7,8 +7,6 @@ package sysfs
 import (
 	"os"
 	"syscall"
-
-	"github.com/maruel/dlibox/go/pio"
 )
 
 type event [1]syscall.EpollEvent
@@ -51,8 +49,4 @@ func (e event) makeEvent(f *os.File) (int, error) {
 	e[0].Events = EPOLLPRI | EPOLLET
 	e[0].Fd = int32(fd)
 	return epollFd, syscall.EpollCtl(epollFd, EPOLL_CTL_ADD, int(fd), &e[0])
-}
-
-func init() {
-	pio.MustRegister(&driverGPIO{})
 }

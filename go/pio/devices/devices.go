@@ -98,7 +98,7 @@ type Environment struct {
 
 // Environmental represents an environmental sensor.
 type Environmental interface {
-	// Read returns the value read from the sensor. Unsupported metrics are not
+	// Sense returns the value read from the sensor. Unsupported metrics are not
 	// modified.
-	Read(env *Environment) error
+	Sense(env *Environment) error
 }

@@ -177,4 +177,10 @@ func (d *driverLED) Init() (bool, error) {
 	return true, nil
 }
 
+func init() {
+	if isLinux {
+		pio.MustRegister(&driverLED{})
+	}
+}
+
 var _ gpio.PinIO = &LED{}

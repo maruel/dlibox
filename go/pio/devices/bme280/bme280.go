@@ -73,8 +73,8 @@ type Dev struct {
 	c     calibration
 }
 
-// Read returns measurements as °C, kPa and % of relative humidity.
-func (d *Dev) Read(env *devices.Environment) error {
+// Sense returns measurements as °C, kPa and % of relative humidity.
+func (d *Dev) Sense(env *devices.Environment) error {
 	// All registers must be read in a single pass, as noted at page 21, section
 	// 4.1.
 	// Pressure: 0xF7~0xF9
@@ -364,3 +364,5 @@ func (c *calibration) compensateHumidityInt(raw, tFine int32) uint32 {
 	}
 	return uint32(x >> 12)
 }
+
+var _ devices.Environmental = &Dev{}
