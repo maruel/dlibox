@@ -4,4 +4,13 @@
 
 package sysfs
 
+import "syscall"
+
 const isLinux = true
+
+func ioctl(f uintptr, op uint, arg uintptr) error {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f, uintptr(op), arg); errno != 0 {
+		return syscall.Errno(errno)
+	}
+	return nil
+}

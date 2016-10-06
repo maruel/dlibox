@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"unsafe"
 
 	"github.com/maruel/dlibox/go/pio"
@@ -153,8 +152,8 @@ func (i *I2C) SDA() gpio.PinIO {
 // Private details.
 
 func (i *I2C) ioctl(op uint, arg uintptr) error {
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, i.f.Fd(), uintptr(op), arg); errno != 0 {
-		return fmt.Errorf("i²c ioctl: %s", syscall.Errno(errno))
+	if err := ioctl(i.f.Fd(), op, arg); err != nil {
+		return fmt.Errorf("i²c ioctl: %v", err)
 	}
 	return nil
 }

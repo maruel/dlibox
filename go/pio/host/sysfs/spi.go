@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"syscall"
 	"unsafe"
 
 	"github.com/maruel/dlibox/go/pio"
@@ -196,8 +195,8 @@ func (s *SPI) setFlag(op uint, arg uint64) error {
 }
 
 func (s *SPI) ioctl(op uint, arg unsafe.Pointer) error {
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, s.f.Fd(), uintptr(op), uintptr(arg)); errno != 0 {
-		return fmt.Errorf("spi ioctl: %s", syscall.Errno(errno))
+	if err := ioctl(s.f.Fd(), op, uintptr(arg)); err != nil {
+		return fmt.Errorf("spi ioctl: %v", err)
 	}
 	return nil
 }
