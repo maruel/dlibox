@@ -119,6 +119,10 @@ func (l *LED) Out(level gpio.Level) error {
 	return err
 }
 
+func (l *LED) PWM(duty int) error {
+	return errors.New("pwm is not supported")
+}
+
 //
 
 func (l *LED) open() error {
@@ -183,4 +187,6 @@ func init() {
 	}
 }
 
+var _ gpio.PinIn = &LED{}
+var _ gpio.PinOut = &LED{}
 var _ gpio.PinIO = &LED{}

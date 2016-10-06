@@ -120,6 +120,13 @@ type PinIn interface {
 	Pull() Pull
 }
 
+const (
+	// Max is the PWM fully at high. One should use Out(High) instead.
+	Max = 65536
+	// Half is a 50% PWM duty cycle.
+	Half = Max / 2
+)
+
 // PinOut is an output GPIO pin.
 type PinOut interface {
 	pins.Pin
@@ -128,6 +135,12 @@ type PinOut interface {
 	// After the initial call to ensure that the pin has been set as output, it
 	// is generally safe to ignore the error returned.
 	Out(l Level) error
+	// PWM sets a pin as output with a specified duty cycle between 0 and Max.
+	//
+	// The pin should use the highest frequency it can use.
+	//
+	// Use Half for a 50% duty cycle.
+	PWM(duty int) error
 }
 
 // PinIO is a GPIO pin that supports both input and output.
@@ -141,6 +154,7 @@ type PinIO interface {
 	WaitForEdge(timeout time.Duration) bool
 	Pull() Pull
 	Out(l Level) error
+	PWM(duty int) error
 }
 
 // INVALID implements PinIO and fails on all access.
@@ -181,6 +195,10 @@ func (b *BasicPin) Pull() Pull {
 
 func (b *BasicPin) Out(Level) error {
 	return fmt.Errorf("%s cannot be used as output", b.Name)
+}
+
+func (b *BasicPin) PWM(duty int) error {
+	return fmt.Errorf("%s cannot be used as PWM", b.Name)
 }
 
 //
@@ -342,6 +360,10 @@ func (invalidPin) Out(Level) error {
 	return invalidPinErr
 }
 
+func (invalidPin) PWM(duty int) error {
+	return invalidPinErr
+}
+
 var (
 	lock       sync.Mutex
 	byNumber   = map[int]PinIO{}
@@ -354,3 +376,7 @@ type pinList []PinIO
 func (p pinList) Len() int           { return len(p) }
 func (p pinList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 func (p pinList) Less(i, j int) bool { return p[i].Number() < p[j].Number() }
+
+var _ PinIn = INVALID
+var _ PinOut = INVALID
+var _ PinIO = INVALID

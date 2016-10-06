@@ -244,6 +244,10 @@ func (p Pin) Out(l gpio.Level) error {
 	return seekWrite(p.fValue, d[:])
 }
 
+func (p *Pin) PWM(duty int) error {
+	return errors.New("pwm is not supported on sysfs")
+}
+
 //
 
 // open opens the gpio sysfs handle to /value and direction.
@@ -413,3 +417,7 @@ func init() {
 		pio.MustRegister(&driverGPIO{})
 	}
 }
+
+var _ gpio.PinIn = &Pin{}
+var _ gpio.PinOut = &Pin{}
+var _ gpio.PinIO = &Pin{}

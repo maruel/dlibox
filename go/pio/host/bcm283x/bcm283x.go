@@ -409,6 +409,10 @@ func (p *Pin) Out(l gpio.Level) error {
 	return nil
 }
 
+func (p *Pin) PWM(duty int) error {
+	return errors.New("pwm is not supported")
+}
+
 // Special functionality.
 
 // DefaultPull returns the default pull for the function.
@@ -762,3 +766,6 @@ func (d *driver) Init() (bool, error) {
 }
 
 var _ pio.Driver = &driver{}
+var _ gpio.PinIn = &Pin{}
+var _ gpio.PinOut = &Pin{}
+var _ gpio.PinIO = &Pin{}
