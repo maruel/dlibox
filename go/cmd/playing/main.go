@@ -19,11 +19,11 @@ import (
 
 	_ "image/png"
 
-	"github.com/maruel/dlibox/go/bw2d"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/devices/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
+	"github.com/maruel/dlibox/go/pio/devices/ssd1306/image1bit"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
@@ -32,7 +32,7 @@ import (
 	"github.com/maruel/interrupt"
 )
 
-func loadImg(path string) (*bw2d.Image, error) {
+func loadImg(path string) (*image1bit.Image, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func loadImg(path string) (*bw2d.Image, error) {
 		return nil, err
 	}
 	r := src.Bounds()
-	img, err := bw2d.New(r.Max.X, r.Max.Y)
+	img, err := image1bit.New(image.Rect(0, 0, r.Max.X, r.Max.Y))
 	if err != nil {
 		return nil, err
 	}
@@ -94,15 +94,15 @@ func mainImpl() error {
 		return err
 	}
 	src.Inverse()
-	img, err := bw2d.New(s.W, s.H)
+	img, err := image1bit.New(image.Rect(0, 0, s.W, s.H))
 	if err != nil {
 		return err
 	}
 	r := src.Bounds()
 	r = r.Add(image.Point{(img.W - r.Max.X), (img.H - r.Max.Y) / 2})
 	draw.Draw(img, r, src, image.Point{}, draw.Src)
-	f8.Draw(img, 0, 0, bw2d.On, nil, "dlibox!")
-	f8.Draw(img, 0, s.H-f8.H-1, bw2d.On, nil, "is awesome")
+	f8.Draw(img, 0, 0, image1bit.On, nil, "dlibox!")
+	f8.Draw(img, 0, s.H-f8.H-1, image1bit.On, nil, "is awesome")
 	if _, err = s.Write(img.Buf); err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func mainImpl() error {
 	return nil
 }
 
-func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-chan bool, env <-chan *devices.Environment, keys <-chan ir.Key) {
+func displayLoop(s *ssd1306.Dev, f *psf.Font, img *image1bit.Image, button, motion <-chan bool, env <-chan *devices.Environment, keys <-chan ir.Key) {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
 	for {
@@ -191,30 +191,30 @@ func displayLoop(s *ssd1306.Dev, f *psf.Font, img *bw2d.Image, button, motion <-
 		select {
 		case b := <-button:
 			if b {
-				f.Draw(img, 0, f.H*4, bw2d.On, bw2d.Off, "Bouton!")
+				f.Draw(img, 0, f.H*4, image1bit.On, image1bit.Off, "Bouton!")
 			} else {
-				f.Draw(img, 0, f.H*4, bw2d.On, bw2d.Off, "          ")
+				f.Draw(img, 0, f.H*4, image1bit.On, image1bit.Off, "          ")
 			}
 			draw = true
 
 		case m := <-motion:
 			if m {
-				f.Draw(img, 0, f.H*5, bw2d.On, bw2d.Off, "Mouvement!")
+				f.Draw(img, 0, f.H*5, image1bit.On, image1bit.Off, "Mouvement!")
 			} else {
-				f.Draw(img, 0, f.H*5, bw2d.On, bw2d.Off, "          ")
+				f.Draw(img, 0, f.H*5, image1bit.On, image1bit.Off, "          ")
 			}
 
 		case t := <-env:
-			f.Draw(img, 0, f.H, bw2d.On, bw2d.Off, fmt.Sprintf("%8s", t.Temperature))
-			f.Draw(img, 0, f.H*2, bw2d.On, bw2d.Off, fmt.Sprintf("%9s", t.Pressure))
-			f.Draw(img, 0, f.H*3, bw2d.On, bw2d.Off, fmt.Sprintf("%10s", t.Humidity))
+			f.Draw(img, 0, f.H, image1bit.On, image1bit.Off, fmt.Sprintf("%8s", t.Temperature))
+			f.Draw(img, 0, f.H*2, image1bit.On, image1bit.Off, fmt.Sprintf("%9s", t.Pressure))
+			f.Draw(img, 0, f.H*3, image1bit.On, image1bit.Off, fmt.Sprintf("%10s", t.Humidity))
 
 		case s := <-keys:
-			f.Draw(img, 0, f.H*6, bw2d.On, bw2d.Off, string(s))
+			f.Draw(img, 0, f.H*6, image1bit.On, image1bit.Off, string(s))
 			draw = true
 
 		case <-tick.C:
-			f.Draw(img, 0, 0, bw2d.On, bw2d.Off, time.Now().Format("15:04:05"))
+			f.Draw(img, 0, 0, image1bit.On, image1bit.Off, time.Now().Format("15:04:05"))
 			draw = true
 
 		case <-interrupt.Channel:

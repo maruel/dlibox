@@ -26,6 +26,7 @@ import (
 	"log"
 
 	"github.com/maruel/dlibox/go/pio/devices"
+	"github.com/maruel/dlibox/go/pio/devices/ssd1306/image1bit"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
@@ -186,20 +187,30 @@ func (d *Dev) Draw(r image.Rectangle, src image.Image, sp image.Point) {
 	// Take 8 lines at a time.
 	deltaX := r.Min.X - srcR.Min.X
 	deltaY := r.Min.Y - srcR.Min.Y
-	pixels := make([]byte, d.W*d.H/8)
-	for sY := srcR.Min.Y; sY < srcR.Max.Y; sY += 8 {
-		rY := ((sY + deltaY) / 8) * d.W
-		for sX := srcR.Min.X; sX < srcR.Max.X; sX++ {
-			rX := sX + deltaX
-			c0 := colorToBit(src.At(sX, sY))
-			c1 := colorToBit(src.At(sX, sY+1)) << 1
-			c2 := colorToBit(src.At(sX, sY+2)) << 2
-			c3 := colorToBit(src.At(sX, sY+3)) << 3
-			c4 := colorToBit(src.At(sX, sY+4)) << 4
-			c5 := colorToBit(src.At(sX, sY+5)) << 5
-			c6 := colorToBit(src.At(sX, sY+6)) << 6
-			c7 := colorToBit(src.At(sX, sY+7)) << 7
-			pixels[rX+rY] = c0 | c1 | c2 | c3 | c4 | c5 | c6 | c7
+
+	var pixels []byte
+	if img, ok := src.(*image1bit.Image); ok {
+		if srcR.Min.X == 0 && srcR.Dx() == d.W && srcR.Min.Y == 0 && srcR.Dy() == d.H {
+			// Fast path.
+			pixels = img.Buf
+		}
+	}
+	if pixels == nil {
+		pixels = make([]byte, d.W*d.H/8)
+		for sY := srcR.Min.Y; sY < srcR.Max.Y; sY += 8 {
+			rY := ((sY + deltaY) / 8) * d.W
+			for sX := srcR.Min.X; sX < srcR.Max.X; sX++ {
+				rX := sX + deltaX
+				c0 := colorToBit(src.At(sX, sY))
+				c1 := colorToBit(src.At(sX, sY+1)) << 1
+				c2 := colorToBit(src.At(sX, sY+2)) << 2
+				c3 := colorToBit(src.At(sX, sY+3)) << 3
+				c4 := colorToBit(src.At(sX, sY+4)) << 4
+				c5 := colorToBit(src.At(sX, sY+5)) << 5
+				c6 := colorToBit(src.At(sX, sY+6)) << 6
+				c7 := colorToBit(src.At(sX, sY+7)) << 7
+				pixels[rX+rY] = c0 | c1 | c2 | c3 | c4 | c5 | c6 | c7
+			}
 		}
 	}
 	if _, err := d.Write(pixels); err != nil {

@@ -10,7 +10,6 @@ import (
 	"flag"
 	"fmt"
 	"image"
-	"image/color"
 	"image/draw"
 	"image/gif"
 	_ "image/png"
@@ -26,6 +25,7 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
+	"github.com/maruel/dlibox/go/pio/devices/ssd1306/image1bit"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
@@ -126,7 +126,7 @@ func drawText(img draw.Image, text string) {
 	}
 	drawer := font.Drawer{
 		Dst:  img,
-		Src:  &image.Uniform{color.Gray{255}},
+		Src:  &image.Uniform{image1bit.On},
 		Face: f,
 		Dot:  fixed.P(advance, bounds.Dy()-1-f.Descent),
 	}
@@ -135,9 +135,12 @@ func drawText(img draw.Image, text string) {
 
 // convert resizes and converts to black and white an image while keeping
 // aspect ratio, put it in a centered image of the same size as the display.
-func convert(s *ssd1306.Dev, src image.Image) (*image.Gray, error) {
+func convert(s *ssd1306.Dev, src image.Image) (*image1bit.Image, error) {
 	src = resize.Thumbnail(uint(s.W), uint(s.H), src, resize.Bicubic)
-	img := image.NewGray(image.Rect(0, 0, s.W, s.H))
+	img, err := image1bit.New(image.Rect(0, 0, s.W, s.H))
+	if err != nil {
+		return nil, err
+	}
 	r := src.Bounds()
 	r = r.Add(image.Point{(s.W - r.Max.X) / 2, (s.H - r.Max.Y) / 2})
 	draw.Draw(img, r, src, image.Point{}, draw.Src)
@@ -214,7 +217,7 @@ func mainImpl() error {
 	// If an animated GIF, draw it in a loop.
 	if g != nil {
 		// Resize all the images up front to save on CPU processing.
-		imgs := make([]*image.Gray, len(g.Image))
+		imgs := make([]*image1bit.Image, len(g.Image))
 		for i := range g.Image {
 			imgs[i], err = convert(s, g.Image[i])
 			drawText(imgs[i], *text)
@@ -234,7 +237,10 @@ func mainImpl() error {
 
 	if src == nil {
 		// Create a blank image.
-		src = image.NewGray(image.Rect(0, 0, s.W, s.H))
+		src, err = image1bit.New(image.Rect(0, 0, s.W, s.H))
+		if err != nil {
+			return err
+		}
 	}
 
 	img, err := convert(s, src)

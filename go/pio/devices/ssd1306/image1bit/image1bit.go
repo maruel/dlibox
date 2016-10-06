@@ -1,11 +1,12 @@
-// Copyright 2016 Marc-Antoine Ruel. All rights reserved.
+// Copyright 2016 Google Inc. All rights reserved.
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package bw2d implements black and white (1 bit per pixel) 2D graphics.
+// Package image1bit implements black and white (1 bit per pixel) 2D graphics
+// in the memory format of the ssd1306 controller.
 //
 // It is compatible with package image/draw.
-package bw2d
+package image1bit
 
 import (
 	"errors"
@@ -50,7 +51,9 @@ type Image struct {
 }
 
 // New returns an initialized Image instance.
-func New(w, h int) (*Image, error) {
+func New(r image.Rectangle) (*Image, error) {
+	h := r.Dy()
+	w := r.Dx()
 	if h&7 != 0 {
 		return nil, errors.New("height must be multiple of 8")
 	}
@@ -90,7 +93,11 @@ func (i *Image) Bounds() image.Rectangle {
 
 // At implements image.Image.
 func (i *Image) At(x, y int) color.Color {
-	// Addressing is a bit odd, each byte is 8 vertical bits.
+	return i.AtBit(x, y)
+}
+
+// AtBit is the optimized version of At().
+func (i *Image) AtBit(x, y int) Bit {
 	offset := x + y/8*i.W
 	mask := byte(1 << byte(y&7))
 	return Bit(i.Buf[offset]&mask != 0)
@@ -116,7 +123,7 @@ func (i *Image) SetBit(x, y int, b Bit) {
 	}
 }
 
-// Private stuff.
+//
 
 var _ draw.Image = &Image{}
 
@@ -131,7 +138,6 @@ func convertBit(c color.Color) Bit {
 	case Bit:
 		return t
 	default:
-		// Values are on 16 bits.
 		r, g, b, _ := c.RGBA()
 		return Bit((r | g | b) >= 0x8000)
 	}

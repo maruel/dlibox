@@ -24,6 +24,19 @@ func TestCelcius(t *testing.T) {
 	if f := o.Float64(); f > 10.011 || f < 10.009 {
 		t.Fatalf("%f", f)
 	}
+	if f := o.ToF(); f != 50018 {
+		t.Fatalf("%d", f)
+	}
+}
+
+func TestFahrenheit(t *testing.T) {
+	o := Fahrenheit(10010)
+	if s := o.String(); s != "10.010°F" {
+		t.Fatalf("%#v", s)
+	}
+	if f := o.Float64(); f > 10.011 || f < 10.009 {
+		t.Fatalf("%f", f)
+	}
 }
 
 func TestKPascal(t *testing.T) {

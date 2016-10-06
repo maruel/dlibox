@@ -1,11 +1,12 @@
-// Copyright 2016 Marc-Antoine Ruel. All rights reserved.
+// Copyright 2016 Google Inc. All rights reserved.
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package bw2d
+package image1bit
 
 import (
 	"bytes"
+	"image"
 	"image/color"
 	"testing"
 )
@@ -17,18 +18,24 @@ func TestBit(t *testing.T) {
 	if r, g, b, a := Off.RGBA(); r != 0 || g != r || b != r || a != r {
 		t.Fail()
 	}
-}
-func TestImageNew(t *testing.T) {
-	if img, err := New(8, 7); img != nil || err == nil {
+	if On.String() != "On" || Off.String() != "Off" {
 		t.Fail()
 	}
-	if img, err := New(1, 8); img == nil || err != nil {
+	if On != convertBit(On) {
+		t.Fail()
+	}
+}
+func TestImageNew(t *testing.T) {
+	if img, err := New(image.Rect(0, 0, 8, 7)); img != nil || err == nil {
+		t.Fail()
+	}
+	if img, err := New(image.Rect(0, 0, 1, 8)); img == nil || err != nil {
 		t.Fail()
 	}
 }
 
 func TestImagePixels(t *testing.T) {
-	img, _ := New(1, 8)
+	img, _ := New(image.Rect(0, 0, 1, 8))
 	if !bytes.Equal(img.Buf, []byte{0x00}) {
 		t.Fatal("starts black")
 	}
@@ -55,7 +62,7 @@ func TestImagePixels(t *testing.T) {
 }
 
 func TestColorModel(t *testing.T) {
-	img, _ := New(1, 8)
+	img, _ := New(image.Rect(0, 0, 1, 8))
 	if v := img.ColorModel().Convert(color.NRGBA{0x80, 0x80, 0x80, 0xFF}).(Bit); v != On {
 		t.Fatalf("%s", v)
 	}

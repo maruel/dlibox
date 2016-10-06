@@ -24,12 +24,12 @@ import (
 
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/bw2d"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/apa102"
 	"github.com/maruel/dlibox/go/pio/devices/devicestest"
 	"github.com/maruel/dlibox/go/pio/devices/lirc"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
+	"github.com/maruel/dlibox/go/pio/devices/ssd1306/image1bit"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
@@ -58,12 +58,12 @@ func initDisplay() (devices.Display, error) {
 	}
 	// TODO(maruel): Leverage bme280 while at it but don't fail if not
 	// connected.
-	img, err := bw2d.New(display.W, display.H)
+	img, err := image1bit.New(image.Rect(0, 0, display.W, display.H))
 	if err != nil {
 		return nil, err
 	}
-	f20.Draw(img, 0, 0, bw2d.On, nil, "dlibox!")
-	f12.Draw(img, 0, display.H-f12.H-1, bw2d.On, nil, "is awesome")
+	f20.Draw(img, 0, 0, image1bit.On, nil, "dlibox!")
+	f12.Draw(img, 0, display.H-f12.H-1, image1bit.On, nil, "is awesome")
 	if _, err = display.Write(img.Buf); err != nil {
 		return nil, err
 	}

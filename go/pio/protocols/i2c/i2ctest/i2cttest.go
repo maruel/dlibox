@@ -91,6 +91,15 @@ func (p *Playback) String() string {
 	return "playback"
 }
 
+func (p *Playback) Close() error {
+	p.Lock.Lock()
+	defer p.Lock.Unlock()
+	if len(p.Ops) != 0 {
+		return fmt.Errorf("expected playback to be empty:\n%#v", p.Ops)
+	}
+	return nil
+}
+
 // Tx implements i2c.Conn.
 func (p *Playback) Tx(addr uint16, w, r []byte) error {
 	p.Lock.Lock()

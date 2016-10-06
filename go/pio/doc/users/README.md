@@ -47,10 +47,16 @@ It is basically a wrapper around `GOOS=linux GOARCH=arm go build .; scp <exe>
 <host>:.`
 
 
-### Configuring the host
+## Configuring the host
 
 More often than not on Debian based distros, you may have to run the executable
 as root to be able to access the LEDs, GPIOs and other functionality.
 
 This section will be soon enhanced with udev rules (and potentially a kernel
 driver) to help with this.
+
+
+### Debian
+
+If you get `fatal error: libusb-1.0/libusb.h: No such file or directory`, run
+`sudo apt-get install libusb-1.0.0-dev`

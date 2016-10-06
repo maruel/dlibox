@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/maruel/interrupt"
-	"golang.org/x/exp/inotify"
+	fsnotify "gopkg.in/fsnotify.v1"
 )
 
 func watchFile(fileName string) error {
@@ -17,20 +17,21 @@ func watchFile(fileName string) error {
 		return err
 	}
 	mod0 := fi.ModTime()
-	watcher, err := inotify.NewWatcher()
+	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
 	}
-	if err = watcher.Watch(fileName); err != nil {
+	defer watcher.Close()
+	if err = watcher.Add(fileName); err != nil {
 		return err
 	}
 	for {
 		select {
 		case <-interrupt.Channel:
 			return err
-		case err = <-watcher.Error:
+		case err = <-watcher.Errors:
 			return err
-		case <-watcher.Event:
+		case <-watcher.Events:
 			if fi, err = os.Stat(fileName); err != nil || !fi.ModTime().Equal(mod0) {
 				return err
 			}
