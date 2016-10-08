@@ -43,15 +43,6 @@ func Register(name string, venid, devid uint16, opener Opener) error {
 	return nil
 }
 
-// Unregister unregisters an USB device driver.
-func Unregister(name string, venid, devid uint16) error {
-	lock.Lock()
-	defer lock.Unlock()
-	delete(byName, name)
-	delete(byNumber[venid], devid)
-	return nil
-}
-
 // OnDevice is called when a device is detected on an USB bus.
 //
 // When called with dev == nil, it still returns true or false to signal if it
