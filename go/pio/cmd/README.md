@@ -1,4 +1,4 @@
-# tools
+# pio/cmd - read-to-use executables
 
 This directory contains directly usable tools installable via `go get
 github.com/maruel/dlibox/go/pio/cmd/...`.
@@ -7,8 +7,10 @@ github.com/maruel/dlibox/go/pio/cmd/...`.
 ## Recommended first use
 
 Try first `pio-info`. It will print out if any driver failed to run, for example
-if you have to run as root. Then run `headers-list` to list all the headers on
-your board and confirm that you get the expected output.
+if you have to run as root to access certain drivers. Then run `headers-list` to
+list all the headers on your board and confirm that you get the expected output.
+If your board is missing, you can [contribute
+it](../doc/drivers/CONTRIBUTING.md).
 
 
 ## Devices

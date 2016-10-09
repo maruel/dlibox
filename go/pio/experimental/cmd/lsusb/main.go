@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/maruel/dlibox/go/pio/experimental/usbbus"
+	"github.com/maruel/dlibox/go/pio/experimental/host/usbbus"
 	"github.com/maruel/dlibox/go/pio/host"
 )
 

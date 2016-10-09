@@ -27,7 +27,19 @@ use Github pull requests for this purpose.
 ### Code quality
 
 All submissions, including submissions by project members, require abiding to
-high code quality. See [README.md](README.md) for the expectations.
+high code quality. See [Requirements](README.md#requirements) for the
+expectations and take a look at the [driver lifetime
+management](README.md#driver-lifetime-management) to learn how to contribute new
+device support.
+
+
+### Conduct
+
+While this project is not related to the Go project itself, `pio` abides to the
+same code of conduct as the Go project as described at
+https://golang.org/conduct. `pio` doesn't yet have a formal committee (help's
+appreciated), please email directly `maruel@chromium.org` for issues
+encountered.
 
 
 ### The small print

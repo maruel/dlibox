@@ -3,7 +3,8 @@
 pio is a peripheral I/O library in Go.
 
 The documentation is split into 3 sections:
-* [users/](users/) for users who need ready-to-use tools.
+* [users/](users/) for users who need ready-to-use tools. N
+  * No Go programming skill is required at all.
 * [apps/](apps/) for application writers to want to use `pio` as a
   library.
   * The complete API documentation, including examples, is at

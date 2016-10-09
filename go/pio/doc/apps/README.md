@@ -174,7 +174,7 @@ func (a *adaptor) Close() error {
 pins](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/gpio#PinIO)
 can be leveraged for arbitrary use, like buttons, control LEDs, etc. You may
 construct an I²C or a SPI bus over raw GPIO pins via
-[experimental/bitbang](https://godoc.org/github.com/maruel/dlibox/go/pio/experimental/bitbang).
+[experimental/bitbang](https://godoc.org/github.com/maruel/dlibox/go/pio/experimental/devices/bitbang).
 
 
 ## Samples

@@ -83,3 +83,34 @@ notoriously doesn't expose.
 The setup described above enables the best of both world, low latency read and
 write, and CPU-less edge detection, all without the user knowing about the
 intricate details!
+
+
+## Ambiant vs opened devices
+
+A device can either be ambiant or opened. An ambiant device _just exists_ and
+doesn't need to be opened. Any other device require an `open()`-like call to get
+an handle to be used.
+
+Most operating system virtualizes the system's GPU even if the host only has one
+video card. The application "opens" the video card, effectively its driver, and
+ask the GPU device drive rto load texture, run shaders and display in a window
+context.
+
+When working with hardware, coordination of multiple users is needed but
+virtualization eventually fall short in certain use cases.
+
+Ambiant devices are point-to-point single bit devices; GPIO, LED, pins headers.
+They are simplistic in nature and normally soldered on the board. They are often
+spec'ed by a datasheet. Sharing the device across applications doesn't make
+sense yet it is hard to do via the OS provided means.
+
+Opened devices are dynamic in nature. They may or may not be present. They may
+be used by multiple users (applications) concurrently. This includes buses and
+devices connected to buses.
+
+Using an ambiant design is useful for the user because it can be presented by
+statically typed global variables. This reduces ambiguity, error checking, it's
+just there.
+
+Openable devices permits state, configurability. You can connect a device on a
+bus. Multiple applications can communicate to multiple devices on a share bus.

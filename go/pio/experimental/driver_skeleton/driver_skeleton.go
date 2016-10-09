@@ -76,5 +76,13 @@ func (d *driver) Init() (bool, error) {
 	return true, errors.New("not implemented")
 }
 
+func init() {
+	// Since isArm is a compile time constant, the compile can strip the
+	// unnecessary code and unused private symbols.
+	if isArm {
+		pio.MustRegister(&driver{})
+	}
+}
+
 // FIXME: This verifies that the driver implements all the required methods.
 var _ pio.Driver = &driver{}
