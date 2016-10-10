@@ -78,6 +78,10 @@ type DriverFailure struct {
 	Err error
 }
 
+func (d DriverFailure) String() string {
+	return fmt.Sprintf("%s: %v", d.D, d.Err)
+}
+
 // State is the state of loaded device drivers.
 type State struct {
 	Loaded  []Driver

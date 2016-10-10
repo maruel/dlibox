@@ -20,7 +20,7 @@ func mainImpl() error {
 
 	fmt.Printf("Addr  ID\n")
 	for _, d := range usbbus.All() {
-		fmt.Printf("%02x:%02x %04x:%04x\n", d.Bus, d.Addr, d.VenID, d.DevID)
+		fmt.Printf("%02x:%02x %s\n", d.Bus, d.Addr, d.ID)
 	}
 	return nil
 }

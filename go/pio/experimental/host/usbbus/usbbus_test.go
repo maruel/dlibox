@@ -14,7 +14,7 @@ import (
 )
 
 func Example() {
-	usb.Register("thingy", 0x1234, 0x5678, func(dev usb.ConnCloser) error {
+	usb.Register(usb.ID{0x1234, 0x5678}, func(dev usb.ConnCloser) error {
 		fmt.Printf("Detected USB device: %s\n", dev)
 		return dev.Close()
 	})

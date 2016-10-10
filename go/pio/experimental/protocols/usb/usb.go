@@ -13,10 +13,29 @@ import (
 	"github.com/maruel/dlibox/go/pio/protocols"
 )
 
-// ConnCloser hides the hell that libusb is.
+// Conn represents a connection to an USB device.
+type Conn interface {
+	protocols.Conn
+	ID() *ID
+}
+
+// ConnCloser is an USB device handle that can be closed.
+//
+// This interface is meant to be handled by the USB device driver, not the
+// application.
 type ConnCloser interface {
 	io.Closer
-	protocols.Conn
+	Conn
+}
+
+// ID represents an USB device by its ID.
+type ID struct {
+	VenID uint16
+	DevID uint16
+}
+
+func (i ID) String() string {
+	return fmt.Sprintf("%04x:%04x", i.VenID, i.DevID)
 }
 
 // Opener takes control of an already opened USB device.
@@ -25,50 +44,42 @@ type Opener func(dev ConnCloser) error
 // Register registers a driver for an USB device.
 //
 // When this device is found, the factory will be called with a device handle.
-func Register(name string, venid, devid uint16, opener Opener) error {
+func Register(id ID, opener Opener) error {
 	lock.Lock()
 	defer lock.Unlock()
-	if _, ok := byName[name]; ok {
-		return fmt.Errorf("registering the same USB %s %d/%d twice", name, venid, devid)
-	}
-	if _, ok := byNumber[venid]; !ok {
-		byNumber[venid] = map[uint16]Opener{}
-	}
-	if _, ok := byNumber[venid][devid]; ok {
-		return fmt.Errorf("registering the same USB %s %d/%d twice", name, venid, devid)
+	if _, ok := byID[id]; ok {
+		return fmt.Errorf("registering the same USB id %s twice", id)
 	}
 
-	byName[name] = opener
-	byNumber[venid][devid] = opener
+	byID[id] = opener
+	for _, c := range buses {
+		c <- Driver{id, opener}
+	}
 	return nil
 }
 
-// OnDevice is called when a device is detected on an USB bus.
-//
-// When called with dev == nil, it still returns true or false to signal if it
-// is a device that is registered.
-func OnDevice(venid, devid uint16, dev ConnCloser) bool {
+// Driver is a registered driver.
+type Driver struct {
+	ID // TODO(maruel): Using only the ID as the selector is a bit naive. There's known conflicts.
+	Opener
+}
+
+// RegisterBus is called by a bus that will send a notification everytime
+// there's a new driver being registered.
+func RegisterBus(c chan<- Driver) {
 	lock.Lock()
 	defer lock.Unlock()
-	if m := byNumber[venid]; m != nil {
-		if opener := m[devid]; opener != nil {
-			if dev == nil {
-				return true
-			}
-			if err := opener(dev); err != nil {
-				dev.Close()
-				return false
-			}
-			return true
-		}
+	buses = append(buses, c)
+	// First start by sending all the known drivers.
+	for id, opener := range byID {
+		c <- Driver{id, opener}
 	}
-	return false
 }
 
 //
 
 var (
-	lock     sync.Mutex
-	byName   = map[string]Opener{}
-	byNumber = map[uint16]map[uint16]Opener{}
+	lock  sync.Mutex
+	byID  = map[ID]Opener{} //
+	buses []chan<- Driver   // That's highly unlike that the number of items is not exactly 1.
 )
