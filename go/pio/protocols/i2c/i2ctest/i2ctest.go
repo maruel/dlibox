@@ -35,6 +35,7 @@ func (r *Record) String() string {
 	return "record"
 }
 
+// Tx implements i2c.Conn.
 func (r *Record) Tx(addr uint16, w, read []byte) error {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
@@ -57,6 +58,7 @@ func (r *Record) Tx(addr uint16, w, read []byte) error {
 	return nil
 }
 
+// Speed implements i2c.Conn.
 func (r *Record) Speed(hz int64) error {
 	if r.Conn != nil {
 		return r.Conn.Speed(hz)
@@ -64,6 +66,7 @@ func (r *Record) Speed(hz int64) error {
 	return nil
 }
 
+// SCL implements i2c.Pins.
 func (r *Record) SCL() gpio.PinIO {
 	if p, ok := r.Conn.(i2c.Pins); ok {
 		return p.SCL()
@@ -71,6 +74,7 @@ func (r *Record) SCL() gpio.PinIO {
 	return gpio.INVALID
 }
 
+// SDA implements i2c.Pins.
 func (r *Record) SDA() gpio.PinIO {
 	if p, ok := r.Conn.(i2c.Pins); ok {
 		return p.SDA()
@@ -78,7 +82,7 @@ func (r *Record) SDA() gpio.PinIO {
 	return gpio.INVALID
 }
 
-// Playblack implements i2c.Conn and plays back a recorded I/O flow.
+// Playback implements i2c.Conn and plays back a recorded I/O flow.
 //
 // While "replay" type of unit tests are of limited value, they still present
 // an easy way to do basic code coverage.
@@ -91,6 +95,7 @@ func (p *Playback) String() string {
 	return "playback"
 }
 
+// Close implements i2c.ConnCloser.
 func (p *Playback) Close() error {
 	p.Lock.Lock()
 	defer p.Lock.Unlock()
@@ -122,6 +127,7 @@ func (p *Playback) Tx(addr uint16, w, r []byte) error {
 	return nil
 }
 
+// Speed implements i2c.Conn.
 func (p *Playback) Speed(hz int64) error {
 	return nil
 }

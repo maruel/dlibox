@@ -24,7 +24,7 @@ type Dev struct {
 
 // New opens a handle to the device. FIXME.
 func New(i i2c.Conn) (*Dev, error) {
-	d := &Dev{&i2c.Dev{i, 42}}
+	d := &Dev{&i2c.Dev{Conn: i, Addr: 42}}
 	// FIXME: Simulate a setup dance.
 	var b [2]byte
 	if err := d.c.Tx([]byte("in"), b[:]); err != nil {

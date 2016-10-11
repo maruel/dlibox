@@ -77,6 +77,7 @@ func (s *SPI) String() string {
 	return fmt.Sprintf("SPI%d.%d", s.busNumber, s.chipSelect)
 }
 
+// Speed implements spi.Conn.
 func (s *SPI) Speed(hz int64) error {
 	if hz < 1000 {
 		return errors.New("invalid speed")
@@ -84,6 +85,7 @@ func (s *SPI) Speed(hz int64) error {
 	return s.setFlag(spiIOCMaxSpeedHz, uint64(hz))
 }
 
+// Configure implements spi.Conn.
 func (s *SPI) Configure(mode spi.Mode, bits int) error {
 	if bits < 1 || bits > 256 {
 		return errors.New("invalid bits")
@@ -94,6 +96,7 @@ func (s *SPI) Configure(mode spi.Mode, bits int) error {
 	return s.setFlag(spiIOCBitsPerWord, uint64(bits))
 }
 
+// Write implements spi.Conn.
 func (s *SPI) Write(b []byte) (int, error) {
 	return s.f.Write(b)
 }
@@ -109,37 +112,25 @@ func (s *SPI) Tx(w, r []byte) error {
 	return s.ioctl(spiIOCTx|0x40000000, unsafe.Pointer(&p))
 }
 
-// CLK implements spi.Conn.
-//
-// It will fail if host.Init() wasn't called. host.Init() is transparently
-// called by host.MakeSPI().
+// CLK implements spi.Pins.
 func (s *SPI) CLK() gpio.PinOut {
 	s.initPins()
 	return s.clk
 }
 
-// MISO implements spi.Conn.
-//
-// It will fail if host.Init() wasn't called. host.Init() is transparently
-// called by host.MakeSPI().
+// MISO implements spi.Pins.
 func (s *SPI) MISO() gpio.PinIn {
 	s.initPins()
 	return s.miso
 }
 
-// MOSI implements spi.Conn.
-//
-// It will fail if host.Init() wasn't called. host.Init() is transparently
-// called by host.MakeSPI().
+// MOSI implements spi.Pins.
 func (s *SPI) MOSI() gpio.PinOut {
 	s.initPins()
 	return s.mosi
 }
 
-// CS implements spi.Conn.
-//
-// It will fail if host.Init() wasn't called. host.Init() is transparently
-// called by host.MakeSPI().
+// CS implements spi.Pins.
 func (s *SPI) CS() gpio.PinOut {
 	s.initPins()
 	return s.cs

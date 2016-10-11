@@ -25,12 +25,14 @@ func (r *RecordRaw) String() string {
 	return "recordraw"
 }
 
+// Write implements protocols.Conn.
 func (r *RecordRaw) Write(b []byte) (int, error) {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
 	return r.W.Write(b)
 }
 
+// Tx implements protocols.Conn.
 func (r *RecordRaw) Tx(w, read []byte) error {
 	if len(read) != 0 {
 		return errors.New("not implemented")
@@ -58,6 +60,7 @@ func (r *Record) String() string {
 	return "record"
 }
 
+// Write implements protocols.Conn.
 func (r *Record) Write(d []byte) (int, error) {
 	if err := r.Tx(d, nil); err != nil {
 		return 0, err
@@ -65,6 +68,7 @@ func (r *Record) Write(d []byte) (int, error) {
 	return len(d), nil
 }
 
+// Tx implements protocols.Conn.
 func (r *Record) Tx(w, read []byte) error {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
@@ -87,7 +91,7 @@ func (r *Record) Tx(w, read []byte) error {
 	return nil
 }
 
-// Playblack implements protocols.Conn and plays back a recorded I/O flow.
+// Playback implements protocols.Conn and plays back a recorded I/O flow.
 //
 // While "replay" type of unit tests are of limited value, they still present
 // an easy way to do basic code coverage.
@@ -100,6 +104,7 @@ func (p *Playback) String() string {
 	return "playback"
 }
 
+// Write implements protocols.Conn.
 func (p *Playback) Write(d []byte) (int, error) {
 	if err := p.Tx(d, nil); err != nil {
 		return 0, err
@@ -107,6 +112,7 @@ func (p *Playback) Write(d []byte) (int, error) {
 	return len(d), nil
 }
 
+// Tx implements protocols.Conn.
 func (p *Playback) Tx(w, r []byte) error {
 	p.Lock.Lock()
 	defer p.Lock.Unlock()

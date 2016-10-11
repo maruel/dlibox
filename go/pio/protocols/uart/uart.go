@@ -19,20 +19,28 @@ import (
 type Parity byte
 
 const (
-	None  Parity = 'N'
-	Odd   Parity = 'O'
-	Even  Parity = 'E'
-	Mark  Parity = 'M' // always 1
-	Space Parity = 'S' // always 0
+	// None means no parity bit
+	None Parity = 'N'
+	// Odd means 1 when sum is odd
+	Odd Parity = 'O'
+	// Even means 1 when sum is even
+	Even Parity = 'E'
+	// Mark means always 1
+	Mark Parity = 'M'
+	// Space means always 0
+	Space Parity = 'S'
 )
 
 // Stop determines what stop bit to use.
 type Stop int8
 
 const (
-	One     Stop = 0 // 1 stop bit
-	OneHalf Stop = 1 // 1.5 stop bits
-	Two     Stop = 2 // 2 stop bits
+	// One is 1 stop bit
+	One Stop = 0
+	// OneHalf is 1.5 stop bits
+	OneHalf Stop = 1
+	// Two is 2 stop bits
+	Two Stop = 2
 )
 
 // Conn defines the interface a concrete UART driver must implement.

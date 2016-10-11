@@ -29,9 +29,11 @@ func (m *Mem) Uint32() []uint32 {
 // i must be a pointer to a pointer to a struct and the pointer to struct must
 // be nil. panics otherwise.
 func (m *Mem) Struct(i unsafe.Pointer) {
+	// This looks dangerous but it works. If someone knows how to reformat the
+	// following code to not trigger a go vet warning, please send a PR.
 	header := *(*reflect.SliceHeader)(unsafe.Pointer(&m.base))
 	dest := (*int)(unsafe.Pointer(header.Data + uintptr(m.offset)))
-	var v **int = (**int)(i)
+	v := (**int)(i)
 	if *v != nil {
 		panic(*v)
 	}

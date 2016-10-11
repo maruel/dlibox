@@ -17,6 +17,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
+// Pine64 specific pins.
 var (
 	VCC      pins.Pin = &pins.BasicPin{Name: "VCC"}      //
 	IOVCC    pins.Pin = &pins.BasicPin{Name: "IOVCC"}    // Power supply for port A
@@ -30,6 +31,7 @@ var (
 	PWR_SWITCH  gpio.PinIO = &gpio.BasicPin{Name: "PWR_SWITCH"}  //
 )
 
+// All the individual pins on the headers.
 var (
 	P1_1  pins.Pin   = pins.V3_3         // 3.3 volt; max 40mA
 	P1_2  pins.Pin   = pins.V5           // 5 volt (before filtering)

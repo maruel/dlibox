@@ -115,6 +115,7 @@ func (i *I2C) Tx(addr uint16, w, r []byte) error {
 	return i.ioctl(ioctlRdwr, pp)
 }
 
+// Speed implements i2c.Conn.
 func (i *I2C) Speed(hz int64) error {
 	i.l.Lock()
 	defer i.l.Unlock()
@@ -131,7 +132,7 @@ func (i *I2C) Speed(hz int64) error {
 	return errors.New("not supported")
 }
 
-// SCL implements i2c.Conn.
+// SCL implements i2c.Pins.
 //
 // It will fail if host.Init() wasn't called. host.Init() is transparently
 // called by host.MakeI2C().
@@ -140,7 +141,7 @@ func (i *I2C) SCL() gpio.PinIO {
 	return i.scl
 }
 
-// SDA implements i2c.Conn.
+// SDA implements i2c.Pins.
 //
 // It will fail if host.Init() wasn't called. host.Init() is transparently
 // called by host.MakeI2C().

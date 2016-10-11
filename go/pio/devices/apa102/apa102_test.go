@@ -425,7 +425,7 @@ func TestDevIntensity(t *testing.T) {
 	}
 }
 
-func TesttDevLong(t *testing.T) {
+func TestDevLong(t *testing.T) {
 	buf := bytes.Buffer{}
 	colors := make([]color.NRGBA, 256)
 	d, _ := New(spitest.NewRecordRaw(&buf), len(colors), 255, 6500)

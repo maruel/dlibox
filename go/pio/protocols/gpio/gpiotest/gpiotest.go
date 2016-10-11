@@ -31,10 +31,12 @@ func (p *Pin) String() string {
 	return p.Name
 }
 
+// Number implements pins.Pin.
 func (p *Pin) Number() int {
 	return p.Num
 }
 
+// Function implements pins.Pin.
 func (p *Pin) Function() string {
 	return p.Fn
 }
@@ -68,6 +70,7 @@ func (p *Pin) Read() gpio.Level {
 	return p.L
 }
 
+// WaitForEdge implements gpio.PinIn.
 func (p *Pin) WaitForEdge(timeout time.Duration) bool {
 	if timeout == -1 {
 		p.Out(<-p.EdgesChan)
@@ -82,6 +85,7 @@ func (p *Pin) WaitForEdge(timeout time.Duration) bool {
 	}
 }
 
+// Pull implements gpio.PinIn.
 func (p *Pin) Pull() gpio.Pull {
 	return p.P
 }
@@ -94,6 +98,7 @@ func (p *Pin) Out(l gpio.Level) error {
 	return nil
 }
 
+// PWM implements gpio.PinOut.
 func (p *Pin) PWM(duty int) error {
 	return errors.New("pwm is not implemented")
 }

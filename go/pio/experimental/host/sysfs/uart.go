@@ -54,6 +54,7 @@ func newUART(busNumber int) (*UART, error) {
 	return u, nil
 }
 
+// Close implements uart.ConnCloser.
 func (u *UART) Close() error {
 	err := u.f.Close()
 	u.f = nil
@@ -64,34 +65,42 @@ func (u *UART) String() string {
 	return "uart"
 }
 
+// Configure implements uart.Conn.
 func (u *UART) Configure(stopBit uart.Stop, parity uart.Parity, bits int) error {
 	return errors.New("not implemented")
 }
 
+// Write implements uart.Conn.
 func (u *UART) Write(b []byte) (int, error) {
 	return 0, errors.New("not implemented")
 }
 
+// Tx implements uart.Conn.
 func (u *UART) Tx(w, r []byte) error {
 	return errors.New("not implemented")
 }
 
+// Speed implements uart.Conn.
 func (u *UART) Speed(hz int64) error {
 	return errors.New("not implemented")
 }
 
+// RX implements uart.Pins.
 func (u *UART) RX() gpio.PinIn {
 	return gpio.INVALID
 }
 
+// TX implements uart.Pins.
 func (u *UART) TX() gpio.PinOut {
 	return gpio.INVALID
 }
 
+// RTS implements uart.Pins.
 func (u *UART) RTS() gpio.PinIO {
 	return gpio.INVALID
 }
 
+// CTS implements uart.Pins.
 func (u *UART) CTS() gpio.PinIO {
 	return gpio.INVALID
 }

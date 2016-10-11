@@ -38,6 +38,7 @@ func (l Level) String() string {
 // Pull specifies the internal pull-up or pull-down for a pin set as input.
 type Pull uint8
 
+// Acceptable pull values.
 const (
 	Float        Pull = 0 // Let the input float
 	Down         Pull = 1 // Apply pull-down
@@ -61,6 +62,7 @@ func (i Pull) String() string {
 // Only enable it when needed, since this causes system interrupts.
 type Edge uint8
 
+// Acceptable edge detection values.
 const (
 	None    Edge = 0
 	Rising  Edge = 1
@@ -165,38 +167,46 @@ type BasicPin struct {
 	Name string
 }
 
-func (b *BasicPin) Number() int {
-	return -1
-}
-
 func (b *BasicPin) String() string {
 	return b.Name
 }
 
+// Number implements pins.Pin.
+func (b *BasicPin) Number() int {
+	return -1
+}
+
+// Function implements pins.Pin.
 func (b *BasicPin) Function() string {
 	return ""
 }
 
+// In implements gpio.PinIn.
 func (b *BasicPin) In(Pull, Edge) error {
 	return fmt.Errorf("%s cannot be used as input", b.Name)
 }
 
+// Read implements gpio.PinIn.
 func (b *BasicPin) Read() Level {
 	return Low
 }
 
+// WaitForEdge implements gpio.PinIn.
 func (b *BasicPin) WaitForEdge(timeout time.Duration) bool {
 	return false
 }
 
+// Pull implements gpio.PinIn.
 func (b *BasicPin) Pull() Pull {
 	return PullNoChange
 }
 
+// Out implements gpio.PinOut.
 func (b *BasicPin) Out(Level) error {
 	return fmt.Errorf("%s cannot be used as output", b.Name)
 }
 
+// PWM implements gpio.PinOut.
 func (b *BasicPin) PWM(duty int) error {
 	return fmt.Errorf("%s cannot be used as PWM", b.Name)
 }
@@ -213,7 +223,7 @@ func ByNumber(number int) PinIO {
 	return pin
 }
 
-// PinByName returns a GPIO pin from its name.
+// ByName returns a GPIO pin from its name.
 //
 // This can be strings like GPIO2, PB8, etc.
 //
@@ -321,8 +331,8 @@ func MapFunction(function string, pin PinIO) {
 
 //
 
-// invalidPinErr is returned when trying to use INVALID.
-var invalidPinErr = errors.New("invalid pin")
+// errInvalidPin is returned when trying to use INVALID.
+var errInvalidPin = errors.New("invalid pin")
 
 // invalidPin implements PinIO for compability but fails on all access.
 type invalidPin struct {
@@ -341,7 +351,7 @@ func (invalidPin) Function() string {
 }
 
 func (invalidPin) In(Pull, Edge) error {
-	return invalidPinErr
+	return errInvalidPin
 }
 
 func (invalidPin) Read() Level {
@@ -357,11 +367,11 @@ func (invalidPin) Pull() Pull {
 }
 
 func (invalidPin) Out(Level) error {
-	return invalidPinErr
+	return errInvalidPin
 }
 
 func (invalidPin) PWM(duty int) error {
-	return invalidPinErr
+	return errInvalidPin
 }
 
 var (

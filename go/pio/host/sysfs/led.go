@@ -52,10 +52,12 @@ func (l *LED) String() string {
 	return l.name
 }
 
+// Number implements pins.Pin.
 func (l *LED) Number() int {
 	return l.number
 }
 
+// Function implements pins.Pin.
 func (l *LED) Function() string {
 	if l.Read() {
 		return "LED/On"
@@ -63,8 +65,9 @@ func (l *LED) Function() string {
 	return "LED/Off"
 }
 
+// In implements gpio.PinIn.
 func (l *LED) In(pull gpio.Pull, edge gpio.Edge) error {
-	if pull != gpio.Float || pull != gpio.PullNoChange {
+	if pull != gpio.Float && pull != gpio.PullNoChange {
 		return errors.New("pull is not supported on LED")
 	}
 	if edge != gpio.None {
@@ -73,6 +76,7 @@ func (l *LED) In(pull gpio.Pull, edge gpio.Edge) error {
 	return nil
 }
 
+// Read implements gpio.PinIn.
 func (l *LED) Read() gpio.Level {
 	err := l.open()
 	if err != nil {
@@ -93,14 +97,17 @@ func (l *LED) Read() gpio.Level {
 	return gpio.Low
 }
 
+// WaitForEdge implements gpio.PinIn.
 func (l *LED) WaitForEdge(timeout time.Duration) bool {
 	return false
 }
 
+// Pull implements gpio.PinIn.
 func (l *LED) Pull() gpio.Pull {
 	return gpio.PullNoChange
 }
 
+// Out implements gpio.PinOut.
 func (l *LED) Out(level gpio.Level) error {
 	err := l.open()
 	if err != nil {
@@ -119,6 +126,7 @@ func (l *LED) Out(level gpio.Level) error {
 	return err
 }
 
+// PWM implements gpio.PinOut.
 func (l *LED) PWM(duty int) error {
 	return errors.New("pwm is not supported")
 }

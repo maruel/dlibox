@@ -78,10 +78,8 @@ func mainImpl() error {
 			p.WaitForEdge(-1)
 			printLevel(p.Read())
 		}
-	} else {
-		return printLevel(p.Read())
 	}
-	return nil
+	return printLevel(p.Read())
 }
 
 func main() {

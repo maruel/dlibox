@@ -73,8 +73,8 @@ type Pin struct {
 	edge        *sysfs.Pin // Mutable, set once, then never set back to nil
 }
 
-// Pins is all the supported pins. The bcm 283x exports continuously numbered
-// pins.
+// Pins is all the pins as supported by the CPU. There is no guarantee that
+// they are actually connected to anything on the board.
 var Pins = [54]Pin{
 	{number: 0, name: "GPIO0", defaultPull: gpio.Up},
 	{number: 1, name: "GPIO1", defaultPull: gpio.Up},
@@ -132,6 +132,7 @@ var Pins = [54]Pin{
 	{number: 53, name: "GPIO53", defaultPull: gpio.Up},
 }
 
+// All the pins supported by the CPU.
 var (
 	GPIO0  *Pin = &Pins[0]  // I2C0_SDA
 	GPIO1  *Pin = &Pins[1]  // I2C0_SCL
@@ -234,17 +235,16 @@ var (
 
 // PinIO implementation.
 
-// Number implements gpio.PinIO
-func (p *Pin) Number() int {
-	return p.number
-}
-
-// String implements gpio.PinIO
 func (p *Pin) String() string {
 	return p.name
 }
 
-// Function implements gpio.PinIO
+// Number implements pins.Pin.
+func (p *Pin) Number() int {
+	return p.number
+}
+
+// Function implements pins.Pin.
 func (p *Pin) Function() string {
 	switch f := p.function(); f {
 	case in:
@@ -374,7 +374,7 @@ func (p *Pin) WaitForEdge(timeout time.Duration) bool {
 	return false
 }
 
-// Pull implemented gpio.PinIO.
+// Pull implemented gpio.PinIn.
 //
 // bcm283x doesn't support querying the pull resistor of any GPIO pin.
 func (p *Pin) Pull() gpio.Pull {
@@ -403,6 +403,7 @@ func (p *Pin) Out(l gpio.Level) error {
 	return nil
 }
 
+// PWM implements gpio.PinOut.
 func (p *Pin) PWM(duty int) error {
 	return errors.New("pwm is not supported")
 }

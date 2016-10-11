@@ -5,6 +5,7 @@
 // Specification
 //
 // http://www.nxp.com/documents/user_manual/UM10204.pdf
+
 package bitbang
 
 import (
@@ -34,6 +35,12 @@ func (i *I2C) String() string {
 	return fmt.Sprintf("bitbang/i2c(%s, %s)", i.scl, i.sda)
 }
 
+// Close implements i2c.ConnCloser.
+func (i *I2C) Close() error {
+	return nil
+}
+
+// Tx implements i2c.Conn.
 func (i *I2C) Tx(addr uint16, w, r []byte) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
@@ -81,6 +88,7 @@ func (i *I2C) Tx(addr uint16, w, r []byte) error {
 	return nil
 }
 
+// Speed implements i2c.Conn.
 func (i *I2C) Speed(hz int64) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
@@ -88,16 +96,14 @@ func (i *I2C) Speed(hz int64) error {
 	return nil
 }
 
+// SCL implements i2c.Pins.
 func (i *I2C) SCL() gpio.PinIO {
 	return i.scl
 }
 
+// SDA implements i2c.Pins.
 func (i *I2C) SDA() gpio.PinIO {
 	return i.sda
-}
-
-func (i *I2C) Close() error {
-	return nil
 }
 
 // New returns an object that communicates I²C over two pins.

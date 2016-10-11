@@ -23,6 +23,7 @@ import (
 // CPHA is the clock phase, sample on trailing edge when set.
 type Mode int
 
+// Valid SPI clock and phase.
 const (
 	Mode0 Mode = 0x0 // CPOL=0, CPHA=0
 	Mode1 Mode = 0x1 // CPOL=0, CPHA=1

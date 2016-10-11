@@ -17,7 +17,7 @@ func ExampleAll() {
 	}
 }
 
-func ExampleDev() {
+func Example() {
 	// Find a specific device on all available SPI buses:
 	for _, opener := range All() {
 		bus, err := opener()

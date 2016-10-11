@@ -29,6 +29,7 @@ import (
 // consumption, but this is still below 1mA so we generally don't care.
 type Oversampling uint8
 
+// Possible oversampling values.
 const (
 	No   Oversampling = 0
 	O1x  Oversampling = 1
@@ -43,6 +44,7 @@ const (
 // measurements are done.
 type Standby uint8
 
+// Possible standby values, these determines the refresh rate.
 const (
 	S500us Standby = 0
 	S10ms  Standby = 6
@@ -58,6 +60,7 @@ const (
 // using oversampling. This is mainly used to reduce power consumption.
 type Filter uint8
 
+// Possible filtering values.
 const (
 	FOff Filter = 0
 	F2   Filter = 1
@@ -130,7 +133,7 @@ type Opts struct {
 // It is recommended to call Stop() when done with the device so it stops
 // sampling.
 func NewI2C(i i2c.Conn, opts *Opts) (*Dev, error) {
-	d := &Dev{d: &i2c.Dev{i, 0x76}, isSPI: false}
+	d := &Dev{d: &i2c.Dev{Conn: i, Addr: 0x76}, isSPI: false}
 	if err := d.makeDev(opts); err != nil {
 		return nil, err
 	}
@@ -178,7 +181,7 @@ type status byte
 
 const (
 	measuring status = 8 // set when conversion is running
-	im_update status = 1 // set when NVM data are being copied to image registers
+	imUpdate  status = 1 // set when NVM data are being copied to image registers
 )
 
 var defaults = Opts{
@@ -207,12 +210,12 @@ func (d *Dev) makeDev(opts *Opts) error {
 	// The device starts in 2ms as per datasheet. No need to wait for boot to be
 	// finished.
 
-	var chipId [1]byte
+	var chipID [1]byte
 	// Read register 0xD0 to read the chip id.
-	if err := d.readReg(0xD0, chipId[:]); err != nil {
+	if err := d.readReg(0xD0, chipID[:]); err != nil {
 		return err
 	}
-	if chipId[0] != 0x60 {
+	if chipID[0] != 0x60 {
 		return errors.New("unexpected chip id; is this a BME280?")
 	}
 	// Read calibration data t1~3, p1~9, 8bits padding, h1.

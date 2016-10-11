@@ -48,6 +48,7 @@ func (t *ThermalSensor) String() string {
 	return t.name
 }
 
+// Type returns the type of sensor as exported by sysfs.
 func (t *ThermalSensor) Type() string {
 	t.lock.Lock()
 	defer t.lock.Unlock()
@@ -71,6 +72,7 @@ func (t *ThermalSensor) Type() string {
 	return t.nameType
 }
 
+// Sense implements devices.Environmental.
 func (t *ThermalSensor) Sense(env *devices.Environment) error {
 	if err := t.open(); err != nil {
 		return err

@@ -48,6 +48,7 @@ func Digits(n ...int) []byte {
 // Brightness defines the screen brightness as controlled by the internal PWM.
 type Brightness uint8
 
+// Valid brightness values.
 const (
 	Off          Brightness = 0x80 // Completely off.
 	Brightness1  Brightness = 0x88 // 1/16 PWM
@@ -66,7 +67,7 @@ type Dev struct {
 	data gpio.PinIO
 }
 
-// Brightness changes the brightness and/or turns the display on and off.
+// SetBrightness changes the brightness and/or turns the display on and off.
 func (d *Dev) SetBrightness(b Brightness) error {
 	// This helps reduce jitter a little.
 	runtime.LockOSThread()

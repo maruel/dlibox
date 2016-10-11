@@ -64,7 +64,7 @@ func ExamplePinOut() {
 }
 
 func TestInvalid(t *testing.T) {
-	if INVALID.In(Float, None) != invalidPinErr {
+	if INVALID.In(Float, None) != errInvalidPin {
 		t.Fail()
 	}
 }

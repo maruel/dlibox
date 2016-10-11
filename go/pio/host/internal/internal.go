@@ -72,7 +72,7 @@ func CPUInfo() map[string]string {
 	return cpuInfo
 }
 
-// CPUInfo returns parsed data from /etc/os-release.
+// OSRelease returns parsed data from /etc/os-release.
 func OSRelease() map[string]string {
 	if isLinux {
 		return makeOSReleaseLinux()

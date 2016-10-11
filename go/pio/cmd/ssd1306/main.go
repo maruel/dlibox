@@ -148,9 +148,9 @@ func convert(s *ssd1306.Dev, src image.Image) (*image1bit.Image, error) {
 }
 
 func mainImpl() error {
-	i2cId := flag.Int("i2c", -1, "specify I²C bus to use")
-	spiId := flag.Int("spi", -1, "specify SPI bus to use")
-	csId := flag.Int("cs", 0, "specify SPI chip select (CS) to use")
+	i2cID := flag.Int("i2c", -1, "specify I²C bus to use")
+	spiID := flag.Int("spi", -1, "specify SPI bus to use")
+	csID := flag.Int("cs", 0, "specify SPI chip select (CS) to use")
 	speed := flag.Int("speed", 0, "specify SPI speed in Hz to use")
 	h := flag.Int("h", 64, "display height")
 	imgName := flag.String("i", "ballerine.gif", "image to load; try bunny.gif")
@@ -174,8 +174,8 @@ func mainImpl() error {
 
 	// Open the device on the right bus.
 	var s *ssd1306.Dev
-	if *spiId >= 0 {
-		bus, err := spi.New(*spiId, *csId)
+	if *spiID >= 0 {
+		bus, err := spi.New(*spiID, *csID)
 		if err != nil {
 			return err
 		}
@@ -194,7 +194,7 @@ func mainImpl() error {
 			return err
 		}
 	} else {
-		bus, err := i2c.New(*i2cId)
+		bus, err := i2c.New(*i2cID)
 		if err != nil {
 			return err
 		}

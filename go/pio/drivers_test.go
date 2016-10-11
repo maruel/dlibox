@@ -139,7 +139,9 @@ func TestInitMissing(t *testing.T) {
 
 func TestRegisterLate(t *testing.T) {
 	reset()
-	Init()
+	if _, err := Init(); err != nil {
+		t.Fatal(err)
+	}
 	d := &driver{
 		name:    "CPU",
 		t:       Processor,

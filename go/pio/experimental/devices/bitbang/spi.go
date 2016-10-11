@@ -38,6 +38,11 @@ func (s *SPI) String() string {
 	return fmt.Sprintf("bitbang/spi(%s, %s, %s, %s)", s.sck, s.sdi, s.sdo, s.csn)
 }
 
+// Close implements spi.ConnCloser.
+func (s *SPI) Close() error {
+	return nil
+}
+
 // Speed implements spi.Conn.
 func (s *SPI) Speed(hz int64) error {
 	s.lock.Lock()
@@ -99,24 +104,24 @@ func (s *SPI) Write(d []byte) (int, error) {
 	return len(d), nil
 }
 
+// CLK implements spi.Pins.
 func (s *SPI) CLK() gpio.PinOut {
 	return s.sck
 }
 
+// MOSI implements spi.Pins.
 func (s *SPI) MOSI() gpio.PinOut {
 	return s.sdo
 }
 
+// MISO implements spi.Pins.
 func (s *SPI) MISO() gpio.PinIn {
 	return s.sdi
 }
 
+// CS implements spi.Pins.
 func (s *SPI) CS() gpio.PinOut {
 	return s.csn
-}
-
-func (s *SPI) Close() error {
-	return nil
 }
 
 // NewSPI returns an object that communicates SPI over 3 or 4 pins.

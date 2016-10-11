@@ -5,6 +5,7 @@
 package host
 
 import (
+	// Make sure sysfs drivers are registered.
 	_ "github.com/maruel/dlibox/go/pio/host/sysfs"
 )
 

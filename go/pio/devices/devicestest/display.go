@@ -13,11 +13,12 @@ import (
 	"github.com/maruel/dlibox/go/pio/devices"
 )
 
-// Display is a fake devices.Display
+// Display is a fake devices.Display.
 type Display struct {
 	Img *image.NRGBA
 }
 
+// Write implements devices.Display.
 func (d *Display) Write(pixels []byte) (int, error) {
 	if len(pixels)%3 != 0 {
 		return 0, errors.New("invalid RGB stream length")
@@ -26,14 +27,17 @@ func (d *Display) Write(pixels []byte) (int, error) {
 	return len(pixels), nil
 }
 
+// ColorModel implements image.Image.
 func (d *Display) ColorModel() color.Model {
 	return d.Img.ColorModel()
 }
 
+// Bounds implements image.Image.
 func (d *Display) Bounds() image.Rectangle {
 	return d.Img.Bounds()
 }
 
+// Draw implements draw.Image.
 func (d *Display) Draw(r image.Rectangle, src image.Image, sp image.Point) {
 	draw.Draw(d.Img, r, src, sp, draw.Src)
 }

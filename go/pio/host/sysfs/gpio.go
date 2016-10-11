@@ -54,10 +54,12 @@ func (p *Pin) String() string {
 	return p.name
 }
 
+// Number implements pins.Pin.
 func (p *Pin) Number() int {
 	return p.number
 }
 
+// Function implements pins.Pin.
 func (p *Pin) Function() string {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -208,7 +210,7 @@ func (p *Pin) Pull() gpio.Pull {
 	return gpio.PullNoChange
 }
 
-// Out sets a pin as output.
+// Out sets a pin as output; implements gpio.PinOut.
 func (p *Pin) Out(l gpio.Level) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -239,6 +241,7 @@ func (p *Pin) Out(l gpio.Level) error {
 	return seekWrite(p.fValue, d[:])
 }
 
+// PWM implements gpio.PinOut.
 func (p *Pin) PWM(duty int) error {
 	return errors.New("pwm is not supported on sysfs")
 }

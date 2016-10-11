@@ -86,10 +86,10 @@ func (c *Conn) loop(r *bufio.Reader) {
 			// Format is: <code> <repeat count> <button name> <remote control name>
 			// http://www.lirc.org/html/lircd.html#lbAG
 			if parts := strings.SplitN(line, " ", 5); len(parts) != 4 {
-				log.Printf("ir: corrupted line: #v", line)
+				log.Printf("ir: corrupted line: %v", line)
 			} else {
 				if i, err2 := strconv.Atoi(parts[1]); err2 != nil {
-					log.Printf("ir: corrupted line: #v", line)
+					log.Printf("ir: corrupted line: %v", line)
 				} else if len(parts[2]) != 0 && len(parts[3]) != 0 {
 					c.c <- ir.Message{Key: ir.Key(parts[2]), RemoteType: parts[3], Repeat: i != 0}
 				}

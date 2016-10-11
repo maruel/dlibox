@@ -20,6 +20,8 @@ import (
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
+// Pins is all the pins as supported by the CPU. There is no guarantee that
+// they are actually connected to anything on the board.
 var Pins = []Pin{
 	{offset: 0, name: "PL0", defaultPull: gpio.Up},
 	{offset: 1, name: "PL1", defaultPull: gpio.Up},
@@ -36,6 +38,9 @@ var Pins = []Pin{
 	{offset: 12, name: "PL12", defaultPull: gpio.Float},
 }
 
+// Pin defines one CPU supported pin.
+//
+// Pin implements gpio.PinIO.
 type Pin struct {
 	offset      uint8      // as per register offset calculation
 	name        string     // name as per datasheet
@@ -63,18 +68,18 @@ var (
 
 // PinIO implementation.
 
-// Number implements gpio.PinIO
+func (p *Pin) String() string {
+	return fmt.Sprintf("%s(%d)", p.name, p.Number())
+}
+
+// Number implements pins.Pin.
 //
 // It returns the GPIO pin number as represented by gpio sysfs.
 func (p *Pin) Number() int {
 	return 11*32 + int(p.offset)
 }
 
-// String implements gpio.PinIO
-func (p *Pin) String() string {
-	return fmt.Sprintf("%s(%d)", p.name, p.Number())
-}
-
+// Function implements pins.Pin.
 func (p *Pin) Function() string {
 	switch f := p.function(); f {
 	case in:
@@ -161,6 +166,7 @@ func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 	return nil
 }
 
+// Read implements gpio.PinIn.
 func (p *Pin) Read() gpio.Level {
 	// Pn_DAT  n*0x24+0x10  Port n Data Register (n from 1(B) to 7(H))
 	return gpio.Level(gpioMemory[4]&(1<<p.offset) != 0)
@@ -174,6 +180,7 @@ func (p *Pin) WaitForEdge(timeout time.Duration) bool {
 	return false
 }
 
+// Pull implements gpio.PinIn.
 func (p *Pin) Pull() gpio.Pull {
 	if gpioMemory == nil {
 		return gpio.PullNoChange
@@ -195,6 +202,7 @@ func (p *Pin) Pull() gpio.Pull {
 	}
 }
 
+// Out implements gpio.PinOut.
 func (p *Pin) Out(l gpio.Level) error {
 	if gpioMemory == nil {
 		return errors.New("subsystem not initialized")
@@ -213,6 +221,7 @@ func (p *Pin) Out(l gpio.Level) error {
 	return nil
 }
 
+// PWM implements gpio.PinOut.
 func (p *Pin) PWM(duty int) error {
 	return errors.New("pwm is not supported")
 }

@@ -113,7 +113,7 @@ func (d *Dev) WriteRegUint8(reg byte, v uint8) error {
 
 // WriteRegUint16 writes a 16 bit register.
 func (d *Dev) WriteRegUint16(reg byte, v uint16) error {
-	_, err := d.Write([]byte{reg, byte(v >> 16), byte(v)})
+	_, err := d.Write([]byte{reg, byte(v >> 8), byte(v)})
 	return err
 }
 

@@ -18,7 +18,7 @@ import (
 // Bit implements a 1 bit color.
 type Bit bool
 
-// RGBA() returns either all white or all black and transparent.
+// RGBA returns either all white or all black and transparent.
 func (b Bit) RGBA() (uint32, uint32, uint32, uint32) {
 	if b {
 		return 65535, 65535, 65535, 65535
@@ -33,6 +33,7 @@ func (b Bit) String() string {
 	return "Off"
 }
 
+// Possible bitness.
 const (
 	On  = Bit(true)
 	Off = Bit(false)

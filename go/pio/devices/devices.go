@@ -41,10 +41,12 @@ type Display interface {
 // Milli is a fixed point value with 0.001 precision.
 type Milli int32
 
+// Float64 returns the value as float64 with 0.001 precision.
 func (m Milli) Float64() float64 {
 	return float64(m) * .001
 }
 
+// String returns the value formatted as a string.
 func (m Milli) String() string {
 	return fmt.Sprintf("%d.%03d", m/1000, m%1000)
 }
@@ -56,14 +58,17 @@ func (m Milli) String() string {
 // BUG(maruel): Add function to convert to Fahrenheit for my American friends.
 type Celcius Milli
 
+// Float64 returns the value as float64 with 0.001 precision.
 func (c Celcius) Float64() float64 {
 	return Milli(c).Float64()
 }
 
+// String returns the temperature formatted as a string.
 func (c Celcius) String() string {
 	return Milli(c).String() + "°C"
 }
 
+// ToF returns the temperature as Fahrenheit, a unit used in the United States.
 func (c Celcius) ToF() Fahrenheit {
 	return Fahrenheit((c*9+2)/5 + 32000)
 }
@@ -71,10 +76,12 @@ func (c Celcius) ToF() Fahrenheit {
 // Fahrenheit is a unit used in the United States.
 type Fahrenheit Milli
 
+// Float64 returns the value as float64 with 0.001 precision.
 func (f Fahrenheit) Float64() float64 {
 	return Milli(f).Float64()
 }
 
+// String returns the temperature formatted as a string.
 func (f Fahrenheit) String() string {
 	return Milli(f).String() + "°F"
 }
@@ -84,10 +91,12 @@ func (f Fahrenheit) String() string {
 // Expected range is [0, >1000000].
 type KPascal Milli
 
+// Float64 returns the value as float64 with 0.001 precision.
 func (k KPascal) Float64() float64 {
 	return Milli(k).Float64()
 }
 
+// String returns the pressure formatted as a string.
 func (k KPascal) String() string {
 	return Milli(k).String() + "KPa"
 }
@@ -100,6 +109,7 @@ func (r RelativeHumidity) Float64() float64 {
 	return float64(r) * .01
 }
 
+// String returns the humidity formatted as a string.
 func (r RelativeHumidity) String() string {
 	return fmt.Sprintf("%d.%02d%%rH", r/100, r%100)
 }

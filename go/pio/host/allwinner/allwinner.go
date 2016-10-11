@@ -22,6 +22,7 @@ import (
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
+// CPU specific pins.
 var (
 	X32KFOUT gpio.PinIO   = &gpio.BasicPin{Name: "X32KFOUT"}  // Clock output of 32Khz crystal
 	KEY_ADC  analog.PinIO = &analog.BasicPin{Name: "KEY_ADC"} // 6 bits resolution ADC for key application; can work up to 250Hz conversion rate; reference voltage is 2.0V
@@ -31,6 +32,8 @@ var (
 
 // 0x24/4 = 9
 
+// Pins is all the pins as supported by the CPU. There is no guarantee that
+// they are actually connected to anything on the board.
 var Pins = []Pin{
 	{index: 0, group: 9 * 1, offset: 0, name: "PB0", defaultPull: gpio.Float},
 	{index: 1, group: 9 * 1, offset: 1, name: "PB1", defaultPull: gpio.Float},
@@ -358,6 +361,9 @@ var functional = map[string]pins.Pin{
 	"UART4_TX":  gpio.INVALID,
 }
 
+// Pin defines one CPU supported pin.
+//
+// Pin implements gpio.PinIO.
 type Pin struct {
 	index       uint8      // only used to lookup in mapping
 	group       uint8      // as per register offset calculation
@@ -477,18 +483,18 @@ var (
 
 // PinIO implementation.
 
-// Number implements gpio.PinIO
+func (p *Pin) String() string {
+	return fmt.Sprintf("%s(%d)", p.name, p.Number())
+}
+
+// Number implements pins.Pin.
 //
 // It returns the GPIO pin number as represented by gpio sysfs.
 func (p *Pin) Number() int {
 	return int(p.group/9)*32 + int(p.offset)
 }
 
-// String implements gpio.PinIO
-func (p *Pin) String() string {
-	return fmt.Sprintf("%s(%d)", p.name, p.Number())
-}
-
+// Function implements pins.Pin.
 func (p *Pin) Function() string {
 	switch f := p.function(); f {
 	case in:
@@ -582,6 +588,7 @@ func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 	return nil
 }
 
+// Read implements gpio.PinIn.
 func (p *Pin) Read() gpio.Level {
 	// Pn_DAT  n*0x24+0x10  Port n Data Register (n from 1(B) to 7(H))
 	return gpio.Level(gpioMemory[p.group+4]&(1<<p.offset) != 0)
@@ -595,6 +602,7 @@ func (p *Pin) WaitForEdge(timeout time.Duration) bool {
 	return false
 }
 
+// Pull implements gpio.PinIn.
 func (p *Pin) Pull() gpio.Pull {
 	off := p.group + 7 + p.offset/16
 	var v uint32
@@ -613,6 +621,7 @@ func (p *Pin) Pull() gpio.Pull {
 	}
 }
 
+// Out implements gpio.PinOut.
 func (p *Pin) Out(l gpio.Level) error {
 	if gpioMemory == nil {
 		return errors.New("subsystem not initialized")
@@ -632,6 +641,7 @@ func (p *Pin) Out(l gpio.Level) error {
 	return nil
 }
 
+// PWM implements gpio.PinOut.
 func (p *Pin) PWM(duty int) error {
 	return errors.New("pwm is not supported")
 }

@@ -55,6 +55,7 @@ func (r *Record) String() string {
 	return "record"
 }
 
+// Write implements spi.Conn.
 func (r *Record) Write(d []byte) (int, error) {
 	if err := r.Tx(d, nil); err != nil {
 		return 0, err
@@ -62,6 +63,7 @@ func (r *Record) Write(d []byte) (int, error) {
 	return len(d), nil
 }
 
+// Tx implements spi.Conn.
 func (r *Record) Tx(w, read []byte) error {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
@@ -84,6 +86,7 @@ func (r *Record) Tx(w, read []byte) error {
 	return nil
 }
 
+// Speed implements spi.Conn.
 func (r *Record) Speed(hz int64) error {
 	if r.Conn != nil {
 		return r.Conn.Speed(hz)
@@ -91,6 +94,7 @@ func (r *Record) Speed(hz int64) error {
 	return nil
 }
 
+// Configure implements spi.Conn.
 func (r *Record) Configure(mode spi.Mode, bits int) error {
 	if r.Conn != nil {
 		return r.Conn.Configure(mode, bits)
@@ -98,6 +102,7 @@ func (r *Record) Configure(mode spi.Mode, bits int) error {
 	return nil
 }
 
+// CLK implements spi.Pins.
 func (r *Record) CLK() gpio.PinOut {
 	if p, ok := r.Conn.(spi.Pins); ok {
 		return p.CLK()
@@ -105,6 +110,7 @@ func (r *Record) CLK() gpio.PinOut {
 	return gpio.INVALID
 }
 
+// MOSI implements spi.Pins.
 func (r *Record) MOSI() gpio.PinOut {
 	if p, ok := r.Conn.(spi.Pins); ok {
 		return p.MOSI()
@@ -112,6 +118,7 @@ func (r *Record) MOSI() gpio.PinOut {
 	return gpio.INVALID
 }
 
+// MISO implements spi.Pins.
 func (r *Record) MISO() gpio.PinIn {
 	if p, ok := r.Conn.(spi.Pins); ok {
 		return p.MISO()
@@ -119,6 +126,7 @@ func (r *Record) MISO() gpio.PinIn {
 	return gpio.INVALID
 }
 
+// CS implements spi.Pins.
 func (r *Record) CS() gpio.PinOut {
 	if p, ok := r.Conn.(spi.Pins); ok {
 		return p.CS()
@@ -126,7 +134,7 @@ func (r *Record) CS() gpio.PinOut {
 	return gpio.INVALID
 }
 
-// Playblack implements spi.Conn and plays back a recorded I/O flow.
+// Playback implements spi.Conn and plays back a recorded I/O flow.
 //
 // While "replay" type of unit tests are of limited value, they still present
 // an easy way to do basic code coverage.
@@ -134,10 +142,12 @@ type Playback struct {
 	protocolstest.Playback
 }
 
+// Speed implements spi.Conn.
 func (p *Playback) Speed(hz int64) error {
 	return nil
 }
 
+// Configure implements spi.Conn.
 func (p *Playback) Configure(mode spi.Mode, bits int) error {
 	return nil
 }
