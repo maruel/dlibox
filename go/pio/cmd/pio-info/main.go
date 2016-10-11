@@ -44,7 +44,7 @@ func mainImpl() error {
 		return err
 	}
 
-	fmt.Printf("Drivers loaded:\n")
+	fmt.Printf("Drivers loaded and their dependencies, if any:\n")
 	if len(state.Loaded) == 0 {
 		fmt.Print("  <none>\n")
 	} else {
@@ -70,9 +70,9 @@ func mainImpl() error {
 		}
 	}
 
-	fmt.Printf("Drivers skipped:\n")
+	fmt.Printf("Drivers skipped and the reason why:\n")
 	printOrdered(state.Skipped)
-	fmt.Printf("Drivers failed to load:\n")
+	fmt.Printf("Drivers failed to load and the error:\n")
 	printOrdered(state.Failed)
 	return err
 }

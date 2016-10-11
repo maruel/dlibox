@@ -11,15 +11,61 @@ failed to load, if any.
 
 ## Example
 
+On a [Raspberry Pi](https://www.raspberrypi.org/) running
+[Raspbian](https://raspbian.org/):
+
     $ pio-info
-    Using drivers:
-      - bcm283x
-      - sysfs-leds
-      - rpi
-      - sysfs-gpio
-      - sysfs-spi
-      - sysfs-i2c
-    Drivers skipped:
-      - allwinner
-      - allwinner_pl
-      - pine64
+    Drivers loaded and their dependencies, if any:
+    - bcm283x
+    - rpi          : [bcm283x]
+    - sysfs-gpio
+    - sysfs-i2c
+    - sysfs-leds
+    - sysfs-spi
+    - sysfs-thermal
+    Drivers skipped and the reason why:
+    - allwinner   : Allwinner CPU not detected
+    - allwinner_pl: dependency not loaded: "allwinner"
+    - pine64      : dependency not loaded: "allwinner_pl"
+    Drivers failed to load and the error:
+      <none>
+
+On a [Pine64](https://www.pine64.org/) running [Armbian](http://armbian.com)
+running **as a user** (not root):
+
+$ pio-info
+Drivers loaded and their dependencies, if any:
+- pine64       : [allwinner_pl]
+- sysfs-i2c
+- sysfs-thermal
+Drivers skipped and the reason why:
+- bcm283x   : bcm283x CPU not detected
+- rpi       : dependency not loaded: "bcm283x"
+- sysfs-leds: no LED found
+- sysfs-spi : no SPI bus found
+Drivers failed to load and the error:
+- allwinner   : need more access, try as root: open /dev/mem: permission denied
+- allwinner_pl: need more access, try as root: open /dev/mem: permission denied
+- sysfs-gpio  : need more access, try as root or setup udev rules: open /sys/class/gpio/export: permission denied
+
+On a [Pine64](https://www.pine64.org/) running [Armbian](http://armbian.com) **as
+root**:
+
+    $ sudo pio-info
+    Drivers loaded and their dependencies, if any:
+    - allwinner
+    - allwinner_pl : [allwinner]
+    - pine64       : [allwinner_pl]
+    - sysfs-gpio
+    - sysfs-i2c
+    - sysfs-thermal
+    Drivers skipped and the reason why:
+    - bcm283x   : bcm283x CPU not detected
+    - rpi       : dependency not loaded: "bcm283x"
+    - sysfs-leds: no LED found
+    - sysfs-spi : no SPI bus found
+    Drivers failed to load and the error:
+      <none>
+
+More driver can be loaded when running as root on some platforms, improving
+performance and adding some features, like input pull resistor support.
