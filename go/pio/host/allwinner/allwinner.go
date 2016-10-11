@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/pio"
+	"github.com/maruel/dlibox/go/pio/host/gpiomem"
 	"github.com/maruel/dlibox/go/pio/host/internal"
-	"github.com/maruel/dlibox/go/pio/host/internal/gpiomem"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/analog"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
@@ -874,7 +874,7 @@ func (d *driver) Init() (bool, error) {
 	if err != nil {
 		return true, err
 	}
-	gpioMemory = mem.Uint32
+	gpioMemory = mem.Uint32()
 	for i := range Pins {
 		if err := gpio.Register(&Pins[i]); err != nil {
 			return true, err

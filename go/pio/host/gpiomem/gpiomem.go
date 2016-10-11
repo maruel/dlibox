@@ -13,18 +13,34 @@ import (
 	"unsafe"
 )
 
-// Mem is the memory mapped CPU I/O registers.
+// Mem represents memory mapped CPU registers (usually I/O).
 type Mem struct {
-	Uint8  []uint8
-	Uint32 []uint32
+	base   []uint8
+	offset int
+}
+
+// Uint32 returns the memory map as a slice of uint32.
+func (m *Mem) Uint32() []uint32 {
+	return unsafeRemap(m.base[m.offset:])
+}
+
+// Struct initializes a point to a struct to point to the memory mapped region.
+//
+// i must be a pointer to a pointer to a struct and the pointer to struct must
+// be nil. panics otherwise.
+func (m *Mem) Struct(i unsafe.Pointer) {
+	header := *(*reflect.SliceHeader)(unsafe.Pointer(&m.base))
+	dest := (*int)(unsafe.Pointer(header.Data + uintptr(m.offset)))
+	var v **int = (**int)(i)
+	if *v != nil {
+		panic(*v)
+	}
+	*v = dest
 }
 
 // Close unmaps the I/O registers.
 func (m *Mem) Close() error {
-	u := m.Uint8
-	m.Uint8 = nil
-	m.Uint32 = nil
-	return syscall.Munmap(u)
+	return syscall.Munmap(m.base)
 }
 
 // OpenGPIO returns a CPU specific memory mapping of the CPU I/O registers using
@@ -41,6 +57,10 @@ func OpenGPIO() (*Mem, error) {
 
 // OpenMem returns a memory mapped view of arbitrary kernel memory range using
 // /dev/mem.
+//
+// Maps 4kb of memory, rounded on a 4kb window.
+//
+// This function is dangerous and should be used wisely.
 func OpenMem(base uint64) (*Mem, error) {
 	if isLinux {
 		return openMemLinux(base)
@@ -62,7 +82,7 @@ func openGPIOLinux() (*Mem, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Mem{i, unsafeRemap(i)}, nil
+	return &Mem{i, 0}, nil
 }
 
 func openMemLinux(base uint64) (*Mem, error) {
@@ -76,7 +96,7 @@ func openMemLinux(base uint64) (*Mem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gpiomem: mapping at 0x%x failed: %v", base, err)
 	}
-	return &Mem{i, unsafeRemap(i[base&0xFFF:])}, nil
+	return &Mem{i, int(base & 0xFFF)}, nil
 }
 
 func unsafeRemap(i []byte) []uint32 {

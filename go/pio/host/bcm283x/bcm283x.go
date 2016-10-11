@@ -12,10 +12,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/maruel/dlibox/go/pio"
+	"github.com/maruel/dlibox/go/pio/host/gpiomem"
 	"github.com/maruel/dlibox/go/pio/host/internal"
-	"github.com/maruel/dlibox/go/pio/host/internal/gpiomem"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
@@ -306,7 +307,7 @@ func (p *Pin) Function() string {
 // and looks for '011' to rising and '100' for falling detection to avoid
 // glitches. Because gpio sysfs is used, the latency is unpredictable.
 func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
-	if gpioMemory32 == nil {
+	if gpioMemory == nil {
 		return errors.New("subsystem not initialized")
 	}
 	if !p.setFunction(in) {
@@ -318,26 +319,23 @@ func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 		// page 101.
 
 		// Set Pull
-		// 0x94    RW   GPIO Pin Pull-up/down Enable (00=Float, 01=Down, 10=Up)
 		switch pull {
 		case gpio.Down:
-			gpioMemory32[37] = 1
+			gpioMemory.pullEnable = 1
 		case gpio.Up:
-			gpioMemory32[37] = 2
+			gpioMemory.pullEnable = 2
 		case gpio.Float:
-			gpioMemory32[37] = 0
+			gpioMemory.pullEnable = 0
 		}
 
 		// Datasheet states caller needs to sleep 150 cycles.
 		sleep150cycles()
-		// 0x98    RW   GPIO Pin Pull-up/down Enable Clock 0 (GPIO0-31)
-		// 0x9C    RW   GPIO Pin Pull-up/down Enable Clock 1 (GPIO32-53)
-		offset := 38 + p.number/32
-		gpioMemory32[offset] = 1 << uint(p.number%32)
+		offset := p.number / 32
+		gpioMemory.pullEnableClock[offset] = 1 << uint(p.number%32)
 
 		sleep150cycles()
-		gpioMemory32[37] = 0
-		gpioMemory32[offset] = 0
+		gpioMemory.pullEnable = 0
+		gpioMemory.pullEnableClock[offset] = 0
 	}
 	if edge != gpio.None {
 		// This is a race condition but this is fine; at worst PinByNumber() is
@@ -364,9 +362,7 @@ func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 //
 // This function is very fast. It works even if the pin is set as output.
 func (p *Pin) Read() gpio.Level {
-	// 0x34    R    GPIO Pin Level 0 (GPIO0-31)
-	// 0x38    R    GPIO Pin Level 1 (GPIO32-53)
-	return gpio.Level((gpioMemory32[13+p.number/32] & (1 << uint(p.number&31))) != 0)
+	return gpio.Level((gpioMemory.level[p.number/32] & (1 << uint(p.number&31))) != 0)
 }
 
 // WaitForEdge does edge detection and implements gpio.PinIn.
@@ -390,19 +386,16 @@ func (p *Pin) Pull() gpio.Pull {
 //
 // Fails if requesting to change a pin that is set to special functionality.
 func (p *Pin) Out(l gpio.Level) error {
-	if gpioMemory32 == nil {
+	if gpioMemory == nil {
 		return errors.New("subsystem not initialized")
 	}
 	// Change output before changing mode to not create any glitch.
-	// 0x1C    W    GPIO Pin Output Set 0 (GPIO0-31)
-	// 0x20    W    GPIO Pin Output Set 1 (GPIO32-53)
-	base := 7 + p.number/32
+	offset := p.number / 32
 	if l == gpio.Low {
-		// 0x28    W    GPIO Pin Output Clear 0 (GPIO0-31)
-		// 0x2C    W    GPIO Pin Output Clear 1 (GPIO32-53)
-		base += 3
+		gpioMemory.outputClear[offset] = 1 << uint(p.number&31)
+	} else {
+		gpioMemory.outputSet[offset] = 1 << uint(p.number&31)
 	}
-	gpioMemory32[base] = 1 << uint(p.number&31)
 	if !p.setFunction(out) {
 		return errors.New("failed to change pin mode")
 	}
@@ -426,16 +419,10 @@ func (p *Pin) DefaultPull() gpio.Pull {
 
 // function returns the current GPIO pin function.
 func (p *Pin) function() function {
-	if gpioMemory32 == nil {
+	if gpioMemory == nil {
 		return alt5
 	}
-	// 0x00    RW   GPIO Function Select 0 (GPIO0-9)
-	// 0x04    RW   GPIO Function Select 1 (GPIO10-19)
-	// 0x08    RW   GPIO Function Select 2 (GPIO20-29)
-	// 0x0C    RW   GPIO Function Select 3 (GPIO30-39)
-	// 0x10    RW   GPIO Function Select 4 (GPIO40-49)
-	// 0x14    RW   GPIO Function Select 5 (GPIO50-53)
-	return function((gpioMemory32[p.number/10] >> uint((p.number%10)*3)) & 7)
+	return function((gpioMemory.functionSelect[p.number/10] >> uint((p.number%10)*3)) & 7)
 }
 
 // setFunction changes the GPIO pin function.
@@ -448,15 +435,9 @@ func (p *Pin) setFunction(f function) bool {
 	if actual := p.function(); actual != in && actual != out {
 		return false
 	}
-	// 0x00    RW   GPIO Function Select 0 (GPIO0-9)
-	// 0x04    RW   GPIO Function Select 1 (GPIO10-19)
-	// 0x08    RW   GPIO Function Select 2 (GPIO20-29)
-	// 0x0C    RW   GPIO Function Select 3 (GPIO30-39)
-	// 0x10    RW   GPIO Function Select 4 (GPIO40-49)
-	// 0x14    RW   GPIO Function Select 5 (GPIO50-53)
 	off := p.number / 10
 	shift := uint(p.number%10) * 3
-	gpioMemory32[off] = (gpioMemory32[off] &^ (7 << shift)) | (uint32(f) << shift)
+	gpioMemory.functionSelect[off] = (gpioMemory.functionSelect[off] &^ (7 << shift)) | (uint32(f) << shift)
 	return true
 }
 
@@ -481,50 +462,77 @@ const (
 // Mapping as
 // https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 // pages 90-91.
-// Offset  Mode Value
-// 0x00    RW   GPIO Function Select 0 (GPIO0-9)
-// 0x04    RW   GPIO Function Select 1 (GPIO10-19)
-// 0x08    RW   GPIO Function Select 2 (GPIO20-29)
-// 0x0C    RW   GPIO Function Select 3 (GPIO30-39)
-// 0x10    RW   GPIO Function Select 4 (GPIO40-49)
-// 0x14    RW   GPIO Function Select 5 (GPIO50-53)
-// 0x18    -    Reserved
-// 0x1C    W    GPIO Pin Output Set 0 (GPIO0-31)
-// 0x20    W    GPIO Pin Output Set 1 (GPIO32-53)
-// 0x24    -    Reserved
-// 0x28    W    GPIO Pin Output Clear 0 (GPIO0-31)
-// 0x2C    W    GPIO Pin Output Clear 1 (GPIO32-53)
-// 0x30    -    Reserved
-// 0x34    R    GPIO Pin Level 0 (GPIO0-31)
-// 0x38    R    GPIO Pin Level 1 (GPIO32-53)
-// 0x3C    -    Reserved
-// 0x40    RW   GPIO Pin Event Detect Status 0 (GPIO0-31)
-// 0x44    RW   GPIO Pin Event Detect Status 1 (GPIO32-53)
-// 0x48    -    Reserved
-// 0x4C    RW   GPIO Pin Rising Edge Detect Enable 0 (GPIO0-31)
-// 0x50    RW   GPIO Pin Rising Edge Detect Enable 1 (GPIO32-53)
-// 0x54    -    Reserved
-// 0x58    RW   GPIO Pin Falling Edge Detect Enable 0 (GPIO0-31)
-// 0x5C    RW   GPIO Pin Falling Edge Detect Enable 1 (GPIO32-53)
-// 0x60    -    Reserved
-// 0x64    RW   GPIO Pin High Detect Enable 0 (GPIO0-31)
-// 0x68    RW   GPIO Pin High Detect Enable 1 (GPIO32-53)
-// 0x6C    -    Reserved
-// 0x70    RW   GPIO Pin Low Detect Enable 0 (GPIO0-31)
-// 0x74    RW   GPIO Pin Low Detect Enable 1 (GPIO32-53)
-// 0x78    -    Reserved
-// 0x7C    RW   GPIO Pin Async Rising Edge Detect 0 (GPIO0-31)
-// 0x80    RW   GPIO Pin Async Rising Edge Detect 1 (GPIO32-53)
-// 0x84    -    Reserved
-// 0x88    RW   GPIO Pin Async Falling Edge Detect 0 (GPIO0-31)
-// 0x8C    RW   GPIO Pin Async Falling Edge Detect 1 (GPIO32-53)
-// 0x90    -    Reserved
-// 0x94    RW   GPIO Pin Pull-up/down Enable (00=Float, 01=Down, 10=Up)
-// 0x98    RW   GPIO Pin Pull-up/down Enable Clock 0 (GPIO0-31)
-// 0x9C    RW   GPIO Pin Pull-up/down Enable Clock 1 (GPIO32-53)
-// 0xA0    -    Reserved
-// 0xB0    -    Test (byte)
-var gpioMemory32 []uint32
+type gpioMap struct {
+	// 0x00    RW   GPIO Function Select 0 (GPIO0-9)
+	// 0x04    RW   GPIO Function Select 1 (GPIO10-19)
+	// 0x08    RW   GPIO Function Select 2 (GPIO20-29)
+	// 0x0C    RW   GPIO Function Select 3 (GPIO30-39)
+	// 0x10    RW   GPIO Function Select 4 (GPIO40-49)
+	// 0x14    RW   GPIO Function Select 5 (GPIO50-53)
+	functionSelect [6]uint32
+	// 0x18    -    Reserved
+	dummy0 uint32
+	// 0x1C    W    GPIO Pin Output Set 0 (GPIO0-31)
+	// 0x20    W    GPIO Pin Output Set 1 (GPIO32-53)
+	outputSet [2]uint32
+	// 0x24    -    Reserved
+	dummy1 uint32
+	// 0x28    W    GPIO Pin Output Clear 0 (GPIO0-31)
+	// 0x2C    W    GPIO Pin Output Clear 1 (GPIO32-53)
+	outputClear [2]uint32
+	// 0x30    -    Reserved
+	dummy2 uint32
+	// 0x34    R    GPIO Pin Level 0 (GPIO0-31)
+	// 0x38    R    GPIO Pin Level 1 (GPIO32-53)
+	level [2]uint32
+	// 0x3C    -    Reserved
+	dummy3 uint32
+	// 0x40    RW   GPIO Pin Event Detect Status 0 (GPIO0-31)
+	// 0x44    RW   GPIO Pin Event Detect Status 1 (GPIO32-53)
+	eventDetectStatus [2]uint32
+	// 0x48    -    Reserved
+	dummy4 uint32
+	// 0x4C    RW   GPIO Pin Rising Edge Detect Enable 0 (GPIO0-31)
+	// 0x50    RW   GPIO Pin Rising Edge Detect Enable 1 (GPIO32-53)
+	risingEdgeDetectEnable [2]uint32
+	// 0x54    -    Reserved
+	dummy5 uint32
+	// 0x58    RW   GPIO Pin Falling Edge Detect Enable 0 (GPIO0-31)
+	// 0x5C    RW   GPIO Pin Falling Edge Detect Enable 1 (GPIO32-53)
+	fallingEdgeDetectEnable [2]uint32
+	// 0x60    -    Reserved
+	dummy6 uint32
+	// 0x64    RW   GPIO Pin High Detect Enable 0 (GPIO0-31)
+	// 0x68    RW   GPIO Pin High Detect Enable 1 (GPIO32-53)
+	highDetectEnable [2]uint32
+	// 0x6C    -    Reserved
+	dummy7 uint32
+	// 0x70    RW   GPIO Pin Low Detect Enable 0 (GPIO0-31)
+	// 0x74    RW   GPIO Pin Low Detect Enable 1 (GPIO32-53)
+	lowDetectEnable [2]uint32
+	// 0x78    -    Reserved
+	dummy8 uint32
+	// 0x7C    RW   GPIO Pin Async Rising Edge Detect 0 (GPIO0-31)
+	// 0x80    RW   GPIO Pin Async Rising Edge Detect 1 (GPIO32-53)
+	asyncRisingEdgeDetectEnable [2]uint32
+	// 0x84    -    Reserved
+	dummy9 uint32
+	// 0x88    RW   GPIO Pin Async Falling Edge Detect 0 (GPIO0-31)
+	// 0x8C    RW   GPIO Pin Async Falling Edge Detect 1 (GPIO32-53)
+	asyncFallingEdgeDetectEnable [2]uint32
+	// 0x90    -    Reserved
+	dummy10 uint32
+	// 0x94    RW   GPIO Pin Pull-up/down Enable (00=Float, 01=Down, 10=Up)
+	pullEnable uint32
+	// 0x98    RW   GPIO Pin Pull-up/down Enable Clock 0 (GPIO0-31)
+	// 0x9C    RW   GPIO Pin Pull-up/down Enable Clock 1 (GPIO32-53)
+	pullEnableClock [2]uint32
+	// 0xA0    -    Reserved
+	dummy uint32
+	// 0xB0    -    Test (byte)
+}
+
+var gpioMemory *gpioMap
 
 // Changing pull resistor require a 150 cycles sleep.
 //
@@ -534,11 +542,11 @@ var gpioMemory32 []uint32
 func sleep150cycles() uint32 {
 	// Do not call into any kernel function, since this causes a high chance of
 	// being preempted.
-	// Abuse the fact that gpioMemory32 is uncached memory.
+	// Abuse the fact that gpioMemory is uncached memory.
 	// TODO(maruel): No idea if this is too much or enough.
 	var out uint32
 	for i := 0; i < 150; i++ {
-		out += gpioMemory32[i]
+		out += gpioMemory.functionSelect[0]
 	}
 	return out
 }
@@ -700,7 +708,7 @@ func (d *driver) Init() (bool, error) {
 			return true, err
 		}
 	}
-	gpioMemory32 = mem.Uint32
+	mem.Struct(unsafe.Pointer(&gpioMemory))
 
 	// https://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 	// Page 102.
