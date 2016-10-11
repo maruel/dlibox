@@ -10,8 +10,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -245,7 +245,7 @@ func (p *Pin) PWM(duty int) error {
 
 //
 
-// open opens the gpio sysfs handle to /value and direction.
+// open opens the gpio sysfs handle to /value and /direction.
 //
 // lock must be held.
 func (p *Pin) open() error {
@@ -256,16 +256,16 @@ func (p *Pin) open() error {
 		return nil
 	}
 	_, err := exportHandle.Write([]byte(strconv.Itoa(p.number)))
-	if !isErrBusy(err) {
+	if err != nil && !isErrBusy(err) {
 		if os.IsPermission(err) {
 			return fmt.Errorf("need more access, try as root or setup udev rules: %v", err)
 		}
 		return err
 	}
 	// There's a race condition where the file may be created but udev is still
-	// running the script to make it readable to the current user. It's simpler
-	// to just loop a little as if /export is accessible, it doesn't make sense
-	// that gpioN/value doesn't become accessible eventually.
+	// running the Raspbian udev rule to make it readable to the current user.
+	// It's simpler to just loop a little as if /export is accessible, it doesn't
+	// make sense that gpioN/value doesn't become accessible eventually.
 	timeout := 5 * time.Second
 	for start := time.Now(); time.Since(start) < timeout; {
 		p.fValue, err = os.OpenFile(p.root+"value", os.O_RDWR, 0600)
@@ -360,34 +360,30 @@ func (d *driverGPIO) Prerequisites() []string {
 // The main drawback of GPIO sysfs is that it doesn't expose internal pull
 // resistor and it is much slower than using memory mapped hardware registers.
 func (d *driverGPIO) Init() (bool, error) {
-	// This driver is only registered on linux, so there is no legitimate time to
-	// skip it.
-	f, err := os.OpenFile("/sys/class/gpio/export", os.O_WRONLY, 0600)
+	items, err := filepath.Glob("/sys/class/gpio/gpiochip*")
 	if err != nil {
 		return true, err
 	}
-	items, err := ioutil.ReadDir("/sys/class/gpio/")
-	if err != nil {
-		f.Close()
-		return true, err
+	if len(items) == 0 {
+		return false, errors.New("no GPIO pin found")
 	}
-	// There are hosts that use non-continuous pin numbering.
+
+	// There are hosts that use non-continuous pin numbering so use a map instead
+	// of an array.
 	Pins = map[int]*Pin{}
 	for _, item := range items {
-		name := item.Name()
-		if !strings.HasPrefix(name, "gpiochip") {
-			continue
-		}
-		if err := d.exportGPIOChip("/sys/class/gpio/" + name + "/"); err != nil {
-			f.Close()
+		if err := d.parseGPIOChip(item + "/"); err != nil {
 			return true, err
 		}
 	}
-	exportHandle = f
-	return true, nil
+	exportHandle, err = os.OpenFile("/sys/class/gpio/export", os.O_WRONLY, 0600)
+	if os.IsPermission(err) {
+		return true, fmt.Errorf("need more access, try as root or setup udev rules: %v", err)
+	}
+	return true, err
 }
 
-func (d *driverGPIO) exportGPIOChip(path string) error {
+func (d *driverGPIO) parseGPIOChip(path string) error {
 	base, err := readInt(path + "base")
 	if err != nil {
 		return err

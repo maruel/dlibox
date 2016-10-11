@@ -245,6 +245,9 @@ func (d *driverSPI) Init() (bool, error) {
 	if err != nil {
 		return true, err
 	}
+	if len(items) == 0 {
+		return false, errors.New("no SPI bus found")
+	}
 	sort.Strings(items)
 	for _, item := range items {
 		parts := strings.Split(item[len(prefix):], ".")

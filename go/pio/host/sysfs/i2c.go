@@ -308,15 +308,15 @@ func (d *driverI2C) Prerequisites() []string {
 }
 
 func (d *driverI2C) Init() (bool, error) {
-	// This driver is only registered on linux, so there is no legitimate time to
-	// skip it.
-
 	// Do not use "/sys/bus/i2c/devices/i2c-" as Raspbian's provided udev rules
 	// only modify the ACL of /dev/i2c-* but not the ones in /sys/bus/...
 	prefix := "/dev/i2c-"
 	items, err := filepath.Glob(prefix + "*")
 	if err != nil {
 		return true, err
+	}
+	if len(items) == 0 {
+		return false, errors.New("no I²C bus found")
 	}
 	// Make sure they are registered in order.
 	sort.Strings(items)

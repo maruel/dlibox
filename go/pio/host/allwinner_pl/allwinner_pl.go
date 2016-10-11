@@ -343,6 +343,9 @@ func (d *driver) Init() (bool, error) {
 	}
 	mem, err := gpiomem.OpenMem(getBaseAddress())
 	if err != nil {
+		if os.IsPermission(err) {
+			return true, fmt.Errorf("need more access, try as root: %v", err)
+		}
 		return true, err
 	}
 	gpioMemory = mem.Uint32()

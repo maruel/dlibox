@@ -6,6 +6,7 @@ package bcm283x
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -703,8 +704,19 @@ func (d *driver) Init() (bool, error) {
 	if err != nil {
 		// Try without /dev/gpiomem. This is the case of not running on Raspbian or
 		// raspbian before Jessie. This requires running as root.
-		mem, err = gpiomem.OpenMem(getBaseAddress())
-		if err != nil {
+		var err2 error
+		mem, err2 = gpiomem.OpenMem(getBaseAddress())
+		if err2 != nil {
+			if internal.IsRaspbian() {
+				// Raspbian specific error code to help guide the user to troubleshoot
+				// the problems.
+				if os.IsNotExist(err) && os.IsPermission(err2) {
+					return true, fmt.Errorf("/dev/gpiomem wasn't found; please upgrade to Raspbian Jessie or run as root")
+				}
+			}
+			if os.IsPermission(err2) {
+				return true, fmt.Errorf("need more access, try as root: %v", err)
+			}
 			return true, err
 		}
 	}

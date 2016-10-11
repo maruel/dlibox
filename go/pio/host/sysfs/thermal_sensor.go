@@ -140,6 +140,9 @@ func (d *driverThermalSensor) Init() (bool, error) {
 	if err != nil {
 		return true, err
 	}
+	if len(items) == 0 {
+		return false, errors.New("no thermal sensor found")
+	}
 	sort.Strings(items)
 	for _, item := range items {
 		base := filepath.Dir(item)

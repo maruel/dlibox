@@ -163,11 +163,12 @@ func (d *driverLED) Prerequisites() []string {
 //
 // * for the most minimalistic meaning of 'described'.
 func (d *driverLED) Init() (bool, error) {
-	// This driver is only registered on linux, so there is no legitimate time to
-	// skip it.
 	items, err := filepath.Glob("/sys/class/leds/*")
 	if err != nil {
 		return true, err
+	}
+	if len(items) == 0 {
+		return false, errors.New("no LED found")
 	}
 	// This make the LEDs in deterministic order.
 	sort.Strings(items)
