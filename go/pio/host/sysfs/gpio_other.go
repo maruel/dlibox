@@ -20,3 +20,8 @@ func (e event) wait(ep, timeoutms int) (int, error) {
 func (e event) makeEvent(f *os.File) (int, error) {
 	return 0, errors.New("unreachable code")
 }
+
+func isErrBusy(err error) bool {
+	// This function is not used on non-linux.
+	return false
+}

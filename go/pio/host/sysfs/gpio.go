@@ -67,7 +67,7 @@ func (p *Pin) Function() string {
 		return err.Error()
 	}
 	var buf [4]byte
-	if err := seekWrite(p.fDirection, buf[:]); err != nil {
+	if err := seekRead(p.fDirection, buf[:]); err != nil {
 		return err.Error()
 	}
 	if buf[0] == 'i' && buf[1] == 'n' {
@@ -155,12 +155,7 @@ func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 func (p *Pin) Read() gpio.Level {
 	// There's no lock here.
 	var buf [4]byte
-	if _, err := p.fValue.Seek(0, 0); err != nil {
-		// Error.
-		//fmt.Printf("%s: %v", p, err)
-		return gpio.Low
-	}
-	if _, err := p.fValue.Read(buf[:]); err != nil {
+	if err := seekRead(p.fValue, buf[:]); err != nil {
 		// Error.
 		//fmt.Printf("%s: %v", p, err)
 		return gpio.Low
@@ -214,7 +209,7 @@ func (p *Pin) Pull() gpio.Pull {
 }
 
 // Out sets a pin as output.
-func (p Pin) Out(l gpio.Level) error {
+func (p *Pin) Out(l gpio.Level) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if p.direction != dOut {
@@ -260,10 +255,11 @@ func (p *Pin) open() error {
 	if p.fDirection != nil {
 		return nil
 	}
-	// Ignore the failure unless this is a permission failure. Exporting a pin
-	// that is already exported causes a write failure.
-	_, err := exportHandle.Write([]byte(fmt.Sprintf("%d\n", p.number)))
-	if os.IsPermission(err) {
+	_, err := exportHandle.Write([]byte(strconv.Itoa(p.number)))
+	if !isErrBusy(err) {
+		if os.IsPermission(err) {
+			return fmt.Errorf("need more access, try as root or setup udev rules: %v", err)
+		}
 		return err
 	}
 	// There's a race condition where the file may be created but udev is still
@@ -318,6 +314,14 @@ func readInt(path string) (int, error) {
 		return 0, errors.New("invalid value")
 	}
 	return strconv.Atoi(string(raw[:len(raw)-1]))
+}
+
+func seekRead(f *os.File, b []byte) error {
+	if _, err := f.Seek(0, 0); err != nil {
+		return err
+	}
+	_, err := f.Read(b)
+	return err
 }
 
 func seekWrite(f *os.File, b []byte) error {

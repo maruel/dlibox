@@ -50,3 +50,8 @@ func (e event) makeEvent(f *os.File) (int, error) {
 	e[0].Fd = int32(fd)
 	return epollFd, syscall.EpollCtl(epollFd, EPOLL_CTL_ADD, int(fd), &e[0])
 }
+
+func isErrBusy(err error) bool {
+	e, ok := err.(*os.PathError)
+	return ok && e.Err == syscall.EBUSY
+}

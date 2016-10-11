@@ -51,7 +51,7 @@ func Register(name string, pins [][]pins.Pin) error {
 	for i, line := range pins {
 		for j, pin := range line {
 			if pin == nil || len(pin.String()) == 0 {
-				return fmt.Errorf("missing pin [%d][%d]\n", i+1, j+1)
+				return fmt.Errorf("missing pin on header %s[%d][%d]\n", name, i+1, j+1)
 			}
 		}
 	}
