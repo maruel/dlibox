@@ -145,7 +145,7 @@ type driverLED struct {
 }
 
 func (d *driverLED) String() string {
-	return "sysfs-leds"
+	return "sysfs-led"
 }
 
 func (d *driverLED) Type() pio.Type {

@@ -20,7 +20,7 @@ On a [Raspberry Pi](https://www.raspberrypi.org/) running
     - rpi          : [bcm283x]
     - sysfs-gpio
     - sysfs-i2c
-    - sysfs-leds
+    - sysfs-led
     - sysfs-spi
     - sysfs-thermal
     Drivers skipped and the reason why:
@@ -39,10 +39,10 @@ running **as a user** (not root):
     - sysfs-i2c
     - sysfs-thermal
     Drivers skipped and the reason why:
-    - bcm283x   : bcm283x CPU not detected
-    - rpi       : dependency not loaded: "bcm283x"
-    - sysfs-leds: no LED found
-    - sysfs-spi : no SPI bus found
+    - bcm283x  : bcm283x CPU not detected
+    - rpi      : dependency not loaded: "bcm283x"
+    - sysfs-led: no LED found
+    - sysfs-spi: no SPI bus found
     Drivers failed to load and the error:
     - allwinner   : need more access, try as root: open /dev/mem: permission denied
     - allwinner_pl: need more access, try as root: open /dev/mem: permission denied
@@ -60,10 +60,10 @@ root**:
     - sysfs-i2c
     - sysfs-thermal
     Drivers skipped and the reason why:
-    - bcm283x   : bcm283x CPU not detected
-    - rpi       : dependency not loaded: "bcm283x"
-    - sysfs-leds: no LED found
-    - sysfs-spi : no SPI bus found
+    - bcm283x  : bcm283x CPU not detected
+    - rpi      : dependency not loaded: "bcm283x"
+    - sysfs-led: no LED found
+    - sysfs-spi: no SPI bus found
     Drivers failed to load and the error:
       <none>
 
