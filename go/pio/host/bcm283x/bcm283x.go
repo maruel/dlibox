@@ -16,11 +16,20 @@ import (
 	"unsafe"
 
 	"github.com/maruel/dlibox/go/pio"
+	"github.com/maruel/dlibox/go/pio/host/distro"
 	"github.com/maruel/dlibox/go/pio/host/gpiomem"
-	"github.com/maruel/dlibox/go/pio/host/internal"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
+
+// Present returns true if running on a Broadcom bcm283x based CPU.
+func Present() bool {
+	if isArm {
+		hardware, ok := distro.CPUInfo()["Hardware"]
+		return ok && strings.HasPrefix(hardware, "BCM")
+	}
+	return false
+}
 
 var functional = map[string]gpio.PinIO{
 	"GPCLK0":    gpio.INVALID,
@@ -698,7 +707,7 @@ func (d *driver) Prerequisites() []string {
 }
 
 func (d *driver) Init() (bool, error) {
-	if !internal.IsBCM283x() {
+	if !Present() {
 		return false, errors.New("bcm283x CPU not detected")
 	}
 	mem, err := gpiomem.OpenGPIO()
@@ -708,7 +717,7 @@ func (d *driver) Init() (bool, error) {
 		var err2 error
 		mem, err2 = gpiomem.OpenMem(getBaseAddress())
 		if err2 != nil {
-			if internal.IsRaspbian() {
+			if distro.IsRaspbian() {
 				// Raspbian specific error code to help guide the user to troubleshoot
 				// the problems.
 				if os.IsNotExist(err) && os.IsPermission(err2) {
@@ -784,6 +793,12 @@ func (d *driver) Init() (bool, error) {
 		gpio.MapFunction(k, v)
 	}
 	return true, nil
+}
+
+func init() {
+	if isArm {
+		pio.MustRegister(&driver{})
+	}
 }
 
 var _ pio.Driver = &driver{}

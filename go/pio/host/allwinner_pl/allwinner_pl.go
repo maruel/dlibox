@@ -14,11 +14,26 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/pio"
+	"github.com/maruel/dlibox/go/pio/host/distro"
 	"github.com/maruel/dlibox/go/pio/host/gpiomem"
-	"github.com/maruel/dlibox/go/pio/host/internal"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
+
+// Present returns true if running on an Allwinner A64 based CPU.
+//
+// https://en.wikipedia.org/wiki/Allwinner_Technology
+//
+// BUG(maruel): Fix detection, need to specifically look for A64!
+func Present() bool {
+	if isArm {
+		// TODO(maruel): This is too vague.
+		hardware, ok := distro.CPUInfo()["Hardware"]
+		return ok && strings.HasPrefix(hardware, "sun")
+		// /sys/class/sunxi_info/sys_info
+	}
+	return false
+}
 
 // Pins is all the pins as supported by the CPU. There is no guarantee that
 // they are actually connected to anything on the board.
@@ -346,8 +361,7 @@ func (d *driver) Prerequisites() []string {
 }
 
 func (d *driver) Init() (bool, error) {
-	if !internal.IsAllwinner() {
-		// BUG(maruel): Fix detection, need to specifically look for A64!
+	if !Present() {
 		return false, errors.New("A64 CPU not detected")
 	}
 	mem, err := gpiomem.OpenMem(getBaseAddress())
@@ -368,6 +382,12 @@ func (d *driver) Init() (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func init() {
+	if isArm {
+		pio.MustRegister(&driver{})
+	}
 }
 
 var _ pio.Driver = &driver{}

@@ -4,8 +4,4 @@
 
 package bcm283x
 
-import "github.com/maruel/dlibox/go/pio"
-
-func init() {
-	pio.MustRegister(&driver{})
-}
+const isArm = true

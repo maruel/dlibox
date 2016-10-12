@@ -6,6 +6,4 @@
 
 package pine64
 
-func init() {
-	zapPins()
-}
+const isArm = false

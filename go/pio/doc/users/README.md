@@ -29,7 +29,11 @@ It is as simple as:
 
 ```bash
 go get -u github.com/maruel/dlibox/go/pio/cmd/...
+sudo pio-setup
 ```
+
+`pio-setup` initializes the host to enables as much functionality as possible.
+
 
 ## Cross-compiling
 
@@ -52,8 +56,8 @@ It is basically a wrapper around `GOOS=linux GOARCH=arm go build .; scp <exe>
 More often than not on Debian based distros, you may have to run the executable
 as root to be able to access the LEDs, GPIOs and other functionality.
 
-This section will be soon enhanced with udev rules (and potentially a kernel
-driver) to help with this.
+`pio-setup` initializes the host to enables as much functionality as possible.
+Use `-dry-run` to inspect the modifications that would be done.
 
 
 ### Debian

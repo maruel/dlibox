@@ -4,8 +4,4 @@
 
 package rpi
 
-import "github.com/maruel/dlibox/go/pio"
-
-func init() {
-	pio.MustRegister(&driver{})
-}
+const isArm = true

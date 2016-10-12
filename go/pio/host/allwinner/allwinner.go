@@ -14,13 +14,26 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/pio"
+	"github.com/maruel/dlibox/go/pio/host/distro"
 	"github.com/maruel/dlibox/go/pio/host/gpiomem"
-	"github.com/maruel/dlibox/go/pio/host/internal"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
 	"github.com/maruel/dlibox/go/pio/protocols/analog"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
+
+// Present returns true if running on an Allwinner based CPU.
+//
+// https://en.wikipedia.org/wiki/Allwinner_Technology
+func Present() bool {
+	if isArm {
+		// TODO(maruel): This is too vague.
+		hardware, ok := distro.CPUInfo()["Hardware"]
+		return ok && strings.HasPrefix(hardware, "sun")
+		// /sys/class/sunxi_info/sys_info
+	}
+	return false
+}
 
 // CPU specific pins.
 var (
@@ -877,7 +890,7 @@ func (d *driver) Prerequisites() []string {
 }
 
 func (d *driver) Init() (bool, error) {
-	if !internal.IsAllwinner() {
+	if !Present() {
 		return false, errors.New("Allwinner CPU not detected")
 	}
 	mem, err := gpiomem.OpenMem(getBaseAddress())
@@ -902,6 +915,12 @@ func (d *driver) Init() (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func init() {
+	if isArm {
+		pio.MustRegister(&driver{})
+	}
 }
 
 var _ pio.Driver = &driver{}

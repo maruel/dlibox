@@ -6,6 +6,4 @@
 
 package rpi
 
-func init() {
-	zapPins()
-}
+const isArm = false

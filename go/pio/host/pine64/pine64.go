@@ -6,16 +6,28 @@ package pine64
 
 import (
 	"errors"
+	"os"
 
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host/allwinner"
 	"github.com/maruel/dlibox/go/pio/host/allwinner_pl"
 	"github.com/maruel/dlibox/go/pio/host/headers"
-	"github.com/maruel/dlibox/go/pio/host/internal"
 	"github.com/maruel/dlibox/go/pio/protocols/analog"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
+
+// Present returns true if running on a Pine64 board.
+//
+// https://www.pine64.org/
+func Present() bool {
+	if isArm {
+		// This is iffy at best.
+		_, err := os.Stat("/boot/pine64.dtb")
+		return err == nil
+	}
+	return false
+}
 
 // Pine64 specific pins.
 var (
@@ -281,7 +293,7 @@ func (d *driver) Prerequisites() []string {
 }
 
 func (d *driver) Init() (bool, error) {
-	if !internal.IsPine64() {
+	if !Present() {
 		zapPins()
 		return false, errors.New("pine64 board not detected")
 	}
@@ -367,6 +379,14 @@ func (d *driver) Init() (bool, error) {
 	}
 
 	return true, nil
+}
+
+func init() {
+	if isArm {
+		pio.MustRegister(&driver{})
+	} else {
+		zapPins()
+	}
 }
 
 var _ pio.Driver = &driver{}

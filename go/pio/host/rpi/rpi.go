@@ -9,15 +9,28 @@ package rpi
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host/bcm283x"
+	"github.com/maruel/dlibox/go/pio/host/distro"
 	"github.com/maruel/dlibox/go/pio/host/headers"
-	"github.com/maruel/dlibox/go/pio/host/internal"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
+
+// Present returns true if running on a Raspberry Pi board.
+//
+// https://www.raspberrypi.org/
+func Present() bool {
+	if isArm {
+		// This is iffy at best.
+		_, err := os.Stat("/sys/bus/platform/drivers/raspberrypi-firmware")
+		return err == nil
+	}
+	return false
+}
 
 // Version is the Raspberry Pi version 1, 2 or 3.
 //
@@ -165,7 +178,7 @@ func (d *driver) Prerequisites() []string {
 }
 
 func (d *driver) Init() (bool, error) {
-	if !internal.IsRaspberryPi() {
+	if !Present() {
 		zapPins()
 		return false, errors.New("Raspberry Pi board not detected")
 	}
@@ -174,7 +187,7 @@ func (d *driver) Init() (bool, error) {
 	//
 	// This code is not futureproof, it will error out on a Raspberry Pi 4
 	// whenever it comes out.
-	rev, _ := internal.CPUInfo()["Revision"]
+	rev, _ := distro.CPUInfo()["Revision"]
 	if i, err := strconv.ParseInt(rev, 16, 32); err == nil {
 		// Ignore the overclock bit.
 		i &= 0xFFFFFF
@@ -282,6 +295,14 @@ func (d *driver) Init() (bool, error) {
 		return true, err
 	}
 	return true, nil
+}
+
+func init() {
+	if isArm {
+		pio.MustRegister(&driver{})
+	} else {
+		zapPins()
+	}
 }
 
 var _ pio.Driver = &driver{}
