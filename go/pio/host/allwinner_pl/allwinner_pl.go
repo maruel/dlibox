@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host/distro"
@@ -27,7 +28,6 @@ import (
 // BUG(maruel): Fix detection, need to specifically look for A64!
 func Present() bool {
 	if isArm {
-		// TODO(maruel): This is too vague.
 		hardware, ok := distro.CPUInfo()["Hardware"]
 		return ok && strings.HasPrefix(hardware, "sun")
 		// /sys/class/sunxi_info/sys_info
@@ -148,15 +148,15 @@ func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 		return fmt.Errorf("failed to set pin %s as input", p.name)
 	}
 	if pull != gpio.PullNoChange {
-		off := 7 + p.offset/16
+		off := p.offset / 16
 		shift := 2 * (p.offset % 16)
 		// Do it in a way that is concurrent safe.
-		gpioMemory[off] &^= 3 << shift
+		gpioMemory.pull[off] &^= 3 << shift
 		switch pull {
 		case gpio.Down:
-			gpioMemory[off] = 2 << shift
+			gpioMemory.pull[off] = 2 << shift
 		case gpio.Up:
-			gpioMemory[off] = 1 << shift
+			gpioMemory.pull[off] = 1 << shift
 		default:
 		}
 	}
@@ -183,8 +183,7 @@ func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 
 // Read implements gpio.PinIn.
 func (p *Pin) Read() gpio.Level {
-	// Pn_DAT  n*0x24+0x10  Port n Data Register (n from 1(B) to 7(H))
-	return gpio.Level(gpioMemory[4]&(1<<p.offset) != 0)
+	return gpio.Level(gpioMemory.data&(1<<p.offset) != 0)
 }
 
 // WaitForEdge does edge detection and implements gpio.PinIn.
@@ -200,11 +199,7 @@ func (p *Pin) Pull() gpio.Pull {
 	if gpioMemory == nil {
 		return gpio.PullNoChange
 	}
-	off := 7 + p.offset/16
-	var v uint32
-	// Pn_PULL  n*0x24+0x1C Port n Pull Register (n from 1(B) to 7(H))
-	v = gpioMemory[off]
-	switch (v >> (2 * (p.offset % 16))) & 3 {
+	switch (gpioMemory.pull[p.offset/16] >> (2 * (p.offset % 16))) & 3 {
 	case 0:
 		return gpio.Float
 	case 1:
@@ -229,9 +224,9 @@ func (p *Pin) Out(l gpio.Level) error {
 	// there is no glitch.
 	bit := uint32(1 << p.offset)
 	if l {
-		gpioMemory[4] |= bit
+		gpioMemory.data |= bit
 	} else {
-		gpioMemory[4] &^= bit
+		gpioMemory.data &^= bit
 	}
 	return nil
 }
@@ -248,10 +243,8 @@ func (p *Pin) function() function {
 	if gpioMemory == nil {
 		return disabled
 	}
-	off := p.offset / 8
 	shift := 4 * (p.offset % 8)
-	// Pn_CFGx n*0x24+0x0x  Port n Configure Register x (n from 1(B) to 7(H))
-	return function((gpioMemory[off] >> shift) & 7)
+	return function((gpioMemory.cfg[p.offset/8] >> shift) & 7)
 }
 
 // setFunction changes the GPIO pin function.
@@ -273,8 +266,8 @@ func (p *Pin) setFunction(f function) bool {
 	mask := uint32(disabled) << shift
 	v := (uint32(f) << shift) ^ mask
 	// First disable, then setup. This is concurrent safe.
-	gpioMemory[off] |= mask
-	gpioMemory[off] &^= v
+	gpioMemory.cfg[off] |= mask
+	gpioMemory.cfg[off] &^= v
 	if p.function() != f {
 		panic(f)
 	}
@@ -300,8 +293,22 @@ const (
 	disabled function = 7
 )
 
+// http://files.pine64.org/doc/datasheet/pine64/Allwinner_A64_User_Manual_V1.0.pdf
 // Page 410 GPIO PL.
-var gpioMemory []uint32
+type gpioGroup struct {
+	// Pn_CFGx n*0x24+x*4       Port n Configure Register x (n from 1(B) to 7(H))
+	cfg [4]uint32
+	// Pn_DAT  n*0x24+0x10      Port n Data Register (n from 1(B) to 7(H))
+	data uint32
+	// Pn_DRVx n*0x24+0x14+x*4  Port n Multi-Driving Register x (n from 1 to 7)
+	drv [2]uint32
+	// Pn_PULL n*0x24+0x1C+x*4  Port n Pull Register (n from 1(B) to 7(H))
+	pull [2]uint32
+}
+
+// gpioMemory is only the PL group in that case. Note that groups PI, PJ, PK do
+// not exist.
+var gpioMemory *gpioGroup
 
 var _ gpio.PinIO = &Pin{}
 
@@ -371,7 +378,8 @@ func (d *driver) Init() (bool, error) {
 		}
 		return true, err
 	}
-	gpioMemory = mem.Uint32()
+	mem.Struct(unsafe.Pointer(&gpioMemory))
+
 	for i := range Pins {
 		p := &Pins[i]
 		if err := gpio.Register(p); err != nil {

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/maruel/dlibox/go/pio"
 	"github.com/maruel/dlibox/go/pio/host/distro"
@@ -48,109 +49,109 @@ var (
 // Pins is all the pins as supported by the CPU. There is no guarantee that
 // they are actually connected to anything on the board.
 var Pins = []Pin{
-	{index: 0, group: 9 * 1, offset: 0, name: "PB0", defaultPull: gpio.Float},
-	{index: 1, group: 9 * 1, offset: 1, name: "PB1", defaultPull: gpio.Float},
-	{index: 2, group: 9 * 1, offset: 2, name: "PB2", defaultPull: gpio.Float},
-	{index: 3, group: 9 * 1, offset: 3, name: "PB3", defaultPull: gpio.Float},
-	{index: 4, group: 9 * 1, offset: 4, name: "PB4", defaultPull: gpio.Float},
-	{index: 5, group: 9 * 1, offset: 5, name: "PB5", defaultPull: gpio.Float},
-	{index: 6, group: 9 * 1, offset: 6, name: "PB6", defaultPull: gpio.Float},
-	{index: 7, group: 9 * 1, offset: 7, name: "PB7", defaultPull: gpio.Float},
-	{index: 8, group: 9 * 1, offset: 8, name: "PB8", defaultPull: gpio.Float},
-	{index: 9, group: 9 * 1, offset: 9, name: "PB9", defaultPull: gpio.Float},
-	{index: 10, group: 9 * 2, offset: 0, name: "PC0", defaultPull: gpio.Float},
-	{index: 11, group: 9 * 2, offset: 1, name: "PC1", defaultPull: gpio.Float},
-	{index: 12, group: 9 * 2, offset: 2, name: "PC2", defaultPull: gpio.Float},
-	{index: 13, group: 9 * 2, offset: 3, name: "PC3", defaultPull: gpio.Up},
-	{index: 14, group: 9 * 2, offset: 4, name: "PC4", defaultPull: gpio.Up},
-	{index: 15, group: 9 * 2, offset: 5, name: "PC5", defaultPull: gpio.Float},
-	{index: 16, group: 9 * 2, offset: 6, name: "PC6", defaultPull: gpio.Up},
-	{index: 17, group: 9 * 2, offset: 7, name: "PC7", defaultPull: gpio.Up},
-	{index: 18, group: 9 * 2, offset: 8, name: "PC8", defaultPull: gpio.Float},
-	{index: 19, group: 9 * 2, offset: 9, name: "PC9", defaultPull: gpio.Float},
-	{index: 20, group: 9 * 2, offset: 10, name: "PC10", defaultPull: gpio.Float},
-	{index: 21, group: 9 * 2, offset: 11, name: "PC11", defaultPull: gpio.Float},
-	{index: 22, group: 9 * 2, offset: 12, name: "PC12", defaultPull: gpio.Float},
-	{index: 23, group: 9 * 2, offset: 13, name: "PC13", defaultPull: gpio.Float},
-	{index: 24, group: 9 * 2, offset: 14, name: "PC14", defaultPull: gpio.Float},
-	{index: 25, group: 9 * 2, offset: 15, name: "PC15", defaultPull: gpio.Float},
-	{index: 26, group: 9 * 2, offset: 16, name: "PC16", defaultPull: gpio.Float},
-	{index: 27, group: 9 * 3, offset: 0, name: "PD0", defaultPull: gpio.Float},
-	{index: 28, group: 9 * 3, offset: 1, name: "PD1", defaultPull: gpio.Float},
-	{index: 29, group: 9 * 3, offset: 2, name: "PD2", defaultPull: gpio.Float},
-	{index: 30, group: 9 * 3, offset: 3, name: "PD3", defaultPull: gpio.Float},
-	{index: 31, group: 9 * 3, offset: 4, name: "PD4", defaultPull: gpio.Float},
-	{index: 32, group: 9 * 3, offset: 5, name: "PD5", defaultPull: gpio.Float},
-	{index: 33, group: 9 * 3, offset: 6, name: "PD6", defaultPull: gpio.Float},
-	{index: 34, group: 9 * 3, offset: 7, name: "PD7", defaultPull: gpio.Float},
-	{index: 35, group: 9 * 3, offset: 8, name: "PD8", defaultPull: gpio.Float},
-	{index: 36, group: 9 * 3, offset: 9, name: "PD9", defaultPull: gpio.Float},
-	{index: 37, group: 9 * 3, offset: 10, name: "PD10", defaultPull: gpio.Float},
-	{index: 38, group: 9 * 3, offset: 11, name: "PD11", defaultPull: gpio.Float},
-	{index: 39, group: 9 * 3, offset: 12, name: "PD12", defaultPull: gpio.Float},
-	{index: 40, group: 9 * 3, offset: 13, name: "PD13", defaultPull: gpio.Float},
-	{index: 41, group: 9 * 3, offset: 14, name: "PD14", defaultPull: gpio.Float},
-	{index: 42, group: 9 * 3, offset: 15, name: "PD15", defaultPull: gpio.Float},
-	{index: 43, group: 9 * 3, offset: 16, name: "PD16", defaultPull: gpio.Float},
-	{index: 44, group: 9 * 3, offset: 17, name: "PD17", defaultPull: gpio.Float},
-	{index: 45, group: 9 * 3, offset: 18, name: "PD18", defaultPull: gpio.Float},
-	{index: 46, group: 9 * 3, offset: 19, name: "PD19", defaultPull: gpio.Float},
-	{index: 47, group: 9 * 3, offset: 20, name: "PD20", defaultPull: gpio.Float},
-	{index: 48, group: 9 * 3, offset: 21, name: "PD21", defaultPull: gpio.Float},
-	{index: 49, group: 9 * 3, offset: 22, name: "PD22", defaultPull: gpio.Float},
-	{index: 50, group: 9 * 3, offset: 23, name: "PD23", defaultPull: gpio.Float},
-	{index: 51, group: 9 * 3, offset: 24, name: "PD24", defaultPull: gpio.Float},
-	{index: 52, group: 9 * 4, offset: 0, name: "PE0", defaultPull: gpio.Float},
-	{index: 53, group: 9 * 4, offset: 1, name: "PE1", defaultPull: gpio.Float},
-	{index: 54, group: 9 * 4, offset: 2, name: "PE2", defaultPull: gpio.Float},
-	{index: 55, group: 9 * 4, offset: 3, name: "PE3", defaultPull: gpio.Float},
-	{index: 56, group: 9 * 4, offset: 4, name: "PE4", defaultPull: gpio.Float},
-	{index: 57, group: 9 * 4, offset: 5, name: "PE5", defaultPull: gpio.Float},
-	{index: 58, group: 9 * 4, offset: 6, name: "PE6", defaultPull: gpio.Float},
-	{index: 59, group: 9 * 4, offset: 7, name: "PE7", defaultPull: gpio.Float},
-	{index: 60, group: 9 * 4, offset: 8, name: "PE8", defaultPull: gpio.Float},
-	{index: 61, group: 9 * 4, offset: 9, name: "PE9", defaultPull: gpio.Float},
-	{index: 62, group: 9 * 4, offset: 10, name: "PE10", defaultPull: gpio.Float},
-	{index: 63, group: 9 * 4, offset: 11, name: "PE11", defaultPull: gpio.Float},
-	{index: 64, group: 9 * 4, offset: 12, name: "PE12", defaultPull: gpio.Float},
-	{index: 65, group: 9 * 4, offset: 13, name: "PE13", defaultPull: gpio.Float},
-	{index: 66, group: 9 * 4, offset: 14, name: "PE14", defaultPull: gpio.Float},
-	{index: 67, group: 9 * 4, offset: 15, name: "PE15", defaultPull: gpio.Float},
-	{index: 68, group: 9 * 4, offset: 16, name: "PE16", defaultPull: gpio.Float},
-	{index: 69, group: 9 * 4, offset: 17, name: "PE17", defaultPull: gpio.Float},
-	{index: 70, group: 9 * 5, offset: 0, name: "PF0", defaultPull: gpio.Float},
-	{index: 71, group: 9 * 5, offset: 1, name: "PF1", defaultPull: gpio.Float},
-	{index: 72, group: 9 * 5, offset: 2, name: "PF2", defaultPull: gpio.Float},
-	{index: 73, group: 9 * 5, offset: 3, name: "PF3", defaultPull: gpio.Float},
-	{index: 74, group: 9 * 5, offset: 4, name: "PF4", defaultPull: gpio.Float},
-	{index: 75, group: 9 * 5, offset: 5, name: "PF5", defaultPull: gpio.Float},
-	{index: 76, group: 9 * 5, offset: 6, name: "PF6", defaultPull: gpio.Float},
-	{index: 77, group: 9 * 6, offset: 0, name: "PG0", defaultPull: gpio.Float},
-	{index: 78, group: 9 * 6, offset: 1, name: "PG1", defaultPull: gpio.Float},
-	{index: 79, group: 9 * 6, offset: 2, name: "PG2", defaultPull: gpio.Float},
-	{index: 80, group: 9 * 6, offset: 3, name: "PG3", defaultPull: gpio.Float},
-	{index: 81, group: 9 * 6, offset: 4, name: "PG4", defaultPull: gpio.Float},
-	{index: 82, group: 9 * 6, offset: 5, name: "PG5", defaultPull: gpio.Float},
-	{index: 83, group: 9 * 6, offset: 6, name: "PG6", defaultPull: gpio.Float},
-	{index: 84, group: 9 * 6, offset: 7, name: "PG7", defaultPull: gpio.Float},
-	{index: 85, group: 9 * 6, offset: 8, name: "PG8", defaultPull: gpio.Float},
-	{index: 86, group: 9 * 6, offset: 9, name: "PG9", defaultPull: gpio.Float},
-	{index: 87, group: 9 * 6, offset: 10, name: "PG10", defaultPull: gpio.Float},
-	{index: 88, group: 9 * 6, offset: 11, name: "PG11", defaultPull: gpio.Float},
-	{index: 89, group: 9 * 6, offset: 12, name: "PG12", defaultPull: gpio.Float},
-	{index: 90, group: 9 * 6, offset: 13, name: "PG13", defaultPull: gpio.Float},
-	{index: 91, group: 9 * 7, offset: 0, name: "PH0", defaultPull: gpio.Float},
-	{index: 92, group: 9 * 7, offset: 1, name: "PH1", defaultPull: gpio.Float},
-	{index: 93, group: 9 * 7, offset: 2, name: "PH2", defaultPull: gpio.Float},
-	{index: 94, group: 9 * 7, offset: 3, name: "PH3", defaultPull: gpio.Float},
-	{index: 95, group: 9 * 7, offset: 4, name: "PH4", defaultPull: gpio.Float},
-	{index: 96, group: 9 * 7, offset: 5, name: "PH5", defaultPull: gpio.Float},
-	{index: 97, group: 9 * 7, offset: 6, name: "PH6", defaultPull: gpio.Float},
-	{index: 98, group: 9 * 7, offset: 7, name: "PH7", defaultPull: gpio.Float},
-	{index: 99, group: 9 * 7, offset: 8, name: "PH8", defaultPull: gpio.Float},
-	{index: 100, group: 9 * 7, offset: 9, name: "PH9", defaultPull: gpio.Float},
-	{index: 101, group: 9 * 7, offset: 10, name: "PH10", defaultPull: gpio.Float},
-	{index: 102, group: 9 * 7, offset: 11, name: "PH11", defaultPull: gpio.Float},
+	{index: 0, group: 1, offset: 0, name: "PB0", defaultPull: gpio.Float},
+	{index: 1, group: 1, offset: 1, name: "PB1", defaultPull: gpio.Float},
+	{index: 2, group: 1, offset: 2, name: "PB2", defaultPull: gpio.Float},
+	{index: 3, group: 1, offset: 3, name: "PB3", defaultPull: gpio.Float},
+	{index: 4, group: 1, offset: 4, name: "PB4", defaultPull: gpio.Float},
+	{index: 5, group: 1, offset: 5, name: "PB5", defaultPull: gpio.Float},
+	{index: 6, group: 1, offset: 6, name: "PB6", defaultPull: gpio.Float},
+	{index: 7, group: 1, offset: 7, name: "PB7", defaultPull: gpio.Float},
+	{index: 8, group: 1, offset: 8, name: "PB8", defaultPull: gpio.Float},
+	{index: 9, group: 1, offset: 9, name: "PB9", defaultPull: gpio.Float},
+	{index: 10, group: 2, offset: 0, name: "PC0", defaultPull: gpio.Float},
+	{index: 11, group: 2, offset: 1, name: "PC1", defaultPull: gpio.Float},
+	{index: 12, group: 2, offset: 2, name: "PC2", defaultPull: gpio.Float},
+	{index: 13, group: 2, offset: 3, name: "PC3", defaultPull: gpio.Up},
+	{index: 14, group: 2, offset: 4, name: "PC4", defaultPull: gpio.Up},
+	{index: 15, group: 2, offset: 5, name: "PC5", defaultPull: gpio.Float},
+	{index: 16, group: 2, offset: 6, name: "PC6", defaultPull: gpio.Up},
+	{index: 17, group: 2, offset: 7, name: "PC7", defaultPull: gpio.Up},
+	{index: 18, group: 2, offset: 8, name: "PC8", defaultPull: gpio.Float},
+	{index: 19, group: 2, offset: 9, name: "PC9", defaultPull: gpio.Float},
+	{index: 20, group: 2, offset: 10, name: "PC10", defaultPull: gpio.Float},
+	{index: 21, group: 2, offset: 11, name: "PC11", defaultPull: gpio.Float},
+	{index: 22, group: 2, offset: 12, name: "PC12", defaultPull: gpio.Float},
+	{index: 23, group: 2, offset: 13, name: "PC13", defaultPull: gpio.Float},
+	{index: 24, group: 2, offset: 14, name: "PC14", defaultPull: gpio.Float},
+	{index: 25, group: 2, offset: 15, name: "PC15", defaultPull: gpio.Float},
+	{index: 26, group: 2, offset: 16, name: "PC16", defaultPull: gpio.Float},
+	{index: 27, group: 3, offset: 0, name: "PD0", defaultPull: gpio.Float},
+	{index: 28, group: 3, offset: 1, name: "PD1", defaultPull: gpio.Float},
+	{index: 29, group: 3, offset: 2, name: "PD2", defaultPull: gpio.Float},
+	{index: 30, group: 3, offset: 3, name: "PD3", defaultPull: gpio.Float},
+	{index: 31, group: 3, offset: 4, name: "PD4", defaultPull: gpio.Float},
+	{index: 32, group: 3, offset: 5, name: "PD5", defaultPull: gpio.Float},
+	{index: 33, group: 3, offset: 6, name: "PD6", defaultPull: gpio.Float},
+	{index: 34, group: 3, offset: 7, name: "PD7", defaultPull: gpio.Float},
+	{index: 35, group: 3, offset: 8, name: "PD8", defaultPull: gpio.Float},
+	{index: 36, group: 3, offset: 9, name: "PD9", defaultPull: gpio.Float},
+	{index: 37, group: 3, offset: 10, name: "PD10", defaultPull: gpio.Float},
+	{index: 38, group: 3, offset: 11, name: "PD11", defaultPull: gpio.Float},
+	{index: 39, group: 3, offset: 12, name: "PD12", defaultPull: gpio.Float},
+	{index: 40, group: 3, offset: 13, name: "PD13", defaultPull: gpio.Float},
+	{index: 41, group: 3, offset: 14, name: "PD14", defaultPull: gpio.Float},
+	{index: 42, group: 3, offset: 15, name: "PD15", defaultPull: gpio.Float},
+	{index: 43, group: 3, offset: 16, name: "PD16", defaultPull: gpio.Float},
+	{index: 44, group: 3, offset: 17, name: "PD17", defaultPull: gpio.Float},
+	{index: 45, group: 3, offset: 18, name: "PD18", defaultPull: gpio.Float},
+	{index: 46, group: 3, offset: 19, name: "PD19", defaultPull: gpio.Float},
+	{index: 47, group: 3, offset: 20, name: "PD20", defaultPull: gpio.Float},
+	{index: 48, group: 3, offset: 21, name: "PD21", defaultPull: gpio.Float},
+	{index: 49, group: 3, offset: 22, name: "PD22", defaultPull: gpio.Float},
+	{index: 50, group: 3, offset: 23, name: "PD23", defaultPull: gpio.Float},
+	{index: 51, group: 3, offset: 24, name: "PD24", defaultPull: gpio.Float},
+	{index: 52, group: 4, offset: 0, name: "PE0", defaultPull: gpio.Float},
+	{index: 53, group: 4, offset: 1, name: "PE1", defaultPull: gpio.Float},
+	{index: 54, group: 4, offset: 2, name: "PE2", defaultPull: gpio.Float},
+	{index: 55, group: 4, offset: 3, name: "PE3", defaultPull: gpio.Float},
+	{index: 56, group: 4, offset: 4, name: "PE4", defaultPull: gpio.Float},
+	{index: 57, group: 4, offset: 5, name: "PE5", defaultPull: gpio.Float},
+	{index: 58, group: 4, offset: 6, name: "PE6", defaultPull: gpio.Float},
+	{index: 59, group: 4, offset: 7, name: "PE7", defaultPull: gpio.Float},
+	{index: 60, group: 4, offset: 8, name: "PE8", defaultPull: gpio.Float},
+	{index: 61, group: 4, offset: 9, name: "PE9", defaultPull: gpio.Float},
+	{index: 62, group: 4, offset: 10, name: "PE10", defaultPull: gpio.Float},
+	{index: 63, group: 4, offset: 11, name: "PE11", defaultPull: gpio.Float},
+	{index: 64, group: 4, offset: 12, name: "PE12", defaultPull: gpio.Float},
+	{index: 65, group: 4, offset: 13, name: "PE13", defaultPull: gpio.Float},
+	{index: 66, group: 4, offset: 14, name: "PE14", defaultPull: gpio.Float},
+	{index: 67, group: 4, offset: 15, name: "PE15", defaultPull: gpio.Float},
+	{index: 68, group: 4, offset: 16, name: "PE16", defaultPull: gpio.Float},
+	{index: 69, group: 4, offset: 17, name: "PE17", defaultPull: gpio.Float},
+	{index: 70, group: 5, offset: 0, name: "PF0", defaultPull: gpio.Float},
+	{index: 71, group: 5, offset: 1, name: "PF1", defaultPull: gpio.Float},
+	{index: 72, group: 5, offset: 2, name: "PF2", defaultPull: gpio.Float},
+	{index: 73, group: 5, offset: 3, name: "PF3", defaultPull: gpio.Float},
+	{index: 74, group: 5, offset: 4, name: "PF4", defaultPull: gpio.Float},
+	{index: 75, group: 5, offset: 5, name: "PF5", defaultPull: gpio.Float},
+	{index: 76, group: 5, offset: 6, name: "PF6", defaultPull: gpio.Float},
+	{index: 77, group: 6, offset: 0, name: "PG0", defaultPull: gpio.Float},
+	{index: 78, group: 6, offset: 1, name: "PG1", defaultPull: gpio.Float},
+	{index: 79, group: 6, offset: 2, name: "PG2", defaultPull: gpio.Float},
+	{index: 80, group: 6, offset: 3, name: "PG3", defaultPull: gpio.Float},
+	{index: 81, group: 6, offset: 4, name: "PG4", defaultPull: gpio.Float},
+	{index: 82, group: 6, offset: 5, name: "PG5", defaultPull: gpio.Float},
+	{index: 83, group: 6, offset: 6, name: "PG6", defaultPull: gpio.Float},
+	{index: 84, group: 6, offset: 7, name: "PG7", defaultPull: gpio.Float},
+	{index: 85, group: 6, offset: 8, name: "PG8", defaultPull: gpio.Float},
+	{index: 86, group: 6, offset: 9, name: "PG9", defaultPull: gpio.Float},
+	{index: 87, group: 6, offset: 10, name: "PG10", defaultPull: gpio.Float},
+	{index: 88, group: 6, offset: 11, name: "PG11", defaultPull: gpio.Float},
+	{index: 89, group: 6, offset: 12, name: "PG12", defaultPull: gpio.Float},
+	{index: 90, group: 6, offset: 13, name: "PG13", defaultPull: gpio.Float},
+	{index: 91, group: 7, offset: 0, name: "PH0", defaultPull: gpio.Float},
+	{index: 92, group: 7, offset: 1, name: "PH1", defaultPull: gpio.Float},
+	{index: 93, group: 7, offset: 2, name: "PH2", defaultPull: gpio.Float},
+	{index: 94, group: 7, offset: 3, name: "PH3", defaultPull: gpio.Float},
+	{index: 95, group: 7, offset: 4, name: "PH4", defaultPull: gpio.Float},
+	{index: 96, group: 7, offset: 5, name: "PH5", defaultPull: gpio.Float},
+	{index: 97, group: 7, offset: 6, name: "PH6", defaultPull: gpio.Float},
+	{index: 98, group: 7, offset: 7, name: "PH7", defaultPull: gpio.Float},
+	{index: 99, group: 7, offset: 8, name: "PH8", defaultPull: gpio.Float},
+	{index: 100, group: 7, offset: 9, name: "PH9", defaultPull: gpio.Float},
+	{index: 101, group: 7, offset: 10, name: "PH10", defaultPull: gpio.Float},
+	{index: 102, group: 7, offset: 11, name: "PH11", defaultPull: gpio.Float},
 }
 
 var functional = map[string]pins.Pin{
@@ -504,7 +505,7 @@ func (p *Pin) String() string {
 //
 // It returns the GPIO pin number as represented by gpio sysfs.
 func (p *Pin) Number() int {
-	return int(p.group/9)*32 + int(p.offset)
+	return int(p.group)*32 + int(p.offset)
 }
 
 // Function implements pins.Pin.
@@ -561,22 +562,21 @@ func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 		return fmt.Errorf("failed to set pin %s as input", p.name)
 	}
 	if pull != gpio.PullNoChange {
-		off := p.group + 7 + p.offset/16
+		off := p.offset / 16
 		shift := 2 * (p.offset % 16)
 		// Do it in a way that is concurrent safe.
-		// Pn_PULL  n*0x24+0x1C Port n Pull Register (n from 1(B) to 7(H))
-		gpioMemory[off] &^= 3 << shift
+		gpioMemory.groups[p.group].pull[off] &^= 3 << shift
 		switch pull {
 		case gpio.Down:
-			gpioMemory[off] = 2 << shift
+			gpioMemory.groups[p.group].pull[off] = 2 << shift
 		case gpio.Up:
-			gpioMemory[off] = 1 << shift
+			gpioMemory.groups[p.group].pull[off] = 1 << shift
 		default:
 		}
 	}
 	if edge != gpio.None {
 		switch p.group {
-		case 1 * 9, 6 * 9, 7 * 9:
+		case 1, 6, 7:
 			// TODO(maruel): Some pins do not support Alt5 in these groups.
 		default:
 			return errors.New("only groups PB, PG, PH (and PL if available) support edge based triggering")
@@ -603,8 +603,7 @@ func (p *Pin) In(pull gpio.Pull, edge gpio.Edge) error {
 
 // Read implements gpio.PinIn.
 func (p *Pin) Read() gpio.Level {
-	// Pn_DAT  n*0x24+0x10  Port n Data Register (n from 1(B) to 7(H))
-	return gpio.Level(gpioMemory[p.group+4]&(1<<p.offset) != 0)
+	return gpio.Level(gpioMemory.groups[p.group].data&(1<<p.offset) != 0)
 }
 
 // WaitForEdge does edge detection and implements gpio.PinIn.
@@ -617,10 +616,7 @@ func (p *Pin) WaitForEdge(timeout time.Duration) bool {
 
 // Pull implements gpio.PinIn.
 func (p *Pin) Pull() gpio.Pull {
-	off := p.group + 7 + p.offset/16
-	var v uint32
-	// Pn_PULL  n*0x24+0x1C Port n Pull Register (n from 1(B) to 7(H))
-	v = gpioMemory[off]
+	v := gpioMemory.groups[p.group].pull[p.offset/16]
 	switch (v >> (2 * (p.offset % 16))) & 3 {
 	case 0:
 		return gpio.Float
@@ -645,11 +641,10 @@ func (p *Pin) Out(l gpio.Level) error {
 	// TODO(maruel): Set the value *before* changing the pin to be an output, so
 	// there is no glitch.
 	bit := uint32(1 << p.offset)
-	// Pn_DAT  n*0x24+0x10  Port n Data Register (n from 1(B) to 7(H))
 	if l {
-		gpioMemory[p.group+4] |= bit
+		gpioMemory.groups[p.group].data |= bit
 	} else {
-		gpioMemory[p.group+4] &^= bit
+		gpioMemory.groups[p.group].data &^= bit
 	}
 	return nil
 }
@@ -666,10 +661,8 @@ func (p *Pin) function() function {
 	if gpioMemory == nil {
 		return disabled
 	}
-	off := p.group + p.offset/8
 	shift := 4 * (p.offset % 8)
-	// Pn_CFGx n*0x24+0x0x  Port n Configure Register x (n from 1(B) to 7(H))
-	return function((gpioMemory[off] >> shift) & 7)
+	return function((gpioMemory.groups[p.group].cfg[p.offset/8] >> shift) & 7)
 }
 
 // setFunction changes the GPIO pin function.
@@ -686,14 +679,13 @@ func (p *Pin) setFunction(f function) bool {
 		// Pin is in special mode.
 		return false
 	}
-	off := p.group + p.offset/8
+	off := p.offset / 8
 	shift := 4 * (p.offset % 8)
 	mask := uint32(disabled) << shift
 	v := (uint32(f) << shift) ^ mask
 	// First disable, then setup. This is concurrent safe.
-	// Pn_CFGx n*0x24+0x0x  Port n Configure Register x (n from 1(B) to 7(H))
-	gpioMemory[off] |= mask
-	gpioMemory[off] &^= v
+	gpioMemory.groups[p.group].cfg[off] |= mask
+	gpioMemory.groups[p.group].cfg[off] &^= v
 	if p.function() != f {
 		panic(f)
 	}
@@ -721,7 +713,26 @@ const (
 
 // http://files.pine64.org/doc/datasheet/pine64/Allwinner_A64_User_Manual_V1.0.pdf
 // Page 376 GPIO PB to PH.
-var gpioMemory []uint32
+//
+// Each group could have at most 32 pins. In practice the number of valid pins
+// per group varies between 10 and 25.
+type gpioGroup struct {
+	// Pn_CFGx n*0x24+x*4       Port n Configure Register x (n from 1(B) to 7(H))
+	cfg [4]uint32
+	// Pn_DAT  n*0x24+0x10      Port n Data Register (n from 1(B) to 7(H))
+	data uint32
+	// Pn_DRVx n*0x24+0x14+x*4  Port n Multi-Driving Register x (n from 1 to 7)
+	drv [2]uint32
+	// Pn_PULL n*0x24+0x1C+x*4  Port n Pull Register (n from 1(B) to 7(H))
+	pull [2]uint32
+}
+
+type gpioMap struct {
+	// PB to PH. The first group is unused.
+	groups [8]gpioGroup
+}
+
+var gpioMemory *gpioMap
 
 // Page 73 for memory mapping overview.
 // Page 194 for PWM.
@@ -900,7 +911,8 @@ func (d *driver) Init() (bool, error) {
 		}
 		return true, err
 	}
-	gpioMemory = mem.Uint32()
+	mem.Struct(unsafe.Pointer(&gpioMemory))
+
 	for i := range Pins {
 		if err := gpio.Register(&Pins[i]); err != nil {
 			return true, err
