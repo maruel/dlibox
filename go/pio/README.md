@@ -1,11 +1,10 @@
 # pio - Peripheral I/O in Go
 
-* [doc/users/](doc/users/) for users who need ready-to-use tools.
-* [doc/apps/](doc/apps/) for application writers to want to use `pio` as a
-  library. The complete API documentation, including examples, is at
+* [doc/users/](doc/users/) for ready-to-use tools.
+* [doc/apps/](doc/apps/) to use `pio` as a library. The complete API
+  documentation, including examples, is at
   [![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio).
-* [doc/drivers/](doc/drivers/) for device driver writers who want to expand
-  the list of supported hardware.
+* [doc/drivers/](doc/drivers/) to expand the list of supported hardware.
 
 
 ## Users
@@ -15,6 +14,8 @@ more info on configuring the host and using the included tools.
 
 ```bash
 go get github.com/maruel/dlibox/go/pio/cmd/...
+pio-info
+headers-list
 ```
 
 

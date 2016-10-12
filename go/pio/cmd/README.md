@@ -7,16 +7,20 @@ github.com/maruel/dlibox/go/pio/cmd/...`.
 ## Recommended first use
 
 Try first `pio-info`. It will print out if any driver failed to run, for example
-if you have to run as root to access certain drivers. Then run `headers-list` to
-list all the headers on your board and confirm that you get the expected output.
-If your board is missing, you can [contribute
+if you have to run as root to access certain drivers.
+
+`pio-setup` is a rule based configuration tool that will modify the host to
+enable more functionality.
+
+Then run `headers-list` to list all the headers on your board and confirm that
+you get the expected output. If your board is missing, you can [contribute
 it](../doc/drivers/CONTRIBUTING.md).
 
 
 ## Devices
 
-* [apa102](apa102): Writes to a LED strip of APA-102 (often called Dotstar). Can
-  show an image animating on the Y axis.
+* [apa102](apa102): Writes to a LED strip of APA-102 (sometimes called Dotstar).
+  Can show an image animating on the Y axis.
 * [bme280](bme280): Reads the temperature, pressure and humidity off a bme280.
 * [ir](ir): Reads codes (button presses) on an InfraRed remote sensor.
 * [led](led): Reads the state of on-board LEDs.
@@ -38,12 +42,18 @@ it](../doc/drivers/CONTRIBUTING.md).
 * [i2c-list](i2c-list): Lists which I²C buses are enabled and where the pins
   are.
 * [i2c](i2c): Writes to an I²C device.
-* [pio-info](pio-info): Lists which pio drivers loaded and which failed.
 * [spi-list](spi-list): Lists which SPI buses are enabled and where the pins
   are.
 
 
+## Other
+
+* [pio-info](pio-info): Lists which pio drivers loaded and which failed.
+* [pio-setup](pio-setup): Modifies the host to enable more functionality (load
+  drivers, install udev rules, etc).
+
+
 ## Troubleshooting
 
-Having getting the tools to run? See [doc/users](../doc/users) for more
+Having getting the tools to run? See [doc/users/](../doc/users/) for more
 documentation.
