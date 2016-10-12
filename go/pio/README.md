@@ -1,38 +1,28 @@
-# pio
+# pio - Peripheral I/O in Go
 
-pio is a peripheral I/O library in Go.
-
-The documentation is split into 3 sections:
 * [doc/users/](doc/users/) for users who need ready-to-use tools.
 * [doc/apps/](doc/apps/) for application writers to want to use `pio` as a
-  library.
-  * The complete API documentation, including examples, is at
-    [![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio).
+  library. The complete API documentation, including examples, is at
+  [![GoDoc](https://godoc.org/github.com/maruel/dlibox/go/pio?status.svg)](https://godoc.org/github.com/maruel/dlibox/go/pio).
 * [doc/drivers/](doc/drivers/) for device driver writers who want to expand
-  the list of supported hardware and hopefully contribute to the project.
+  the list of supported hardware.
 
 
 ## Users
 
-pio includes [many ready-to-use tools](cmd)!
+pio includes [many ready-to-use tools](cmd/)! See [doc/users/](doc/users/) for
+more info on configuring the host and using the included tools.
 
 ```bash
 go get github.com/maruel/dlibox/go/pio/cmd/...
 ```
 
-See [doc/users/](doc/users/) for more info on:
-
-* Configuring the host
-* Using the included tools
-
 
 ## Application developpers
 
 For [application developpers](doc/apps/), `pio` provides OS-independent bus
-numbering. For example, the *following code will behave exactly the same if you
-run it on a Raspberry Pi or on Windows with a FT232H connected over USB*!  This
-complete example gets the current temperature, barometric pressure and relative
-humidity using a bme280:
+interfacing. The following gets the current temperature, barometric pressure and
+relative humidity using a bme280:
 
 ```go
 package main
@@ -79,11 +69,17 @@ func main() {
 See more examples at [doc/apps/SAMPLES.md](doc/apps/SAMPLES.md)!
 
 
-## Device drivers developpers
+## Contributions
 
-For [device drivers developpers](doc/drivers/), `pio` provides an extensible
-driver registry and common bus interfaces. See this page for requirements to
-submit contributions.
+`pio` provides an extensible driver registry and common bus interfaces which are
+explained in more details at [doc/drivers/](doc/drivers/). `pio` is designed to
+work well with drivers living in external repositories so you are not _required_
+to fork to load drivers for your platform.
+
+We gladly accept contributions from device driver developpers via GitHub pull
+requests, as long as the author has signed the Google Contributor License.
+Please see [doc/drivers/CONTRIBUTING.md](doc/drivers/CONTRIBUTING.md) for more
+details.
 
 
 ## Philosophy
@@ -134,13 +130,6 @@ submit contributions.
 
 The main author is [Marc-Antoine Ruel](https://github.com/maruel). The full list
 is in [AUTHORS](AUTHORS) and [CONTRIBUTORS](CONTRIBUTORS).
-
-
-## Contributions
-
-We gladly accept contributions via GitHub pull requests, as long as the author
-has signed the Google Contributor License. Please see
-[doc/drivers/CONTRIBUTING.md](doc/drivers/CONTRIBUTING.md) for more details.
 
 
 ## Disclaimer
