@@ -107,7 +107,7 @@ details.
      exposes both high level
      [draw.Image](https://golang.org/pkg/image/draw/#Image) to draw an image and
      low level [io.Writer](https://golang.org/pkg/io/#Writer) to write raw RGB
-     24 bits pixels. The user choose.
+     24 bits pixels. The user chooses.
 4. Use a divide and conquer approach. Each component has exactly one
    responsibility.
    * e.g. instead of having a driver per "platform", there's a driver per
