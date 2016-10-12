@@ -86,23 +86,23 @@ details.
 ## Philosophy
 
 1. Optimize for simplicity, correctness and usability in that order.
-   * Ex: everything, interfaces and structs, uses strict typing, there's no
+   * e.g. everything, interfaces and structs, uses strict typing, there's no
      `interface{}` in sight.
 2. OS agnostic. Clear separation of interfaces in [protocols/](protocols),
    enablers in [host/](host) and device drivers in [devices/](devices).
-   * Ex: no devfs or sysfs path in sight.
-   * Ex: conditional compilation enables only the relevant drivers to be loaded
+   * e.g. no devfs or sysfs path in sight.
+   * e.g. conditional compilation enables only the relevant drivers to be loaded
      on each platform.
-3. ... yet don't get in the way of platform specificity.
-   * Ex: A user can use statically typed global variables
+3. ... yet doesn't get in the way of platform specific code.
+   * e.g. A user can use statically typed global variables
      [rpi.P1_3](https://godoc.org/github.com/maruel/dlibox/go/pio/host/rpi#pkg-variables),
      [bcm283x.GPIO2](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x#Pin)
      or
      [bcm283x.I2C1_SDA](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x#pkg-variables)
      to refer to the exact same pin when I²C bus #1 is enabled on a Raspberry
      Pi.
-3. At usability expense, the user can chose to optimize for performance.
-   * Ex:
+3. The user can chose to optimize for performance instead of usability.
+   * e.g.
      [apa102.Dev](https://godoc.org/github.com/maruel/dlibox/go/pio/devices/apa102#Dev)
      exposes both high level
      [draw.Image](https://golang.org/pkg/image/draw/#Image) to draw an image and
@@ -110,16 +110,16 @@ details.
      24 bits pixels. The user choose.
 4. Use a divide and conquer approach. Each component has exactly one
    responsibility.
-   * Ex: instead of having a driver per "platform", there's a driver per
+   * e.g. instead of having a driver per "platform", there's a driver per
      "component": one for the CPU, one for the board headers, one for each
      buses and sensors, etc.
 5. Extensible via a [driver
    registry](https://godoc.org/github.com/maruel/dlibox/go/pio#Register).
-   * Ex: a user can inject a custom driver to expose more pins, headers, etc. An
-     USB device (like an FT232H) can expose headers _in addition_ to the headers
-     found on the host.
+   * e.g. a user can inject a custom driver to expose more pins, headers, etc.
+     An USB device (like an FT232H) can expose headers _in addition_ to the
+     headers found on the host.
 6. The drivers must use the fastest possible implementation.
-   * Ex: both
+   * e.g. both
      [allwinner](https://godoc.org/github.com/maruel/dlibox/go/pio/host/allwinner)
      and
      [bcm283x](https://godoc.org/github.com/maruel/dlibox/go/pio/host/bcm283x)
