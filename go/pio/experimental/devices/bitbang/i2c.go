@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/internal"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 )
@@ -251,7 +251,7 @@ func (i *I2C) readByte() (byte, error) {
 
 // sleep does a busy loop to act as fast as possible.
 func (i *I2C) sleepHalfCycle() {
-	internal.Nanosleep(i.halfCycle)
+	host.Nanospin(i.halfCycle)
 }
 
 var _ i2c.Conn = &I2C{}

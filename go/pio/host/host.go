@@ -7,9 +7,11 @@ package host
 import (
 	"io/ioutil"
 	"log"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/maruel/dlibox/go/pio"
 )
@@ -32,6 +34,25 @@ func MaxSpeed() int64 {
 	return 0
 }
 
+// Nanospins spins for a short amount of time doing a busy loop.
+//
+// This function should be call with durations of 10µs or less.
+func Nanospin(d time.Duration) {
+	if isLinux {
+		// TODO(maruel): Lock thread here too?
+		nanospinLinux(d)
+	} else {
+		nanospinTime(d)
+	}
+}
+
+//
+
+var (
+	lock     sync.Mutex
+	maxSpeed int64 = -1
+)
+
 func getMaxSpeedLinux() int64 {
 	lock.Lock()
 	defer lock.Unlock()
@@ -53,7 +74,13 @@ func getMaxSpeedLinux() int64 {
 	return maxSpeed
 }
 
-var (
-	lock     sync.Mutex
-	maxSpeed int64 = -1
-)
+func nanospinTime(d time.Duration) {
+	// TODO(maruel): That's not optimal; it's actually pretty bad.
+	// time.Sleep() sleeps for really too long, calling it repeatedly with
+	// minimal value will give the caller a wake rate of 5KHz or so, depending on
+	// the host. This makes it useless for bitbanging protocols.
+	runtime.LockOSThread()
+	for start := time.Now(); time.Since(start) < d; {
+	}
+	runtime.UnlockOSThread()
+}

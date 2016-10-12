@@ -14,7 +14,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/internal"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
@@ -184,5 +184,5 @@ func (d *Dev) writeByte(b byte) (bool, error) {
 
 // sleep does a busy loop to act as fast as possible.
 func (d *Dev) sleepHalfCycle() {
-	internal.Nanosleep(clockHalfCycle)
+	host.Nanospin(clockHalfCycle)
 }

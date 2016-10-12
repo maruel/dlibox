@@ -6,4 +6,9 @@
 
 package host
 
+import "time"
+
 const isLinux = false
+
+func nanospinLinux(d time.Duration) {
+}

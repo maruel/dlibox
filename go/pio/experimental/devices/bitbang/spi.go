@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/internal"
+	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
@@ -163,7 +163,7 @@ func NewSPI(clk, mosi gpio.PinOut, miso gpio.PinIn, cs gpio.PinOut, speedHz int6
 
 // sleep does a busy loop to act as fast as possible.
 func (s *SPI) sleepHalfCycle() {
-	internal.Nanosleep(s.halfCycle)
+	host.Nanospin(s.halfCycle)
 }
 
 var _ spi.Conn = &SPI{}

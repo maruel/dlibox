@@ -6,7 +6,24 @@ package host
 
 import (
 	// Make sure sysfs drivers are registered.
+	"syscall"
+	"time"
+
 	_ "github.com/maruel/dlibox/go/pio/host/sysfs"
 )
 
 const isLinux = true
+
+func nanospinLinux(d time.Duration) {
+	// runtime.nanotime() is not exported so it cannot be used to busy loop for
+	// very short sleep (10µs or less).
+	time := syscall.NsecToTimespec(d.Nanoseconds())
+	leftover := syscall.Timespec{}
+	for {
+		if err := syscall.Nanosleep(&time, &leftover); err != nil {
+			time = leftover
+			continue
+		}
+		break
+	}
+}
