@@ -1,4 +1,4 @@
-# pio - Peripheral I/O in Go
+# pio - Peripherals I/O in Go
 
 * [doc/users/](doc/users/) for ready-to-use tools.
 * [doc/apps/](doc/apps/) to use `pio` as a library. The complete API
