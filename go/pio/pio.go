@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package pio is a peripheral I/O library. It contains host, devices, and
+// Package pio is a peripherals I/O library. It contains host, devices, and
 // test packages to emulate the hardware.
 //
 // pio acts as a registry of drivers.
