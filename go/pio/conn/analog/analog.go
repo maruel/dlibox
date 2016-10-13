@@ -9,7 +9,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
+	"github.com/maruel/dlibox/go/pio/conn/pins"
 )
 
 // ADC is an analog-to-digital-conversion input.

@@ -13,10 +13,10 @@ import (
 	"os"
 	"sort"
 
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/pins"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/headers"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 func printFunc(invalid bool) {

@@ -25,10 +25,10 @@ import (
 	"io"
 	"log"
 
+	"github.com/maruel/dlibox/go/pio/conn/i2c"
+	"github.com/maruel/dlibox/go/pio/conn/spi"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306/image1bit"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
-	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
 // FrameRate determines scrolling speed.

@@ -26,8 +26,8 @@
 //     CPU and buses that are exposed by the host onto which devices can be
 //     connected, i.e. I²C, SPI, GPIO, etc. 'host' contains the interfaces
 //     and subpackages contain contain concrete types.
-//   - protocols/ contains interfaces for all the supported protocols (I²C, SPI,
-//     GPIO, etc).
+//   - conn/ contains interfaces for all the supported protocols and
+//     connections (I²C, SPI, GPIO, etc).
 //   - tests/ contains smoke tests.
 package pio
 

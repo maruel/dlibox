@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
+	"github.com/maruel/dlibox/go/pio/conn/pins"
 )
 
 // All contains all the on-board headers on a micro computer.

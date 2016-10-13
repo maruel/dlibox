@@ -9,12 +9,12 @@ import (
 	"os"
 
 	"github.com/maruel/dlibox/go/pio"
+	"github.com/maruel/dlibox/go/pio/conn/analog"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/pins"
 	"github.com/maruel/dlibox/go/pio/host/allwinner"
 	"github.com/maruel/dlibox/go/pio/host/allwinner_pl"
 	"github.com/maruel/dlibox/go/pio/host/headers"
-	"github.com/maruel/dlibox/go/pio/protocols/analog"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // Present returns true if running on a Pine64 board.

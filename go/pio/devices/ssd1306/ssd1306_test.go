@@ -14,9 +14,9 @@ import (
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
 
+	"github.com/maruel/dlibox/go/pio/conn/i2c"
+	"github.com/maruel/dlibox/go/pio/conn/i2c/i2ctest"
 	"github.com/maruel/dlibox/go/pio/devices/ssd1306/image1bit"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
 )
 
 func TestDrawGray(t *testing.T) {

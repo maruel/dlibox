@@ -10,12 +10,12 @@ import (
 	"io"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/protocols"
+	"github.com/maruel/dlibox/go/pio/conn"
 )
 
 // Conn represents a connection to an USB device.
 type Conn interface {
-	protocols.Conn
+	conn.Conn
 	ID() *ID
 }
 

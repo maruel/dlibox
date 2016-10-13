@@ -2,7 +2,8 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Package bitbang implements conn by banging on the bits (GPIO pins).
+// Package conn defines core interfaces for protocols and connections.
 //
-// This is not efficient but works around broken or missing drivers.
-package bitbang
+// Subpackages implements all the interfaces that can be used to connects
+// peripherals.
+package conn

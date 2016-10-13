@@ -59,7 +59,7 @@ maintenance.
   * Breakage in the API should happen at a yearly parce at most once the library
     got to a stable state.
 * Strong distinction about the driver (as a user of a
-  [protocols.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols#Conn)
+  [conn.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/conn#Conn)
   instance) and an application writer (as a user of a device driver). It's the
   _application_ that controls the objects' lifetime.
 * Strong distinction between _enablers_ and _devices_. See

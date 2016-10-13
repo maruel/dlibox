@@ -15,12 +15,12 @@ import (
 	"unsafe"
 
 	"github.com/maruel/dlibox/go/pio"
+	"github.com/maruel/dlibox/go/pio/conn/analog"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/pins"
 	"github.com/maruel/dlibox/go/pio/host/distro"
 	"github.com/maruel/dlibox/go/pio/host/gpiomem"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
-	"github.com/maruel/dlibox/go/pio/protocols/analog"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // Present returns true if running on an Allwinner based CPU.

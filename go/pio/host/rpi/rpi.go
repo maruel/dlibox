@@ -13,11 +13,11 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/pins"
 	"github.com/maruel/dlibox/go/pio/host/bcm283x"
 	"github.com/maruel/dlibox/go/pio/host/distro"
 	"github.com/maruel/dlibox/go/pio/host/headers"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 // Present returns true if running on a Raspberry Pi board.

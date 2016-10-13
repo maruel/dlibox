@@ -12,8 +12,8 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/go/pio"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/uart"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/uart"
 )
 
 // EnumerateUART returns the available serial buses.

@@ -14,8 +14,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 func printLevel(l gpio.Level) error {

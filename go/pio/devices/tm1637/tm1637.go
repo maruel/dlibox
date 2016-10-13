@@ -14,8 +14,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 // Clock converts time to a slice of bytes as segments.

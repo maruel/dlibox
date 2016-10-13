@@ -16,8 +16,8 @@ import (
 	"unsafe"
 
 	"github.com/maruel/dlibox/go/pio"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/i2c"
 )
 
 // I2C is an open I²C bus via sysfs.

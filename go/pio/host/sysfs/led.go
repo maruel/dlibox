@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/pio"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 )
 
 // LEDs is all the leds discovered on this host via sysfs.

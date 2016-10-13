@@ -88,8 +88,8 @@ details.
 1. Optimize for simplicity, correctness and usability in that order.
    * e.g. everything, interfaces and structs, uses strict typing, there's no
      `interface{}` in sight.
-2. OS agnostic. Clear separation of interfaces in [protocols/](protocols),
-   enablers in [host/](host) and device drivers in [devices/](devices).
+2. OS agnostic. Clear separation of interfaces in [conn/](conn/),
+   enablers in [host/](host) and device drivers in [devices/](devices/).
    * e.g. no devfs or sysfs path in sight.
    * e.g. conditional compilation enables only the relevant drivers to be loaded
      on each platform.

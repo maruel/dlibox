@@ -10,19 +10,19 @@ import (
 	"io"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/protocolstest"
-	"github.com/maruel/dlibox/go/pio/protocols/spi"
+	"github.com/maruel/dlibox/go/pio/conn/conntest"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/spi"
 )
 
 // RecordRaw implements spi.Conn. It sends everything written to it to W.
 type RecordRaw struct {
-	protocolstest.RecordRaw
+	conntest.RecordRaw
 }
 
 // NewRecordRaw is a shortcut to create a RecordRaw
 func NewRecordRaw(w io.Writer) *RecordRaw {
-	return &RecordRaw{protocolstest.RecordRaw{W: w}}
+	return &RecordRaw{conntest.RecordRaw{W: w}}
 }
 
 // Close is a no-op.
@@ -48,7 +48,7 @@ func (r *RecordRaw) Configure(mode spi.Mode, bits int) error {
 type Record struct {
 	Conn spi.Conn // Conn can be nil if only writes are being recorded.
 	Lock sync.Mutex
-	Ops  []protocolstest.IO
+	Ops  []conntest.IO
 }
 
 func (r *Record) String() string {
@@ -76,7 +76,7 @@ func (r *Record) Tx(w, read []byte) error {
 			return err
 		}
 	}
-	io := protocolstest.IO{Write: make([]byte, len(w))}
+	io := conntest.IO{Write: make([]byte, len(w))}
 	if len(read) != 0 {
 		io.Read = make([]byte, len(read))
 	}
@@ -139,7 +139,7 @@ func (r *Record) CS() gpio.PinOut {
 // While "replay" type of unit tests are of limited value, they still present
 // an easy way to do basic code coverage.
 type Playback struct {
-	protocolstest.Playback
+	conntest.Playback
 }
 
 // Speed implements spi.Conn.

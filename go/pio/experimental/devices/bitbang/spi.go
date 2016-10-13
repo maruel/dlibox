@@ -17,9 +17,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/spi"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
 // SPI represents a SPI master implemented as bit-banging on 3 or 4 GPIO pins.

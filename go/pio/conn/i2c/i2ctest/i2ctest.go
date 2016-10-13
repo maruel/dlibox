@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/i2c"
 )
 
 // IO registers the I/O that happened on either a real or fake I²C bus.

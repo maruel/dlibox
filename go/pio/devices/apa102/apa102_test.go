@@ -13,8 +13,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/protocols/spi"
-	"github.com/maruel/dlibox/go/pio/protocols/spi/spitest"
+	"github.com/maruel/dlibox/go/pio/conn/spi"
+	"github.com/maruel/dlibox/go/pio/conn/spi/spitest"
 )
 
 func TestRamp(t *testing.T) {

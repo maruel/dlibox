@@ -14,9 +14,9 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 	"github.com/maruel/dlibox/go/pio/devices/tm1637"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 func mainImpl() error {

@@ -12,10 +12,10 @@ package bme280
 import (
 	"errors"
 
+	"github.com/maruel/dlibox/go/pio/conn"
+	"github.com/maruel/dlibox/go/pio/conn/i2c"
+	"github.com/maruel/dlibox/go/pio/conn/spi"
 	"github.com/maruel/dlibox/go/pio/devices"
-	"github.com/maruel/dlibox/go/pio/protocols"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
-	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
 // Oversampling affects how much time is taken to measure each of temperature,
@@ -71,7 +71,7 @@ const (
 
 // Dev is an handle to a bme280.
 type Dev struct {
-	d     protocols.Conn
+	d     conn.Conn
 	isSPI bool
 	c     calibration
 }

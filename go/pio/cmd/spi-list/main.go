@@ -10,10 +10,10 @@ import (
 	"os"
 	"sort"
 
+	"github.com/maruel/dlibox/go/pio/conn/pins"
+	"github.com/maruel/dlibox/go/pio/conn/spi"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/headers"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
-	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
 func printPin(fn string, p pins.Pin) {

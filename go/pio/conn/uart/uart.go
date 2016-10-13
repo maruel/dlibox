@@ -11,8 +11,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/protocols"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/conn"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 )
 
 // Parity determines the parity bit when transmitting, if any.
@@ -45,7 +45,7 @@ const (
 
 // Conn defines the interface a concrete UART driver must implement.
 type Conn interface {
-	protocols.Conn
+	conn.Conn
 	// Speed changes the bus speed.
 	Speed(baud int64) error
 	// Configure changes the communication parameters of the bus.

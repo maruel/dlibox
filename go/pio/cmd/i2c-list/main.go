@@ -10,10 +10,10 @@ import (
 	"os"
 	"sort"
 
+	"github.com/maruel/dlibox/go/pio/conn/i2c"
+	"github.com/maruel/dlibox/go/pio/conn/pins"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/headers"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
 )
 
 func printPin(fn string, p pins.Pin) {

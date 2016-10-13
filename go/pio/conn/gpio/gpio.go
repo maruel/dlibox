@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
+	"github.com/maruel/dlibox/go/pio/conn/pins"
 )
 
 // Level is the level of the pin: Low or High.

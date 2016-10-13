@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/i2c"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
 )
 
 // Use SkipAddr to skip the address from being sent.

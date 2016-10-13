@@ -7,8 +7,8 @@ package headers
 import (
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/protocols/gpio/gpiotest"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
+	"github.com/maruel/dlibox/go/pio/conn/gpio/gpiotest"
+	"github.com/maruel/dlibox/go/pio/conn/pins"
 )
 
 func TestAll(t *testing.T) {

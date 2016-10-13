@@ -135,7 +135,7 @@ _Purpose:_ Signals when a button was pressed or a motion detector detected a
 movement.
 
 The
-[gpio.PinIn.Edge()](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/gpio#PinIn)
+[gpio.PinIn.Edge()](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/gpio#PinIn)
 function permits a edge detection without a busy loop. This is useful for **motion
 detectors**, **buttons** and other kinds of inputs where a busy loop would burn
 CPU for no reason.
@@ -148,7 +148,7 @@ import (
     "log"
 
     "github.com/maruel/dlibox/go/pio/host"
-    "github.com/maruel/dlibox/go/pio/protocols/gpio"
+    "github.com/maruel/dlibox/go/pio/conn/gpio"
 )
 
 func main() {

@@ -9,8 +9,8 @@ import (
 	"image"
 	"image/color"
 
+	"github.com/maruel/dlibox/go/pio/conn/spi"
 	"github.com/maruel/dlibox/go/pio/devices"
-	"github.com/maruel/dlibox/go/pio/protocols/spi"
 	"github.com/maruel/temperature"
 )
 

@@ -13,14 +13,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/maruel/dlibox/go/pio/conn/i2c"
+	"github.com/maruel/dlibox/go/pio/conn/i2c/i2ctest"
+	"github.com/maruel/dlibox/go/pio/conn/pins"
+	"github.com/maruel/dlibox/go/pio/conn/spi"
 	"github.com/maruel/dlibox/go/pio/devices"
 	"github.com/maruel/dlibox/go/pio/devices/bme280"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/headers"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
-	"github.com/maruel/dlibox/go/pio/protocols/pins"
-	"github.com/maruel/dlibox/go/pio/protocols/spi"
 )
 
 func printPin(fn string, p pins.Pin) {

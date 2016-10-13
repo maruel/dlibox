@@ -15,8 +15,8 @@ import (
 	"unsafe"
 
 	"github.com/maruel/dlibox/go/pio"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/spi"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/spi"
 )
 
 // NewSPI opens a SPI bus via its devfs interface as described at

@@ -15,10 +15,10 @@ import (
 	"unsafe"
 
 	"github.com/maruel/dlibox/go/pio"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 	"github.com/maruel/dlibox/go/pio/host/distro"
 	"github.com/maruel/dlibox/go/pio/host/gpiomem"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 // Present returns true if running on an Allwinner A64 based CPU.

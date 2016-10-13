@@ -11,7 +11,7 @@ import (
 
 	gousb "github.com/kylelemons/gousb/usb"
 	"github.com/maruel/dlibox/go/pio"
-	"github.com/maruel/dlibox/go/pio/experimental/protocols/usb"
+	"github.com/maruel/dlibox/go/pio/experimental/conn/usb"
 )
 
 // Desc represents the description of an USB device on an USB bus.

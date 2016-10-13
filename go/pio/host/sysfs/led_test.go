@@ -9,7 +9,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 )
 
 func ExampleLEDByName() {

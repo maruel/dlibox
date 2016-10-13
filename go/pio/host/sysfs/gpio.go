@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/pio"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 )
 
 // Pins is all the pins exported by GPIO sysfs.

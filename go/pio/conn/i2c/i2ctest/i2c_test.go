@@ -7,7 +7,7 @@ package i2ctest
 import (
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
+	"github.com/maruel/dlibox/go/pio/conn/i2c"
 )
 
 func TestDev(t *testing.T) {

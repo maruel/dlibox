@@ -9,9 +9,9 @@ import (
 	"log"
 	"testing"
 
+	"github.com/maruel/dlibox/go/pio/conn/i2c"
+	"github.com/maruel/dlibox/go/pio/conn/i2c/i2ctest"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c/i2ctest"
 )
 
 func Example() {

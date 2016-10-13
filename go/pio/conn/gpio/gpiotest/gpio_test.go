@@ -7,7 +7,7 @@ package gpiotest
 import (
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 )
 
 func TestAll(t *testing.T) {

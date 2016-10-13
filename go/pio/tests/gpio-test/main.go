@@ -13,9 +13,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 	"github.com/maruel/dlibox/go/pio/host"
 	"github.com/maruel/dlibox/go/pio/host/sysfs"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
 )
 
 const (

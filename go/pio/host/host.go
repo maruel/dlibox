@@ -78,7 +78,7 @@ func nanospinTime(d time.Duration) {
 	// TODO(maruel): That's not optimal; it's actually pretty bad.
 	// time.Sleep() sleeps for really too long, calling it repeatedly with
 	// minimal value will give the caller a wake rate of 5KHz or so, depending on
-	// the host. This makes it useless for bitbanging protocols.
+	// the host. This makes it useless for bitbanging protocol implementations.
 	runtime.LockOSThread()
 	for start := time.Now(); time.Since(start) < d; {
 	}

@@ -6,7 +6,7 @@
 //
 // It includes an adapter to directly address an I²C device on a I²C bus
 // without having to continuously specify the address when doing I/O. This
-// enables the support of protocols.Conn.
+// enables the support of conn.Conn.
 package i2c
 
 import (
@@ -15,16 +15,16 @@ import (
 	"io"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 )
 
 // Conn defines the function a concrete I²C driver must implement.
 //
 // This interface is consummed by a device driver for a device sitting on a bus.
 //
-// This interface doesn't implement protocols.Conn since a device address must
-// be specified. Use i2cdev.Dev as an adapter to get a protocols.Conn
-// compatible object.
+// This interface doesn't implement conn.Conn since a device address must be
+// specified. Use i2cdev.Dev as an adapter to get a conn.Conn compatible
+// object.
 type Conn interface {
 	Tx(addr uint16, w, r []byte) error
 	// Speed changes the bus speed, if supported.
@@ -52,7 +52,7 @@ type Pins interface {
 
 // Dev is a device on a I²C bus.
 //
-// It implements protocols.Conn.
+// It implements conn.Conn.
 //
 // It saves from repeatedly specifying the device address and implements
 // utility functions.

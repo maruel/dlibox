@@ -8,8 +8,8 @@ import (
 	"errors"
 
 	"github.com/maruel/dlibox/go/pio"
-	"github.com/maruel/dlibox/go/pio/protocols"
-	"github.com/maruel/dlibox/go/pio/protocols/i2c"
+	"github.com/maruel/dlibox/go/pio/conn"
+	"github.com/maruel/dlibox/go/pio/conn/i2c"
 )
 
 // FIXME: Expose public symbols as relevant. Do not export more than needed!
@@ -19,7 +19,7 @@ import (
 
 // Dev is a handle to the device. FIXME.
 type Dev struct {
-	c protocols.Conn
+	c conn.Conn
 }
 
 // New opens a handle to the device. FIXME.

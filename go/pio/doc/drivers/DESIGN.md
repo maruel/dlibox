@@ -29,13 +29,15 @@ things that make it work are:
 
 ### Other registries
 
-Many packages under [protocols/](../../protocols) and
-[host/headers](../../host/headers) contains small focused registries. The goal
-is to not have a one-size-fits-all approach that would require broad
-generalization; when a user needs an I²C bus handle, the user knows they can
-find it in [protocols/i2c](../../protocols/i2c). It's is assumed the user knows
-what bus to use in the first place. Strict type typing guides the user towards
-providing the right object.
+Many packages under
+[conn](https://godoc.org/github.com/maruel/dlibox/go/pio/conn) and
+[host/headers](https://godoc.org/github.com/maruel/dlibox/go/pio/host/headers)
+contains small focused registries. The goal is to not have a one-size-fits-all
+approach that would require broad generalization; when a user needs an I²C bus
+handle, the user knows they can find it in
+[conn/i2c](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/i2c). It's is
+assumed the user knows what bus to use in the first place. Strict type typing
+guides the user towards providing the right object.
 
 The packages follow the `Register()` and `All()` pattern. At `drivers.Init()`
 time, each driver registers themselves in the relevant components. Then the
@@ -47,13 +49,13 @@ twice is an error. This helps reducing ambiguity for the users.
 ## pins
 
 There's a strict separation between
-[analog](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/analog#PinIO),
+[analog](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/analog#PinIO),
 [digital
-(gpio)](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/gpio#PinIO)
+(gpio)](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/gpio#PinIO)
 and [generic
-pins](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/pins#Pin). The
+pins](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/pins#Pin). The
 common base is
-[pins.Pin](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/pins#Pin),
+[pins.Pin](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/pins#Pin),
 which is a purely generic pin. This describes GROUND,
 VCC, etc. Each pin is registered by the relevant device driver at initialization
 time and has a unique name. The same pin may be present multiple times on a
@@ -61,11 +63,11 @@ header.
 
 The only pins not registered are the INVALID ones. There's one generic
 at
-[pins.INVALID](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/pins#INVALID)
+[pins.INVALID](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/pins#INVALID)
 and two specialized,
-[analog.INVALID](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/analog#INVALID)
+[analog.INVALID](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/analog#INVALID)
 and
-[gpio.INVALID](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/gpio#INVALID).
+[gpio.INVALID](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/gpio#INVALID).
 
 
 ## Edge based triggering and input pull resistor

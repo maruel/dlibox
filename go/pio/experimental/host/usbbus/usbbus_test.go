@@ -9,7 +9,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/experimental/protocols/usb"
+	"github.com/maruel/dlibox/go/pio/experimental/conn/usb"
 	"github.com/maruel/dlibox/go/pio/host"
 )
 

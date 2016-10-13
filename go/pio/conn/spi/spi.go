@@ -11,8 +11,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/maruel/dlibox/go/pio/protocols"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
+	"github.com/maruel/dlibox/go/pio/conn"
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
 )
 
 // Mode determines how communication is done. The bits can be OR'ed to change
@@ -33,7 +33,7 @@ const (
 
 // Conn defines the interface a concrete SPI driver must implement.
 type Conn interface {
-	protocols.Conn
+	conn.Conn
 	// Speed changes the bus speed.
 	Speed(hz int64) error
 	// Configure changes the communication parameters of the bus.

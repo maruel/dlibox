@@ -14,16 +14,16 @@ it is running on. It differentiates between drivers that _enable_ functionality
 on the host and drivers for devices connected _to_ the host.
 
 Most micro computers expose at least some of the following:
-[I²C bus](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/i2c#Conn),
-[SPI bus](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/spi#Conn),
+[I²C bus](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/i2c#Conn),
+[SPI bus](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/spi#Conn),
 [gpio
-pins](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/gpio#PinIO),
+pins](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/gpio#PinIO),
 [analog
-pins](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/analog),
-[UART](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/uart), I2S
+pins](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/analog),
+[UART](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/uart), I2S
 and PWM.
 
-* The interfaces are defined in [protocols/](../../protocols/).
+* The interfaces are defined in [conn/](../../conn/).
 * The concrete objects _implementing_ the interfaces are in
   [host/](../../host/).
 * The device drivers _using_ these interfaces are located in
@@ -71,11 +71,11 @@ drivers under [host/](../../host/).
 ## Connection
 
 A connection
-[protocols.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols#Conn)
+[conn.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/conn#Conn)
 is a **point-to-point** connection between the host and a device where you are
 the master driving the I/O.
 
-[protocols.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols#Conn)
+[conn.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/conn#Conn)
 implements [io.Writer](https://golang.org/pkg/io/#Writer) for write-only
 devices, so you can use functions like
 [io.Copy()](https://golang.org/pkg/io/#Copy) to push data over a connection.
@@ -90,14 +90,14 @@ pins via bit banging.
 ### I²C connection
 
 An
-[i2c.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/i2c#Conn)
+[i2c.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/i2c#Conn)
 is **not** a
-[protocols.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols#Conn).
+[conn.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/conn#Conn).
 This is because an I²C bus is **not** a point-to-point connection but instead is
 a real bus where multiple devices can be connected simultaneously, like an USB
 bus. To create a virtual connection to a device, the device address is required
 via
-[i2c.Dev](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/i2c#Dev):
+[i2c.Dev](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/i2c#Dev):
 
 ```go
 // Open the first available I²C bus:
@@ -105,7 +105,7 @@ bus, _ := i2c.New(-1)
 // Address the device with address 0x76 on the I²C bus:
 dev := i2c.Dev{bus, 0x76}
 // This is effectively a point-to-point connection:
-var _ protocols.Conn = &dev
+var _ conn.Conn = &dev
 ```
 
 Since many devices have their address hardcoded, it's up to the device driver to
@@ -115,14 +115,14 @@ specify the address.
 #### exp/io compatibility
 
 To convert a
-[i2c.Dev](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/i2c#Dev)
+[i2c.Dev](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/i2c#Dev)
 to a
 [exp/io/i2c/driver.Conn](https://godoc.org/golang.org/x/exp/io/i2c/driver#Conn),
 use the following:
 
 ```go
 type adaptor struct {
-    protocols.Conn
+    conn.Conn
 }
 
 func (a *adaptor) Close() error {
@@ -134,15 +134,15 @@ func (a *adaptor) Close() error {
 ### SPI connection
 
 An
-[spi.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/spi#Conn)
+[spi.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/spi#Conn)
 **is** a
-[protocols.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols#Conn).
+[conn.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/conn#Conn).
 
 
 #### exp/io compatibility
 
 To convert a
-[spi.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/spi#Conn)
+[spi.Conn](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/spi#Conn)
 to a
 [exp/io/spi/driver.Conn](https://godoc.org/golang.org/x/exp/io/spi/driver#Conn),
 use the following:
@@ -171,7 +171,7 @@ func (a *adaptor) Close() error {
 ### GPIO
 
 [gpio
-pins](https://godoc.org/github.com/maruel/dlibox/go/pio/protocols/gpio#PinIO)
+pins](https://godoc.org/github.com/maruel/dlibox/go/pio/conn/gpio#PinIO)
 can be leveraged for arbitrary use, like buttons, control LEDs, etc. You may
 construct an I²C or a SPI bus over raw GPIO pins via
 [experimental/bitbang](https://godoc.org/github.com/maruel/dlibox/go/pio/experimental/devices/bitbang).
@@ -198,7 +198,7 @@ import (
     "github.com/example/virtual_i2c"
     "github.com/maruel/dlibox/go/pio"
     "github.com/maruel/dlibox/go/pio/host"
-    "github.com/maruel/dlibox/go/pio/protocols/i2c"
+    "github.com/maruel/dlibox/go/pio/conn/i2c"
 )
 
 type driver struct{}

@@ -8,9 +8,9 @@ import (
 	"log"
 	"testing"
 
+	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/pio/conn/gpio/gpiotest"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio"
-	"github.com/maruel/dlibox/go/pio/protocols/gpio/gpiotest"
 )
 
 func TestNew(t *testing.T) {

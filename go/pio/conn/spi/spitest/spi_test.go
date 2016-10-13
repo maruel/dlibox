@@ -7,12 +7,12 @@ package spitest
 import (
 	"testing"
 
-	"github.com/maruel/dlibox/go/pio/protocols/protocolstest"
+	"github.com/maruel/dlibox/go/pio/conn/conntest"
 )
 
 func TestBasic(t *testing.T) {
 	p := Playback{}
-	p.Ops = []protocolstest.IO{
+	p.Ops = []conntest.IO{
 		{
 			Write: []byte{10},
 			Read:  []byte{12},
