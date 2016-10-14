@@ -18,12 +18,12 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/maruel/dlibox/go/donotuse/conn/spi"
-	"github.com/maruel/dlibox/go/donotuse/devices"
-	"github.com/maruel/dlibox/go/donotuse/devices/apa102"
-	"github.com/maruel/dlibox/go/donotuse/host"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/screen"
+	"periph.io/x/periph/conn/spi"
+	"periph.io/x/periph/devices"
+	"periph.io/x/periph/devices/apa102"
+	"periph.io/x/periph/host/cpu"
 )
 
 // APA102 contains light specific settings.
@@ -69,7 +69,7 @@ func initLEDs(b modules.Bus, fake bool, config *APA102) (*leds, error) {
 		l = &leds{Display: screen.New(num), b: b, fps: 30}
 	} else {
 		fps := 60
-		if host.MaxSpeed() < 900000 || runtime.NumCPU() < 4 {
+		if cpu.MaxSpeed() < 900000 || runtime.NumCPU() < 4 {
 			// Use 30Hz on slower devices because it is too slow.
 			fps = 30
 		}

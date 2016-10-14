@@ -9,11 +9,11 @@ import (
 	"log"
 	"sync"
 
-	"github.com/maruel/dlibox/go/donotuse/conn/i2c"
-	"github.com/maruel/dlibox/go/donotuse/devices/ssd1306"
-	"github.com/maruel/dlibox/go/donotuse/devices/ssd1306/image1bit"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/psf"
+	"periph.io/x/periph/conn/i2c"
+	"periph.io/x/periph/devices/ssd1306"
+	"periph.io/x/periph/devices/ssd1306/image1bit"
 )
 
 // Display contains small embedded display settings.

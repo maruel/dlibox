@@ -19,17 +19,17 @@ import (
 
 	_ "image/png"
 
-	"github.com/maruel/dlibox/go/donotuse/conn/gpio"
-	"github.com/maruel/dlibox/go/donotuse/conn/i2c"
-	"github.com/maruel/dlibox/go/donotuse/conn/ir"
-	"github.com/maruel/dlibox/go/donotuse/devices"
-	"github.com/maruel/dlibox/go/donotuse/devices/bme280"
-	"github.com/maruel/dlibox/go/donotuse/devices/lirc"
-	"github.com/maruel/dlibox/go/donotuse/devices/ssd1306"
-	"github.com/maruel/dlibox/go/donotuse/devices/ssd1306/image1bit"
-	"github.com/maruel/dlibox/go/donotuse/host"
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
+	"periph.io/x/periph/conn/gpio"
+	"periph.io/x/periph/conn/i2c"
+	"periph.io/x/periph/conn/ir"
+	"periph.io/x/periph/devices"
+	"periph.io/x/periph/devices/bme280"
+	"periph.io/x/periph/devices/lirc"
+	"periph.io/x/periph/devices/ssd1306"
+	"periph.io/x/periph/devices/ssd1306/image1bit"
+	"periph.io/x/periph/host"
 )
 
 func loadImg(path string) (*image1bit.Image, error) {
@@ -64,7 +64,7 @@ func mainImpl() error {
 	}
 	log.SetFlags(log.Lmicroseconds)
 
-	// Initialize pio.
+	// Initialize periph.
 	if _, err := host.Init(); err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func mainImpl() error {
 		if p == nil {
 			return errors.New("no pin 24")
 		}
-		if err := p.In(gpio.Up, gpio.Both); err != nil {
+		if err := p.In(gpio.PullUp, gpio.BothEdges); err != nil {
 			return err
 		}
 		c := make(chan gpio.Level)
@@ -158,7 +158,7 @@ func mainImpl() error {
 		if p == nil {
 			return errors.New("no pin 19")
 		}
-		if err := p.In(gpio.Down, gpio.Both); err != nil {
+		if err := p.In(gpio.PullDown, gpio.BothEdges); err != nil {
 			return err
 		}
 		c := make(chan gpio.Level)

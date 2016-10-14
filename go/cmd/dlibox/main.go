@@ -23,9 +23,9 @@ import (
 
 	"github.com/kardianos/osext"
 	"github.com/maruel/circular"
-	"github.com/maruel/dlibox/go/donotuse/host"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/interrupt"
+	"periph.io/x/periph/host"
 )
 
 func mainImpl() error {
@@ -81,7 +81,7 @@ func mainImpl() error {
 		defer pprof.StopCPUProfile()
 	}
 
-	// Initialize pio.
+	// Initialize periph.
 	if _, err := host.Init(); err != nil {
 		return err
 	}

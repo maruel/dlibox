@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/donotuse/devices"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/pkg/errors"
+	"periph.io/x/periph/devices"
 )
 
 // LRU is the list of recent patterns. The first is the oldest.

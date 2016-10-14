@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/donotuse/conn/gpio"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/interrupt"
 	"github.com/pkg/errors"
+	"periph.io/x/periph/conn/gpio"
 )
 
 // Button contains settings for controlling the lights through a button.
@@ -42,7 +42,7 @@ func initButton(b modules.Bus, config *Button) error {
 	if p == nil {
 		return fmt.Errorf("button: failed to find pin %d", config.PinNumber)
 	}
-	if err := p.In(gpio.Up, gpio.Both); err != nil {
+	if err := p.In(gpio.PullUp, gpio.BothEdges); err != nil {
 		return errors.Wrapf(err, "button: failed to pull up %s", p)
 	}
 

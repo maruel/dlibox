@@ -13,9 +13,9 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/maruel/dlibox/go/donotuse/devices/devicestest"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/ut"
+	"periph.io/x/periph/devices/devicestest"
 )
 
 func TestWeb(t *testing.T) {

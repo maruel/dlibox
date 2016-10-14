@@ -9,10 +9,10 @@ import (
 	"log"
 	"sync"
 
-	"github.com/maruel/dlibox/go/donotuse/conn/ir"
-	"github.com/maruel/dlibox/go/donotuse/devices/lirc"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/pkg/errors"
+	"periph.io/x/periph/conn/ir"
+	"periph.io/x/periph/devices/lirc"
 )
 
 // IR contains InfraRed remote information.

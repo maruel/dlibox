@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/donotuse/devices"
 	"github.com/maruel/interrupt"
+	"periph.io/x/periph/devices"
 )
 
 // Pattern is a interface to draw an animated line.

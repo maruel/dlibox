@@ -17,8 +17,8 @@ import (
 	"io"
 
 	"github.com/maruel/ansi256"
-	"github.com/maruel/dlibox/go/donotuse/devices"
 	"github.com/mattn/go-colorable"
+	"periph.io/x/periph/devices"
 )
 
 // Dev is a 1d LED strip emulator.
