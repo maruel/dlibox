@@ -22,7 +22,7 @@ import (
 
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/donotuse/host"
 	"github.com/maruel/interrupt"
 )
 

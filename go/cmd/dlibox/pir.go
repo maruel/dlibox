@@ -6,7 +6,7 @@ package main
 
 import (
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/pio/conn/gpio"
+	"github.com/maruel/dlibox/go/donotuse/conn/gpio"
 )
 
 func initPIR(painter *anim1d.Painter, config *PIR) error {

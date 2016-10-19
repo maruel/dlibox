@@ -14,7 +14,7 @@ import (
 	"testing"
 
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/pio/devices/devicestest"
+	"github.com/maruel/dlibox/go/donotuse/devices/devicestest"
 	"github.com/maruel/ut"
 )
 

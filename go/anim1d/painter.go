@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/pio/devices"
+	"github.com/maruel/dlibox/go/donotuse/devices"
 	"github.com/maruel/interrupt"
 )
 

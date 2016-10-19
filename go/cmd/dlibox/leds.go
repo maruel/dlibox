@@ -14,10 +14,10 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/google/pio/devices"
-	"github.com/maruel/dlibox/go/pio/conn/spi"
-	"github.com/maruel/dlibox/go/pio/devices/apa102"
-	"github.com/maruel/dlibox/go/pio/host"
+	"github.com/maruel/dlibox/go/donotuse/conn/spi"
+	"github.com/maruel/dlibox/go/donotuse/devices"
+	"github.com/maruel/dlibox/go/donotuse/devices/apa102"
+	"github.com/maruel/dlibox/go/donotuse/host"
 	"github.com/maruel/dlibox/go/screen"
 )
 

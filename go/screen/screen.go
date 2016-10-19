@@ -17,7 +17,7 @@ import (
 	"io"
 
 	"github.com/maruel/ansi256"
-	"github.com/maruel/dlibox/go/pio/devices"
+	"github.com/maruel/dlibox/go/donotuse/devices"
 	"github.com/mattn/go-colorable"
 )
 

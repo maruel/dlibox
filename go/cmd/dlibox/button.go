@@ -9,8 +9,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/google/pio/conn/gpio"
 	"github.com/maruel/dlibox/go/anim1d"
+	"github.com/maruel/dlibox/go/donotuse/conn/gpio"
 	"github.com/maruel/interrupt"
 )
 

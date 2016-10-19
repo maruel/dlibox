@@ -7,10 +7,10 @@ package main
 import (
 	"image"
 
-	"github.com/maruel/dlibox/go/pio/conn/i2c"
-	"github.com/maruel/dlibox/go/pio/devices"
-	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
-	"github.com/maruel/dlibox/go/pio/devices/ssd1306/image1bit"
+	"github.com/maruel/dlibox/go/donotuse/conn/i2c"
+	"github.com/maruel/dlibox/go/donotuse/devices"
+	"github.com/maruel/dlibox/go/donotuse/devices/ssd1306"
+	"github.com/maruel/dlibox/go/donotuse/devices/ssd1306/image1bit"
 	"github.com/maruel/dlibox/go/psf"
 )
 

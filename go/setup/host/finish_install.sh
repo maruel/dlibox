@@ -35,7 +35,7 @@ echo "- Setting up automated apt cron job"
 
 echo "- Installing ancillary utilities"
 sudo -i -u pi /bin/sh <<'EOF'
-go get -v github.com/maruel/dlibox/go/cmd/... github.com/maruel/dlibox/go/pio/cmd/...
+go get -v github.com/maruel/dlibox/go/cmd/...
 EOF
 
 echo "- User specific installation"

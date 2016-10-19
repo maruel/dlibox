@@ -6,7 +6,7 @@ package main
 
 import (
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/pio/devices/lirc"
+	"github.com/maruel/dlibox/go/donotuse/devices/lirc"
 )
 
 func initIR(painter *anim1d.Painter, config *IR) error {

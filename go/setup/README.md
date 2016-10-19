@@ -59,7 +59,7 @@ Push a new version:
 
 Read the scripts and do the same. In short they do:
 - Install git and [Go](https://golang.org/dl/).
-- `go get github.com/maruel/dlibox/go/pio/cmd/... github.com/maruel/dlibox/go/cmd/...`
+- `go get github.com/maruel/dlibox/go/cmd/...`
 - `sudo $GOPATH/src/github.com/maruel/dlibox/go/setup/host/install_systemd.sh`
 
 Anytime you `go install github.com/maruel/dlibox/go/cmd/dlibox`, systemd will
