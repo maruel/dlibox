@@ -13,107 +13,18 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"image"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
-	"runtime"
 	"runtime/pprof"
 	"syscall"
 
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/pio/conn/gpio"
-	"github.com/maruel/dlibox/go/pio/conn/i2c"
-	"github.com/maruel/dlibox/go/pio/conn/spi"
-	"github.com/maruel/dlibox/go/pio/devices"
-	"github.com/maruel/dlibox/go/pio/devices/apa102"
-	"github.com/maruel/dlibox/go/pio/devices/devicestest"
-	"github.com/maruel/dlibox/go/pio/devices/lirc"
-	"github.com/maruel/dlibox/go/pio/devices/ssd1306"
-	"github.com/maruel/dlibox/go/pio/devices/ssd1306/image1bit"
 	"github.com/maruel/dlibox/go/pio/host"
-	"github.com/maruel/dlibox/go/psf"
-	"github.com/maruel/dlibox/go/screen"
 	"github.com/maruel/interrupt"
 )
-
-func initDisplay() (devices.Display, error) {
-	i2cBus, err := i2c.New(-1)
-	if err != nil {
-		return nil, err
-	}
-	display, err := ssd1306.NewI2C(i2cBus, 128, 64, false)
-	if err != nil {
-		return nil, err
-	}
-	f12, err := psf.Load("Terminus12x6")
-	if err != nil {
-		return nil, err
-	}
-	f20, err := psf.Load("Terminus20x10")
-	if err != nil {
-		return nil, err
-	}
-	// TODO(maruel): Leverage bme280 while at it but don't fail if not
-	// connected.
-	img, err := image1bit.New(image.Rect(0, 0, display.W, display.H))
-	if err != nil {
-		return nil, err
-	}
-	f20.Draw(img, 0, 0, image1bit.On, nil, "dlibox!")
-	f12.Draw(img, 0, display.H-f12.H-1, image1bit.On, nil, "is awesome")
-	if _, err = display.Write(img.Buf); err != nil {
-		return nil, err
-	}
-	return display, nil
-}
-
-func initIR(painter *anim1d.Painter, config *IR) error {
-	bus, err := lirc.New()
-	if err != nil {
-		return err
-	}
-	go func() {
-		c := bus.Channel()
-		for {
-			select {
-			case msg, ok := <-c:
-				if !ok {
-					break
-				}
-				if !msg.Repeat {
-					// TODO(maruel): Locking.
-					if pat := config.Mapping[msg.Key]; len(pat) != 0 {
-						painter.SetPattern(string(pat))
-					}
-				}
-			}
-		}
-	}()
-	return nil
-}
-
-func initPIR(painter *anim1d.Painter, config *PIR) error {
-	p := gpio.ByNumber(config.Pin)
-	if p == nil {
-		return nil
-	}
-	if err := p.In(gpio.Down, gpio.Both); err != nil {
-		return err
-	}
-	go func() {
-		for {
-			p.WaitForEdge(-1)
-			if p.Read() == gpio.High {
-				// TODO(maruel): Locking.
-				painter.SetPattern(string(config.Pattern))
-			}
-		}
-	}()
-	return nil
-}
 
 func mainImpl() error {
 	thisFile, err := osext.Executable()
@@ -175,66 +86,46 @@ func mainImpl() error {
 	}
 	log.Printf("Config:\n%s", string(b))
 
-	fps := 60
-	if host.MaxSpeed() < 900000 || runtime.NumCPU() < 4 {
-		// Use 30Hz on slower devices because it is too slow.
-		fps = 30
+	// Initialize modules.
+
+	_, err = initDisplay(&config.Settings.Display)
+	if err != nil {
+		// Non-fatal.
+		log.Printf("Display not connected: %v", err)
 	}
 
-	// Output (terminal with ANSI codes or APA102).
-	var leds devices.Display
-	if *fake {
-		// Hardcode to 100 characters when using a terminal output.
-		// TODO(maruel): Query the terminal and use its width.
-		leds = screen.New(100)
-		defer os.Stdout.Write([]byte("\033[0m\n"))
-		// Use lower refresh rate too.
-		fps = 30
-		properties = append(properties, "fake=1")
-	} else {
-		spiBus, err := spi.New(-1, -1)
-		if err != nil {
-			log.Printf("SPI failed: %v", err)
-			leds = &devicestest.Display{image.NewNRGBA(image.Rect(0, 0, config.Settings.APA102.NumberLights, 1))}
-		} else {
-			if err = spiBus.Speed(config.Settings.APA102.SPIspeed); err != nil {
-				log.Printf("%s.Speed() failed: %v", spiBus, err)
-			}
-			defer spiBus.Close()
-			if leds, err = apa102.New(spiBus, config.Settings.APA102.NumberLights, 255, 6500); err != nil {
-				return err
-			}
-			properties = append(properties, fmt.Sprintf("APA102=%d", config.Settings.APA102.NumberLights))
-		}
+	leds, end, properties2, fps, err := initLEDs(*fake, &config.Settings.APA102)
+	if err != nil {
+		return err
 	}
-
-	// Try to initialize the display.
-	if _, err = initDisplay(); err != nil {
-		log.Printf("Display not connected")
-	}
-
-	// Painter.
+	defer end()
+	properties = append(properties, properties2...)
 	p := anim1d.NewPainter(leds, fps)
 	if err := config.Init(p); err != nil {
 		return err
 	}
 	startWebServer(*port, p, &config.Config)
 
+	if err = initButton(p, nil, &config.Settings.Button); err != nil {
+		// Non-fatal.
+		log.Printf("Button not connected: %v", err)
+	}
+
 	if err = initIR(p, &config.Settings.IR); err != nil {
+		// Non-fatal.
 		log.Printf("IR not connected: %v", err)
 	}
 
 	if err = initPIR(p, &config.Settings.PIR); err != nil {
+		// Non-fatal.
 		log.Printf("PIR not connected: %v", err)
 	}
 
-	/*
-		service, err := initmDNS(*port, properties)
-		if err != nil {
-			return err
-		}
-		defer service.Close()
-	*/
+	//service, err := initmDNS(*port, properties)
+	//if err != nil {
+	//	return err
+	//}
+	//defer service.Close()
 
 	return watchFile(thisFile)
 }

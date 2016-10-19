@@ -103,15 +103,63 @@ type APA102 struct {
 	NumberLights int
 }
 
+func (a *APA102) ResetDefault() {
+	*a = APA102{
+		SPIspeed:     10000000,
+		NumberLights: 150,
+	}
+}
+
+func (a *APA102) Validate() error {
+	return nil
+}
+
+// Button contains settings for controlling the lights through a button.
+type Button struct {
+	PinNumber int
+}
+
+func (b *Button) ResetDefault() {
+	*b = Button{}
+}
+
+func (b *Button) Validate() error {
+	return nil
+}
+
+// Display contains small embedded display settings.
+type Display struct {
+}
+
+func (d *Display) ResetDefault() {
+	*d = Display{}
+}
+
+func (d *Display) Validate() error {
+	return nil
+}
+
 // IR contains InfraRed remote information.
 type IR struct {
 	Mapping map[ir.Key]Pattern // TODO(maruel): We may actually do something more complex than just set a pattern.
 }
 
-// PIR contains a motion detection behavior.
-type PIR struct {
-	Pin     int
-	Pattern Pattern // TODO(maruel): We may actually do something more complex than just set a pattern.
+func (i *IR) ResetDefault() {
+	*i = IR{
+		Mapping: map[ir.Key]Pattern{
+			ir.KEY_NUMERIC_0: "\"#000000\"",
+			ir.KEY_100PLUS:   "\"#ffffff\"",
+		},
+	}
+}
+
+func (i *IR) Validate() error {
+	for k, v := range i.Mapping {
+		if err := v.Validate(); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("can't load pattern for key %s", k))
+		}
+	}
+	return nil
 }
 
 // PatternSettings contains settings about patterns.
@@ -146,47 +194,70 @@ func (p *PatternSettings) Validate() error {
 	return nil
 }
 
+// PIR contains a motion detection behavior.
+type PIR struct {
+	Pin     int
+	Pattern Pattern // TODO(maruel): We may actually do something more complex than just set a pattern.
+}
+
+func (p *PIR) ResetDefault() {
+	*p = PIR{
+		Pin:     -1,
+		Pattern: "\"#ffffff\"",
+	}
+}
+
+func (p *PIR) Validate() error {
+	if err := p.Pattern.Validate(); err != nil {
+		return errors.Wrap(err, "can't load pattern for PIR")
+	}
+	return nil
+}
+
 // Settings is all the host settings.
 type Settings struct {
 	Alarms          Alarms
 	APA102          APA102
+	Button          Button
+	Display         Display
 	IR              IR
-	PIR             PIR
 	PatternSettings PatternSettings
+	PIR             PIR
 }
 
 func (s *Settings) ResetDefault() {
 	s.Alarms.ResetDefault()
-	s.APA102 = APA102{
-		SPIspeed:     10000000,
-		NumberLights: 150,
-	}
-	s.PIR = PIR{
-		Pin:     -1,
-		Pattern: "\"#ffffff\"",
-	}
-	s.IR = IR{
-		Mapping: map[ir.Key]Pattern{
-			ir.KEY_NUMERIC_0: "\"#000000\"",
-			ir.KEY_100PLUS:   "\"#ffffff\"",
-		},
-	}
+	s.APA102.ResetDefault()
+	s.Button.ResetDefault()
+	s.Display.ResetDefault()
+	s.IR.ResetDefault()
 	s.PatternSettings.ResetDefault()
+	s.PIR.ResetDefault()
 }
 
 func (s *Settings) Validate() error {
 	if err := s.Alarms.Validate(); err != nil {
 		return err
 	}
-	for k, v := range s.IR.Mapping {
-		if err := v.Validate(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("can't load pattern for key %s", k))
-		}
+	if err := s.APA102.Validate(); err != nil {
+		return err
 	}
-	if err := s.PIR.Pattern.Validate(); err != nil {
-		return errors.Wrap(err, "can't load pattern for PIR")
+	if err := s.Button.Validate(); err != nil {
+		return err
 	}
-	return s.PatternSettings.Validate()
+	if err := s.Display.Validate(); err != nil {
+		return err
+	}
+	if err := s.IR.Validate(); err != nil {
+		return err
+	}
+	if err := s.PatternSettings.Validate(); err != nil {
+		return err
+	}
+	if err := s.PIR.Validate(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Config contains all the configuration for this specific host.
