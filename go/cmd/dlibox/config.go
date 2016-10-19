@@ -162,22 +162,22 @@ func (i *IR) Validate() error {
 	return nil
 }
 
-// PatternSettings contains settings about patterns.
-type PatternSettings struct {
+// Painter contains settings about patterns.
+type Painter struct {
 	Named   map[string]Pattern // Patterns that are 'named'.
 	Startup Pattern            // Startup pattern to use. If not set, use Last.
 	Last    Pattern            // Last pattern used.
 }
 
-func (p *PatternSettings) ResetDefault() {
-	*p = PatternSettings{
+func (p *Painter) ResetDefault() {
+	*p = Painter{
 		Named:   map[string]Pattern{},
 		Startup: "\"#010001\"",
 		Last:    "\"#010001\"",
 	}
 }
 
-func (p *PatternSettings) Validate() error {
+func (p *Painter) Validate() error {
 	for k, v := range p.Named {
 		if err := v.Validate(); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("can't load pattern %s", k))
@@ -216,13 +216,13 @@ func (p *PIR) Validate() error {
 
 // Settings is all the host settings.
 type Settings struct {
-	Alarms          Alarms
-	APA102          APA102
-	Button          Button
-	Display         Display
-	IR              IR
-	PatternSettings PatternSettings
-	PIR             PIR
+	Alarms  Alarms
+	APA102  APA102
+	Button  Button
+	Display Display
+	IR      IR
+	Painter Painter
+	PIR     PIR
 }
 
 func (s *Settings) ResetDefault() {
@@ -231,7 +231,7 @@ func (s *Settings) ResetDefault() {
 	s.Button.ResetDefault()
 	s.Display.ResetDefault()
 	s.IR.ResetDefault()
-	s.PatternSettings.ResetDefault()
+	s.Painter.ResetDefault()
 	s.PIR.ResetDefault()
 }
 
@@ -251,7 +251,7 @@ func (s *Settings) Validate() error {
 	if err := s.IR.Validate(); err != nil {
 		return err
 	}
-	if err := s.PatternSettings.Validate(); err != nil {
+	if err := s.Painter.Validate(); err != nil {
 		return err
 	}
 	if err := s.PIR.Validate(); err != nil {
@@ -262,17 +262,27 @@ func (s *Settings) Validate() error {
 
 // Config contains all the configuration for this specific host.
 type Config struct {
-	lock     sync.Mutex
+	mu       sync.Mutex
 	Settings Settings
-	LRU      LRU
+	// LRU is saved aside Settings because these are not meant to be "updated" by
+	// the user, they are a side-effect.
+	LRU LRU
 }
 
 func (c *Config) ResetDefault() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.Settings.ResetDefault()
 	c.LRU.ResetDefault()
 }
 
 func (c *Config) Validate() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.validate()
+}
+
+func (c *Config) validate() error {
 	if err := c.Settings.Validate(); err != nil {
 		return err
 	}
@@ -280,6 +290,8 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) Load(n string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	f, err := os.Open(n)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -294,11 +306,13 @@ func (c *Config) Load(n string) error {
 	if err := d.Decode(c); err != nil {
 		return err
 	}
-	return c.Validate()
+	return c.validate()
 }
 
 func (c *Config) Save(n string) error {
-	if err := c.Validate(); err != nil {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if err := c.validate(); err != nil {
 		return err
 	}
 	b, err := json.MarshalIndent(c, "", "  ")
@@ -329,14 +343,9 @@ func (c *ConfigMgr) Load() error {
 }
 
 func (c *ConfigMgr) Init(p *anim1d.Painter) error {
+	// TODO(maruel): Use module.Bus instead.
 	if err := c.Settings.Alarms.Reset(p); err != nil {
 		return nil
-	}
-	if len(c.Settings.PatternSettings.Last) != 0 {
-		return p.SetPattern(string(c.Settings.PatternSettings.Last))
-	}
-	if len(c.Settings.PatternSettings.Startup) != 0 {
-		return p.SetPattern(string(c.Settings.PatternSettings.Startup))
 	}
 	return nil
 }

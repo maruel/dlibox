@@ -199,7 +199,7 @@ package main
 //	s *mdns.Server
 //	//l net.Listener // Communicates over UDP. Eventually using MQTT would be a good idea.
 //
-//	lock    sync.Mutex
+//	mu      sync.Mutex
 //	entries []*mdns.ServiceEntry
 //}
 //
@@ -220,16 +220,16 @@ package main
 //}
 //
 //func (m *mDNS) Entries() []*mdns.ServiceEntry {
-//	m.lock.Lock()
-//	defer m.lock.Unlock()
+//	m.mu.Lock()
+//	defer m.mu.Unlock()
 //	return m.entries
 //}
 //
 //// IsMaster returns true if this device should be the master. The master is the
 //// device with the smallest serial number, as listed by the hostname.
 //func (m *mDNS) IsMaster() bool {
-//	m.lock.Lock()
-//	defer m.lock.Unlock()
+//	m.mu.Lock()
+//	defer m.mu.Unlock()
 //	return true
 //}
 //
@@ -261,9 +261,9 @@ package main
 //		for _, e := range entries {
 //			entries = append(entries, e)
 //		}
-//		m.lock.Lock()
+//		m.mu.Lock()
 //		m.entries = entries
-//		m.lock.Unlock()
+//		m.mu.Unlock()
 //	}()
 //	defer wg.Wait()
 //	defer close(entries)

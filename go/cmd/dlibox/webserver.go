@@ -201,7 +201,7 @@ func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 	if c, ok := p.Pattern.(*anim1d.Color); !ok || (c.R == 0 && c.G == 0 && c.B == 0) {
 		s.config.LRU.Inject(pattern)
 	}
-	s.config.Settings.PatternSettings.Last = Pattern(pattern)
+	s.config.Settings.Painter.Last = Pattern(pattern)
 	data, _ := json.Marshal(s.config.LRU.Patterns)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)

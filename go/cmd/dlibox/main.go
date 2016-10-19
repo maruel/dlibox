@@ -21,7 +21,6 @@ import (
 	"syscall"
 
 	"github.com/kardianos/osext"
-	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/donotuse/host"
 	"github.com/maruel/interrupt"
 )
@@ -100,7 +99,11 @@ func mainImpl() error {
 	}
 	defer end()
 	properties = append(properties, properties2...)
-	p := anim1d.NewPainter(leds, fps)
+
+	p, err := initPainter(leds, fps, &config.Settings.Painter)
+	if err != nil {
+		return err
+	}
 	if err := config.Init(p); err != nil {
 		return err
 	}
