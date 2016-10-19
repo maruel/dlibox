@@ -28,7 +28,7 @@ func (l *LocalBus) Close() error {
 	return nil
 }
 
-func (l *LocalBus) Publish(msg *Message, qos QOS, retained bool) error {
+func (l *LocalBus) Publish(msg Message, qos QOS, retained bool) error {
 	p := parseTopic(msg.Topic)
 	if p == nil || p.isQuery() {
 		return errors.New("invalid topic")
@@ -46,7 +46,7 @@ func (l *LocalBus) Publish(msg *Message, qos QOS, retained bool) error {
 		if retained {
 			l.persistentTopics[msg.Topic] = msg.Payload
 		}
-		var chans []chan<- *Message
+		var chans []chan<- Message
 		for i := range l.subscribers {
 			if l.subscribers[i].topic.match(msg.Topic) {
 				chans = append(chans, l.subscribers[i].channel)
@@ -63,12 +63,12 @@ func (l *LocalBus) Publish(msg *Message, qos QOS, retained bool) error {
 	return nil
 }
 
-func (l *LocalBus) Subscribe(topic string, qos QOS) (<-chan *Message, error) {
+func (l *LocalBus) Subscribe(topic string, qos QOS) (<-chan Message, error) {
 	p := parseTopic(topic)
 	if p == nil {
 		return nil, errors.New("invalid topic")
 	}
-	c := make(chan *Message)
+	c := make(chan Message)
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	l.subscribers = append(l.subscribers, subscription{p, c})
@@ -91,17 +91,17 @@ func (l *LocalBus) Unsubscribe(topic string) error {
 	return errors.New("subscription not found")
 }
 
-func (l *LocalBus) Get(topic string, qos QOS) ([]*Message, error) {
+func (l *LocalBus) Get(topic string, qos QOS) ([]Message, error) {
 	p := parseTopic(topic)
 	if p == nil {
 		return nil, errors.New("invalid topic")
 	}
 	l.lock.Lock()
 	defer l.lock.Unlock()
-	var out []*Message
+	var out []Message
 	for k, v := range l.persistentTopics {
 		if p.match(k) {
-			out = append(out, &Message{k, v})
+			out = append(out, Message{k, v})
 		}
 	}
 	return out, nil
@@ -111,7 +111,7 @@ func (l *LocalBus) Get(topic string, qos QOS) ([]*Message, error) {
 
 type subscription struct {
 	topic   parsedTopic
-	channel chan<- *Message
+	channel chan<- Message
 }
 
 // parsedTopic is either a query or a static topic.

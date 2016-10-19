@@ -38,12 +38,81 @@ type Bus interface {
 	io.Closer
 
 	// Publish publishes a message to a topic.
-	Publish(msg *Message, qos QOS, retained bool) error
+	Publish(msg Message, qos QOS, retained bool) error
 
 	// Subscribe sends back updates to this topic query.
-	Subscribe(topic string, qos QOS) (<-chan *Message, error)
+	Subscribe(topic string, qos QOS) (<-chan Message, error)
 	// Unsubscribe removes a previous subscription.
 	Unsubscribe(topic string) error
 	// Get retrieves matching messages for a retained topic query.
-	Get(topic string, qos QOS) ([]*Message, error)
+	Get(topic string, qos QOS) ([]Message, error)
+}
+
+// RebasePublisher rebases a Bus when publishing messages.
+//
+// Messages retrieved are unaffected.
+func RebasePublisher(b Bus, root string) Bus {
+	if len(root) != 0 && root[len(root)-1] != '/' {
+		root += "/"
+	}
+	return &rebasePublisher{b, root}
+}
+
+// RebaseSubscriber rebases a Bus when subscribing or getting topics.
+//
+// Messages published are unaffected.
+func RebaseSubscriber(b Bus, root string) Bus {
+	if len(root) != 0 && root[len(root)-1] != '/' {
+		root += "/"
+	}
+	return &rebaseSubscriber{b, root}
+}
+
+//
+
+type rebasePublisher struct {
+	Bus
+	root string
+}
+
+func (r *rebasePublisher) Publish(msg Message, qos QOS, retained bool) error {
+	msg.Topic = r.root + msg.Topic
+	return r.Bus.Publish(msg, qos, retained)
+}
+
+type rebaseSubscriber struct {
+	Bus
+	root string
+}
+
+func (r *rebaseSubscriber) Subscribe(topic string, qos QOS) (<-chan Message, error) {
+	c, err := r.Bus.Subscribe(r.root+topic, qos)
+	if err != nil {
+		return c, err
+	}
+	c2 := make(chan Message)
+	offset := len(r.root)
+	go func() {
+		// Translate the topics.
+		for msg := range c {
+			c2 <- Message{msg.Topic[offset:], msg.Payload}
+		}
+	}()
+	return c2, nil
+}
+
+func (r *rebaseSubscriber) Unsubscribe(topic string) error {
+	return r.Bus.Unsubscribe(r.root + topic)
+}
+
+func (r *rebaseSubscriber) Get(topic string, qos QOS) ([]Message, error) {
+	msgs, err := r.Bus.Get(r.root+topic, qos)
+	if err != nil {
+		return msgs, err
+	}
+	offset := len(r.root)
+	for i := range msgs {
+		msgs[i].Topic = msgs[i].Topic[offset:]
+	}
+	return msgs, err
 }

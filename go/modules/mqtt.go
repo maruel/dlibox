@@ -47,17 +47,17 @@ func (m *MQTT) Close() error {
 	return nil
 }
 
-func (m *MQTT) Publish(msg *Message, qos QOS, retained bool) error {
+func (m *MQTT) Publish(msg Message, qos QOS, retained bool) error {
 	// Make it back synchronous.
 	token := m.client.Publish(msg.Topic, byte(qos), retained, msg.Payload)
 	token.Wait()
 	return token.Error()
 }
 
-func (m *MQTT) Subscribe(topic string, qos QOS) (<-chan *Message, error) {
-	c := make(chan *Message)
+func (m *MQTT) Subscribe(topic string, qos QOS) (<-chan Message, error) {
+	c := make(chan Message)
 	token := m.client.Subscribe(topic, byte(qos), func(client mqtt.Client, msg mqtt.Message) {
-		c <- &Message{msg.Topic(), msg.Payload()}
+		c <- Message{msg.Topic(), msg.Payload()}
 	})
 	return c, token.Error()
 }
@@ -68,7 +68,7 @@ func (m *MQTT) Unsubscribe(topic string) error {
 	return token.Error()
 }
 
-func (m *MQTT) Get(topic string, qos QOS) ([]*Message, error) {
+func (m *MQTT) Get(topic string, qos QOS) ([]Message, error) {
 	// TODO(maruel): It looks it needs to do a quick Subscribe + poll every
 	// messages until one with !msg.Retained() or a timeout then Unsubscribe.
 	return nil, errors.New("implement me")
