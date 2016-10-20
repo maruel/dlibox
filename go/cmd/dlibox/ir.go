@@ -4,12 +4,9 @@
 
 package main
 
-import (
-	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/donotuse/devices/lirc"
-)
+import "github.com/maruel/dlibox/go/donotuse/devices/lirc"
 
-func initIR(painter *anim1d.Painter, config *IR) error {
+func initIR(painter *painter, config *IR) error {
 	bus, err := lirc.New()
 	if err != nil {
 		return err

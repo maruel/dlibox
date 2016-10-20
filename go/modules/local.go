@@ -14,14 +14,14 @@ import (
 // LocalBus is a Bus implementation that runs locally in the process.
 // http://www.hivemq.com/blog/mqtt-essentials-part-8-retained-messages
 type LocalBus struct {
-	lock             sync.Mutex
+	mu               sync.Mutex
 	persistentTopics map[string][]byte
 	subscribers      []subscription
 }
 
 func (l *LocalBus) Close() error {
-	l.lock.Lock()
-	defer l.lock.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	for i := range l.subscribers {
 		close(l.subscribers[i].channel)
 	}
@@ -33,8 +33,8 @@ func (l *LocalBus) Publish(msg Message, qos QOS, retained bool) error {
 	if p == nil || p.isQuery() {
 		return errors.New("invalid topic")
 	}
-	l.lock.Lock()
-	defer l.lock.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	if l.persistentTopics == nil {
 		l.persistentTopics = map[string][]byte{}
 	}
@@ -69,16 +69,16 @@ func (l *LocalBus) Subscribe(topic string, qos QOS) (<-chan Message, error) {
 		return nil, errors.New("invalid topic")
 	}
 	c := make(chan Message)
-	l.lock.Lock()
-	defer l.lock.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	l.subscribers = append(l.subscribers, subscription{p, c})
 	return c, nil
 }
 
 func (l *LocalBus) Unsubscribe(topic string) error {
 	p := parseTopic(topic)
-	l.lock.Lock()
-	defer l.lock.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	for i := range l.subscribers {
 		if l.subscribers[i].topic.isEqual(p) {
 			// Found!
@@ -96,8 +96,8 @@ func (l *LocalBus) Get(topic string, qos QOS) ([]Message, error) {
 	if p == nil {
 		return nil, errors.New("invalid topic")
 	}
-	l.lock.Lock()
-	defer l.lock.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	var out []Message
 	for k, v := range l.persistentTopics {
 		if p.match(k) {

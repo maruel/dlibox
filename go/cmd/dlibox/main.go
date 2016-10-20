@@ -22,6 +22,7 @@ import (
 
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/donotuse/host"
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/interrupt"
 )
 
@@ -87,7 +88,9 @@ func mainImpl() error {
 
 	// Initialize modules.
 
-	_, err = initDisplay(&config.Settings.Display)
+	bus := &modules.LocalBus{}
+	local := modules.Rebase(bus, "dlibox/")
+	_, err = initDisplay(local, &config.Settings.Display)
 	if err != nil {
 		// Non-fatal.
 		log.Printf("Display not connected: %v", err)
@@ -100,10 +103,11 @@ func mainImpl() error {
 	defer end()
 	properties = append(properties, properties2...)
 
-	p, err := initPainter(leds, fps, &config.Settings.Painter)
+	p, err := initPainter(local, leds, fps, &config.Settings.Painter)
 	if err != nil {
 		return err
 	}
+	defer p.Close()
 	if err := config.Init(p); err != nil {
 		return err
 	}

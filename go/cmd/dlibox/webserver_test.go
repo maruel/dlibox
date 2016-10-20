@@ -13,8 +13,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/donotuse/devices/devicestest"
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/ut"
 )
 
@@ -24,7 +24,8 @@ func TestWeb(t *testing.T) {
 	config.ResetDefault()
 	config.LRU.Patterns = []Pattern{"\"#010101\"", "\"#020202\""}
 	d := &devicestest.Display{image.NewNRGBA(image.Rect(0, 0, 128, 1))}
-	painter := anim1d.NewPainter(d, 60)
+	painter, err := initPainter(&modules.LocalBus{}, d, 60, &Painter{})
+	ut.AssertEqual(t, nil, err)
 	defer painter.Close()
 	s, err := startWebServer(0, painter, &config)
 	defer s.Close()

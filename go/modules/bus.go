@@ -4,7 +4,10 @@
 
 package modules
 
-import "io"
+import (
+	"io"
+	"strings"
+)
 
 // QOS defines the quality of service to use when publishing and subscribing to
 // messages.
@@ -48,6 +51,14 @@ type Bus interface {
 	Get(topic string, qos QOS) ([]Message, error)
 }
 
+// Rebase rebases a Bus for all topics.
+func Rebase(b Bus, root string) Bus {
+	if len(root) != 0 && root[len(root)-1] != '/' {
+		root += "/"
+	}
+	return &rebasePublisher{&rebaseSubscriber{b, root}, root}
+}
+
 // RebasePublisher rebases a Bus when publishing messages.
 //
 // Messages retrieved are unaffected.
@@ -76,7 +87,7 @@ type rebasePublisher struct {
 }
 
 func (r *rebasePublisher) Publish(msg Message, qos QOS, retained bool) error {
-	msg.Topic = r.root + msg.Topic
+	msg.Topic = mergeTopic(r.root, msg.Topic)
 	return r.Bus.Publish(msg, qos, retained)
 }
 
@@ -86,6 +97,7 @@ type rebaseSubscriber struct {
 }
 
 func (r *rebaseSubscriber) Subscribe(topic string, qos QOS) (<-chan Message, error) {
+	// TODO(maruel): Support mergeTopic().
 	c, err := r.Bus.Subscribe(r.root+topic, qos)
 	if err != nil {
 		return c, err
@@ -102,10 +114,12 @@ func (r *rebaseSubscriber) Subscribe(topic string, qos QOS) (<-chan Message, err
 }
 
 func (r *rebaseSubscriber) Unsubscribe(topic string) error {
+	// TODO(maruel): Support mergeTopic().
 	return r.Bus.Unsubscribe(r.root + topic)
 }
 
 func (r *rebaseSubscriber) Get(topic string, qos QOS) ([]Message, error) {
+	// TODO(maruel): Support mergeTopic().
 	msgs, err := r.Bus.Get(r.root+topic, qos)
 	if err != nil {
 		return msgs, err
@@ -115,4 +129,25 @@ func (r *rebaseSubscriber) Get(topic string, qos QOS) ([]Message, error) {
 		msgs[i].Topic = msgs[i].Topic[offset:]
 	}
 	return msgs, err
+}
+
+func mergeTopic(root, topic string) string {
+	for strings.HasPrefix(topic, "../") {
+		if len(root) == 0 {
+			panic(topic)
+		}
+		i := strings.LastIndexByte(root, '/')
+		root = root[:i]
+		topic = topic[3:]
+	}
+	if len(topic) == 0 {
+		panic(root)
+	}
+	if topic[0] == '/' {
+		panic(root)
+	}
+	if len(root) != 0 && root[len(root)-1] != '/' {
+		root += "/"
+	}
+	return root + topic
 }

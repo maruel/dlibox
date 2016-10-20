@@ -9,7 +9,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/pkg/errors"
 )
 
@@ -75,7 +74,7 @@ func (a *Alarm) Next(now time.Time) time.Time {
 	return time.Time{}
 }
 
-func (a *Alarm) Reset(p *anim1d.Painter) error {
+func (a *Alarm) Reset(p *painter) error {
 	if a.timer != nil {
 		a.timer.Stop()
 		a.timer = nil
@@ -104,7 +103,7 @@ func (a *Alarm) String() string {
 
 type Alarms []Alarm
 
-func (a Alarms) Reset(p *anim1d.Painter) error {
+func (a Alarms) Reset(p *painter) error {
 	var err error
 	for _, a := range a {
 		if err1 := a.Reset(p); err1 != nil {

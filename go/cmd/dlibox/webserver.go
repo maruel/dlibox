@@ -34,14 +34,14 @@ func init() {
 }
 
 type webServer struct {
-	painter *anim1d.Painter
+	painter *painter
 	cache   anim1d.ThumbnailsCache
 	config  *Config
 	ln      net.Listener
 	server  http.Server
 }
 
-func startWebServer(port int, painter *anim1d.Painter, config *Config) (*webServer, error) {
+func startWebServer(port int, painter *painter, config *Config) (*webServer, error) {
 	s := &webServer{
 		painter: painter,
 		cache: anim1d.ThumbnailsCache{

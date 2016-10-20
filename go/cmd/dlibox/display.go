@@ -11,10 +11,11 @@ import (
 	"github.com/maruel/dlibox/go/donotuse/devices"
 	"github.com/maruel/dlibox/go/donotuse/devices/ssd1306"
 	"github.com/maruel/dlibox/go/donotuse/devices/ssd1306/image1bit"
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/psf"
 )
 
-func initDisplay(d *Display) (devices.Display, error) {
+func initDisplay(bus modules.Bus, d *Display) (devices.Display, error) {
 	i2cBus, err := i2c.New(-1)
 	if err != nil {
 		return nil, err

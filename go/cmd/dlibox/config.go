@@ -342,7 +342,7 @@ func (c *ConfigMgr) Load() error {
 	return c.Config.Load(c.path)
 }
 
-func (c *ConfigMgr) Init(p *anim1d.Painter) error {
+func (c *ConfigMgr) Init(p *painter) error {
 	// TODO(maruel): Use module.Bus instead.
 	if err := c.Settings.Alarms.Reset(p); err != nil {
 		return nil

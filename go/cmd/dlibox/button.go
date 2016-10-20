@@ -9,12 +9,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/donotuse/conn/gpio"
 	"github.com/maruel/interrupt"
 )
 
-func initButton(p *anim1d.Painter, r map[string]string, config *Button) error {
+func initButton(p *painter, r map[string]string, config *Button) error {
 	if len(r) == 0 {
 		// TODO(maruel): Temporary hack to disable this code.
 		return nil

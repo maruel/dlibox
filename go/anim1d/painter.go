@@ -53,7 +53,10 @@ func (p *Painter) SetPattern(s string) error {
 }
 
 func (p *Painter) Close() error {
-	p.c <- nil
+	select {
+	case p.c <- nil:
+	default:
+	}
 	p.wg.Wait()
 	p.c = nil
 	return nil
@@ -86,12 +89,17 @@ func NewPainter(d devices.Display, fps int) *Painter {
 
 var black = &Color{}
 
-func (p *Painter) runPattern(cGen, cWrite chan Frame) {
-	defer p.wg.Done()
+func (p *Painter) runPattern(cGen <-chan Frame, cWrite chan<- Frame) {
 	defer func() {
 		// Tell runWrite() to quit.
-		cWrite <- nil
+		select {
+		case cWrite <- nil:
+		default:
+		}
+		close(cWrite)
+		p.wg.Done()
 	}()
+
 	ease := Transition{
 		Before:     SPattern{black},
 		After:      SPattern{black},
@@ -112,7 +120,10 @@ func (p *Painter) runPattern(cGen, cWrite chan Frame) {
 			ease.After.Pattern = newPat
 			ease.OffsetMS = uint32(since / time.Millisecond)
 
-		case pixels := <-cGen:
+		case pixels, ok := <-cGen:
+			if !ok {
+				return
+			}
 			for i := range pixels {
 				pixels[i] = Color{}
 			}
@@ -126,15 +137,24 @@ func (p *Painter) runPattern(cGen, cWrite chan Frame) {
 	}
 }
 
-func (p *Painter) runWrite(cGen, cWrite chan Frame, numLights int) {
-	defer p.wg.Done()
+func (p *Painter) runWrite(cGen chan<- Frame, cWrite <-chan Frame, numLights int) {
+	defer func() {
+		// Tell runPattern() to quit.
+		select {
+		case cGen <- nil:
+		default:
+		}
+		close(cGen)
+		p.wg.Done()
+	}()
+
 	tick := time.NewTicker(p.frameDuration)
 	defer tick.Stop()
 	var err error
 	buf := make([]byte, numLights*3)
 	for {
-		pixels := <-cWrite
-		if len(pixels) == 0 {
+		pixels, ok := <-cWrite
+		if pixels == nil || !ok {
 			return
 		}
 		if err == nil {

@@ -4,12 +4,9 @@
 
 package main
 
-import (
-	"github.com/maruel/dlibox/go/anim1d"
-	"github.com/maruel/dlibox/go/donotuse/conn/gpio"
-)
+import "github.com/maruel/dlibox/go/donotuse/conn/gpio"
 
-func initPIR(painter *anim1d.Painter, config *PIR) error {
+func initPIR(painter *painter, config *PIR) error {
 	p := gpio.ByNumber(config.Pin)
 	if p == nil {
 		return nil
