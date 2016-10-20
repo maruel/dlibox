@@ -88,8 +88,9 @@ func mainImpl() error {
 
 	// Initialize modules.
 
-	bus := &modules.LocalBus{}
+	bus := modules.Logging(&modules.LocalBus{})
 	local := modules.Rebase(bus, "dlibox/")
+
 	_, err = initDisplay(local, &config.Settings.Display)
 	if err != nil {
 		// Non-fatal.
@@ -103,31 +104,35 @@ func mainImpl() error {
 	defer end()
 	properties = append(properties, properties2...)
 
-	p, err := initPainter(local, leds, fps, &config.Settings.Painter)
+	p, err := initPainter(local, leds, fps, &config.Settings.Painter, &config.LRU)
 	if err != nil {
 		return err
 	}
 	defer p.Close()
-	if err := config.Init(p); err != nil {
+
+	_, err = initWeb(local, *port, &config.Config)
+	if err != nil {
 		return err
 	}
-	startWebServer(*port, p, &config.Config)
 
-	if err = initButton(p, nil, &config.Settings.Button); err != nil {
+	if err = initButton(local, nil, &config.Settings.Button); err != nil {
 		// Non-fatal.
 		log.Printf("Button not connected: %v", err)
 	}
 
-	if err = initIR(p, &config.Settings.IR); err != nil {
+	if err = initIR(local, &config.Settings.IR); err != nil {
 		// Non-fatal.
 		log.Printf("IR not connected: %v", err)
 	}
 
-	if err = initPIR(p, &config.Settings.PIR); err != nil {
+	if err = initPIR(local, &config.Settings.PIR); err != nil {
 		// Non-fatal.
 		log.Printf("PIR not connected: %v", err)
 	}
 
+	if err = initAlarms(local, &config.Settings.Alarms); err != nil {
+		return err
+	}
 	//service, err := initmDNS(*port, properties)
 	//if err != nil {
 	//	return err

@@ -6,21 +6,40 @@ package main
 
 import (
 	"image"
+	"log"
+	"sync"
 
 	"github.com/maruel/dlibox/go/donotuse/conn/i2c"
-	"github.com/maruel/dlibox/go/donotuse/devices"
 	"github.com/maruel/dlibox/go/donotuse/devices/ssd1306"
 	"github.com/maruel/dlibox/go/donotuse/devices/ssd1306/image1bit"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/psf"
 )
 
-func initDisplay(bus modules.Bus, d *Display) (devices.Display, error) {
-	i2cBus, err := i2c.New(-1)
+// Display contains small embedded display settings.
+type Display struct {
+	sync.Mutex
+	I2CBus int
+}
+
+func (d *Display) ResetDefault() {
+	d.Lock()
+	d.Unlock()
+	d.I2CBus = -1
+}
+
+func (d *Display) Validate() error {
+	d.Lock()
+	d.Unlock()
+	return nil
+}
+
+func initDisplay(b modules.Bus, config *Display) (*display, error) {
+	i2cBus, err := i2c.New(config.I2CBus)
 	if err != nil {
 		return nil, err
 	}
-	display, err := ssd1306.NewI2C(i2cBus, 128, 64, false)
+	d, err := ssd1306.NewI2C(i2cBus, 128, 64, false)
 	if err != nil {
 		return nil, err
 	}
@@ -32,14 +51,49 @@ func initDisplay(bus modules.Bus, d *Display) (devices.Display, error) {
 	if err != nil {
 		return nil, err
 	}
-	img, err := image1bit.New(image.Rect(0, 0, display.W, display.H))
+	img, err := image1bit.New(image.Rect(0, 0, d.W, d.H))
 	if err != nil {
 		return nil, err
 	}
 	f20.Draw(img, 0, 0, image1bit.On, nil, "dlibox!")
-	f12.Draw(img, 0, display.H-f12.H-1, image1bit.On, nil, "is awesome")
-	if _, err = display.Write(img.Buf); err != nil {
+	f12.Draw(img, 0, d.H-f12.H-1, image1bit.On, nil, "is awesome")
+	if _, err = d.Write(img.Buf); err != nil {
 		return nil, err
 	}
-	return display, nil
+	c, err := b.Subscribe("display", modules.ExactlyOnce)
+	if err != nil {
+		return nil, err
+	}
+	disp := &display{d, b, img, f12, f20}
+	go func() {
+		for msg := range c {
+			disp.onMsg(msg)
+		}
+	}()
+	return disp, nil
+}
+
+type display struct {
+	d   *ssd1306.Dev
+	b   modules.Bus
+	img *image1bit.Image
+	f12 *psf.Font
+	f20 *psf.Font
+}
+
+func (d *display) Close() error {
+	d.b.Unsubscribe("display/+")
+	return nil
+}
+
+func (d *display) onMsg(msg modules.Message) {
+	switch msg.Topic {
+	case "display/settext":
+		d.f20.Draw(d.img, 0, 0, image1bit.On, nil, string(msg.Payload))
+		if _, err := d.d.Write(d.img.Buf); err != nil {
+			log.Printf("display write failure: %# v", msg)
+		}
+	default:
+		log.Printf("display unknown msg: %# v", msg)
+	}
 }

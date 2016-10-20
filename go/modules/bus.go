@@ -6,6 +6,7 @@ package modules
 
 import (
 	"io"
+	"log"
 	"strings"
 )
 
@@ -51,6 +52,11 @@ type Bus interface {
 	Get(topic string, qos QOS) ([]Message, error)
 }
 
+// Logging logs all messages published on a Bus.
+func Logging(b Bus) Bus {
+	return &logging{b}
+}
+
 // Rebase rebases a Bus for all topics.
 func Rebase(b Bus, root string) Bus {
 	if len(root) != 0 && root[len(root)-1] != '/' {
@@ -81,6 +87,32 @@ func RebaseSubscriber(b Bus, root string) Bus {
 
 //
 
+type logging struct {
+	Bus
+}
+
+func (l *logging) Publish(msg Message, qos QOS, retained bool) error {
+	log.Printf("Publish({%s, %q}, %s, %t)", msg.Topic, string(msg.Payload), qos, retained)
+	return l.Bus.Publish(msg, qos, retained)
+}
+
+func (l *logging) Subscribe(topic string, qos QOS) (<-chan Message, error) {
+	log.Printf("Subscribe(%s, %s)", topic, qos)
+	c, err := l.Bus.Subscribe(topic, qos)
+	if err != nil {
+		return c, err
+	}
+	c2 := make(chan Message)
+	go func() {
+		defer close(c2)
+		for msg := range c {
+			log.Printf("<- Message{%s, %q}", msg.Topic, string(msg.Payload))
+			c2 <- msg
+		}
+	}()
+	return c2, nil
+}
+
 type rebasePublisher struct {
 	Bus
 	root string
@@ -105,6 +137,7 @@ func (r *rebaseSubscriber) Subscribe(topic string, qos QOS) (<-chan Message, err
 	c2 := make(chan Message)
 	offset := len(r.root)
 	go func() {
+		defer close(c2)
 		// Translate the topics.
 		for msg := range c {
 			c2 <- Message{msg.Topic[offset:], msg.Payload}

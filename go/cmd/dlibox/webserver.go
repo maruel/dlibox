@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/go/anim1d"
+	"github.com/maruel/dlibox/go/modules"
 )
 
 var (
@@ -34,16 +35,16 @@ func init() {
 }
 
 type webServer struct {
-	painter *painter
-	cache   anim1d.ThumbnailsCache
-	config  *Config
-	ln      net.Listener
-	server  http.Server
+	b      modules.Bus
+	cache  anim1d.ThumbnailsCache
+	config *Config
+	ln     net.Listener
+	server http.Server
 }
 
-func startWebServer(port int, painter *painter, config *Config) (*webServer, error) {
+func initWeb(b modules.Bus, port int, config *Config) (*webServer, error) {
 	s := &webServer{
-		painter: painter,
+		b: b,
 		cache: anim1d.ThumbnailsCache{
 			NumberLEDs:       100,
 			ThumbnailHz:      10,
@@ -131,7 +132,8 @@ func (s *webServer) staticHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *webServer) patternsHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO(maruel): Locking for config access.
+	s.config.LRU.Lock()
+	defer s.config.LRU.Unlock()
 	switch r.Method {
 	case "GET":
 		data, _ := json.Marshal(s.config.LRU.Patterns)
@@ -146,7 +148,8 @@ func (s *webServer) patternsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *webServer) settingsHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO(maruel): Locking for config access.
+	s.config.Settings.Lock()
+	defer s.config.Settings.Unlock()
 	switch r.Method {
 	case "GET":
 		data, _ := json.Marshal(s.config.Settings)
@@ -180,29 +183,20 @@ func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "pattern is not base64", http.StatusBadRequest)
 		return
 	}
-	// Reformat the pattern in canonical format.
-	// TODO(maruel): Change SetPattern() to accept a anim1d.Pattern.
-	var p anim1d.SPattern
-	if err := json.Unmarshal(raw, &p); err != nil {
+
+	if err := Pattern(raw).Validate(); err != nil {
 		http.Error(w, "invalid JSON pattern", http.StatusBadRequest)
 		return
 	}
-	b, err := p.MarshalJSON()
-	if err != nil {
-		http.Error(w, "internal error", http.StatusBadRequest)
+	log.Printf("pattern = %q", raw)
+	if err := s.b.Publish(modules.Message{"painter/setuser", raw}, modules.ExactlyOnce, false); err != nil {
+		http.Error(w, "failed to publish", http.StatusInternalServerError)
 		return
 	}
-	pattern := string(b)
-	log.Printf("pattern = %q", pattern)
-	if err := s.painter.SetPattern(pattern); err != nil {
-		http.Error(w, "invalid JSON pattern", http.StatusBadRequest)
-		return
-	}
-	if c, ok := p.Pattern.(*anim1d.Color); !ok || (c.R == 0 && c.G == 0 && c.B == 0) {
-		s.config.LRU.Inject(pattern)
-	}
-	s.config.Settings.Painter.Last = Pattern(pattern)
+	// TODO(maruel): LRU won't be updated synchronously.
+	s.config.LRU.Lock()
 	data, _ := json.Marshal(s.config.LRU.Patterns)
+	s.config.LRU.Unlock()
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }

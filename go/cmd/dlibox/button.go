@@ -7,15 +7,38 @@ package main
 import (
 	"errors"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/maruel/dlibox/go/donotuse/conn/gpio"
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/interrupt"
 )
 
-func initButton(p *painter, r map[string]string, config *Button) error {
+// Button contains settings for controlling the lights through a button.
+type Button struct {
+	sync.Mutex
+	PinNumber int
+}
+
+func (b *Button) ResetDefault() {
+	b.Lock()
+	defer b.Unlock()
+	b.PinNumber = -1
+}
+
+func (b *Button) Validate() error {
+	b.Lock()
+	defer b.Unlock()
+	return nil
+}
+
+func initButton(b modules.Bus, r map[string][]byte, config *Button) error {
 	if len(r) == 0 {
 		// TODO(maruel): Temporary hack to disable this code.
+		return nil
+	}
+	if config.PinNumber == -1 {
 		return nil
 	}
 	pin := gpio.ByNumber(config.PinNumber)
@@ -50,7 +73,7 @@ func initButton(p *painter, r map[string]string, config *Button) error {
 				last = state
 				if state == gpio.Low {
 					index = (index + 1) % len(names)
-					p.SetPattern(r[names[index]])
+					b.Publish(modules.Message{"painter/setuser", r[names[index]]}, modules.ExactlyOnce, false)
 				}
 			}
 			select {

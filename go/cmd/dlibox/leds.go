@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sync"
 
 	"github.com/maruel/dlibox/go/donotuse/conn/spi"
 	"github.com/maruel/dlibox/go/donotuse/devices"
@@ -21,9 +22,30 @@ import (
 	"github.com/maruel/dlibox/go/screen"
 )
 
+// APA102 contains light specific settings.
+type APA102 struct {
+	sync.Mutex
+	// Speed of the transfer.
+	SPIspeed int64
+	// Number of lights controlled by this device. If lower than the actual
+	// number of lights, the remaining lights will flash oddly.
+	NumberLights int
+}
+
+func (a *APA102) ResetDefault() {
+	a.Lock()
+	defer a.Unlock()
+	a.SPIspeed = 10000000
+	a.NumberLights = 150
+}
+
+func (a *APA102) Validate() error {
+	a.Lock()
+	defer a.Unlock()
+	return nil
+}
+
 // initLEDs initializes the LED strip.
-//
-// TODO(maruel): This function is horrible.
 func initLEDs(fake bool, config *APA102) (devices.Display, func(), []string, int, error) {
 	if fake {
 		// Output (terminal with ANSI codes or APA102).

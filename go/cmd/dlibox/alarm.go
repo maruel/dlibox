@@ -7,8 +7,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/pkg/errors"
 )
 
@@ -74,7 +76,7 @@ func (a *Alarm) Next(now time.Time) time.Time {
 	return time.Time{}
 }
 
-func (a *Alarm) Reset(p *painter) error {
+func (a *Alarm) Reset(b modules.Bus) error {
 	if a.timer != nil {
 		a.timer.Stop()
 		a.timer = nil
@@ -84,10 +86,10 @@ func (a *Alarm) Reset(p *painter) error {
 	if next := a.Next(now); !next.IsZero() {
 		a.timer = time.AfterFunc(next.Sub(now), func() {
 			// Do not update PatternSettings.Last.
-			if err := p.SetPattern(string(a.Pattern)); err != nil {
+			if err := b.Publish(modules.Message{"painter/setautomated", []byte(a.Pattern)}, modules.ExactlyOnce, false); err != nil {
 				log.Printf("failed to unmarshal pattern %q", a.Pattern)
 			}
-			a.Reset(p)
+			a.Reset(b)
 		})
 	}
 	return nil
@@ -101,12 +103,17 @@ func (a *Alarm) String() string {
 	return out
 }
 
-type Alarms []Alarm
+type Alarms struct {
+	sync.Mutex
+	Alarms []Alarm
+}
 
-func (a Alarms) Reset(p *painter) error {
+func initAlarms(b modules.Bus, config *Alarms) error {
+	config.Lock()
+	defer config.Unlock()
 	var err error
-	for _, a := range a {
-		if err1 := a.Reset(p); err1 != nil {
+	for i := range config.Alarms {
+		if err1 := config.Alarms[i].Reset(b); err1 != nil {
 			err = err1
 		}
 	}
@@ -114,7 +121,9 @@ func (a Alarms) Reset(p *painter) error {
 }
 
 func (a *Alarms) ResetDefault() {
-	*a = Alarms{
+	a.Lock()
+	defer a.Unlock()
+	a.Alarms = []Alarm{
 		{
 			Enabled: true,
 			Hour:    6,
@@ -139,9 +148,11 @@ func (a *Alarms) ResetDefault() {
 	}
 }
 
-func (a Alarms) Validate() error {
-	for _, alarm := range a {
-		if err := alarm.Pattern.Validate(); err != nil {
+func (a *Alarms) Validate() error {
+	a.Lock()
+	defer a.Unlock()
+	for i := range a.Alarms {
+		if err := a.Alarms[i].Pattern.Validate(); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("can't load pattern for alarm %s", a))
 		}
 	}

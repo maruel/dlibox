@@ -4,9 +4,43 @@
 
 package main
 
-import "github.com/maruel/dlibox/go/donotuse/devices/lirc"
+import (
+	"fmt"
+	"sync"
 
-func initIR(painter *painter, config *IR) error {
+	"github.com/maruel/dlibox/go/donotuse/conn/ir"
+	"github.com/maruel/dlibox/go/donotuse/devices/lirc"
+	"github.com/maruel/dlibox/go/modules"
+	"github.com/pkg/errors"
+)
+
+// IR contains InfraRed remote information.
+type IR struct {
+	sync.Mutex
+	Mapping map[ir.Key]Pattern // TODO(maruel): We may actually do something more complex than just set a pattern.
+}
+
+func (i *IR) ResetDefault() {
+	i.Lock()
+	defer i.Unlock()
+	i.Mapping = map[ir.Key]Pattern{
+		ir.KEY_NUMERIC_0: "\"#000000\"",
+		ir.KEY_100PLUS:   "\"#ffffff\"",
+	}
+}
+
+func (i *IR) Validate() error {
+	i.Lock()
+	defer i.Unlock()
+	for k, v := range i.Mapping {
+		if err := v.Validate(); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("can't load pattern for key %s", k))
+		}
+	}
+	return nil
+}
+
+func initIR(b modules.Bus, config *IR) error {
 	bus, err := lirc.New()
 	if err != nil {
 		return err
@@ -22,7 +56,7 @@ func initIR(painter *painter, config *IR) error {
 				if !msg.Repeat {
 					// TODO(maruel): Locking.
 					if pat := config.Mapping[msg.Key]; len(pat) != 0 {
-						painter.SetPattern(string(pat))
+						b.Publish(modules.Message{"painter/setuser", []byte(pat)}, modules.ExactlyOnce, false)
 					}
 				}
 			}
