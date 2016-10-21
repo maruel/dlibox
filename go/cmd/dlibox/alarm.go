@@ -49,7 +49,7 @@ type Alarm struct {
 	Hour    int
 	Minute  int
 	Days    WeekdayBit
-	Pattern Pattern
+	Cmd     Command
 	timer   *time.Timer
 }
 
@@ -81,13 +81,11 @@ func (a *Alarm) Reset(b modules.Bus) error {
 		a.timer.Stop()
 		a.timer = nil
 	}
-	// TODO(maruel): Make sure all alarms are valid.
 	now := time.Now()
 	if next := a.Next(now); !next.IsZero() {
 		a.timer = time.AfterFunc(next.Sub(now), func() {
-			// Do not update PatternSettings.Last.
-			if err := b.Publish(modules.Message{"painter/setautomated", []byte(a.Pattern)}, modules.ExactlyOnce, false); err != nil {
-				log.Printf("failed to unmarshal pattern %q", a.Pattern)
+			if err := b.Publish(modules.Message(a.Cmd), modules.ExactlyOnce, false); err != nil {
+				log.Printf("failed to unmarshal pattern %q", a.Cmd)
 			}
 			a.Reset(b)
 		})
@@ -129,21 +127,21 @@ func (a *Alarms) ResetDefault() {
 			Hour:    6,
 			Minute:  35,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Pattern: morning,
+			Cmd:     Command{"painter/setautomated", []byte(morning)},
 		},
 		{
 			Enabled: true,
 			Hour:    6,
 			Minute:  55,
 			Days:    Saturday | Sunday,
-			Pattern: "\"#000000\"",
+			Cmd:     Command{"painter/setautomated", []byte("\"#000000\"")},
 		},
 		{
 			Enabled: true,
 			Hour:    19,
 			Minute:  00,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Pattern: "\"#010001\"",
+			Cmd:     Command{"painter/setautomated", []byte("\"#010001\"")},
 		},
 	}
 }
@@ -152,8 +150,8 @@ func (a *Alarms) Validate() error {
 	a.Lock()
 	defer a.Unlock()
 	for i := range a.Alarms {
-		if err := a.Alarms[i].Pattern.Validate(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("can't load pattern for alarm %s", a))
+		if err := a.Alarms[i].Cmd.Validate(); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("can't load command for alarm %s", a))
 		}
 	}
 	return nil

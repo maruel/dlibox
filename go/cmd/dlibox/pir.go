@@ -15,22 +15,22 @@ import (
 // PIR contains a motion detection behavior.
 type PIR struct {
 	sync.Mutex
-	Pin     int
-	Pattern Pattern
+	Pin int
+	Cmd Command
 }
 
 func (p *PIR) ResetDefault() {
 	p.Lock()
 	defer p.Unlock()
 	p.Pin = -1
-	p.Pattern = "\"#ffffff\""
+	p.Cmd = Command{"painter/setnow", []byte("\"#ffffff\"")}
 }
 
 func (p *PIR) Validate() error {
 	p.Lock()
 	defer p.Unlock()
-	if err := p.Pattern.Validate(); err != nil {
-		return errors.Wrap(err, "can't load pattern for PIR")
+	if err := p.Cmd.Validate(); err != nil {
+		return errors.Wrap(err, "can't load command for PIR")
 	}
 	return nil
 }
@@ -50,8 +50,9 @@ func initPIR(b modules.Bus, config *PIR) error {
 		for {
 			p.WaitForEdge(-1)
 			if p.Read() == gpio.High {
-				// TODO(maruel): Locking.
-				b.Publish(modules.Message{"pattern/setautomated", []byte(config.Pattern)}, modules.ExactlyOnce, false)
+				config.Lock()
+				b.Publish(modules.Message(config.Cmd), modules.ExactlyOnce, false)
+				config.Unlock()
 			}
 		}
 	}()

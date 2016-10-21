@@ -17,15 +17,15 @@ import (
 // IR contains InfraRed remote information.
 type IR struct {
 	sync.Mutex
-	Mapping map[ir.Key]Pattern // TODO(maruel): We may actually do something more complex than just set a pattern.
+	Mapping map[ir.Key]Command
 }
 
 func (i *IR) ResetDefault() {
 	i.Lock()
 	defer i.Unlock()
-	i.Mapping = map[ir.Key]Pattern{
-		ir.KEY_NUMERIC_0: "\"#000000\"",
-		ir.KEY_100PLUS:   "\"#ffffff\"",
+	i.Mapping = map[ir.Key]Command{
+		ir.KEY_NUMERIC_0: {"painter/setuser", []byte("\"#000000\"")},
+		ir.KEY_100PLUS:   {"painter/setuser", []byte("\"#ffffff\"")},
 	}
 }
 
@@ -34,7 +34,7 @@ func (i *IR) Validate() error {
 	defer i.Unlock()
 	for k, v := range i.Mapping {
 		if err := v.Validate(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("can't load pattern for key %s", k))
+			return errors.Wrap(err, fmt.Sprintf("can't load command for key %s", k))
 		}
 	}
 	return nil
@@ -54,9 +54,11 @@ func initIR(b modules.Bus, config *IR) error {
 					break
 				}
 				if !msg.Repeat {
-					// TODO(maruel): Locking.
-					if pat := config.Mapping[msg.Key]; len(pat) != 0 {
-						b.Publish(modules.Message{"painter/setuser", []byte(pat)}, modules.ExactlyOnce, false)
+					config.Lock()
+					cmd := config.Mapping[msg.Key]
+					config.Unlock()
+					if len(cmd.Topic) != 0 {
+						b.Publish(modules.Message(cmd), modules.ExactlyOnce, false)
 					}
 				}
 			}
