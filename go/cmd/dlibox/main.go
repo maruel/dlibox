@@ -22,6 +22,7 @@ import (
 
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/donotuse/host"
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/interrupt"
 )
 
@@ -83,7 +84,6 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Config:\n%s", string(b))
 
 	// Initialize modules.
 
@@ -91,6 +91,11 @@ func mainImpl() error {
 	if err != nil {
 		// Non-fatal.
 		log.Printf("MQTT not connected: %v", err)
+		log.Printf("Config:\n%s", string(b))
+	}
+	// Publish the config as a retained message.
+	if err := bus.Publish(modules.Message{"config", b}, modules.MinOnce, true); err != nil {
+		log.Printf("Publishing failued: %v", err)
 	}
 
 	_, err = initDisplay(bus, &config.Settings.Display)
