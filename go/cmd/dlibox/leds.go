@@ -25,6 +25,8 @@ import (
 // APA102 contains light specific settings.
 type APA102 struct {
 	sync.Mutex
+	// BusNumber is the SPI bus number to use, defaults to -1.
+	BusNumber int
 	// Speed of the transfer.
 	SPIspeed int64
 	// Number of lights controlled by this device. If lower than the actual
@@ -35,6 +37,7 @@ type APA102 struct {
 func (a *APA102) ResetDefault() {
 	a.Lock()
 	defer a.Unlock()
+	a.BusNumber = -1
 	a.SPIspeed = 10000000
 	a.NumberLights = 150
 }
@@ -62,7 +65,7 @@ func initLEDs(fake bool, config *APA102) (devices.Display, func(), []string, int
 		// Use 30Hz on slower devices because it is too slow.
 		fps = 30
 	}
-	spiBus, err := spi.New(-1, -1)
+	spiBus, err := spi.New(config.BusNumber, 0)
 	if err != nil {
 		return nil, nil, nil, 0, err
 	}
