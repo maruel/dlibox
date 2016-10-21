@@ -9,8 +9,8 @@ import (
 	"log"
 	"sync"
 
-	"github.com/google/pio/devices"
 	"github.com/maruel/dlibox/go/anim1d"
+	"github.com/maruel/dlibox/go/donotuse/devices"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/pkg/errors"
 )
