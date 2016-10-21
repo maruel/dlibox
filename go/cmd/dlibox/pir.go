@@ -23,7 +23,7 @@ func (p *PIR) ResetDefault() {
 	p.Lock()
 	defer p.Unlock()
 	p.Pin = -1
-	p.Cmd = Command{"painter/setnow", []byte("\"#ffffff\"")}
+	p.Cmd = Command{"painter/setnow", "\"#ffffff\""}
 }
 
 func (p *PIR) Validate() error {
@@ -51,7 +51,7 @@ func initPIR(b modules.Bus, config *PIR) error {
 			p.WaitForEdge(-1)
 			if p.Read() == gpio.High {
 				config.Lock()
-				b.Publish(modules.Message(config.Cmd), modules.ExactlyOnce, false)
+				b.Publish(config.Cmd.ToMsg(), modules.ExactlyOnce, false)
 				config.Unlock()
 			}
 		}

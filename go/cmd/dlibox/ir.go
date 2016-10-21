@@ -24,8 +24,8 @@ func (i *IR) ResetDefault() {
 	i.Lock()
 	defer i.Unlock()
 	i.Mapping = map[ir.Key]Command{
-		ir.KEY_NUMERIC_0: {"painter/setuser", []byte("\"#000000\"")},
-		ir.KEY_100PLUS:   {"painter/setuser", []byte("\"#ffffff\"")},
+		ir.KEY_NUMERIC_0: {"painter/setuser", "\"#000000\""},
+		ir.KEY_100PLUS:   {"painter/setuser", "\"#ffffff\""},
 	}
 }
 
@@ -58,7 +58,7 @@ func initIR(b modules.Bus, config *IR) error {
 					cmd := config.Mapping[msg.Key]
 					config.Unlock()
 					if len(cmd.Topic) != 0 {
-						b.Publish(modules.Message(cmd), modules.ExactlyOnce, false)
+						b.Publish(cmd.ToMsg(), modules.ExactlyOnce, false)
 					}
 				}
 			}

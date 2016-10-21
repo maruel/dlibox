@@ -10,7 +10,14 @@ import (
 	"github.com/maruel/dlibox/go/modules"
 )
 
-type Command modules.Message
+type Command struct {
+	Topic   string
+	Payload string
+}
+
+func (c *Command) ToMsg() modules.Message {
+	return modules.Message{c.Topic, []byte(c.Payload)}
+}
 
 func (c *Command) Validate() error {
 	switch c.Topic {

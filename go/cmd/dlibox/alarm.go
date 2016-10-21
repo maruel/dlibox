@@ -87,7 +87,7 @@ func (a *Alarm) Reset(b modules.Bus) error {
 	now := time.Now()
 	if next := a.Next(now); !next.IsZero() {
 		a.timer = time.AfterFunc(next.Sub(now), func() {
-			if err := b.Publish(modules.Message(a.Cmd), modules.ExactlyOnce, false); err != nil {
+			if err := b.Publish(a.Cmd.ToMsg(), modules.ExactlyOnce, false); err != nil {
 				log.Printf("failed to publish command %v", a.Cmd)
 			}
 			a.Reset(b)
@@ -143,21 +143,21 @@ func (a *Alarms) ResetDefault() {
 			Hour:    6,
 			Minute:  35,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Cmd:     Command{"painter/setautomated", []byte(morning)},
+			Cmd:     Command{"painter/setautomated", string(morning)},
 		},
 		{
 			Enabled: true,
 			Hour:    6,
 			Minute:  55,
 			Days:    Saturday | Sunday,
-			Cmd:     Command{"painter/setautomated", []byte("\"#000000\"")},
+			Cmd:     Command{"painter/setautomated", "\"#000000\""},
 		},
 		{
 			Enabled: true,
 			Hour:    19,
 			Minute:  00,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Cmd:     Command{"painter/setautomated", []byte("\"#010001\"")},
+			Cmd:     Command{"painter/setautomated", "\"#010001\""},
 		},
 	}
 }
