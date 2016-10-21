@@ -22,7 +22,6 @@ import (
 
 	"github.com/kardianos/osext"
 	"github.com/maruel/dlibox/go/donotuse/host"
-	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/interrupt"
 )
 
@@ -88,10 +87,13 @@ func mainImpl() error {
 
 	// Initialize modules.
 
-	bus := modules.Logging(&modules.LocalBus{})
-	local := modules.Rebase(bus, "dlibox/")
+	bus, err := initMQTT(&config.Settings.MQTT)
+	if err != nil {
+		// Non-fatal.
+		log.Printf("MQTT not connected: %v", err)
+	}
 
-	_, err = initDisplay(local, &config.Settings.Display)
+	_, err = initDisplay(bus, &config.Settings.Display)
 	if err != nil {
 		// Non-fatal.
 		log.Printf("Display not connected: %v", err)
@@ -104,33 +106,33 @@ func mainImpl() error {
 	defer end()
 	properties = append(properties, properties2...)
 
-	p, err := initPainter(local, leds, fps, &config.Settings.Painter, &config.LRU)
+	p, err := initPainter(bus, leds, fps, &config.Settings.Painter, &config.LRU)
 	if err != nil {
 		return err
 	}
 	defer p.Close()
 
-	_, err = initWeb(local, *port, &config.Config)
+	_, err = initWeb(bus, *port, &config.Config)
 	if err != nil {
 		return err
 	}
 
-	if err = initButton(local, nil, &config.Settings.Button); err != nil {
+	if err = initButton(bus, nil, &config.Settings.Button); err != nil {
 		// Non-fatal.
 		log.Printf("Button not connected: %v", err)
 	}
 
-	if err = initIR(local, &config.Settings.IR); err != nil {
+	if err = initIR(bus, &config.Settings.IR); err != nil {
 		// Non-fatal.
 		log.Printf("IR not connected: %v", err)
 	}
 
-	if err = initPIR(local, &config.Settings.PIR); err != nil {
+	if err = initPIR(bus, &config.Settings.PIR); err != nil {
 		// Non-fatal.
 		log.Printf("PIR not connected: %v", err)
 	}
 
-	if err = initAlarms(local, &config.Settings.Alarms); err != nil {
+	if err = initAlarms(bus, &config.Settings.Alarms); err != nil {
 		return err
 	}
 	//service, err := initmDNS(*port, properties)

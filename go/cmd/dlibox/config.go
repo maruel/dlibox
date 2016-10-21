@@ -43,6 +43,7 @@ type Settings struct {
 	Button  Button
 	Display Display
 	IR      IR
+	MQTT    MQTT
 	Painter Painter
 	PIR     PIR
 }
@@ -53,6 +54,7 @@ func (s *Settings) Lock() {
 	s.Button.Lock()
 	s.Display.Lock()
 	s.IR.Lock()
+	s.MQTT.Lock()
 	s.Painter.Lock()
 	s.PIR.Lock()
 }
@@ -60,6 +62,7 @@ func (s *Settings) Lock() {
 func (s *Settings) Unlock() {
 	s.PIR.Unlock()
 	s.Painter.Unlock()
+	s.MQTT.Unlock()
 	s.IR.Unlock()
 	s.Display.Unlock()
 	s.Button.Unlock()
@@ -73,6 +76,7 @@ func (s *Settings) ResetDefault() {
 	s.Button.ResetDefault()
 	s.Display.ResetDefault()
 	s.IR.ResetDefault()
+	s.MQTT.ResetDefault()
 	s.Painter.ResetDefault()
 	s.PIR.ResetDefault()
 }
@@ -91,6 +95,9 @@ func (s *Settings) Validate() error {
 		return err
 	}
 	if err := s.IR.Validate(); err != nil {
+		return err
+	}
+	if err := s.MQTT.Validate(); err != nil {
 		return err
 	}
 	if err := s.Painter.Validate(); err != nil {
