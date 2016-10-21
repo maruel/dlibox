@@ -92,6 +92,13 @@ var black = &Color{}
 func (p *Painter) runPattern(cGen <-chan Frame, cWrite chan<- Frame) {
 	defer func() {
 		// Tell runWrite() to quit.
+		for loop := true; loop; {
+			select {
+			case _, loop = <-cGen:
+			default:
+				loop = false
+			}
+		}
 		select {
 		case cWrite <- nil:
 		default:
@@ -140,6 +147,13 @@ func (p *Painter) runPattern(cGen <-chan Frame, cWrite chan<- Frame) {
 func (p *Painter) runWrite(cGen chan<- Frame, cWrite <-chan Frame, numLights int) {
 	defer func() {
 		// Tell runPattern() to quit.
+		for loop := true; loop; {
+			select {
+			case _, loop = <-cWrite:
+			default:
+				loop = false
+			}
+		}
 		select {
 		case cGen <- nil:
 		default:
