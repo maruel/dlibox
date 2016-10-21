@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// WeekdayBit is a bitmask of each day.
 type WeekdayBit int
 
 const (
@@ -24,6 +25,7 @@ const (
 	Thursday
 	Friday
 	Saturday
+	lastDay
 )
 
 const weekdayLetters = "SMTWTFS"
@@ -44,6 +46,7 @@ func (w WeekdayBit) String() string {
 	return string(out[:])
 }
 
+// Alarm represents a single alarm.
 type Alarm struct {
 	Enabled bool
 	Hour    int
@@ -85,12 +88,25 @@ func (a *Alarm) Reset(b modules.Bus) error {
 	if next := a.Next(now); !next.IsZero() {
 		a.timer = time.AfterFunc(next.Sub(now), func() {
 			if err := b.Publish(modules.Message(a.Cmd), modules.ExactlyOnce, false); err != nil {
-				log.Printf("failed to unmarshal pattern %q", a.Cmd)
+				log.Printf("failed to publish command %v", a.Cmd)
 			}
 			a.Reset(b)
 		})
 	}
 	return nil
+}
+
+func (a *Alarm) Validate() error {
+	if a.Days >= lastDay {
+		return errors.New("invalid days")
+	}
+	if a.Hour < 0 || a.Hour >= 24 {
+		return errors.New("invalid hour")
+	}
+	if a.Minute < 0 || a.Minute >= 60 {
+		return errors.New("invalid minute")
+	}
+	return a.Cmd.Validate()
 }
 
 func (a *Alarm) String() string {
@@ -150,8 +166,8 @@ func (a *Alarms) Validate() error {
 	a.Lock()
 	defer a.Unlock()
 	for i := range a.Alarms {
-		if err := a.Alarms[i].Cmd.Validate(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("can't load command for alarm %s", a))
+		if err := a.Alarms[i].Validate(); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("can't validate alarm %s", a))
 		}
 	}
 	return nil
