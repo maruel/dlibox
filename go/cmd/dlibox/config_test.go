@@ -13,7 +13,7 @@ import (
 func Test(t *testing.T) {
 	var config Config
 	config.ResetDefault()
-	ut.AssertEqual(t, nil, config.Validate())
+	ut.AssertEqual(t, nil, config.autoFix())
 }
 
 func TestInject(t *testing.T) {

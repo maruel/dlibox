@@ -70,7 +70,7 @@ func (s *Settings) Unlock() {
 	s.Alarms.Unlock()
 }
 
-func (s *Settings) ResetDefault() {
+func (s *Settings) resetDefault() {
 	s.Alarms.ResetDefault()
 	s.APA102.ResetDefault()
 	s.Button.ResetDefault()
@@ -81,32 +81,41 @@ func (s *Settings) ResetDefault() {
 	s.PIR.ResetDefault()
 }
 
-func (s *Settings) Validate() error {
-	if err := s.Alarms.Validate(); err != nil {
-		return err
+func (s *Settings) autoFix() error {
+	var err error
+	if err1 := s.Alarms.Validate(); err1 != nil {
+		s.Alarms.ResetDefault()
+		err = err1
 	}
-	if err := s.APA102.Validate(); err != nil {
-		return err
+	if err1 := s.APA102.Validate(); err1 != nil {
+		s.APA102.ResetDefault()
+		err = err1
 	}
-	if err := s.Button.Validate(); err != nil {
-		return err
+	if err1 := s.Button.Validate(); err1 != nil {
+		s.Button.ResetDefault()
+		err = err1
 	}
-	if err := s.Display.Validate(); err != nil {
-		return err
+	if err1 := s.Display.Validate(); err1 != nil {
+		s.Display.ResetDefault()
+		err = err1
 	}
-	if err := s.IR.Validate(); err != nil {
-		return err
+	if err1 := s.IR.Validate(); err1 != nil {
+		s.IR.ResetDefault()
+		err = err1
 	}
-	if err := s.MQTT.Validate(); err != nil {
-		return err
+	if err1 := s.MQTT.Validate(); err1 != nil {
+		s.MQTT.ResetDefault()
+		err = err1
 	}
-	if err := s.Painter.Validate(); err != nil {
-		return err
+	if err1 := s.Painter.Validate(); err1 != nil {
+		s.Painter.ResetDefault()
+		err = err1
 	}
-	if err := s.PIR.Validate(); err != nil {
-		return err
+	if err1 := s.PIR.Validate(); err1 != nil {
+		s.PIR.ResetDefault()
+		err = err1
 	}
-	return nil
+	return err
 }
 
 // Config contains all the configuration for this specific host.
@@ -128,15 +137,17 @@ func (c *Config) Unlock() {
 }
 
 func (c *Config) ResetDefault() {
-	c.Settings.ResetDefault()
+	c.Settings.resetDefault()
 	c.LRU.ResetDefault()
 }
 
-func (c *Config) Validate() error {
-	if err := c.Settings.Validate(); err != nil {
-		return err
+func (c *Config) autoFix() error {
+	err := c.Settings.autoFix()
+	if err1 := c.LRU.Validate(); err1 != nil {
+		err = err1
+		c.LRU.ResetDefault()
 	}
-	return c.LRU.Validate()
+	return err
 }
 
 func (c *Config) Load(n string) error {
@@ -157,15 +168,15 @@ func (c *Config) Load(n string) error {
 	if err != nil {
 		return err
 	}
-	return c.Validate()
+	return c.autoFix()
 }
 
 func (c *Config) Save(n string) error {
 	// There's a window between validating and marshalling where the lock is
 	// temporarilly released.
-	if err := c.Validate(); err != nil {
-		return err
-	}
+	// Do not save corrupted data, at worst fix the broken part so at least the
+	// good ones are still saved.
+	c.autoFix()
 	c.Lock()
 	b, err := json.MarshalIndent(c, "", "  ")
 	c.Unlock()
