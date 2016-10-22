@@ -150,7 +150,7 @@ func initPainter(b modules.Bus, leds devices.Display, fps int, config *Painter, 
 			return nil, err
 		}
 	}
-	c, err := b.Subscribe("painter/+", modules.ExactlyOnce)
+	c, err := b.Subscribe("painter/#", modules.ExactlyOnce)
 	if err != nil {
 		return nil, err
 	}
@@ -170,14 +170,17 @@ type painter struct {
 	lru    *LRU
 }
 
-// Temporary.
-func (p *painter) SetPattern(s string) error {
-	return p.p.SetPattern(s)
-}
-
 func (p *painter) Close() error {
-	p.b.Unsubscribe("painter")
-	return p.p.Close()
+	var err error
+	if err1 := p.b.Unsubscribe("painter/#"); err1 != nil {
+		log.Printf("painter: failed to unsubscribe: painter/#: %v", err1)
+		err = err1
+	}
+	if err1 := p.p.Close(); err1 != nil {
+		log.Printf("painter: failed to close painter: %v", err1)
+		err = err1
+	}
+	return err
 }
 
 func (p *painter) onMsg(msg modules.Message) {

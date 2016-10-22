@@ -60,7 +60,7 @@ func initDisplay(b modules.Bus, config *Display) (*display, error) {
 	if _, err = d.Write(img.Buf); err != nil {
 		return nil, err
 	}
-	c, err := b.Subscribe("display", modules.ExactlyOnce)
+	c, err := b.Subscribe("display/#", modules.ExactlyOnce)
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +82,11 @@ type display struct {
 }
 
 func (d *display) Close() error {
-	d.b.Unsubscribe("display/+")
-	return nil
+	err := d.b.Unsubscribe("display/#")
+	if err != nil {
+		log.Printf("failed to unsubscribe: display/#: %v", err)
+	}
+	return err
 }
 
 func (d *display) onMsg(msg modules.Message) {

@@ -6,6 +6,7 @@ package main
 
 import (
 	"errors"
+	"log"
 	"sort"
 	"sync"
 	"time"
@@ -73,7 +74,12 @@ func initButton(b modules.Bus, r map[string][]byte, config *Button) error {
 				last = state
 				if state == gpio.Low {
 					index = (index + 1) % len(names)
-					b.Publish(modules.Message{"painter/setuser", r[names[index]]}, modules.ExactlyOnce, false)
+					if err := b.Publish(modules.Message{"painter/setuser", r[names[index]]}, modules.ExactlyOnce, false); err != nil {
+						log.Printf("button: failed to publish: %v", err)
+					}
+				}
+				if err := b.Publish(modules.Message{"button", []byte(state.String())}, modules.ExactlyOnce, false); err != nil {
+					log.Printf("button: failed to publish: %v", err)
 				}
 			}
 			select {

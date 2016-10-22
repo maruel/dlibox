@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/maruel/dlibox/go/donotuse/conn/ir"
@@ -58,7 +59,12 @@ func initIR(b modules.Bus, config *IR) error {
 					cmd := config.Mapping[msg.Key]
 					config.Unlock()
 					if len(cmd.Topic) != 0 {
-						b.Publish(cmd.ToMsg(), modules.ExactlyOnce, false)
+						if err := b.Publish(cmd.ToMsg(), modules.ExactlyOnce, false); err != nil {
+							log.Printf("ir: failed to publish: %v", err)
+						}
+					}
+					if err = b.Publish(modules.Message{"ir", []byte(msg.Key)}, modules.ExactlyOnce, false); err != nil {
+						log.Printf("ir: failed to publish: %v", err)
 					}
 				}
 			}

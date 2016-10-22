@@ -5,6 +5,7 @@
 package main
 
 import (
+	"log"
 	"sync"
 
 	"github.com/maruel/dlibox/go/donotuse/conn/gpio"
@@ -51,8 +52,14 @@ func initPIR(b modules.Bus, config *PIR) error {
 			p.WaitForEdge(-1)
 			if p.Read() == gpio.High {
 				config.Lock()
-				b.Publish(config.Cmd.ToMsg(), modules.ExactlyOnce, false)
+				err := b.Publish(config.Cmd.ToMsg(), modules.ExactlyOnce, false)
 				config.Unlock()
+				if err != nil {
+					log.Printf("pir: failed to publish: %v", err)
+				}
+				if err = b.Publish(modules.Message{"pir", []byte("1")}, modules.ExactlyOnce, false); err != nil {
+					log.Printf("pir: failed to publish: %v", err)
+				}
 			}
 		}
 	}()

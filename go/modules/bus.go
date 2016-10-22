@@ -42,11 +42,17 @@ type Bus interface {
 	io.Closer
 
 	// Publish publishes a message to a topic.
+	//
+	// If msg.Payload is empty, the topic is deleted if it was retained.
 	Publish(msg Message, qos QOS, retained bool) error
 
 	// Subscribe sends back updates to this topic query.
+	//
+	// The format must be according to MQTT.
 	Subscribe(topic string, qos QOS) (<-chan Message, error)
 	// Unsubscribe removes a previous subscription.
+	//
+	// It is an error to unsubscribe from a non-subscribed topic.
 	Unsubscribe(topic string) error
 	// Get retrieves matching messages for a retained topic query.
 	Get(topic string, qos QOS) ([]Message, error)
@@ -58,6 +64,10 @@ func Logging(b Bus) Bus {
 }
 
 // Rebase rebases a Bus for all topics.
+//
+// User can then use:
+//  - "../" to backtrack closer to root
+//  - "//" to ignore the root
 func Rebase(b Bus, root string) Bus {
 	if len(root) != 0 && root[len(root)-1] != '/' {
 		root += "/"
@@ -165,6 +175,9 @@ func (r *rebaseSubscriber) Get(topic string, qos QOS) ([]Message, error) {
 }
 
 func mergeTopic(root, topic string) string {
+	if strings.HasPrefix(topic, "//") {
+		return topic[2:]
+	}
 	for strings.HasPrefix(topic, "../") {
 		if len(root) == 0 {
 			panic(topic)

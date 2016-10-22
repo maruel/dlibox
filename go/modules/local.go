@@ -16,14 +16,14 @@ import (
 type LocalBus struct {
 	mu               sync.Mutex
 	persistentTopics map[string][]byte
-	subscribers      []subscription
+	subscribers      []*subscription
 }
 
 func (l *LocalBus) Close() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	for i := range l.subscribers {
-		close(l.subscribers[i].channel)
+		l.subscribers[i].Close()
 	}
 	return nil
 }
@@ -41,23 +41,15 @@ func (l *LocalBus) Publish(msg Message, qos QOS, retained bool) error {
 	if len(msg.Payload) == 0 {
 		// delete
 		delete(l.persistentTopics, msg.Topic)
-	} else {
-		// Save it first.
-		if retained {
-			l.persistentTopics[msg.Topic] = msg.Payload
-		}
-		var chans []chan<- Message
-		for i := range l.subscribers {
-			if l.subscribers[i].topic.match(msg.Topic) {
-				chans = append(chans, l.subscribers[i].channel)
-			}
-		}
-		if len(chans) != 0 {
-			go func() {
-				for _, c := range chans {
-					c <- msg
-				}
-			}()
+		return nil
+	}
+	// Save it first.
+	if retained {
+		l.persistentTopics[msg.Topic] = msg.Payload
+	}
+	for i := range l.subscribers {
+		if l.subscribers[i].topic.match(msg.Topic) {
+			l.subscribers[i].publish(msg)
 		}
 	}
 	return nil
@@ -71,18 +63,20 @@ func (l *LocalBus) Subscribe(topic string, qos QOS) (<-chan Message, error) {
 	c := make(chan Message)
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.subscribers = append(l.subscribers, subscription{p, c})
+	l.subscribers = append(l.subscribers, &subscription{topic: p, channel: c})
 	return c, nil
 }
 
 func (l *LocalBus) Unsubscribe(topic string) error {
 	p := parseTopic(topic)
+	if p == nil {
+		return errors.New("invalid topic")
+	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	for i := range l.subscribers {
 		if l.subscribers[i].topic.isEqual(p) {
-			// Found!
-			close(l.subscribers[i].channel)
+			l.subscribers[i].Close()
 			copy(l.subscribers[i:], l.subscribers[i+1:])
 			l.subscribers = l.subscribers[:len(l.subscribers)-1]
 			return nil
@@ -110,8 +104,39 @@ func (l *LocalBus) Get(topic string, qos QOS) ([]Message, error) {
 //
 
 type subscription struct {
-	topic   parsedTopic
-	channel chan<- Message
+	topic parsedTopic
+	wg    sync.WaitGroup
+
+	mu      sync.Mutex
+	channel chan Message
+}
+
+func (s *subscription) publish(msg Message) {
+	s.mu.Lock()
+	s.mu.Unlock()
+	if s.channel == nil {
+		return
+	}
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.channel <- msg
+	}()
+}
+
+func (s *subscription) Close() {
+	s.mu.Lock()
+	s.mu.Unlock()
+	for ok := true; ok; {
+		select {
+		case _, ok = <-s.channel:
+		default:
+			ok = false
+		}
+	}
+	s.wg.Wait()
+	close(s.channel)
+	s.channel = nil
 }
 
 // parsedTopic is either a query or a static topic.

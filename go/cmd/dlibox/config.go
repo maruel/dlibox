@@ -38,14 +38,15 @@ const morning Pattern = "{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\
 
 // Settings is all the host settings.
 type Settings struct {
-	Alarms  Alarms
-	APA102  APA102
-	Button  Button
-	Display Display
-	IR      IR
-	MQTT    MQTT
-	Painter Painter
-	PIR     PIR
+	Alarms    Alarms
+	APA102    APA102
+	Button    Button
+	Display   Display
+	Halloween Halloween
+	IR        IR
+	MQTT      MQTT
+	Painter   Painter
+	PIR       PIR
 }
 
 func (s *Settings) Lock() {
@@ -53,6 +54,7 @@ func (s *Settings) Lock() {
 	s.APA102.Lock()
 	s.Button.Lock()
 	s.Display.Lock()
+	s.Halloween.Lock()
 	s.IR.Lock()
 	s.MQTT.Lock()
 	s.Painter.Lock()
@@ -64,6 +66,7 @@ func (s *Settings) Unlock() {
 	s.Painter.Unlock()
 	s.MQTT.Unlock()
 	s.IR.Unlock()
+	s.Halloween.Unlock()
 	s.Display.Unlock()
 	s.Button.Unlock()
 	s.APA102.Unlock()
@@ -75,6 +78,7 @@ func (s *Settings) resetDefault() {
 	s.APA102.ResetDefault()
 	s.Button.ResetDefault()
 	s.Display.ResetDefault()
+	s.Halloween.ResetDefault()
 	s.IR.ResetDefault()
 	s.MQTT.ResetDefault()
 	s.Painter.ResetDefault()
@@ -97,6 +101,10 @@ func (s *Settings) autoFix() error {
 	}
 	if err1 := s.Display.Validate(); err1 != nil {
 		s.Display.ResetDefault()
+		err = err1
+	}
+	if err1 := s.Halloween.Validate(); err1 != nil {
+		s.Halloween.ResetDefault()
 		err = err1
 	}
 	if err1 := s.IR.Validate(); err1 != nil {

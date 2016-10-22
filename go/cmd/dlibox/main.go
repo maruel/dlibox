@@ -93,6 +93,7 @@ func mainImpl() error {
 		log.Printf("MQTT not connected: %v", err)
 		log.Printf("Config:\n%s", string(b))
 	}
+	bus = modules.Logging(bus)
 	// Publish the config as a retained message.
 	if err := bus.Publish(modules.Message{"config", b}, modules.MinOnce, true); err != nil {
 		log.Printf("Publishing failued: %v", err)
@@ -117,10 +118,11 @@ func mainImpl() error {
 	}
 	defer p.Close()
 
-	_, err = initWeb(bus, *port, &config.Config)
+	h, err := initHalloween(bus, &config.Settings.Halloween)
 	if err != nil {
 		return err
 	}
+	defer h.Close()
 
 	if err = initButton(bus, nil, &config.Settings.Button); err != nil {
 		// Non-fatal.
@@ -140,6 +142,12 @@ func mainImpl() error {
 	if err = initAlarms(bus, &config.Settings.Alarms); err != nil {
 		return err
 	}
+
+	w, err := initWeb(bus, *port, &config.Config)
+	if err != nil {
+		return err
+	}
+	defer w.Close()
 	//service, err := initmDNS(*port, properties)
 	//if err != nil {
 	//	return err
