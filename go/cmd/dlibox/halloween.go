@@ -85,13 +85,13 @@ func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
 }
 
 // State is the state machine for the incoming children.
-type State int
+type State string
 
 const (
-	Idle State = iota
-	Incoming
-	Balcon
-	Back
+	Idle     State = "idle"
+	Incoming State = "incoming"
+	Balcon   State = "balcon"
+	Back     State = "back"
 )
 
 type halloween struct {
