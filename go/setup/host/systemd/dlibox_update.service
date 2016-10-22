@@ -23,4 +23,4 @@ After=network-online.target
 Type=oneshot
 User=pi
 Group=pi
-ExecStart=/bin/sh -c "go get -v -u github.com/maruel/dlibox/go/cmd/..."
+ExecStart=/bin/bash -i -c "go get -v -u github.com/maruel/dlibox/go/cmd/..."
