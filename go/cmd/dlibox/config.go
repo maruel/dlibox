@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/maruel/anim1d"
+	"github.com/maruel/dlibox/go/modules/alarm"
 	"github.com/pkg/errors"
 )
 
@@ -38,7 +39,7 @@ const morning Pattern = "{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\
 
 // Settings is all the host settings.
 type Settings struct {
-	Alarms    Alarms
+	Alarms    alarm.Settings
 	APA102    APA102
 	Button    Button
 	Display   Display

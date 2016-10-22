@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/msgbus"
 )
 
@@ -18,7 +19,7 @@ type Halloween struct {
 	sync.Mutex
 	Enabled   bool
 	Modes     map[string]State
-	Cmds      map[State][]Command
+	Cmds      map[State][]modules.Command
 	IdleAfter int // seconds
 }
 

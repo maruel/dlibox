@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/conn/gpio"
@@ -20,14 +21,14 @@ import (
 type PIR struct {
 	sync.Mutex
 	PinNumber int
-	Cmd       Command
+	Cmd       modules.Command
 }
 
 func (p *PIR) ResetDefault() {
 	p.Lock()
 	defer p.Unlock()
 	p.PinNumber = -1
-	p.Cmd = Command{"painter/setnow", "\"#ffffff\""}
+	p.Cmd = modules.Command{"painter/setnow", "\"#ffffff\""}
 }
 
 func (p *PIR) Validate() error {

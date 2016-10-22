@@ -7,6 +7,7 @@ package main
 import (
 	"testing"
 
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/maruel/ut"
 )
@@ -17,7 +18,7 @@ func TestHalloween(t *testing.T) {
 	config.ResetDefault()
 	config.Enabled = true
 	config.Modes = map[string]State{"foo/1": Incoming}
-	config.Cmds = map[State][]Command{Incoming: {{"bar", "1"}}}
+	config.Cmds = map[State][]modules.Command{Incoming: {{"bar", "1"}}}
 	h, err := initHalloween(msgbus.RebaseSub(msgbus.RebasePub(b, "foo"), "foo"), &config)
 	ut.AssertEqual(t, nil, err)
 	ut.AssertEqual(t, nil, b.Publish(msgbus.Message{"foo/1", []byte("1")}, msgbus.BestEffort, false))

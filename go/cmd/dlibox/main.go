@@ -22,6 +22,7 @@ import (
 	"syscall"
 
 	"github.com/maruel/circular"
+	"github.com/maruel/dlibox/go/modules/alarm"
 	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/maruel/interrupt"
 	"periph.io/x/periph/host"
@@ -156,7 +157,7 @@ func mainImpl() error {
 		log.Printf("PIR not connected: %v", err)
 	}
 
-	if err = initAlarms(bus, &config.Settings.Alarms); err != nil {
+	if err = alarm.Init(bus, &config.Settings.Alarms); err != nil {
 		return err
 	}
 

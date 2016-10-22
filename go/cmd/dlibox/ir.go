@@ -9,6 +9,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/conn/ir"
@@ -18,13 +19,13 @@ import (
 // IR contains InfraRed remote information.
 type IR struct {
 	sync.Mutex
-	Mapping map[ir.Key]Command
+	Mapping map[ir.Key]modules.Command
 }
 
 func (i *IR) ResetDefault() {
 	i.Lock()
 	defer i.Unlock()
-	i.Mapping = map[ir.Key]Command{
+	i.Mapping = map[ir.Key]modules.Command{
 		ir.KEY_CHANNELDOWN: {"leds/temperature", "-500"},
 		ir.KEY_CHANNEL:     {"leds/temperature", "5000"},
 		ir.KEY_CHANNELUP:   {"leds/temperature", "+500"},

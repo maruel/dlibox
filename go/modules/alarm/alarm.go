@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package main
+package alarm
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/pkg/errors"
 )
@@ -52,7 +53,7 @@ type Alarm struct {
 	Hour    int
 	Minute  int
 	Days    WeekdayBit
-	Cmd     Command
+	Cmd     modules.Command
 	timer   *time.Timer
 }
 
@@ -117,12 +118,13 @@ func (a *Alarm) String() string {
 	return out
 }
 
-type Alarms struct {
+// Settings is what should be serialized.
+type Settings struct {
 	sync.Mutex
 	Alarms []Alarm
 }
 
-func initAlarms(b msgbus.Bus, config *Alarms) error {
+func Init(b msgbus.Bus, config *Settings) error {
 	config.Lock()
 	defer config.Unlock()
 	var err error
@@ -134,40 +136,40 @@ func initAlarms(b msgbus.Bus, config *Alarms) error {
 	return err
 }
 
-func (a *Alarms) ResetDefault() {
-	a.Lock()
-	defer a.Unlock()
-	a.Alarms = []Alarm{
+func (s *Settings) ResetDefault() {
+	s.Lock()
+	defer s.Unlock()
+	s.Alarms = []Alarm{
 		{
 			Enabled: true,
 			Hour:    6,
 			Minute:  35,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Cmd:     Command{"painter/setautomated", string(morning)},
+			Cmd:     modules.Command{"painter/setautomated", "#010203"},
 		},
 		{
 			Enabled: true,
 			Hour:    6,
 			Minute:  55,
 			Days:    Saturday | Sunday,
-			Cmd:     Command{"painter/setautomated", "\"#000000\""},
+			Cmd:     modules.Command{"painter/setautomated", "\"#000000\""},
 		},
 		{
 			Enabled: true,
 			Hour:    19,
 			Minute:  00,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Cmd:     Command{"painter/setautomated", "\"#010001\""},
+			Cmd:     modules.Command{"painter/setautomated", "\"#010001\""},
 		},
 	}
 }
 
-func (a *Alarms) Validate() error {
-	a.Lock()
-	defer a.Unlock()
-	for i := range a.Alarms {
-		if err := a.Alarms[i].Validate(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("can't validate alarm %s", a))
+func (s *Settings) Validate() error {
+	s.Lock()
+	defer s.Unlock()
+	for i := range s.Alarms {
+		if err := s.Alarms[i].Validate(); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("can't validate alarm %s", s.Alarms[i]))
 		}
 	}
 	return nil
