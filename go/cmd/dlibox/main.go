@@ -105,15 +105,16 @@ func mainImpl() error {
 
 	leds, err := initLEDs(bus, *fake, &config.Settings.APA102)
 	if err != nil {
-		return err
+		// Non-fatal.
+		log.Printf("LEDs: %v", err)
+	} else if leds != nil {
+		defer leds.Close()
+		p, err := initPainter(bus, leds, leds.fps, &config.Settings.Painter, &config.LRU)
+		if err != nil {
+			return err
+		}
+		defer p.Close()
 	}
-	defer leds.Close()
-
-	p, err := initPainter(bus, leds, leds.fps, &config.Settings.Painter, &config.LRU)
-	if err != nil {
-		return err
-	}
-	defer p.Close()
 
 	h, err := initHalloween(bus, &config.Settings.Halloween)
 	if err != nil {
