@@ -117,9 +117,11 @@ func mainImpl() error {
 
 	h, err := initHalloween(bus, &config.Settings.Halloween)
 	if err != nil {
-		return err
+		// Non-fatal.
+		log.Printf("Halloween: %v", err)
+	} else if h != nil {
+		defer h.Close()
 	}
-	defer h.Close()
 
 	if err = initButton(bus, nil, &config.Settings.Button); err != nil {
 		// Non-fatal.

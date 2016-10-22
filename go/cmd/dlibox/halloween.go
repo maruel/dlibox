@@ -17,6 +17,8 @@ import (
 type Halloween struct {
 	sync.Mutex
 	Enabled bool
+	Modes   map[string]State
+	Cmds    map[State]Command
 }
 
 func (h *Halloween) ResetDefault() {
@@ -62,7 +64,7 @@ func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
 		return nil, errors.New("not the controller")
 	}
 
-	h := &halloween{config: config}
+	h := &halloween{config: config, timer: time.NewTimer(0)}
 	c1, err := b.Subscribe("//dlibox/+/pir", modules.ExactlyOnce)
 	if err != nil {
 		return nil, err
@@ -82,20 +84,20 @@ func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
 	return h, nil
 }
 
-// state is the state machine for the incoming children.
-type state int
+// State is the state machine for the incoming children.
+type State int
 
 const (
-	idle state = iota
-	incoming
-	balcon
-	back
+	Idle State = iota
+	Incoming
+	Balcon
+	Back
 )
 
 type halloween struct {
 	b      modules.Bus
 	config *Halloween
-	state  state
+	state  State
 	timer  *time.Timer
 }
 
@@ -113,7 +115,17 @@ func (h *halloween) Close() error {
 }
 
 func (h *halloween) onMsg(m modules.Message) {
-	switch m.Topic {
+	h.config.Lock()
+	defer h.config.Unlock()
+	if s, ok := h.config.Modes[m.Topic]; ok {
+		if h.state == s {
+			// Reset the timer.
+			//h.timer.Reset(d)
+		}
+		h.state = s
+		return
+	}
+	switch {
 	default:
 	}
 }

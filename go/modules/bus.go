@@ -139,6 +139,9 @@ type rebaseSubscriber struct {
 }
 
 func (r *rebaseSubscriber) Subscribe(topic string, qos QOS) (<-chan Message, error) {
+	if strings.HasPrefix(topic, "//") {
+		return r.Bus.Subscribe(topic[2:], qos)
+	}
 	// TODO(maruel): Support mergeTopic().
 	c, err := r.Bus.Subscribe(r.root+topic, qos)
 	if err != nil {
@@ -157,6 +160,9 @@ func (r *rebaseSubscriber) Subscribe(topic string, qos QOS) (<-chan Message, err
 }
 
 func (r *rebaseSubscriber) Unsubscribe(topic string) error {
+	if strings.HasPrefix(topic, "//") {
+		return r.Bus.Unsubscribe(topic[2:])
+	}
 	// TODO(maruel): Support mergeTopic().
 	return r.Bus.Unsubscribe(r.root + topic)
 }
