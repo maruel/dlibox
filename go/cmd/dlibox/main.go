@@ -54,7 +54,6 @@ func mainImpl() error {
 	}()
 	signal.Notify(chanSignal, syscall.SIGTERM)
 
-	var properties []string
 	if *cpuprofile != "" {
 		// Run with cpuprofile, then use 'go tool pprof' to analyze it. See
 		// http://blog.golang.org/profiling-go-programs for more details.
@@ -64,7 +63,6 @@ func mainImpl() error {
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
-		properties = append(properties, "profiled=1")
 	}
 
 	// Initialize pio.
@@ -105,14 +103,13 @@ func mainImpl() error {
 		log.Printf("Display not connected: %v", err)
 	}
 
-	leds, end, properties2, fps, err := initLEDs(*fake, &config.Settings.APA102)
+	leds, err := initLEDs(bus, *fake, &config.Settings.APA102)
 	if err != nil {
 		return err
 	}
-	defer end()
-	properties = append(properties, properties2...)
+	defer leds.Close()
 
-	p, err := initPainter(bus, leds, fps, &config.Settings.Painter, &config.LRU)
+	p, err := initPainter(bus, leds, leds.fps, &config.Settings.Painter, &config.LRU)
 	if err != nil {
 		return err
 	}

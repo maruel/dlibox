@@ -10,15 +10,18 @@
 package main
 
 import (
-	"fmt"
+	"io"
+	"log"
 	"os"
 	"runtime"
+	"strconv"
 	"sync"
 
 	"github.com/maruel/dlibox/go/donotuse/conn/spi"
 	"github.com/maruel/dlibox/go/donotuse/devices"
 	"github.com/maruel/dlibox/go/donotuse/devices/apa102"
 	"github.com/maruel/dlibox/go/donotuse/host"
+	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/screen"
 )
 
@@ -49,33 +52,128 @@ func (a *APA102) Validate() error {
 }
 
 // initLEDs initializes the LED strip.
-func initLEDs(fake bool, config *APA102) (devices.Display, func(), []string, int, error) {
+func initLEDs(b modules.Bus, fake bool, config *APA102) (*leds, error) {
+	var l *leds
+	var fakeBytes []byte
+	num := config.NumberLights
 	if fake {
 		// Output (terminal with ANSI codes or APA102).
 		// Hardcode to 100 characters when using a terminal output.
 		// TODO(maruel): Query the terminal and use its width.
-		leds := screen.New(100)
-		end := func() { os.Stdout.Write([]byte("\033[0m\n")) }
-		// Use lower refresh rate too.
-		return leds, end, []string{"fake=1"}, 30, nil
+		num = 100
+		fakeBytes = []byte("1")
+		l = &leds{Display: screen.New(num), b: b, fps: 30}
+	} else {
+		fps := 60
+		if host.MaxSpeed() < 900000 || runtime.NumCPU() < 4 {
+			// Use 30Hz on slower devices because it is too slow.
+			fps = 30
+		}
+		s, err := spi.New(config.BusNumber, 0)
+		if err != nil {
+			return nil, err
+		}
+		if err = s.Speed(config.SPIspeed); err != nil {
+			return nil, err
+		}
+		a, err := apa102.New(s, config.NumberLights, 255, 6500)
+		if err != nil {
+			return nil, err
+		}
+		l = &leds{Display: a, b: b, s: s, fps: fps}
 	}
+	c, err := b.Subscribe("leds/#", modules.ExactlyOnce)
+	if err != nil {
+		l.Close()
+		return nil, err
+	}
+	if err := b.Publish(modules.Message{"leds/fake", fakeBytes}, modules.MinOnce, true); err != nil {
+		log.Printf("leds: publish failed: %v", err)
+	}
+	if err := b.Publish(modules.Message{"leds/fps", []byte(strconv.Itoa(l.fps))}, modules.MinOnce, true); err != nil {
+		log.Printf("leds: publish failed: %v", err)
+	}
+	if err := b.Publish(modules.Message{"leds/num", []byte(strconv.Itoa(num))}, modules.MinOnce, true); err != nil {
+		log.Printf("leds: publish failed: %v", err)
+	}
+	if err := b.Publish(modules.Message{"leds/temperature", []byte("255")}, modules.MinOnce, true); err != nil {
+		log.Printf("leds: publish failed: %v", err)
+	}
+	if err := b.Publish(modules.Message{"leds/intensity", []byte("6500")}, modules.MinOnce, true); err != nil {
+		log.Printf("leds: publish failed: %v", err)
+	}
+	go func() {
+		for msg := range c {
+			l.onMsg(msg)
+		}
+	}()
+	return l, nil
+}
 
-	fps := 60
-	if host.MaxSpeed() < 900000 || runtime.NumCPU() < 4 {
-		// Use 30Hz on slower devices because it is too slow.
-		fps = 30
-	}
-	spiBus, err := spi.New(config.BusNumber, 0)
+type leds struct {
+	devices.Display
+	s   io.Closer
+	fps int
+	b   modules.Bus
+}
+
+func (l *leds) Close() error {
+	err := l.b.Unsubscribe("leds/#")
 	if err != nil {
-		return nil, nil, nil, 0, err
+		log.Printf("leds: failed to unsubscribe: leds/#: %v", err)
 	}
-	if err = spiBus.Speed(config.SPIspeed); err != nil {
-		return nil, nil, nil, 0, err
+	if l.s != nil {
+		if err1 := l.s.Close(); err1 != nil {
+			err = err1
+		}
+	} else {
+		if _, err1 := os.Stdout.Write([]byte("\033[0m\n")); err1 != nil {
+			err = err1
+		}
 	}
-	end := func() { spiBus.Close() }
-	leds, err := apa102.New(spiBus, config.NumberLights, 255, 6500)
-	if err != nil {
-		return nil, end, nil, 0, err
+	return err
+}
+
+func (l *leds) onMsg(msg modules.Message) {
+	switch msg.Topic {
+	case "leds/fake":
+	case "leds/fps":
+	case "leds/intensity":
+		v, err := strconv.Atoi(string(msg.Payload))
+		if err != nil {
+			log.Printf("leds: %s: %v", msg, err)
+			return
+		}
+		a, ok := l.Display.(*apa102.Dev)
+		if !ok {
+			log.Printf("leds: can't set intensity with fake LED")
+			return
+		}
+		if v < 0 {
+			v = 0
+		} else if v > 255 {
+			v = 255
+		}
+		a.Intensity = uint8(v)
+	case "leds/num":
+	case "leds/temperature":
+		v, err := strconv.Atoi(string(msg.Payload))
+		if err != nil {
+			log.Printf("leds: %s: %v", msg, err)
+			return
+		}
+		a, ok := l.Display.(*apa102.Dev)
+		if !ok {
+			log.Printf("leds: can't set temperature with fake LED")
+			return
+		}
+		if v < 1000 {
+			v = 1000
+		} else if v > 35000 {
+			v = 35000
+		}
+		a.Temperature = uint16(v)
+	default:
+		log.Printf("leds: unknown msg: %# v", msg)
 	}
-	return leds, end, []string{fmt.Sprintf("APA102=%d", config.NumberLights)}, fps, nil
 }
