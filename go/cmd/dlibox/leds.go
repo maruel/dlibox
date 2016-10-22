@@ -96,10 +96,10 @@ func initLEDs(b modules.Bus, fake bool, config *APA102) (*leds, error) {
 	if err := b.Publish(modules.Message{"leds/num", []byte(strconv.Itoa(num))}, modules.MinOnce, true); err != nil {
 		log.Printf("leds: publish failed: %v", err)
 	}
-	if err := b.Publish(modules.Message{"leds/temperature", []byte("255")}, modules.MinOnce, true); err != nil {
+	if err := b.Publish(modules.Message{"leds/intensity", []byte("255")}, modules.MinOnce, true); err != nil {
 		log.Printf("leds: publish failed: %v", err)
 	}
-	if err := b.Publish(modules.Message{"leds/intensity", []byte("6500")}, modules.MinOnce, true); err != nil {
+	if err := b.Publish(modules.Message{"leds/temperature", []byte("6500")}, modules.MinOnce, true); err != nil {
 		log.Printf("leds: publish failed: %v", err)
 	}
 	go func() {
