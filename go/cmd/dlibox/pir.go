@@ -7,7 +7,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/maruel/dlibox/go/donotuse/conn/gpio"
 	"github.com/maruel/dlibox/go/modules"
@@ -52,13 +54,18 @@ func initPIR(b modules.Bus, config *PIR) error {
 		for {
 			p.WaitForEdge(-1)
 			if p.Read() == gpio.High {
-				config.Lock()
-				err := b.Publish(config.Cmd.ToMsg(), modules.ExactlyOnce, false)
-				config.Unlock()
+				// TODO(maruel): sub-second resolution?
+				now := []byte(strconv.FormatInt(time.Now().Unix(), 10))
+				err := b.Publish(modules.Message{"pir", now}, modules.MinOnce, false)
 				if err != nil {
 					log.Printf("pir: failed to publish: %v", err)
 				}
-				if err = b.Publish(modules.Message{"pir", []byte("1")}, modules.ExactlyOnce, false); err != nil {
+				config.Lock()
+				if config.Cmd.Topic != "" {
+					err = b.Publish(config.Cmd.ToMsg(), modules.ExactlyOnce, false)
+				}
+				config.Unlock()
+				if err != nil {
 					log.Printf("pir: failed to publish: %v", err)
 				}
 			}

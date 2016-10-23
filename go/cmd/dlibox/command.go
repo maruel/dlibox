@@ -5,6 +5,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/maruel/dlibox/go/modules"
@@ -24,6 +25,9 @@ func (c *Command) Validate() error {
 	case "painter/setautomated", "painter/setnow", "painter/setuser":
 		return Pattern(c.Payload).Validate()
 	case "":
+		if len(c.Payload) != 0 {
+			return errors.New("empty topic requires empty payload")
+		}
 		return nil
 	default:
 		return fmt.Errorf("unsupported command %v", c.Topic)
