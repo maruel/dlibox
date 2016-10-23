@@ -18,7 +18,7 @@ type Halloween struct {
 	sync.Mutex
 	Enabled bool
 	Modes   map[string]State
-	Cmds    map[State]Command
+	Cmds    map[State][]Command
 }
 
 func (h *Halloween) ResetDefault() {
@@ -121,8 +121,14 @@ func (h *halloween) onMsg(m modules.Message) {
 		if h.state == s {
 			// Reset the timer.
 			//h.timer.Reset(d)
+			return
 		}
 		h.state = s
+		for _, cmd := range h.config.Cmds[s] {
+			if err := h.b.Publish(cmd.ToMsg(), modules.ExactlyOnce, false); err != nil {
+				log.Printf("halloween: %s: %v", s, cmd)
+			}
+		}
 		return
 	}
 	switch {
