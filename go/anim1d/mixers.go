@@ -317,15 +317,28 @@ func (a *Add) NextFrame(pixels Frame, timeMS uint32) {
 
 // Scale adapts a larger or smaller patterns to the Strip size
 //
-// This is useful to create smoother animations or scale down images.
+// This is useful to create smoother horizontal movement animation or to scale
+// up/down images.
 type Scale struct {
-	Child         SPattern
-	Interpolation Interpolation // Defaults to Linear
-	RatioMilli    SValue        // A buffer of this len(buffer)*RatioMilli/1000 will be provided to Child and will be scaled; 500 means smaller, 2000 is larger.
-	buf           Frame
+	Child SPattern
+	// Defaults to Linear
+	Interpolation Interpolation
+	// A buffer of this len(buffer)*RatioMilli/1000 will be provided to Child and
+	// will be scaled; 500 means smaller, 2000 is larger.
+	//
+	// Can be set to 0 when Child is a Frame. In this case it is stretched to the
+	// strip size.
+	RatioMilli SValue
+	buf        Frame
 }
 
 func (s *Scale) NextFrame(pixels Frame, timeMS uint32) {
+	if f, ok := s.Child.Pattern.(Frame); ok {
+		if s.RatioMilli.Eval(timeMS) == 0 {
+			s.Interpolation.Scale(f, pixels)
+			return
+		}
+	}
 	v := MinMax32(s.RatioMilli.Eval(timeMS), 1, 1000000)
 	s.buf.reset((int(v)*len(pixels) + 500) / 1000)
 	s.Child.NextFrame(s.buf, timeMS)
