@@ -83,6 +83,89 @@ func (e *NightStars) NextFrame(pixels Frame, timeMS uint32) {
 	}
 }
 
+type Lightning struct {
+	Center    int    // offset of the center, from the left
+	HalfWidth int    // in pixels
+	Intensity int    // the maximum intensity
+	StartMS   uint32 // when it started
+}
+
+var lightningCycle = []struct {
+	offsetMS  uint32
+	intensity uint8
+}{
+	{0, 0},
+	{150, 255},
+	{300, 0},
+	{450, 255},
+	{600, 0},
+	{750, 255},
+	{900, 0},
+	{1050, 76},
+	{1200, 51},
+	{1350, 26},
+	{1500, 0},
+}
+
+func (l *Lightning) NextFrame(pixels Frame, timeMS uint32) {
+	offset := timeMS - l.StartMS
+	intensity := uint8(0)
+	for i := 0; i < len(lightningCycle); i++ {
+		if lightningCycle[i].offsetMS > offset {
+			intensity = lightningCycle[i-1].intensity
+			break
+		}
+	}
+	if intensity == 0 {
+		return
+	}
+	left := l.Center - l.HalfWidth
+	right := l.Center + l.HalfWidth
+	width := left - right
+	min := MinMax(left, 0, len(pixels)-1)
+	max := MinMax(right, 0, len(pixels)-1)
+	b := Bell{}
+	for i := min; i < max; i++ {
+		x := (i - left) * 65535 / width
+		pixels[i] = Color{intensity, intensity, intensity}
+		pixels[i].Dim(uint8(b.Eval(uint16(x)) >> 8))
+	}
+}
+
+// Thunderstorm creates strobe-like lightning.
+type Thunderstorm struct {
+	AvgMS   int // Average between lightning strikes
+	current []Lightning
+	nextMS  uint32
+}
+
+func (t *Thunderstorm) NextFrame(pixels Frame, timeMS uint32) {
+	/*
+		//freq := 3
+		if t.current == nil {
+			if timeMS != 0 {
+				// TODO(maruel): Backfill for determinism. Will skip for now.
+			}
+			t.current = []Lightning{}
+			r := rand.NewSource(0)
+			t.nextMS = uint32((&Bell{}).Eval(uint16(r.Int63())))
+		}
+		for timeMS > t.nextMS {
+			t.current = append(t.current, Lightning{})
+			r := rand.NewSource(0)
+			t.nextMS = uint32((&Bell{}).Eval(uint16(r.Int63()))) + t.nextMS
+		}
+		// Calculate all triggers up to now.
+		// Calculate location up to now.
+		// Create one random
+		r := rand.NewSource(int64((&Rand{}).Eval(timeMS)))
+		// TODO(maruel): Slight coloring?
+		for i := range pixels {
+			pixels[i] = Color{}
+		}
+	*/
+}
+
 // WishingStar draws a wishing star from time to time.
 //
 // It will only draw one star at a time. To increase the likelihood of getting

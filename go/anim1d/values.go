@@ -60,6 +60,29 @@ func (r *Rand) Eval(timeMS uint32) int32 {
 	return int32(rand.NewSource(int64(timeMS / m)).Int63())
 }
 
+// Bell is a "good enough" approximation of a gaussian curve by using 2
+// symmetrical ease-in-out bezier curves.
+//
+// It is not named Gaussian since it is not a gaussian curve; it really is a
+// bell.
+type Bell struct{}
+
+func (b *Bell) Eval(v uint16) uint16 {
+	switch {
+	case v == 0:
+		return 0
+	case v == 65535:
+		return 0
+	case v == 32767:
+		return 65535
+
+	case v < 32767:
+		return EaseInOut.Scale(v * 2)
+	default:
+		return EaseInOut.Scale(65535 - v*2)
+	}
+}
+
 /*
 
 // Equation evaluate an equation at every call.

@@ -30,6 +30,7 @@ var knownPatterns = []Pattern{
 	&Repeated{},
 	&Aurore{},
 	&NightStars{},
+	&Lightning{},
 	&WishingStar{},
 	// Mixers
 	&Gradient{},
