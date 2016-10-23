@@ -28,7 +28,6 @@ var knownPatterns = []Pattern{
 	&Frame{},
 	&Rainbow{},
 	&Repeated{},
-	&NightSky{},
 	&Aurore{},
 	&NightStars{},
 	&WishingStar{},

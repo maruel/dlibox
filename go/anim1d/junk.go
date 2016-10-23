@@ -11,28 +11,13 @@ import (
 	"time"
 )
 
-type point struct {
-	star  int
-	start time.Time
-}
-
-// NightSky has:
+// TODO(maruel): Create NightSky with:
 //    - Stars
 //    - WishingStar
 //    - Aurores
 //    - Super nova.
 //    - Rotation de la terre?
 //    - Station Internationale?
-type NightSky struct {
-	Stars     []Cycle
-	Frequency float32 // Number of explosions by second.
-	points    []point
-}
-
-func (c *NightSky) NextFrame(pixels Frame, timeMS uint32) {
-	// random
-	// animate.
-}
 
 // Aurore commence lentement, se transforme lentement et éventuellement
 // disparait.
@@ -53,58 +38,55 @@ func (a *Aurore) NextFrame(pixels Frame, timeMS uint32) {
 	}
 }
 
-type NightStar struct {
-	Intensity uint8
-	Type      int
+type star struct {
+	intensity uint8
+	// TODO(maruel): Use maruel/temperature.
 }
 
 type NightStars struct {
-	Stars []NightStar
-	Seed  int // Change it to create a different pseudo-random animation.
-	r     *rand.Rand
+	stars []star
 }
 
 func (e *NightStars) NextFrame(pixels Frame, timeMS uint32) {
-	if e.r == nil {
-		e.r = rand.New(rand.NewSource(int64(e.Seed)))
-	}
-	if len(e.Stars) != len(pixels) {
-		e.Stars = make([]NightStar, len(pixels))
-		for i := 0; i < len(pixels); {
-			// Add a star. Decide it's relative position, intensity and type.
-			// ExpFloat64() ?
-			f := abs(3 * float32(e.r.NormFloat64()))
-			if f < 1 {
+	if len(e.stars) != len(pixels) {
+		r := rand.NewSource(0)
+		e.stars = make([]star, len(pixels))
+		for i := range e.stars {
+			j := r.Int63()
+			// Cut off at 25%.
+			if j&0x30000 != 0x30000 {
 				continue
 			}
-			i += int(roundF(f))
-			if i >= len(pixels) {
-				break
-			}
-			// e.r.Intn(255)
-			intensity := abs(float32(e.r.NormFloat64()))
-			if intensity > 255 {
-				intensity = 0
-			}
-			e.Stars[i].Intensity = FloatToUint8(intensity)
+			// Use gamma == 2 and limit intensity at 50%.
+			d := int(j&0xff+1) * int((j>>8)&0xff+1)
+			e.stars[i].intensity = uint8((d-1)>>8) / 2
 		}
 	}
-	for i := range e.Stars {
-		if j := e.Stars[i].Intensity; j != 0 {
-			// TODO(maruel): Type, oscillation.
-			if j != 0 {
-				f := FloatToUint8(float32(e.r.NormFloat64())*4 + float32(j))
-				pixels[i] = Color{f, f, f}
-			}
+
+	r := rand.NewSource(int64((&Rand{}).Eval(timeMS)))
+	for i, s := range e.stars {
+		if s.intensity == 0 {
+			pixels[i] = Color{}
+			continue
 		}
+		j := r.Int63()
+		// Use gamma == 2.
+		d := int(j&0xf+1) * int((j>>4)&0xf+1)
+		y := (d-1)>>4 + int(s.intensity)
+		if y > 255 {
+			y = 255
+		} else if y < 0 {
+			y = 0
+		}
+		f := uint8(y)
+		pixels[i] = Color{f, f, f}
 	}
 }
 
 // WishingStar draws a wishing star from time to time.
 //
 // It will only draw one star at a time. To increase the likelihood of getting
-// many simultaneously, create multiple instances and use Mixer with Weights of
-// 1.
+// many simultaneously, create multiple instances.
 type WishingStar struct {
 	Duration     time.Duration // Average duration of a star.
 	AverageDelay time.Duration // Average delay between each wishing star.
