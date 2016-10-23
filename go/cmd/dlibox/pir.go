@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"sync"
 
@@ -42,10 +43,10 @@ func initPIR(b modules.Bus, config *PIR) error {
 	}
 	p := gpio.ByNumber(config.Pin)
 	if p == nil {
-		return nil
+		return fmt.Errorf("pir: failed to find pin %d", config.Pin)
 	}
 	if err := p.In(gpio.Down, gpio.Both); err != nil {
-		return err
+		return errors.Wrapf(err, "pir: failed to pull down %s", p)
 	}
 	go func() {
 		for {
