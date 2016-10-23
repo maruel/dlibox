@@ -17,14 +17,14 @@ import (
 // PIR contains a motion detection behavior.
 type PIR struct {
 	sync.Mutex
-	Pin int
-	Cmd Command
+	PinNumber int
+	Cmd       Command
 }
 
 func (p *PIR) ResetDefault() {
 	p.Lock()
 	defer p.Unlock()
-	p.Pin = -1
+	p.PinNumber = -1
 	p.Cmd = Command{"painter/setnow", "\"#ffffff\""}
 }
 
@@ -38,12 +38,12 @@ func (p *PIR) Validate() error {
 }
 
 func initPIR(b modules.Bus, config *PIR) error {
-	if config.Pin == -1 {
+	if config.PinNumber == -1 {
 		return nil
 	}
-	p := gpio.ByNumber(config.Pin)
+	p := gpio.ByNumber(config.PinNumber)
 	if p == nil {
-		return fmt.Errorf("pir: failed to find pin %d", config.Pin)
+		return fmt.Errorf("pir: failed to find pin %d", config.PinNumber)
 	}
 	if err := p.In(gpio.Down, gpio.Both); err != nil {
 		return errors.Wrapf(err, "pir: failed to pull down %s", p)

@@ -124,7 +124,7 @@ func mainImpl() error {
 		defer h.Close()
 	}
 
-	if err = initButton(bus, nil, &config.Settings.Button); err != nil {
+	if err = initButton(bus, &config.Settings.Button); err != nil {
 		// Non-fatal.
 		log.Printf("Button not connected: %v", err)
 	}

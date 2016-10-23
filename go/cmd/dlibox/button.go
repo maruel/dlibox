@@ -5,15 +5,15 @@
 package main
 
 import (
-	"errors"
+	"fmt"
 	"log"
-	"sort"
 	"sync"
 	"time"
 
 	"github.com/maruel/dlibox/go/donotuse/conn/gpio"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/interrupt"
+	"github.com/pkg/errors"
 )
 
 // Button contains settings for controlling the lights through a button.
@@ -34,29 +34,27 @@ func (b *Button) Validate() error {
 	return nil
 }
 
-func initButton(b modules.Bus, r map[string][]byte, config *Button) error {
-	if len(r) == 0 {
-		// TODO(maruel): Temporary hack to disable this code.
-		return nil
-	}
+func initButton(b modules.Bus, config *Button) error {
 	if config.PinNumber == -1 {
 		return nil
 	}
-	pin := gpio.ByNumber(config.PinNumber)
-	if pin == nil {
-		return errors.New("pin not found")
+	p := gpio.ByNumber(config.PinNumber)
+	if p == nil {
+		return fmt.Errorf("button: failed to find pin %d", config.PinNumber)
 	}
-	if err := pin.In(gpio.Up, gpio.Both); err != nil {
-		return err
+	if err := p.In(gpio.Up, gpio.Both); err != nil {
+		return errors.Wrapf(err, "button: failed to pull up %s", p)
 	}
 
-	names := make([]string, 0, len(r))
-	for n := range r {
-		names = append(names, n)
-	}
-	sort.Strings(names)
+	/*
+		names := make([]string, 0, len(r))
+		for n := range r {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+	*/
 	go func() {
-		index := 0
+		//index := 0
 		last := gpio.High
 		for {
 			// Types of press:
@@ -69,15 +67,17 @@ func initButton(b modules.Bus, r map[string][]byte, config *Button) error {
 			// - Bonne nuit
 			// - Next / Prev
 			// - Éteindre (longer press après bonne nuit?)
-			pin.WaitForEdge(-1)
-			if state := pin.Read(); state != last {
+			p.WaitForEdge(-1)
+			if state := p.Read(); state != last {
 				last = state
-				if state == gpio.Low {
-					index = (index + 1) % len(names)
-					if err := b.Publish(modules.Message{"painter/setuser", r[names[index]]}, modules.ExactlyOnce, false); err != nil {
-						log.Printf("button: failed to publish: %v", err)
+				/*
+					if state == gpio.Low {
+						index = (index + 1) % len(names)
+						if err := b.Publish(modules.Message{"painter/setuser", r[names[index]]}, modules.ExactlyOnce, false); err != nil {
+							log.Printf("button: failed to publish: %v", err)
+						}
 					}
-				}
+				*/
 				if err := b.Publish(modules.Message{"button", []byte(state.String())}, modules.ExactlyOnce, false); err != nil {
 					log.Printf("button: failed to publish: %v", err)
 				}
