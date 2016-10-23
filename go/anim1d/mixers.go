@@ -107,21 +107,27 @@ func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
 	}
 	cycleDuration := l.DurationShowMS + l.DurationTransitionMS
 	if cycleDuration == 0 {
+		// Misconfigured. Lock to the first pattern.
 		l.Patterns[0].NextFrame(pixels, timeMS)
 		return
 	}
-	l.buf.reset(len(pixels))
-	cycleNumber := timeMS / cycleDuration
-	a := l.Patterns[cycleNumber%lp]
+
+	base := timeMS / cycleDuration
+	index := base % lp
+	a := l.Patterns[index]
 	a.NextFrame(pixels, timeMS)
-	cycleOffset := cycleNumber * cycleDuration
-	if cycleOffset <= l.DurationShowMS {
+	offset := timeMS - (base * cycleDuration)
+	if offset <= l.DurationShowMS {
 		return
 	}
-	b := l.Patterns[(cycleNumber+1)%lp]
+
+	// Transition.
+	l.buf.reset(len(pixels))
+	b := l.Patterns[(index+1)%lp]
 	b.NextFrame(l.buf, timeMS)
-	intensity := uint16((cycleOffset - l.DurationShowMS) * 65535 / l.DurationTransitionMS)
-	pixels.Mix(l.buf, l.Curve.Scale8(intensity))
+	offset -= l.DurationShowMS
+	intensity := uint16((l.DurationTransitionMS - offset) * 65535 / l.DurationTransitionMS)
+	pixels.Mix(l.buf, l.Curve.Scale8(65535-intensity))
 }
 
 // Rotate rotates a pattern that can also cycle either way.
