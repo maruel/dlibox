@@ -18,7 +18,7 @@ type MQTT struct {
 	client mqtt.Client
 }
 
-func Make(server, clientID, user, password string) (*MQTT, error) {
+func New(server, clientID, user, password string) (*MQTT, error) {
 	opts := mqtt.NewClientOptions().AddBroker(server).SetClientID(clientID)
 	// Use lower timeouts than the defaults since they are high and the current
 	// assumption is local network.
