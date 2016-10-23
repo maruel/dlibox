@@ -38,9 +38,10 @@ function loadButtons() {
   for (var k in patterns) {
     var node = document.createElement('button');
     var v = patterns[k];
-    node.id = 'button-' + k + 1;
+    var i = parseInt(k);
+    node.id = 'button-' + i + 1;
     node.attributes['data-mode'] = v;
-    node.innerHTML = '<img src="/thumbnail/' + encodeURI(btoa(v)) + '" /> ' + k + 1;
+    node.innerHTML = '<img src="/thumbnail/' + encodeURI(btoa(v)) + '" /> ' + (i + 1);
     node.addEventListener('click', function (event) {
       updatePattern(this.attributes['data-mode']);
     });
@@ -116,8 +117,8 @@ function setPattern() {
   oReq.responseType = 'json';
   oReq.onreadystatechange = function () {
     if (oReq.readyState === XMLHttpRequest.DONE && oReq.status === 200) {
-      patterns = oReq.response;
-      loadButtons();
+      document.getElementById('patternBox').value = JSON.stringify(oReq.response, null, 2);
+      fetchPatterns();
     }
     // TODO(maruel): Handle failure.
   };

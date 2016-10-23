@@ -184,21 +184,26 @@ func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := Pattern(raw).Validate(); err != nil {
+	// Reencode in canonical format to send it back to the user.
+	var obj anim1d.SPattern
+	if err := json.Unmarshal(raw, &obj); err != nil {
+		log.Printf("web: invalid JSON pattern: %v", err)
 		http.Error(w, "invalid JSON pattern", http.StatusBadRequest)
 		return
 	}
-	log.Printf("pattern = %q", raw)
+	raw, err = obj.MarshalJSON()
+	if err != nil {
+		log.Printf("web: internal error: %v", err)
+		http.Error(w, "internal error", http.StatusBadRequest)
+		return
+	}
+
 	if err := s.b.Publish(modules.Message{"painter/setuser", raw}, modules.ExactlyOnce, false); err != nil {
 		http.Error(w, "failed to publish", http.StatusInternalServerError)
 		return
 	}
-	// TODO(maruel): LRU won't be updated synchronously.
-	s.config.LRU.Lock()
-	data, _ := json.Marshal(s.config.LRU.Patterns)
-	s.config.LRU.Unlock()
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	w.Write(raw)
 }
 
 func (s *webServer) thumbnailHandler(w http.ResponseWriter, r *http.Request) {
