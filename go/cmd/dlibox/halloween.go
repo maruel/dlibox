@@ -63,8 +63,14 @@ func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
 	if !config.Enabled {
 		return nil, errors.New("not the controller")
 	}
+	if config.Modes == nil {
+		return nil, errors.New("halloween Modes is missing")
+	}
+	if config.Cmds == nil {
+		return nil, errors.New("halloween Cmds is missing")
+	}
 
-	h := &halloween{config: config, timer: time.NewTimer(0)}
+	h := &halloween{b: b, config: config, timer: time.NewTimer(0)}
 	c1, err := b.Subscribe("//dlibox/+/pir", modules.ExactlyOnce)
 	if err != nil {
 		return nil, err
