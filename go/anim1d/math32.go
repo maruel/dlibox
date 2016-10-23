@@ -14,16 +14,6 @@ func ceil(x float32) float32 {
 	return float32(math.Ceil(float64(x)))
 }
 
-func FloatToUint8(x float32) uint8 {
-	if x >= 254.4 {
-		return 255
-	}
-	if x <= 0. {
-		return 0
-	}
-	return uint8(roundF(x))
-}
-
 func hypot(x, y float32) float32 {
 	return float32(math.Hypot(float64(x), float64(y)))
 }

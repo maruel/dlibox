@@ -57,8 +57,8 @@ func (p *Painter) Close() error {
 	case p.c <- nil:
 	default:
 	}
+	close(p.c)
 	p.wg.Wait()
-	p.c = nil
 	return nil
 }
 
@@ -116,8 +116,8 @@ func (p *Painter) runPattern(cGen <-chan Frame, cWrite chan<- Frame) {
 	var since time.Duration
 	for {
 		select {
-		case newPat := <-p.c:
-			if newPat == nil {
+		case newPat, ok := <-p.c:
+			if newPat == nil || !ok {
 				// Request to terminate.
 				return
 			}
