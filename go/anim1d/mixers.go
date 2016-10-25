@@ -41,12 +41,12 @@ func (g *Gradient) NextFrame(pixels Frame, timeMS uint32) {
 //
 // In gets timeMS that is subtracted by OffsetMS.
 type Transition struct {
-	Before     SPattern // Old pattern that is disappearing
-	After      SPattern // New pattern to show
-	OffsetMS   uint32   // Offset at which the transiton from Before->In starts
-	DurationMS uint32   // Duration of the transition while both are rendered
-	Curve      Curve    // Type of transition, defaults to EaseOut if not set
-	buf        Frame
+	Before       SPattern // Old pattern that is disappearing
+	After        SPattern // New pattern to show
+	OffsetMS     uint32   // Offset at which the transiton from Before->In starts
+	TransitionMS uint32   // Duration of the transition while both are rendered
+	Curve        Curve    // Type of transition, defaults to EaseOut if not set
+	buf          Frame
 }
 
 func (t *Transition) NextFrame(pixels Frame, timeMS uint32) {
@@ -56,7 +56,7 @@ func (t *Transition) NextFrame(pixels Frame, timeMS uint32) {
 		return
 	}
 	t.After.NextFrame(pixels, timeMS-t.OffsetMS)
-	if timeMS >= t.OffsetMS+t.DurationMS {
+	if timeMS >= t.OffsetMS+t.TransitionMS {
 		// After transition.
 		t.buf = nil
 		return
@@ -65,22 +65,22 @@ func (t *Transition) NextFrame(pixels Frame, timeMS uint32) {
 
 	// TODO(maruel): Add lateral animation and others.
 	t.Before.NextFrame(t.buf, timeMS)
-	intensity := uint16((timeMS - t.OffsetMS) * 65535 / (t.DurationMS))
+	intensity := uint16((timeMS - t.OffsetMS) * 65535 / (t.TransitionMS))
 	pixels.Mix(t.buf, 255.-t.Curve.Scale8(intensity))
 }
 
 // Loop rotates between all the animations.
 //
-// Display starts with one DurationShow for Patterns[0], then starts looping.
+// Display starts with one ShowMS for Patterns[0], then starts looping.
 // timeMS is not modified so it's like as all animations continued animating
 // behind.
 // TODO(maruel): Add lateral transition and others.
 type Loop struct {
-	Patterns             []SPattern
-	DurationShowMS       uint32 // Duration for each pattern to be shown as pure
-	DurationTransitionMS uint32 // Duration of the transition between two patterns, can be 0
-	Curve                Curve  // Type of transition, defaults to EaseOut if not set
-	buf                  Frame
+	Patterns     []SPattern
+	ShowMS       uint32 // Duration for each pattern to be shown as pure
+	TransitionMS uint32 // Duration of the transition between two patterns, can be 0
+	Curve        Curve  // Type of transition, defaults to EaseOut if not set
+	buf          Frame
 }
 
 func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
@@ -88,7 +88,7 @@ func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
 	if lp == 0 {
 		return
 	}
-	cycleDuration := l.DurationShowMS + l.DurationTransitionMS
+	cycleDuration := l.ShowMS + l.TransitionMS
 	if cycleDuration == 0 {
 		// Misconfigured. Lock to the first pattern.
 		l.Patterns[0].NextFrame(pixels, timeMS)
@@ -100,7 +100,7 @@ func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
 	a := l.Patterns[index]
 	a.NextFrame(pixels, timeMS)
 	offset := timeMS - (base * cycleDuration)
-	if offset <= l.DurationShowMS {
+	if offset <= l.ShowMS {
 		return
 	}
 
@@ -108,8 +108,8 @@ func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
 	l.buf.reset(len(pixels))
 	b := l.Patterns[(index+1)%lp]
 	b.NextFrame(l.buf, timeMS)
-	offset -= l.DurationShowMS
-	intensity := uint16((l.DurationTransitionMS - offset) * 65535 / l.DurationTransitionMS)
+	offset -= l.ShowMS
+	intensity := uint16((l.TransitionMS - offset) * 65535 / l.TransitionMS)
 	pixels.Mix(l.buf, l.Curve.Scale8(65535-intensity))
 }
 

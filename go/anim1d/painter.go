@@ -108,10 +108,10 @@ func (p *Painter) runPattern(cGen <-chan Frame, cWrite chan<- Frame) {
 	}()
 
 	ease := Transition{
-		Before:     SPattern{black},
-		After:      SPattern{black},
-		DurationMS: 500,
-		Curve:      EaseOut,
+		Before:       SPattern{black},
+		After:        SPattern{black},
+		TransitionMS: 500,
+		Curve:        EaseOut,
 	}
 	var since time.Duration
 	for {

@@ -32,7 +32,7 @@ func (p Pattern) Validate() error {
 	return err
 }
 
-const morning Pattern = "{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\",\"Before\":{\"After\":\"#ff7f00\",\"Before\":\"#000000\",\"Curve\":\"direct\",\"DurationMS\":6000000,\"OffsetMS\":0,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":6000000,\"OffsetMS\":6000000,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"DurationMS\":600000,\"OffsetMS\":18000000,\"_type\":\"Transition\"}"
+const morning Pattern = "{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\",\"Before\":{\"After\":\"#ff7f00\",\"Before\":\"#000000\",\"Curve\":\"direct\",\"OffsetMS\":0,\"TransitionMS\":6000000,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"OffsetMS\":6000000,\"TransitionMS\":6000000,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"OffsetMS\":18000000,\"TransitionMS\":600000,\"_type\":\"Transition\"}"
 
 //
 

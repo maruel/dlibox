@@ -198,8 +198,8 @@ func LoadPNG(content []byte, frameDuration time.Duration, vertical bool) *Loop {
 		children[i].Pattern = p
 	}
 	return &Loop{
-		Patterns:       children,
-		DurationShowMS: uint32(frameDuration / time.Millisecond),
+		Patterns: children,
+		ShowMS:   uint32(frameDuration / time.Millisecond),
 	}
 }
 

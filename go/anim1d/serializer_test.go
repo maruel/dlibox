@@ -52,18 +52,18 @@ func TestJSONPatternsSpotCheck(t *testing.T) {
 	p := &Transition{
 		Before: SPattern{
 			&Transition{
-				After:      SPattern{&Color{255, 255, 255}},
-				OffsetMS:   600000,
-				DurationMS: 600000,
-				Curve:      Direct,
+				After:        SPattern{&Color{255, 255, 255}},
+				OffsetMS:     600000,
+				TransitionMS: 600000,
+				Curve:        Direct,
 			},
 		},
-		After:      SPattern{&Color{}},
-		OffsetMS:   30 * 60000,
-		DurationMS: 600000,
-		Curve:      Direct,
+		After:        SPattern{&Color{}},
+		OffsetMS:     30 * 60000,
+		TransitionMS: 600000,
+		Curve:        Direct,
 	}
-	expected := `{"After":"#000000","Before":{"After":"#ffffff","Before":{},"Curve":"direct","DurationMS":600000,"OffsetMS":600000,"_type":"Transition"},"Curve":"direct","DurationMS":600000,"OffsetMS":1800000,"_type":"Transition"}`
+	expected := `{"After":"#000000","Before":{"After":"#ffffff","Before":{},"Curve":"direct","OffsetMS":600000,"TransitionMS":600000,"_type":"Transition"},"Curve":"direct","OffsetMS":1800000,"TransitionMS":600000,"_type":"Transition"}`
 	serializePattern(t, p, expected)
 }
 
