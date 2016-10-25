@@ -47,7 +47,6 @@ func TestJSONPatternsSpotCheck(t *testing.T) {
 	serializePattern(t, &Rainbow{}, `"Rainbow"`)
 	serializePattern(t, &PingPong{}, `{"Child":{},"MovePerHour":0,"_type":"PingPong"}`)
 	serializePattern(t, &Chronometer{}, `{"Child":{},"_type":"Chronometer"}`)
-	serializePattern(t, &Cycle{}, `{"FrameDurationMS":0,"Frames":null,"_type":"Cycle"}`)
 
 	// Create one more complex. Assert that int64 is not mangled.
 	p := &Transition{

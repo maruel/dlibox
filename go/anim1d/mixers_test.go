@@ -18,10 +18,6 @@ func TestTransition(t *testing.T) {
 	// TODO(maruel): Add.
 }
 
-func TestCycle(t *testing.T) {
-	// TODO(maruel): Add.
-}
-
 func TestLoop(t *testing.T) {
 	// TODO(maruel): Add.
 }

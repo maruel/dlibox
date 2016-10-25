@@ -69,23 +69,6 @@ func (t *Transition) NextFrame(pixels Frame, timeMS uint32) {
 	pixels.Mix(t.buf, 255.-t.Curve.Scale8(intensity))
 }
 
-// Cycle cycles between multiple patterns. It can be used as an animatable
-// looping frame.
-//
-// TODO(maruel): Blend between frames with Curve, defaults to step.
-// TODO(maruel): Merge with Loop.
-type Cycle struct {
-	Frames          []SPattern
-	FrameDurationMS uint32
-}
-
-func (c *Cycle) NextFrame(pixels Frame, timeMS uint32) {
-	if len(c.Frames) == 0 {
-		return
-	}
-	c.Frames[int(timeMS/c.FrameDurationMS)%len(c.Frames)].NextFrame(pixels, timeMS)
-}
-
 // Loop rotates between all the animations.
 //
 // Display starts with one DurationShow for Patterns[0], then starts looping.
@@ -95,7 +78,7 @@ func (c *Cycle) NextFrame(pixels Frame, timeMS uint32) {
 type Loop struct {
 	Patterns             []SPattern
 	DurationShowMS       uint32 // Duration for each pattern to be shown as pure
-	DurationTransitionMS uint32 // Duration of the transition between two patterns
+	DurationTransitionMS uint32 // Duration of the transition between two patterns, can be 0
 	Curve                Curve  // Type of transition, defaults to EaseOut if not set
 	buf                  Frame
 }

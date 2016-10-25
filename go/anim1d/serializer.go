@@ -35,7 +35,6 @@ var knownPatterns = []Pattern{
 	// Mixers
 	&Gradient{},
 	&Transition{},
-	&Cycle{},
 	&Loop{},
 	&Chronometer{},
 	&Rotate{},
@@ -164,10 +163,10 @@ func (p *SPattern) MarshalJSON() ([]byte, error) {
 	return jsonMarshalWithType(p.Pattern)
 }
 
-// LoadPNG loads a PNG file and creates a Cycle out of the lines.
+// LoadPNG loads a PNG file and creates a Loop out of the lines.
 //
 // If vertical is true, rotate the image by 90°.
-func LoadPNG(content []byte, frameDuration time.Duration, vertical bool) *Cycle {
+func LoadPNG(content []byte, frameDuration time.Duration, vertical bool) *Loop {
 	img, err := png.Decode(bytes.NewReader(content))
 	if err != nil {
 		return nil
@@ -198,7 +197,10 @@ func LoadPNG(content []byte, frameDuration time.Duration, vertical bool) *Cycle 
 	for i, p := range buf {
 		children[i].Pattern = p
 	}
-	return &Cycle{children, uint32(frameDuration / time.Millisecond)}
+	return &Loop{
+		Patterns:       children,
+		DurationShowMS: uint32(frameDuration / time.Millisecond),
+	}
 }
 
 //
