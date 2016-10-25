@@ -95,7 +95,7 @@ func (s *webServer) rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")
-	w.Header().Set("Cache-Control", cacheControl)
+	w.Header().Set("Cache-Control", cacheControl5m)
 	keys := struct {
 		Host string
 	}{
@@ -112,7 +112,7 @@ func (s *webServer) faviconHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Cache-Control", cacheControl)
+	w.Header().Set("Cache-Control", cacheControl5m)
 	w.Write(mustRead("favicon.ico"))
 }
 
@@ -123,7 +123,7 @@ func (s *webServer) staticHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	p := r.URL.Path[len("/static/"):]
 	w.Header().Set("Content-Type", mime.TypeByExtension(path.Ext(p)))
-	w.Header().Set("Cache-Control", cacheControl)
+	w.Header().Set("Cache-Control", cacheControl5m)
 	if content := read(p); content != nil {
 		_, _ = w.Write(content)
 		return
@@ -223,7 +223,7 @@ func (s *webServer) thumbnailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "image/gif")
-	w.Header().Set("Cache-Control", cacheControl)
+	w.Header().Set("Cache-Control", cacheControl5m)
 	_, _ = w.Write(data)
 }
 

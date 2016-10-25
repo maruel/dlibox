@@ -17,7 +17,8 @@ import (
 	"strings"
 )
 
-const cacheControl = "Cache-Control:no-cache, no-store"
+const cacheControl30d = "Cache-Control:no-cache, no-store"
+const cacheControl5m = "Cache-Control:no-cache, no-store"
 
 func mustRead(name string) []byte {
 	if content := read(name); content != nil {

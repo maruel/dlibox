@@ -5,7 +5,8 @@
 
 package main
 
-const cacheControl = "Cache-Control:public, max-age=2592000" // 30d
+const cacheControl30d = "Cache-Control:public, max-age=259200" // 30d
+const cacheControl5m = "Cache-Control:public, max-age=300"     // 5m
 
 func mustRead(name string) []byte {
 	return []byte(staticFiles[name])
