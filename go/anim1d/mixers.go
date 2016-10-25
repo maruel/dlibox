@@ -271,6 +271,9 @@ type Subset struct {
 }
 
 func (s *Subset) NextFrame(pixels Frame, timeMS uint32) {
+	if s.Child.Pattern == nil {
+		return
+	}
 	o := MinMax(int(s.Offset.Eval(timeMS)), 0, len(pixels)-1)
 	l := MinMax(int(s.Length.Eval(timeMS)), 0, len(pixels)-1-o)
 	s.Child.NextFrame(pixels[o:o+l], timeMS)
