@@ -16,15 +16,17 @@ import (
 
 type Halloween struct {
 	sync.Mutex
-	Enabled bool
-	Modes   map[string]State
-	Cmds    map[State][]Command
+	Enabled   bool
+	Modes     map[string]State
+	Cmds      map[State][]Command
+	IdleAfter int // seconds
 }
 
 func (h *Halloween) ResetDefault() {
 	h.Lock()
 	defer h.Unlock()
 	h.Enabled = false
+	h.IdleAfter = 15
 }
 
 func (h *Halloween) Validate() error {
@@ -70,7 +72,11 @@ func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
 		return nil, errors.New("halloween Cmds is missing")
 	}
 
-	h := &halloween{b: b, config: config, timer: time.NewTimer(0)}
+	h := &halloween{
+		b:      b,
+		config: config,
+		state:  Idle,
+	}
 	c1, err := b.Subscribe("//dlibox/+/pir", modules.ExactlyOnce)
 	if err != nil {
 		return nil, err
@@ -87,6 +93,7 @@ func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
 			}
 		}
 	}()
+	h.publishState()
 	return h, nil
 }
 
@@ -94,18 +101,20 @@ func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
 type State string
 
 const (
-	Idle     State = "idle"
+	// Idle is the animation while nothing in happening.
+	Idle State = "idle"
+	// Incoming is when little monsters (children) are walking in front of the
+	// house.
 	Incoming State = "incoming"
-	Balcon   State = "balcon"
-	Back     State = "back"
+	// Porch is when the children are in front of the door.
+	Porch State = "porch"
 )
 
 type halloween struct {
 	b         modules.Bus
 	config    *Halloween
 	state     State
-	lastLaugh time.Time
-	timer     *time.Timer
+	timerIdle *time.Timer
 }
 
 func (h *halloween) Close() error {
@@ -126,19 +135,41 @@ func (h *halloween) onMsg(m modules.Message) {
 	defer h.config.Unlock()
 	if s, ok := h.config.Modes[m.Topic]; ok {
 		if h.state == s {
-			// Reset the timer.
-			//h.timer.Reset(d)
+			// Didn't change state, do not trigger anything.
+			return
+		}
+		if s == Porch && h.state == Incoming {
+			// Ignore, we'll wait for going back to idle first.
 			return
 		}
 		h.state = s
-		for _, cmd := range h.config.Cmds[s] {
-			if err := h.b.Publish(cmd.ToMsg(), modules.ExactlyOnce, false); err != nil {
-				log.Printf("halloween: %s: %v", s, cmd)
+		h.publishState()
+		if h.state != Idle {
+			// Reset the timer.
+			h.timerIdle.Stop()
+			if h.config.IdleAfter != 0 {
+				h.timerIdle = time.AfterFunc(time.Duration(h.config.IdleAfter)*time.Second, h.setIdle)
 			}
 		}
 		return
 	}
-	switch {
-	default:
+}
+
+func (h *halloween) setIdle() {
+	h.config.Lock()
+	defer h.config.Unlock()
+	if h.state == Idle {
+		return
+	}
+	log.Printf("halloween: going back idle")
+	h.state = Idle
+	h.publishState()
+}
+
+func (h *halloween) publishState() {
+	for _, cmd := range h.config.Cmds[h.state] {
+		if err := h.b.Publish(cmd.ToMsg(), modules.ExactlyOnce, false); err != nil {
+			log.Printf("halloween: %s: %v", h.state, cmd)
+		}
 	}
 }
