@@ -47,6 +47,7 @@ type Settings struct {
 	MQTT      MQTT
 	Painter   Painter
 	PIR       PIR
+	Sound     Sound
 }
 
 func (s *Settings) Lock() {
@@ -59,9 +60,11 @@ func (s *Settings) Lock() {
 	s.MQTT.Lock()
 	s.Painter.Lock()
 	s.PIR.Lock()
+	s.Sound.Lock()
 }
 
 func (s *Settings) Unlock() {
+	s.Sound.Unlock()
 	s.PIR.Unlock()
 	s.Painter.Unlock()
 	s.MQTT.Unlock()
@@ -83,6 +86,7 @@ func (s *Settings) resetDefault() {
 	s.MQTT.ResetDefault()
 	s.Painter.ResetDefault()
 	s.PIR.ResetDefault()
+	s.Sound.ResetDefault()
 }
 
 func (s *Settings) autoFix() error {
@@ -121,6 +125,10 @@ func (s *Settings) autoFix() error {
 	}
 	if err1 := s.PIR.Validate(); err1 != nil {
 		s.PIR.ResetDefault()
+		err = err1
+	}
+	if err1 := s.Sound.Validate(); err1 != nil {
+		s.Sound.ResetDefault()
 		err = err1
 	}
 	return err

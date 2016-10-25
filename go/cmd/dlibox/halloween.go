@@ -101,10 +101,11 @@ const (
 )
 
 type halloween struct {
-	b      modules.Bus
-	config *Halloween
-	state  State
-	timer  *time.Timer
+	b         modules.Bus
+	config    *Halloween
+	state     State
+	lastLaugh time.Time
+	timer     *time.Timer
 }
 
 func (h *halloween) Close() error {

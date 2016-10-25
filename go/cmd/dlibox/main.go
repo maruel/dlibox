@@ -147,6 +147,14 @@ func mainImpl() error {
 		return err
 	}
 
+	s, err := initSound(bus, &config.Settings.Sound)
+	if err != nil {
+		// Non-fatal.
+		log.Printf("Sound failed: %v", err)
+	} else if s != nil {
+		defer s.Close()
+	}
+
 	w, err := initWeb(bus, *port, &config.Config)
 	if err != nil {
 		return err
