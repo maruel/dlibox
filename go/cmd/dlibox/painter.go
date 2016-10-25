@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/donotuse/devices"
@@ -142,11 +143,11 @@ func initPainter(b modules.Bus, leds devices.Display, fps int, config *Painter, 
 	defer lru.Unlock()
 	p := anim1d.NewPainter(leds, fps)
 	if len(config.Last) != 0 {
-		if err := p.SetPattern(string(config.Last)); err != nil {
+		if err := p.SetPattern(string(config.Last), 500*time.Millisecond); err != nil {
 			return nil, err
 		}
 	} else if len(config.Startup) != 0 {
-		if err := p.SetPattern(string(config.Startup)); err != nil {
+		if err := p.SetPattern(string(config.Startup), 500*time.Millisecond); err != nil {
 			return nil, err
 		}
 	}
@@ -199,7 +200,7 @@ func (p *painter) onMsg(msg modules.Message) {
 func (p *painter) setautomated(payload []byte) {
 	// Skip the LRU.
 	s := string(payload)
-	if err := p.p.SetPattern(s); err != nil {
+	if err := p.p.SetPattern(s, 500*time.Millisecond); err != nil {
 		log.Printf("painter.setautomated: invalid payload: %s", s)
 	}
 }
@@ -207,7 +208,7 @@ func (p *painter) setautomated(payload []byte) {
 func (p *painter) setnow(payload []byte) {
 	// Skip the 500ms ease-out.
 	s := string(payload)
-	if err := p.p.SetPattern(s); err != nil {
+	if err := p.p.SetPattern(s, 0); err != nil {
 		log.Printf("painter.setnow: invalid payload: %s", s)
 	}
 }
@@ -215,7 +216,7 @@ func (p *painter) setnow(payload []byte) {
 func (p *painter) setuser(payload []byte) {
 	// Add it to the LRU.
 	s := string(payload)
-	if err := p.p.SetPattern(s); err != nil {
+	if err := p.p.SetPattern(s, 500*time.Millisecond); err != nil {
 		log.Printf("painter.setuser: invalid payload: %s", s)
 		return
 	}

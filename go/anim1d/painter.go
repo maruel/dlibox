@@ -33,7 +33,7 @@ type Pattern interface {
 // Painter handles the "draw frame, write" loop.
 type Painter struct {
 	d             devices.Display
-	c             chan Pattern
+	c             chan newPattern
 	wg            sync.WaitGroup
 	frameDuration time.Duration
 }
@@ -43,18 +43,18 @@ type Painter struct {
 // The pattern is in JSON encoded format. The function will return an error if
 // the encoding is bad. The function is synchronous, it returns only after the
 // pattern was effectively set.
-func (p *Painter) SetPattern(s string) error {
+func (p *Painter) SetPattern(s string, transition time.Duration) error {
 	var pat SPattern
 	if err := json.Unmarshal([]byte(s), &pat); err != nil {
 		return err
 	}
-	p.c <- pat.Pattern
+	p.c <- newPattern{pat.Pattern, transition}
 	return nil
 }
 
 func (p *Painter) Close() error {
 	select {
-	case p.c <- nil:
+	case p.c <- newPattern{}:
 	default:
 	}
 	close(p.c)
@@ -69,7 +69,7 @@ func (p *Painter) Close() error {
 func NewPainter(d devices.Display, fps int) *Painter {
 	p := &Painter{
 		d:             d,
-		c:             make(chan Pattern),
+		c:             make(chan newPattern),
 		frameDuration: time.Second / time.Duration(fps),
 	}
 	numLights := d.Bounds().Dx()
@@ -89,6 +89,11 @@ func NewPainter(d devices.Display, fps int) *Painter {
 
 var black = &Color{}
 
+type newPattern struct {
+	p Pattern
+	d time.Duration
+}
+
 func (p *Painter) runPattern(cGen <-chan Frame, cWrite chan<- Frame) {
 	defer func() {
 		// Tell runWrite() to quit.
@@ -107,25 +112,28 @@ func (p *Painter) runPattern(cGen <-chan Frame, cWrite chan<- Frame) {
 		p.wg.Done()
 	}()
 
-	ease := Transition{
-		Before:       SPattern{black},
-		After:        SPattern{black},
-		TransitionMS: 500,
-		Curve:        EaseOut,
-	}
+	var root Pattern = black
 	var since time.Duration
 	for {
 		select {
 		case newPat, ok := <-p.c:
-			if newPat == nil || !ok {
+			if newPat.p == nil || !ok {
 				// Request to terminate.
 				return
 			}
 
 			// New pattern.
-			ease.Before = ease.After
-			ease.After.Pattern = newPat
-			ease.OffsetMS = uint32(since / time.Millisecond)
+			if newPat.d == 0 {
+				root = newPat.p
+			} else {
+				root = &Transition{
+					Before:       SPattern{root},
+					After:        SPattern{newPat.p},
+					OffsetMS:     uint32(since / time.Millisecond),
+					TransitionMS: uint32(newPat.d / time.Millisecond),
+					Curve:        EaseOut,
+				}
+			}
 
 		case pixels, ok := <-cGen:
 			if !ok {
@@ -134,9 +142,15 @@ func (p *Painter) runPattern(cGen <-chan Frame, cWrite chan<- Frame) {
 			for i := range pixels {
 				pixels[i] = Color{}
 			}
-			ease.NextFrame(pixels, uint32(since/time.Millisecond))
+			timeMS := uint32(since / time.Millisecond)
+			root.NextFrame(pixels, timeMS)
 			since += p.frameDuration
 			cWrite <- pixels
+			if t, ok := root.(*Transition); ok {
+				if t.OffsetMS+t.TransitionMS < timeMS {
+					root = t.After.Pattern
+				}
+			}
 
 		case <-interrupt.Channel:
 			return
