@@ -35,6 +35,7 @@ func mainImpl() error {
 	cpuprofile := flag.String("cpuprofile", "", "dump CPU profile in file")
 	port := flag.Int("port", 8010, "http port to listen on")
 	verbose := flag.Bool("verbose", false, "enable log output")
+	noTime := flag.Bool("notime", false, "disable timestamp when logging")
 	fake := flag.Bool("fake", false, "use a terminal mock, useful to test without the hardware")
 	flag.Parse()
 	if flag.NArg() != 0 {
@@ -43,6 +44,9 @@ func mainImpl() error {
 
 	if !*verbose {
 		log.SetOutput(ioutil.Discard)
+	}
+	if *noTime {
+		log.SetFlags(0)
 	}
 
 	interrupt.HandleCtrlC()
