@@ -53,6 +53,9 @@ func (a *APA102) Validate() error {
 
 // initLEDs initializes the LED strip.
 func initLEDs(b modules.Bus, fake bool, config *APA102) (*leds, error) {
+	if config.NumberLights == 0 {
+		return nil, nil
+	}
 	var l *leds
 	var fakeBytes []byte
 	num := config.NumberLights
