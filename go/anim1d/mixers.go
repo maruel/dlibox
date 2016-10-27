@@ -47,7 +47,7 @@ type Split struct {
 }
 
 func (s *Split) NextFrame(pixels Frame, timeMS uint32) {
-	offset := MinMax(int(s.Offset.Eval(timeMS)), 0, len(pixels))
+	offset := MinMax(int(s.Offset.Eval(timeMS, len(pixels))), 0, len(pixels))
 	if s.Left.Pattern != nil && offset != 0 {
 		s.Left.NextFrame(pixels[:offset], timeMS)
 	}
@@ -149,7 +149,7 @@ func (r *Rotate) NextFrame(pixels Frame, timeMS uint32) {
 	l := len(pixels)
 	r.buf.reset(l)
 	r.Child.NextFrame(r.buf, timeMS)
-	offset := r.MovePerHour.Eval(timeMS, l)
+	offset := r.MovePerHour.Eval(timeMS, len(pixels), l)
 	if offset < 0 {
 		// Reverse direction.
 		offset = l + offset
@@ -232,7 +232,7 @@ func (p *PingPong) NextFrame(pixels Frame, timeMS uint32) {
 	//   move 14 -> move 0; "2*(8-1)"
 	cycle := 2 * (len(pixels) - 1)
 	// TODO(maruel): Smoothing with Curve, defaults to Step.
-	pos := p.MovePerHour.Eval(timeMS, cycle)
+	pos := p.MovePerHour.Eval(timeMS, len(pixels), cycle)
 
 	// Once it works the following code looks trivial but everytime it takes me
 	// an absurd amount of time to rewrite it.
@@ -274,8 +274,8 @@ type Crop struct {
 }
 
 func (c *Crop) NextFrame(pixels Frame, timeMS uint32) {
-	b := int(MinMax32(c.Before.Eval(timeMS), 0, 1000))
-	a := int(MinMax32(c.After.Eval(timeMS), 0, 1000))
+	b := int(MinMax32(c.Before.Eval(timeMS, len(pixels)), 0, 1000))
+	a := int(MinMax32(c.After.Eval(timeMS, len(pixels)), 0, 1000))
 	// This is slightly wasteful as pixels are drawn just to be ditched.
 	c.buf.reset(len(pixels) + b + a)
 	c.Child.NextFrame(c.buf, timeMS)
@@ -293,8 +293,8 @@ func (s *Subset) NextFrame(pixels Frame, timeMS uint32) {
 	if s.Child.Pattern == nil {
 		return
 	}
-	o := MinMax(int(s.Offset.Eval(timeMS)), 0, len(pixels)-1)
-	l := MinMax(int(s.Length.Eval(timeMS)), 0, len(pixels)-1-o)
+	o := MinMax(int(s.Offset.Eval(timeMS, len(pixels))), 0, len(pixels)-1)
+	l := MinMax(int(s.Length.Eval(timeMS, len(pixels))), 0, len(pixels)-1-o)
 	s.Child.NextFrame(pixels[o:o+l], timeMS)
 }
 
@@ -306,7 +306,7 @@ type Dim struct {
 
 func (d *Dim) NextFrame(pixels Frame, timeMS uint32) {
 	d.Child.NextFrame(pixels, timeMS)
-	i := MinMax32(d.Intensity.Eval(timeMS), 0, 255)
+	i := MinMax32(d.Intensity.Eval(timeMS, len(pixels)), 0, 255)
 	pixels.Dim(uint8(i))
 }
 
@@ -345,12 +345,12 @@ type Scale struct {
 
 func (s *Scale) NextFrame(pixels Frame, timeMS uint32) {
 	if f, ok := s.Child.Pattern.(Frame); ok {
-		if s.RatioMilli.Eval(timeMS) == 0 {
+		if s.RatioMilli.Eval(timeMS, len(pixels)) == 0 {
 			s.Interpolation.Scale(f, pixels)
 			return
 		}
 	}
-	v := MinMax32(s.RatioMilli.Eval(timeMS), 1, 1000000)
+	v := MinMax32(s.RatioMilli.Eval(timeMS, len(pixels)), 1, 1000000)
 	s.buf.reset((int(v)*len(pixels) + 500) / 1000)
 	s.Child.NextFrame(s.buf, timeMS)
 	s.Interpolation.Scale(s.buf, pixels)

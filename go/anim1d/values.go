@@ -34,16 +34,25 @@ func MinMax32(v, min, max int32) int32 {
 	return v
 }
 
+// Values
+
 // Value defines a value that may be constant or that may evolve over time.
 type Value interface {
-	Eval(timeMS uint32) int32
+	Eval(timeMS uint32, l int) int32
 }
 
 // Const is a constant value.
 type Const int32
 
-func (c Const) Eval(timeMS uint32) int32 {
+func (c Const) Eval(timeMS uint32, l int) int32 {
 	return int32(c)
+}
+
+// Percent is a percentage of the length. It is stored as a 16.16 fixed point.
+type Percent int32
+
+func (p Percent) Eval(timeMS uint32, l int) int32 {
+	return int32(int64(l) * int64(p) / 65536)
 }
 
 // Rand is a value that pseudo-randomly changes every TickMS millisecond. If
@@ -52,7 +61,7 @@ type Rand struct {
 	TickMS int32 // The resolution at which the random value changes.
 }
 
-func (r *Rand) Eval(timeMS uint32) int32 {
+func (r *Rand) Eval(timeMS uint32, l int) int32 {
 	m := uint32(r.TickMS)
 	if m == 0 {
 		m = 16
@@ -60,31 +69,39 @@ func (r *Rand) Eval(timeMS uint32) int32 {
 	return int32(rand.NewSource(int64(timeMS / m)).Int63())
 }
 
-// Bell is a "good enough" approximation of a gaussian curve by using 2
-// symmetrical ease-in-out bezier curves.
+// MovePerHour is the number of movement per hour.
 //
-// It is not named Gaussian since it is not a gaussian curve; it really is a
-// bell.
-type Bell struct{}
+// Can be either positive or negative. Maximum supported value is ±3600000, 1000
+// move/sec.
+//
+// Sample values:
+//   - 1: one move per hour
+//   - 60: one move per minute
+//   - 3600: one move per second
+//   - 216000: 60 move per second
+type MovePerHour SValue
 
-func (b *Bell) Eval(v uint16) uint16 {
-	switch {
-	case v == 0:
-		return 0
-	case v == 65535:
-		return 0
-	case v == 32767:
-		return 65535
-
-	case v < 32767:
-		return EaseInOut.Scale(v * 2)
-	default:
-		return EaseInOut.Scale(65535 - v*2)
+// Eval is not a Value implementation but it leverages an inner one.
+func (m *MovePerHour) Eval(timeMS uint32, l int, cycle int) int {
+	s := SValue(*m)
+	// Prevent overflows.
+	v := MinMax32(s.Eval(timeMS, l), -3600000, 3600000)
+	// TODO(maruel): Reduce the amount of int64 code in there yet keeping it from
+	// overflowing.
+	// offset ranges [0, 3599999]
+	offset := timeMS % 3600000
+	// (1<<32)/3600000 = 1193 is too low. Temporarily upgrade to int64 to
+	// calculate the value.
+	low := int64(offset) * int64(v) / 3600000
+	hour := timeMS / 3600000
+	high := int64(hour) * int64(v)
+	if cycle != 0 {
+		return int((low + high) % int64(cycle))
 	}
+	return int(low + high)
 }
 
 /*
-
 // Equation evaluate an equation at every call.
 type Equation struct {
 	V string
@@ -101,6 +118,31 @@ func (e *Equation) Eval(timeMS uint32) int32 {
 	return e.f(timeMS)
 }
 */
+
+// Scalers
+
+// Bell is a "good enough" approximation of a gaussian curve by using 2
+// symmetrical ease-in-out bezier curves.
+//
+// It is not named Gaussian since it is not a gaussian curve; it really is a
+// bell.
+type Bell struct{}
+
+func (b *Bell) Scale(v uint16) uint16 {
+	switch {
+	case v == 0:
+		return 0
+	case v == 65535:
+		return 0
+	case v == 32767:
+		return 65535
+
+	case v < 32767:
+		return EaseInOut.Scale(v * 2)
+	default:
+		return EaseInOut.Scale(65535 - v*2)
+	}
+}
 
 // Curve models visually pleasing curves.
 //
@@ -218,37 +260,6 @@ func (i Interpolation) Scale(in, out Frame) {
 			//out[i] = (a + b) / 2
 		}
 	}
-}
-
-// MovePerHour is the number of movement per hour.
-//
-// Can be either positive or negative. Maximum supported value is ±3600000, 1000
-// move/sec.
-//
-// Sample values:
-//   - 1: one move per hour
-//   - 60: one move per minute
-//   - 3600: one move per second
-//   - 216000: 60 move per second
-type MovePerHour SValue
-
-func (m *MovePerHour) Eval(timeMS uint32, cycle int) int {
-	s := SValue(*m)
-	// Prevent overflows.
-	v := MinMax32(s.Eval(timeMS), -3600000, 3600000)
-	// TODO(maruel): Reduce the amount of int64 code in there yet keeping it from
-	// overflowing.
-	// offset ranges [0, 3599999]
-	offset := timeMS % 3600000
-	// (1<<32)/3600000 = 1193 is too low. Temporarily upgrade to int64 to
-	// calculate the value.
-	low := int64(offset) * int64(v) / 3600000
-	hour := timeMS / 3600000
-	high := int64(hour) * int64(v)
-	if cycle != 0 {
-		return int((low + high) % int64(cycle))
-	}
-	return int(low + high)
 }
 
 //

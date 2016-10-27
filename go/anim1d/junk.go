@@ -63,7 +63,7 @@ func (e *NightStars) NextFrame(pixels Frame, timeMS uint32) {
 		}
 	}
 
-	r := rand.NewSource(int64((&Rand{}).Eval(timeMS)))
+	r := rand.NewSource(int64((&Rand{}).Eval(timeMS, len(pixels))))
 	for i, s := range e.stars {
 		if s.intensity == 0 {
 			pixels[i] = Color{}
@@ -128,7 +128,7 @@ func (l *Lightning) NextFrame(pixels Frame, timeMS uint32) {
 	for i := min; i < max; i++ {
 		x := (i - left) * 65535 / width
 		pixels[i] = Color{intensity, intensity, intensity}
-		pixels[i].Dim(uint8(b.Eval(uint16(x)) >> 8))
+		pixels[i].Dim(uint8(b.Scale(uint16(x)) >> 8))
 	}
 }
 

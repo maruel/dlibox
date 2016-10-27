@@ -34,32 +34,56 @@ func TestMinMax32(t *testing.T) {
 	}
 }
 
+// Values
+
 func TestSValue_Eval(t *testing.T) {
 	var s SValue
-	if s.Eval(23) != 0 {
+	if s.Eval(23, 0) != 0 {
 		t.Fail()
 	}
 }
 
 func TestConst(t *testing.T) {
-	if Const(2).Eval(23) != 2 {
+	if Const(2).Eval(23, 0) != 2 {
 		t.Fail()
+	}
+}
+
+func TestPercent(t *testing.T) {
+	data := []struct {
+		p        int32
+		timeMS   uint32
+		l        int
+		expected int32
+	}{
+		{0, 0, 0, 0},
+		{65536, 0, 0, 0},
+		{65536, 1000, 0, 0},
+		{65536, 0, 1000, 1000},
+		{6554, 0, 1000, 100},
+		{-65536, 0, 1000, -1000},
+		{-6554, 0, 1000, -100},
+	}
+	for i, line := range data {
+		ut.AssertEqualIndex(t, i, line.expected, Percent(line.p).Eval(line.timeMS, line.l))
 	}
 }
 
 func TestRand(t *testing.T) {
 	r1 := Rand{0}
 	r2 := Rand{16}
-	if r1.Eval(0) != r2.Eval(15) {
+	if r1.Eval(0, 0) != r2.Eval(15, 0) {
 		t.Fail()
 	}
-	if r1.Eval(15) == r2.Eval(16) {
+	if r1.Eval(15, 0) == r2.Eval(16, 0) {
 		t.Fail()
 	}
-	if r1.Eval(23) != r2.Eval(23) {
+	if r1.Eval(23, 0) != r2.Eval(23, 0) {
 		t.Fail()
 	}
 }
+
+// Scalers
 
 func TestCurve(t *testing.T) {
 	for _, v := range []Curve{Curve(""), Ease, EaseIn, EaseInOut, EaseOut, Direct} {
@@ -174,7 +198,7 @@ func TestMovePerHour(t *testing.T) {
 	}
 	for i, line := range data {
 		m := MovePerHour{Const(line.mps)}
-		if actual := m.Eval(line.timeMS, line.cycle); actual != line.expected {
+		if actual := m.Eval(line.timeMS, 0, line.cycle); actual != line.expected {
 			t.Fatalf("%d: %d.Eval(%d, %d) = %d != %d", i, line.mps, line.timeMS, line.cycle, actual, line.expected)
 		}
 	}

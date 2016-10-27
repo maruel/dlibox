@@ -13,6 +13,7 @@ import (
 	"image/png"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -52,7 +53,8 @@ var valuesLookup map[string]reflect.Type
 
 var knownValues = []Value{
 	new(Const),
-	&Rand{0},
+	new(Percent),
+	&Rand{},
 }
 
 func init() {
@@ -244,11 +246,11 @@ type SValue struct {
 	Value
 }
 
-func (s *SValue) Eval(timeMS uint32) int32 {
+func (s *SValue) Eval(timeMS uint32, l int) int32 {
 	if s.Value == nil {
 		return 0
 	}
-	return s.Value.Eval(timeMS)
+	return s.Value.Eval(timeMS, l)
 }
 
 // UnmarshalJSON decodes a Value.
@@ -263,12 +265,19 @@ func (v *SValue) UnmarshalJSON(b []byte) error {
 		v.Value = Const(c)
 		return nil
 	}
-	if _, err := jsonUnmarshalString(b); err == nil {
-		var r Rand
-		if err := r.UnmarshalJSON(b); err == nil {
-			v.Value = &r
+	if s, err := jsonUnmarshalString(b); err == nil {
+		// It could be either a Percent or a Rand.
+		switch s {
+		case randKey:
+			v.Value = &Rand{}
+			return nil
+		default:
+			var p Percent
+			if err := p.UnmarshalJSON(b); err == nil {
+				v.Value = &p
+			}
+			return err
 		}
-		return err
 	}
 	o, err := jsonUnmarshalWithType(b, valuesLookup, nil)
 	if err != nil {
@@ -291,20 +300,41 @@ func (v *SValue) MarshalJSON() ([]byte, error) {
 //
 // If unmarshalling fails, 'c' is not touched.
 func (c *Const) UnmarshalJSON(b []byte) error {
-	s, err := jsonUnmarshalString(b)
+	i, err := jsonUnmarshalInt32(b)
 	if err != nil {
 		return err
 	}
-	i, err := strconv.ParseInt(s, 10, 32)
-	if err == nil {
-		*c = Const(i)
-	}
+	*c = Const(i)
 	return err
 }
 
 // MarshalJSON encodes the const as a int.
 func (c *Const) MarshalJSON() ([]byte, error) {
 	return json.Marshal(int(*c))
+}
+
+// UnmarshalJSON decodes the percent in the form of a string.
+//
+// If unmarshalling fails, 'p' is not touched.
+func (p *Percent) UnmarshalJSON(b []byte) error {
+	s, err := jsonUnmarshalString(b)
+	if err != nil {
+		return err
+	}
+	if !strings.HasSuffix(s, "%") {
+		return errors.New("percent must end with %")
+	}
+	f, err := strconv.ParseFloat(s[:len(s)-1], 32)
+	if err == nil {
+		// Convert back to fixed point.
+		*p = Percent(int32(f * 655.36))
+	}
+	return err
+}
+
+// MarshalJSON encodes the percent as a string.
+func (p *Percent) MarshalJSON() ([]byte, error) {
+	return json.Marshal(strconv.FormatFloat(float64(*p)/655.36, 'g', 4, 32) + "%")
 }
 
 // UnmarshalJSON decodes the string to the rand.
