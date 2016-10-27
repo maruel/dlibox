@@ -7,7 +7,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"sync"
 	"time"
 
@@ -55,8 +54,9 @@ func initPIR(b modules.Bus, config *PIR) error {
 			p.WaitForEdge(-1)
 			if p.Read() == gpio.High {
 				// TODO(maruel): sub-second resolution?
-				now := []byte(strconv.FormatInt(time.Now().Unix(), 10))
-				err := b.Publish(modules.Message{"pir", now}, modules.MinOnce, false)
+				now := time.Now()
+				nowStr := []byte(fmt.Sprintf("%d %s", now.Unix(), now))
+				err := b.Publish(modules.Message{"pir", nowStr}, modules.MinOnce, false)
 				if err != nil {
 					log.Printf("pir: failed to publish: %v", err)
 				}

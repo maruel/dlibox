@@ -37,6 +37,25 @@ func (g *Gradient) NextFrame(pixels Frame, timeMS uint32) {
 	}
 }
 
+// Split splits the strip in two.
+//
+// Unlike gradient, this create 2 logical independent subsets.
+type Split struct {
+	Left   SPattern
+	Right  SPattern
+	Offset SValue // Point to split between both sides.
+}
+
+func (s *Split) NextFrame(pixels Frame, timeMS uint32) {
+	offset := MinMax(int(s.Offset.Eval(timeMS)), 0, len(pixels))
+	if s.Left.Pattern != nil && offset != 0 {
+		s.Left.NextFrame(pixels[:offset], timeMS)
+	}
+	if s.Right.Pattern != nil && offset != len(pixels) {
+		s.Right.NextFrame(pixels[offset:], timeMS)
+	}
+}
+
 // Transition changes from Before to After over time. It doesn't repeat.
 //
 // In gets timeMS that is subtracted by OffsetMS.

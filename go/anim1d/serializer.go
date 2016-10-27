@@ -34,6 +34,7 @@ var knownPatterns = []Pattern{
 	&WishingStar{},
 	// Mixers
 	&Gradient{},
+	&Split{},
 	&Transition{},
 	&Loop{},
 	&Chronometer{},
