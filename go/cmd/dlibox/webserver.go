@@ -132,19 +132,15 @@ func (s *webServer) staticHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *webServer) patternsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
+		return
+	}
 	s.config.LRU.Lock()
 	defer s.config.LRU.Unlock()
-	switch r.Method {
-	case "GET":
-		data, _ := json.Marshal(s.config.LRU.Patterns)
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
-		w.Write(data)
-	case "POST":
-		// TODO(maruel): Switch goes here.
-	default:
-		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
-	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
+	json.NewEncoder(w).Encode(s.config.LRU.Patterns)
 }
 
 func (s *webServer) settingsHandler(w http.ResponseWriter, r *http.Request) {
@@ -157,7 +153,41 @@ func (s *webServer) settingsHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
 		w.Write(data)
 	case "POST":
-		// TODO(maruel): Update settings.
+		// TODO(maruel): Accept JSON.
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
+		settings := Settings{}
+		rawEncoded := r.PostFormValue("settings")
+		if len(rawEncoded) == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "settings is required"})
+			return
+		}
+		raw, err := base64.URLEncoding.DecodeString(rawEncoded)
+		if len(raw) == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "settings content is required"})
+			return
+		}
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "settings is not base64"})
+			return
+		}
+		if err := json.Unmarshal(raw, &settings); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("failed to decode: %v", err)})
+			return
+		}
+		// The lock is a problem here so we can't just copy in there. Instead,
+		// unmarshal a second time, so the lock is unaffected.
+		if err := json.Unmarshal(raw, &s.config.Settings); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("failed to decode: %v", err)})
+			return
+		}
+		// Serialize it again to return the canonical form.
+		json.NewEncoder(w).Encode(settings)
 	default:
 		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
 	}
@@ -166,6 +196,7 @@ func (s *webServer) settingsHandler(w http.ResponseWriter, r *http.Request) {
 func (s *webServer) patternHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
 		s.config.Settings.Painter.Lock()
 		defer s.config.Settings.Painter.Unlock()
 		l := s.config.Settings.Painter.Last
@@ -180,6 +211,8 @@ func (s *webServer) patternHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
+	// TODO(maruel): Accept JSON.
 	rawEncoded := r.PostFormValue("pattern")
 	if len(rawEncoded) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
