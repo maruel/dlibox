@@ -167,9 +167,12 @@ func (h *halloween) setIdle() {
 }
 
 func (h *halloween) publishState() {
+	if err := h.b.Publish(modules.Message{"state", []byte(h.state)}, modules.ExactlyOnce, true); err != nil {
+		log.Printf("halloween: failed to publish state: %v", err)
+	}
 	for _, cmd := range h.config.Cmds[h.state] {
 		if err := h.b.Publish(cmd.ToMsg(), modules.ExactlyOnce, false); err != nil {
-			log.Printf("halloween: %s: %v", h.state, cmd)
+			log.Printf("halloween: %s->%v: %v", h.state, cmd, err)
 		}
 	}
 }
