@@ -110,17 +110,28 @@ function fetchSettings() {
 }
 
 function setPattern() {
+  try {
   document.getElementById('patternBox').value = JSON.stringify(
       JSON.parse(document.getElementById('patternBox').value), null, 2);
+  } catch(e) {
+    // Tell the user the problem.
+    document.getElementById('patternError').innerText = e;
+    return;
+  }
+  document.getElementById('patternError').innerText = "";
   var oReq = new XMLHttpRequest();
-  oReq.open('post', '/switch', true);
+  oReq.open('post', '/api/pattern', true);
   oReq.responseType = 'json';
   oReq.onreadystatechange = function () {
-    if (oReq.readyState === XMLHttpRequest.DONE && oReq.status === 200) {
-      document.getElementById('patternBox').value = JSON.stringify(oReq.response, null, 2);
-      fetchPatterns();
+    if (oReq.readyState === XMLHttpRequest.DONE) {
+      if (oReq.status === 200) {
+        document.getElementById('patternBox').value = JSON.stringify(oReq.response, null, 2);
+        fetchPatterns();
+      } else if (oReq.status === 400) {
+        document.getElementById('patternError').innerText = oReq.response['error'];
+      }
+      return;
     }
-    // TODO(maruel): Handle failure.
   };
   oReq.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
   oReq.send('pattern=' + btoa(JSON.stringify(JSON.parse(document.getElementById('patternBox').value))));

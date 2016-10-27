@@ -58,9 +58,9 @@ func initWeb(b modules.Bus, port int, config *Config) (*webServer, error) {
 	mux.HandleFunc("/favicon.ico", s.faviconHandler)
 	mux.HandleFunc("/static/", s.staticHandler)
 	// Dynamic replies.
+	mux.HandleFunc("/api/pattern", s.patternHandler)
 	mux.HandleFunc("/api/patterns", s.patternsHandler)
 	mux.HandleFunc("/api/settings", s.settingsHandler)
-	mux.HandleFunc("/switch", s.switchHandler)
 	mux.HandleFunc("/thumbnail/", s.thumbnailHandler)
 
 	var err error
@@ -163,24 +163,38 @@ func (s *webServer) settingsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO(maruel): Locking for config access.
+func (s *webServer) patternHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		w.Header().Set("Content-Type", "application/json")
+		s.config.Settings.Painter.Lock()
+		defer s.config.Settings.Painter.Unlock()
+		l := s.config.Settings.Painter.Last
+		if l == "" {
+			l = s.config.Settings.Painter.Startup
+		}
+		w.Write([]byte(l))
+		return
+	}
 	if r.Method != "POST" {
 		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	rawEncoded := r.PostFormValue("pattern")
 	if len(rawEncoded) == 0 {
-		http.Error(w, "pattern is required", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "pattern is required"})
 		return
 	}
 	raw, err := base64.URLEncoding.DecodeString(rawEncoded)
 	if len(raw) == 0 {
-		http.Error(w, "pattern content is required", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "pattern content is required"})
 		return
 	}
 	if err != nil {
-		http.Error(w, "pattern is not base64", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "pattern is not base64"})
 		return
 	}
 
@@ -188,21 +202,24 @@ func (s *webServer) switchHandler(w http.ResponseWriter, r *http.Request) {
 	var obj anim1d.SPattern
 	if err := json.Unmarshal(raw, &obj); err != nil {
 		log.Printf("web: invalid JSON pattern: %v", err)
-		http.Error(w, "invalid JSON pattern", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 	raw, err = obj.MarshalJSON()
 	if err != nil {
 		log.Printf("web: internal error: %v", err)
-		http.Error(w, "internal error", http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
 	if err := s.b.Publish(modules.Message{"painter/setuser", raw}, modules.ExactlyOnce, false); err != nil {
-		http.Error(w, "failed to publish", http.StatusInternalServerError)
+		log.Printf("web: failed to publish: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("failed to publish: %v", err)})
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(raw)
 }
 
