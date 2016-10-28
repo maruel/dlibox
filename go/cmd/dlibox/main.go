@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -38,6 +39,7 @@ func mainImpl() error {
 	}
 
 	l := circular.New(1024 * 1024)
+	/* Circular is crashy. Shame on me.
 	defer func() {
 		// Flush ensures all readers have caught up.
 		l.Flush()
@@ -49,6 +51,10 @@ func mainImpl() error {
 	if *verbose {
 		// Asynchronously write to stderr.
 		go l.WriteTo(os.Stderr)
+	}
+	*/
+	if !*verbose {
+		log.SetOutput(ioutil.Discard)
 	}
 	if *noTime {
 		log.SetFlags(0)
