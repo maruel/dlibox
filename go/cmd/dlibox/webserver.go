@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"mime"
 	"net"
@@ -17,6 +18,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/maruel/circular"
 	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/modules"
 )
@@ -36,15 +38,17 @@ func init() {
 
 type webServer struct {
 	b      modules.Bus
+	l      io.WriterTo
 	cache  anim1d.ThumbnailsCache
 	config *Config
 	ln     net.Listener
 	server http.Server
 }
 
-func initWeb(b modules.Bus, port int, config *Config) (*webServer, error) {
+func initWeb(b modules.Bus, port int, config *Config, l io.WriterTo) (*webServer, error) {
 	s := &webServer{
 		b: b,
+		l: l,
 		cache: anim1d.ThumbnailsCache{
 			NumberLEDs:       100,
 			ThumbnailHz:      10,
@@ -62,6 +66,7 @@ func initWeb(b modules.Bus, port int, config *Config) (*webServer, error) {
 	mux.HandleFunc("/api/patterns", s.patternsHandler)
 	mux.HandleFunc("/api/settings", s.settingsHandler)
 	mux.HandleFunc("/thumbnail/", s.thumbnailHandler)
+	mux.HandleFunc("/logs", s.logsHandler)
 
 	var err error
 	s.ln, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -275,6 +280,13 @@ func (s *webServer) thumbnailHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/gif")
 	w.Header().Set("Cache-Control", cacheControl5m)
 	_, _ = w.Write(data)
+}
+
+func (s *webServer) logsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	// Streams the log buffer over HTTP until Close() is called.
+	// AutoFlush ensures the log is not buffered locally indefinitely.
+	s.l.WriteTo(circular.AutoFlush(w, time.Second))
 }
 
 // Private details.

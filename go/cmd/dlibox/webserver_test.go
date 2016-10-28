@@ -28,7 +28,7 @@ func TestWeb(t *testing.T) {
 	painter, err := initPainter(b, d, 60, &Painter{}, &LRU{})
 	ut.AssertEqual(t, nil, err)
 	defer painter.Close()
-	s, err := initWeb(b, 0, &config)
+	s, err := initWeb(b, 0, &config, nil)
 	defer s.Close()
 	ut.AssertEqual(t, nil, err)
 	base := fmt.Sprintf("http://%s/", s.server.Addr)

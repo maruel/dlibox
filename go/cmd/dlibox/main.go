@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -21,17 +20,13 @@ import (
 	"syscall"
 
 	"github.com/kardianos/osext"
+	"github.com/maruel/circular"
 	"github.com/maruel/dlibox/go/donotuse/host"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/interrupt"
 )
 
 func mainImpl() error {
-	thisFile, err := osext.Executable()
-	if err != nil {
-		return err
-	}
-
 	cpuprofile := flag.String("cpuprofile", "", "dump CPU profile in file")
 	port := flag.Int("port", 8010, "http port to listen on")
 	verbose := flag.Bool("verbose", false, "enable log output")
@@ -42,8 +37,18 @@ func mainImpl() error {
 		return fmt.Errorf("unexpected argument: %s", flag.Args())
 	}
 
-	if !*verbose {
-		log.SetOutput(ioutil.Discard)
+	l := circular.New(1024 * 1024)
+	defer func() {
+		// Flush ensures all readers have caught up.
+		l.Flush()
+		// Close gracefully closes the readers.
+		l.Close()
+	}()
+	log.SetOutput(l)
+
+	if *verbose {
+		// Asynchronously write to stderr.
+		go l.WriteTo(os.Stderr)
 	}
 	if *noTime {
 		log.SetFlags(0)
@@ -155,16 +160,22 @@ func mainImpl() error {
 		defer s.Close()
 	}
 
-	w, err := initWeb(bus, *port, &config.Config)
+	w, err := initWeb(bus, *port, &config.Config, l)
 	if err != nil {
 		return err
 	}
 	defer w.Close()
+
 	//service, err := initmDNS(*port, properties)
 	//if err != nil {
 	//	return err
 	//}
 	//defer service.Close()
+
+	thisFile, err := osext.Executable()
+	if err != nil {
+		return err
+	}
 
 	return watchFile(thisFile)
 }
