@@ -21,7 +21,8 @@ func TestHalloween(t *testing.T) {
 	h, err := initHalloween(modules.Rebase(&b, "foo"), &config)
 	ut.AssertEqual(t, nil, err)
 	ut.AssertEqual(t, nil, b.Publish(modules.Message{"foo/1", []byte("1")}, modules.ExactlyOnce, false))
-	b.Settle()
+	// TODO(maruel): Settle wasn't implement in a concurrent safe manner.
+	// b.Settle()
 	// This test is non-deterministic.
 	//ut.AssertEqual(t, Incoming, h.state)
 	ut.AssertEqual(t, nil, h.Close())

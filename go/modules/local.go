@@ -101,6 +101,7 @@ func (l *LocalBus) Get(topic string, qos QOS) ([]Message, error) {
 	return out, nil
 }
 
+/*
 // Settle waits for all messages in transit to be fully published.
 func (l *LocalBus) Settle() {
 	l.mu.Lock()
@@ -110,6 +111,7 @@ func (l *LocalBus) Settle() {
 		l.subscribers[i].settle()
 	}
 }
+*/
 
 //
 
@@ -127,6 +129,7 @@ func (s *subscription) publish(msg Message) {
 	if s.channel == nil {
 		return
 	}
+	// s.wg.Add() and s.wg.Wait() can only be called with the lock held.
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
@@ -134,9 +137,14 @@ func (s *subscription) publish(msg Message) {
 	}()
 }
 
+/*
 func (s *subscription) settle() {
+	// TODO(maruel): Add(1) must be called in the same goroutine as Wait(). Dang.
+	// Since publishing can happend in goroutine, this doesn't work, as it
+	// doesn't make sense to grab the lock here.
 	s.wg.Wait()
 }
+*/
 
 func (s *subscription) Close() {
 	s.mu.Lock()
@@ -148,9 +156,11 @@ func (s *subscription) Close() {
 			ok = false
 		}
 	}
-	s.wg.Wait()
-	close(s.channel)
-	s.channel = nil
+	// TODO(maruel): Some even may not be able to complete as the lock is held.
+	// s.wg.Wait()
+	// TODO(maruel): This may blow up the hung publishers.
+	// close(s.channel)
+	// s.channel = nil
 }
 
 // parsedTopic is either a query or a static topic.
