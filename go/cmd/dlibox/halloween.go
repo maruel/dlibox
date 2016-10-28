@@ -6,8 +6,8 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
-	"reflect"
 	"sync"
 	"time"
 
@@ -32,33 +32,17 @@ func (h *Halloween) ResetDefault() {
 func (h *Halloween) Validate() error {
 	h.Lock()
 	defer h.Unlock()
-	return nil
-}
-
-func merge(chans ...<-chan modules.Message) <-chan modules.Message {
-	out := make(chan modules.Message)
-	c := make([]reflect.SelectCase, len(chans))
-	for i := range chans {
-		c[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(chans[i])}
-	}
-	go func() {
-		defer close(out)
-		for {
-			i, msg, ok := reflect.Select(c)
-			if !ok {
-				if len(c) == 1 {
-					break
-				}
-				if i != len(c)-1 {
-					copy(c[i:], c[i+1:])
-				}
-				c = c[:len(c)-1]
-				continue
-			}
-			out <- msg.Interface().(modules.Message)
+	for k, v := range h.Modes {
+		if !v.Valid() {
+			return fmt.Errorf("halloween: Modes[%q] has invalid state %q", k, v)
 		}
-	}()
-	return out
+	}
+	for k := range h.Cmds {
+		if !k.Valid() {
+			return fmt.Errorf("halloween: Cmds[%q] is an invalid state", k)
+		}
+	}
+	return nil
 }
 
 func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
@@ -77,15 +61,13 @@ func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
 		config: config,
 		state:  Idle,
 	}
-	c1, err := b.Subscribe("//dlibox/+/pir", modules.ExactlyOnce)
+	// Listen to all messages, since we don't know the one that could be keys in
+	// the config. Technically we know but it's easier to just get them all.
+	// Revisit this decision if it becomes a problem.
+	c, err := b.Subscribe("//#", modules.ExactlyOnce)
 	if err != nil {
 		return nil, err
 	}
-	c2, err := b.Subscribe("//dlibox/halloween/#", modules.ExactlyOnce)
-	if err != nil {
-		return nil, err
-	}
-	c := merge(c1, c2)
 	go func() {
 		for {
 			for msg := range c {
@@ -93,7 +75,8 @@ func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
 			}
 		}
 	}()
-	h.publishState()
+	// Trigger Idle on startup.
+	h.publishState(h.state)
 	return h, nil
 }
 
@@ -110,6 +93,14 @@ const (
 	Porch State = "porch"
 )
 
+func (s State) Valid() bool {
+	switch s {
+	case Idle, Incoming, Porch:
+		return true
+	}
+	return false
+}
+
 type halloween struct {
 	b         modules.Bus
 	config    *Halloween
@@ -118,16 +109,12 @@ type halloween struct {
 }
 
 func (h *halloween) Close() error {
-	var err error
-	if err1 := h.b.Unsubscribe("//dlibox/+/pir"); err1 != nil {
-		log.Printf("failed to unsubscribe: //dlibox/+/pir: %v", err1)
-		err = err1
+	h.config.Lock()
+	defer h.config.Unlock()
+	if h.timerIdle != nil {
+		h.timerIdle.Stop()
 	}
-	if err1 := h.b.Unsubscribe("//dlibox/halloween/#"); err1 != nil {
-		log.Printf("failed to unsubscribe: //dlibox/halloween/#: %v", err1)
-		err = err1
-	}
-	return err
+	return h.b.Unsubscribe("//#")
 }
 
 func (h *halloween) onMsg(m modules.Message) {
@@ -142,16 +129,35 @@ func (h *halloween) onMsg(m modules.Message) {
 			// Ignore, we'll wait for going back to idle first.
 			return
 		}
-		h.state = s
-		h.publishState()
-		if h.state != Idle {
-			// Reset the timer.
-			h.timerIdle.Stop()
+		if s != Idle {
+			// Reset the timer. Note that the timer is only armed when the switch is
+			// triggered by Modes. If someone sends a state change manually via
+			// mosquitto_pub -t dlibox/halloween/state, the timer will not be armed.
+			if h.timerIdle != nil {
+				h.timerIdle.Stop()
+			}
 			if h.config.IdleAfter != 0 {
 				h.timerIdle = time.AfterFunc(time.Duration(h.config.IdleAfter)*time.Second, h.setIdle)
 			}
 		}
+		// Broadcast the new state. onMsg() will be called again with this state.
+		h.publishState(s)
 		return
+	}
+
+	if m.Topic == "dlibox/halloween/state" {
+		s := State(m.Payload)
+		if !s.Valid() {
+			log.Printf("halloween: state is invalid: %q", s)
+			return
+		}
+		h.state = s
+		for _, cmd := range h.config.Cmds[h.state] {
+			// TODO(maruel): Run them in parallel.
+			if err := h.b.Publish(cmd.ToMsg(), modules.ExactlyOnce, false); err != nil {
+				log.Printf("halloween: %s->%v: %v", h.state, cmd, err)
+			}
+		}
 	}
 }
 
@@ -162,17 +168,11 @@ func (h *halloween) setIdle() {
 		return
 	}
 	log.Printf("halloween: going back idle")
-	h.state = Idle
-	h.publishState()
+	h.publishState(Idle)
 }
 
-func (h *halloween) publishState() {
-	if err := h.b.Publish(modules.Message{"state", []byte(h.state)}, modules.ExactlyOnce, true); err != nil {
+func (h *halloween) publishState(s State) {
+	if err := h.b.Publish(modules.Message{"//dlibox/halloween/state", []byte(s)}, modules.ExactlyOnce, true); err != nil {
 		log.Printf("halloween: failed to publish state: %v", err)
-	}
-	for _, cmd := range h.config.Cmds[h.state] {
-		if err := h.b.Publish(cmd.ToMsg(), modules.ExactlyOnce, false); err != nil {
-			log.Printf("halloween: %s->%v: %v", h.state, cmd, err)
-		}
 	}
 }

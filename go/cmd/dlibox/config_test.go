@@ -10,7 +10,7 @@ import (
 	"github.com/maruel/ut"
 )
 
-func Test(t *testing.T) {
+func TestConfig(t *testing.T) {
 	var config Config
 	config.ResetDefault()
 	ut.AssertEqual(t, nil, config.autoFix())

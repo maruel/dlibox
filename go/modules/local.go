@@ -101,6 +101,16 @@ func (l *LocalBus) Get(topic string, qos QOS) ([]Message, error) {
 	return out, nil
 }
 
+// Settle waits for all messages in transit to be fully published.
+func (l *LocalBus) Settle() {
+	l.mu.Lock()
+	s := l.subscribers
+	l.mu.Unlock()
+	for i := range s {
+		l.subscribers[i].settle()
+	}
+}
+
 //
 
 type subscription struct {
@@ -122,6 +132,10 @@ func (s *subscription) publish(msg Message) {
 		defer s.wg.Done()
 		s.channel <- msg
 	}()
+}
+
+func (s *subscription) settle() {
+	s.wg.Wait()
 }
 
 func (s *subscription) Close() {

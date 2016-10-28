@@ -21,7 +21,7 @@ type MQTT struct {
 func (m *MQTT) ResetDefault() {
 	m.Lock()
 	defer m.Unlock()
-	m.Host = "localhost"
+	m.Host = "tcp://localhost:1883"
 }
 
 func (m *MQTT) Validate() error {
