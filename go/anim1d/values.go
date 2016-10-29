@@ -55,6 +55,15 @@ func (p Percent) Eval(timeMS uint32, l int) int32 {
 	return int32(int64(l) * int64(p) / 65536)
 }
 
+// Mod is a value that is cycling.
+type Mod struct {
+	TickMS int32 // The cycling time. Maximum is ~25 days.
+}
+
+func (m *Mod) Eval(timeMS uint32, l int) int32 {
+	return int32(timeMS % uint32(m.TickMS))
+}
+
 // Rand is a value that pseudo-randomly changes every TickMS millisecond. If
 // unspecified, changes every 60fps.
 type Rand struct {

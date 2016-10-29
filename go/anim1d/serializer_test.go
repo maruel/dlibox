@@ -83,6 +83,12 @@ func TestJSONValues(t *testing.T) {
 			if _, err := fmt.Sscanf(string(b), "\"%g%%\"", &f); err != nil {
 				t.Fatalf("%v", err)
 			}
+		} else if isMod(v) {
+			// Skip the %.
+			i := 0
+			if _, err := fmt.Sscanf(string(b), "\"%%%d\"", &i); err != nil {
+				t.Fatalf("%v", err)
+			}
 		} else if isRand(v) && string(b) == "\""+randKey+"\"" {
 			// Ok.
 		} else {
@@ -148,6 +154,11 @@ func isConst(v Value) bool {
 
 func isPercent(v Value) bool {
 	_, ok := v.(*Percent)
+	return ok
+}
+
+func isMod(v Value) bool {
+	_, ok := v.(*Mod)
 	return ok
 }
 

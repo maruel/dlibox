@@ -54,6 +54,7 @@ var valuesLookup map[string]reflect.Type
 var knownValues = []Value{
 	new(Const),
 	new(Percent),
+	&Mod{},
 	&Rand{},
 }
 
@@ -267,17 +268,25 @@ func (v *SValue) UnmarshalJSON(b []byte) error {
 	}
 	if s, err := jsonUnmarshalString(b); err == nil {
 		// It could be either a Percent or a Rand.
-		switch s {
-		case randKey:
+		if s == randKey {
 			v.Value = &Rand{}
 			return nil
-		default:
+		}
+		if strings.HasPrefix(s, "%") {
+			var m Mod
+			if err := m.UnmarshalJSON(b); err == nil {
+				v.Value = &m
+			}
+			return err
+		}
+		if strings.HasSuffix(s, "%") {
 			var p Percent
 			if err := p.UnmarshalJSON(b); err == nil {
 				v.Value = &p
 			}
 			return err
 		}
+		return fmt.Errorf("unknown value %q", s)
 	}
 	o, err := jsonUnmarshalWithType(b, valuesLookup, nil)
 	if err != nil {
@@ -335,6 +344,32 @@ func (p *Percent) UnmarshalJSON(b []byte) error {
 // MarshalJSON encodes the percent as a string.
 func (p *Percent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(strconv.FormatFloat(float64(*p)/655.36, 'g', 4, 32) + "%")
+}
+
+// UnmarshalJSON decodes the mod in the form of a string.
+//
+// If unmarshalling fails, 'm' is not touched.
+func (m *Mod) UnmarshalJSON(b []byte) error {
+	s, err := jsonUnmarshalString(b)
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(s, "%") {
+		return errors.New("mod must start with %")
+	}
+	i, err := strconv.ParseInt(s[1:], 10, 32)
+	if err == nil {
+		m.TickMS = int32(i)
+	}
+	if i < 0 {
+		return errors.New("mod: value must be positive")
+	}
+	return err
+}
+
+// MarshalJSON encodes the mod as a string.
+func (m *Mod) MarshalJSON() ([]byte, error) {
+	return json.Marshal("%" + strconv.FormatInt(int64(m.TickMS), 10))
 }
 
 // UnmarshalJSON decodes the string to the rand.
