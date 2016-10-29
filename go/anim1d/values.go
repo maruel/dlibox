@@ -55,24 +55,33 @@ func (p Percent) Eval(timeMS uint32, l int) int32 {
 	return int32(int64(l) * int64(p) / 65536)
 }
 
-// Mod is a value that is cycling downward.
-type Mod struct {
+// OpAdd adds a constant to timeMS.
+type OpAdd struct {
+	AddMS int32
+}
+
+func (o *OpAdd) Eval(timeMS uint32, l int) int32 {
+	return int32(timeMS) + o.AddMS
+}
+
+// OpMod is a value that is cycling downward.
+type OpMod struct {
 	TickMS int32 // The cycling time. Maximum is ~25 days.
 }
 
-func (m *Mod) Eval(timeMS uint32, l int) int32 {
-	return int32(timeMS % uint32(m.TickMS))
+func (o *OpMod) Eval(timeMS uint32, l int) int32 {
+	return int32(timeMS % uint32(o.TickMS))
 }
 
-// Step is a value that is cycling upward.
+// OpStep is a value that is cycling upward.
 //
 // It is useful for offsets that are increasing as a stepping function.
-type Step struct {
+type OpStep struct {
 	TickMS int32 // The cycling time. Maximum is ~25 days.
 }
 
-func (s *Step) Eval(timeMS uint32, l int) int32 {
-	return int32(timeMS / uint32(s.TickMS) * uint32(s.TickMS))
+func (o *OpStep) Eval(timeMS uint32, l int) int32 {
+	return int32(timeMS / uint32(o.TickMS) * uint32(o.TickMS))
 }
 
 // Rand is a value that pseudo-randomly changes every TickMS millisecond. If

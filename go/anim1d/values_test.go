@@ -69,6 +69,27 @@ func TestPercent(t *testing.T) {
 	}
 }
 
+func TestOpAdd(t *testing.T) {
+	if (&OpAdd{AddMS: 2}).Eval(23, 0) != 25 {
+		t.Fail()
+	}
+	if (&OpAdd{AddMS: -2}).Eval(23, 0) != 21 {
+		t.Fail()
+	}
+}
+
+func TestOpMod(t *testing.T) {
+	if (&OpMod{TickMS: 2}).Eval(23, 0) != 1 {
+		t.Fail()
+	}
+}
+
+func TestOpStep(t *testing.T) {
+	if (&OpStep{TickMS: 21}).Eval(23, 0) != 21 {
+		t.Fail()
+	}
+}
+
 func TestRand(t *testing.T) {
 	r1 := Rand{0}
 	r2 := Rand{16}

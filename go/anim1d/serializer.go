@@ -54,8 +54,9 @@ var valuesLookup map[string]reflect.Type
 var knownValues = []Value{
 	new(Const),
 	new(Percent),
-	&Mod{},
-	&Step{},
+	&OpAdd{},
+	&OpMod{},
+	&OpStep{},
 	&Rand{},
 }
 
@@ -273,10 +274,25 @@ func (v *SValue) UnmarshalJSON(b []byte) error {
 			v.Value = &Rand{}
 			return nil
 		}
+		if strings.HasPrefix(s, "+") {
+			var o OpAdd
+			if err := o.UnmarshalJSON(b); err == nil {
+				v.Value = &o
+			}
+			return err
+		}
+		if strings.HasPrefix(s, "-") {
+			var o OpAdd
+			if err := o.UnmarshalJSON(b); err == nil {
+				o.AddMS = -o.AddMS
+				v.Value = &o
+			}
+			return err
+		}
 		if strings.HasPrefix(s, "%") {
-			var m Mod
-			if err := m.UnmarshalJSON(b); err == nil {
-				v.Value = &m
+			var o OpMod
+			if err := o.UnmarshalJSON(b); err == nil {
+				v.Value = &o
 			}
 			return err
 		}
@@ -347,20 +363,53 @@ func (p *Percent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(strconv.FormatFloat(float64(*p)/655.36, 'g', 4, 32) + "%")
 }
 
+// UnmarshalJSON decodes the add in the form of a string.
+//
+// If unmarshalling fails, 'o' is not touched.
+func (o *OpAdd) UnmarshalJSON(b []byte) error {
+	s, err := jsonUnmarshalString(b)
+	if err != nil {
+		return err
+	}
+	i := int64(0)
+	if strings.HasPrefix(s, "+") {
+		i, err = strconv.ParseInt(s[1:], 10, 32)
+	} else if strings.HasPrefix(s, "-") {
+		i, err = strconv.ParseInt(s, 10, 32)
+	} else {
+		return errors.New("add: must start with + or -")
+	}
+	if err == nil {
+		o.AddMS = int32(i)
+	}
+	if i < 0 {
+		return errors.New("add: value must be positive")
+	}
+	return err
+}
+
+// MarshalJSON encodes the add as a string.
+func (o *OpAdd) MarshalJSON() ([]byte, error) {
+	if o.AddMS >= 0 {
+		return json.Marshal("+" + strconv.FormatInt(int64(o.AddMS), 10))
+	}
+	return json.Marshal(strconv.FormatInt(int64(o.AddMS), 10))
+}
+
 // UnmarshalJSON decodes the mod in the form of a string.
 //
-// If unmarshalling fails, 'm' is not touched.
-func (m *Mod) UnmarshalJSON(b []byte) error {
+// If unmarshalling fails, 'o' is not touched.
+func (o *OpMod) UnmarshalJSON(b []byte) error {
 	s, err := jsonUnmarshalString(b)
 	if err != nil {
 		return err
 	}
 	if !strings.HasPrefix(s, "%") {
-		return errors.New("mod must start with %")
+		return errors.New("mod: must start with %")
 	}
 	i, err := strconv.ParseInt(s[1:], 10, 32)
 	if err == nil {
-		m.TickMS = int32(i)
+		o.TickMS = int32(i)
 	}
 	if i < 0 {
 		return errors.New("mod: value must be positive")
@@ -369,8 +418,8 @@ func (m *Mod) UnmarshalJSON(b []byte) error {
 }
 
 // MarshalJSON encodes the mod as a string.
-func (m *Mod) MarshalJSON() ([]byte, error) {
-	return json.Marshal("%" + strconv.FormatInt(int64(m.TickMS), 10))
+func (o *OpMod) MarshalJSON() ([]byte, error) {
+	return json.Marshal("%" + strconv.FormatInt(int64(o.TickMS), 10))
 }
 
 // UnmarshalJSON decodes the string to the rand.
