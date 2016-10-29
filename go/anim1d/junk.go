@@ -87,7 +87,7 @@ type Lightning struct {
 	Center    SValue // offset of the center, from the left
 	HalfWidth SValue // in pixels
 	Intensity int    // the maximum intensity
-	StartMS   uint32 // when it started
+	StartMS   SValue // when it started
 }
 
 var lightningCycle = []struct {
@@ -108,7 +108,8 @@ var lightningCycle = []struct {
 }
 
 func (l *Lightning) NextFrame(pixels Frame, timeMS uint32) {
-	offset := timeMS - l.StartMS
+	// Will fail after 25 days.
+	offset := timeMS - uint32(l.StartMS.Eval(timeMS, len(pixels)))
 	intensity := uint8(0)
 	for i := 0; i < len(lightningCycle); i++ {
 		if lightningCycle[i].offsetMS > offset {

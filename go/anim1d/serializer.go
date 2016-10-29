@@ -55,6 +55,7 @@ var knownValues = []Value{
 	new(Const),
 	new(Percent),
 	&Mod{},
+	&Step{},
 	&Rand{},
 }
 

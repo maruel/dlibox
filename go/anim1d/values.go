@@ -55,13 +55,24 @@ func (p Percent) Eval(timeMS uint32, l int) int32 {
 	return int32(int64(l) * int64(p) / 65536)
 }
 
-// Mod is a value that is cycling.
+// Mod is a value that is cycling downward.
 type Mod struct {
 	TickMS int32 // The cycling time. Maximum is ~25 days.
 }
 
 func (m *Mod) Eval(timeMS uint32, l int) int32 {
 	return int32(timeMS % uint32(m.TickMS))
+}
+
+// Step is a value that is cycling upward.
+//
+// It is useful for offsets that are increasing as a stepping function.
+type Step struct {
+	TickMS int32 // The cycling time. Maximum is ~25 days.
+}
+
+func (s *Step) Eval(timeMS uint32, l int) int32 {
+	return int32(timeMS / uint32(s.TickMS) * uint32(s.TickMS))
 }
 
 // Rand is a value that pseudo-randomly changes every TickMS millisecond. If
