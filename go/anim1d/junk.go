@@ -84,8 +84,8 @@ func (e *NightStars) NextFrame(pixels Frame, timeMS uint32) {
 }
 
 type Lightning struct {
-	Center    int    // offset of the center, from the left
-	HalfWidth int    // in pixels
+	Center    SValue // offset of the center, from the left
+	HalfWidth SValue // in pixels
 	Intensity int    // the maximum intensity
 	StartMS   uint32 // when it started
 }
@@ -119,11 +119,13 @@ func (l *Lightning) NextFrame(pixels Frame, timeMS uint32) {
 	if intensity == 0 {
 		return
 	}
-	left := l.Center - l.HalfWidth
-	right := l.Center + l.HalfWidth
+	center := l.Center.Eval(timeMS, len(pixels))
+	halfWidth := l.HalfWidth.Eval(timeMS, len(pixels))
+	left := center - halfWidth
+	right := center + halfWidth
 	width := left - right
-	min := MinMax(left, 0, len(pixels)-1)
-	max := MinMax(right, 0, len(pixels)-1)
+	min := MinMax32(left, 0, int32(len(pixels)-1))
+	max := MinMax32(right, 0, int32(len(pixels)-1))
 	b := Bell{}
 	for i := min; i < max; i++ {
 		x := (i - left) * 65535 / width
