@@ -30,7 +30,7 @@ func (l *LRU) ResetDefault() {
 	l.Patterns = []Pattern{
 		"{\"_type\":\"Aurore\"}",
 		"{\"Child\":{\"Frame\":\"Lff0000ff0000ff0000ff0000ff0000ffffffffffffffffffffffffffffff\",\"_type\":\"Repeated\"},\"MovePerHour\":21600,\"_type\":\"Rotate\"}",
-		"{\"Patterns\":[{\"_type\":\"Aurore\"},{\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"_type\":\"Add\"}",
+		"{\"Patterns\":[{\"_type\":\"Aurore\"},{\"C\":\"#ff9000\",\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"_type\":\"Add\"}",
 		"{\"Curve\":\"easeinout\",\"Patterns\":[\"#ff0000\",\"#00ff00\",\"#0000ff\"],\"ShowMS\":1000000,\"TransitionMS\":1000000,\"_type\":\"Loop\"}",
 		"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#0000ff\",\"_type\":\"Gradient\"}",
 		"{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#ff0000\",\"_type\":\"Gradient\"}",
@@ -42,7 +42,7 @@ func (l *LRU) ResetDefault() {
 		"{\"Child\":\"Lffffff\",\"MovePerHour\":108000,\"_type\":\"PingPong\"}",
 		"{\"Curve\":\"easeinout\",\"Patterns\":[\"#ff0000\",\"#ff7f00\",\"#ffff00\",\"#00ff00\",\"#0000ff\",\"#4b0082\",\"#8b00ff\"],\"ShowMS\":1000000,\"TransitionMS\":10000000,\"_type\":\"Loop\"}",
 		"\"Rainbow\"",
-		"{\"_type\":\"NightStars\"}",
+		"{\"C\":\"#ff9000\",\"_type\":\"NightStars\"}",
 		"{\"Child\":\"L010001ff000000ff000000ff\",\"_type\":\"Chronometer\"}",
 		morning,
 	}
@@ -97,7 +97,7 @@ func (p *Painter) ResetDefault() {
 	p.Named = map[string]Pattern{
 		"Aurora":      "{\"_type\":\"Aurore\"}",
 		"Candy":       "{\"Child\":{\"Frame\":\"Lff0000ff0000ff0000ff0000ff0000ffffffffffffffffffffffffffffff\",\"_type\":\"Repeated\"},\"MovePerHour\":21600,\"_type\":\"Rotate\"}",
-		"Night":       "{\"Patterns\":[{\"_type\":\"Aurore\"},{\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"_type\":\"Add\"}",
+		"Night":       "{\"Patterns\":[{\"_type\":\"Aurore\"},{\"C\":\"#ff9000\",\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"_type\":\"Add\"}",
 		"Colors":      "{\"Curve\":\"easeinout\",\"Patterns\":[\"#ff0000\",\"#00ff00\",\"#0000ff\"],\"ShowMS\":1000000,\"TransitionMS\":1000000,\"_type\":\"Loop\"}",
 		"Blue":        "{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#0000ff\",\"_type\":\"Gradient\"}",
 		"Red":         "{\"Curve\":\"direct\",\"Left\":\"#000000\",\"Right\":\"#ff0000\",\"_type\":\"Gradient\"}",
@@ -109,7 +109,7 @@ func (p *Painter) ResetDefault() {
 		"Dot":         "{\"Child\":\"Lffffff\",\"MovePerHour\":108000,\"_type\":\"PingPong\"}",
 		"":            "{\"Curve\":\"easeinout\",\"Patterns\":[\"#ff0000\",\"#ff7f00\",\"#ffff00\",\"#00ff00\",\"#0000ff\",\"#4b0082\",\"#8b00ff\"],\"ShowMS\":1000000,\"TransitionMS\":10000000,\"_type\":\"Loop\"}",
 		"Rainbow":     "\"Rainbow\"",
-		"NightStars":  "{\"_type\":\"NightStars\"}",
+		"NightStars":  "{\"C\":\"#ff9000\",\"_type\":\"NightStars\"}",
 		"Chronometer": "{\"Child\":\"L010001ff000000ff000000ff\",\"_type\":\"Chronometer\"}",
 		"Morning":     morning,
 	}

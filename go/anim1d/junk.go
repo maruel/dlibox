@@ -38,48 +38,35 @@ func (a *Aurore) NextFrame(pixels Frame, timeMS uint32) {
 	}
 }
 
-type star struct {
-	intensity uint8
-	// TODO(maruel): Use maruel/temperature.
-}
-
 type NightStars struct {
-	stars []star
+	C     Color
+	stars Frame
 }
 
-func (e *NightStars) NextFrame(pixels Frame, timeMS uint32) {
-	if len(e.stars) != len(pixels) {
+func (n *NightStars) NextFrame(pixels Frame, timeMS uint32) {
+	if len(n.stars) != len(pixels) {
 		r := rand.NewSource(0)
-		e.stars = make([]star, len(pixels))
-		for i := range e.stars {
-			j := r.Int63()
+		n.stars = make(Frame, len(pixels))
+		for i := range n.stars {
+			j := int32(r.Int63())
 			// Cut off at 25%.
 			if j&0x30000 != 0x30000 {
 				continue
 			}
 			// Use gamma == 2 and limit intensity at 50%.
 			d := int(j&0xff+1) * int((j>>8)&0xff+1)
-			e.stars[i].intensity = uint8((d-1)>>8) / 2
+			n.stars[i] = n.C
+			n.stars[i].Dim(uint8((d-1)>>8) / 2)
 		}
 	}
 
 	r := rand.NewSource(int64((&Rand{}).Eval(timeMS, len(pixels))))
-	for i, s := range e.stars {
-		if s.intensity == 0 {
-			pixels[i] = Color{}
-			continue
-		}
-		j := r.Int63()
+	copy(pixels, n.stars)
+	for i := range n.stars {
+		j := uint8(r.Int63())
 		// Use gamma == 2.
-		d := int(j&0xf+1) * int((j>>4)&0xf+1)
-		y := (d-1)>>4 + int(s.intensity)
-		if y > 255 {
-			y = 255
-		} else if y < 0 {
-			y = 0
-		}
-		f := uint8(y)
-		pixels[i] = Color{f, f, f}
+		d := int32(j&0xf+1) * int32((j>>4)+1)
+		pixels[i].Dim(255 - uint8((d-1)>>4))
 	}
 }
 

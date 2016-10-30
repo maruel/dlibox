@@ -28,6 +28,8 @@ func (c *Color) NextFrame(pixels Frame, timeMS uint32) {
 }
 
 // Dim reduces the intensity of a color/pixel to scale it on intensity.
+//
+// 0 means completely dark, 255 the color c is unaffected.
 func (c *Color) Dim(intensity uint8) {
 	i := uint16(intensity)
 	d := i >> 1
