@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime/pprof"

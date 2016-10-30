@@ -56,17 +56,16 @@ func initWeb(b modules.Bus, port int, config *Config, l io.WriterTo) (*webServer
 		},
 		config: config,
 	}
-	mux := http.NewServeMux()
 	// Static replies.
-	mux.HandleFunc("/", s.rootHandler)
-	mux.HandleFunc("/favicon.ico", s.faviconHandler)
-	mux.HandleFunc("/static/", s.staticHandler)
+	http.HandleFunc("/", s.rootHandler)
+	http.HandleFunc("/favicon.ico", s.faviconHandler)
+	http.HandleFunc("/static/", s.staticHandler)
 	// Dynamic replies.
-	mux.HandleFunc("/api/pattern", s.patternHandler)
-	mux.HandleFunc("/api/patterns", s.patternsHandler)
-	mux.HandleFunc("/api/settings", s.settingsHandler)
-	mux.HandleFunc("/thumbnail/", s.thumbnailHandler)
-	mux.HandleFunc("/logs", s.logsHandler)
+	http.HandleFunc("/api/pattern", s.patternHandler)
+	http.HandleFunc("/api/patterns", s.patternsHandler)
+	http.HandleFunc("/api/settings", s.settingsHandler)
+	http.HandleFunc("/thumbnail/", s.thumbnailHandler)
+	http.HandleFunc("/logs", s.logsHandler)
 
 	var err error
 	s.ln, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -75,7 +74,7 @@ func initWeb(b modules.Bus, port int, config *Config, l io.WriterTo) (*webServer
 	}
 	s.server = http.Server{
 		Addr:           s.ln.Addr().String(),
-		Handler:        loggingHandler{mux},
+		Handler:        loggingHandler{http.DefaultServeMux},
 		ReadTimeout:    60 * time.Second,
 		WriteTimeout:   60 * time.Second,
 		MaxHeaderBytes: 1 << 16,
