@@ -30,7 +30,7 @@ func (a *Aurore) NextFrame(pixels Frame, timeMS uint32) {
 	for i := range pixels {
 		x := float32(i)
 		//a := 32 + 31*sin(x/(37.+15*cos(y/74)))*cos(y/(31+11*sin(x/57)))
-		b := (32 + 31*(sin(hypot(200-y, 320-x)/16))) * (0.5 + 0.5*sin(y*0.1))
+		b := (128 + 127*(sin(hypot(200-y, 320-x)/16))) * (0.5 + 0.5*sin(y*0.1))
 		pixels[i].R = 0
 		//pixels[i].G = uint8(a + b)
 		pixels[i].G = uint8(b)
