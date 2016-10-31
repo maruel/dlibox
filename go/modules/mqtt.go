@@ -6,6 +6,7 @@ package modules
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -16,6 +17,9 @@ import (
 // It intentionally has a much simpler surface.
 type MQTT struct {
 	client mqtt.Client
+
+	mu          sync.Mutex
+	subscribers []*subscription
 }
 
 func New(server, clientID, user, password string) (*MQTT, error) {
@@ -38,7 +42,26 @@ func New(server, clientID, user, password string) (*MQTT, error) {
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		return nil, token.Error()
 	}
-	return &MQTT{client}, nil
+	m := &MQTT{client: client}
+
+	// TODO(maruel): Temporary.
+	token := m.client.Subscribe("#", byte(ExactlyOnce), func(client mqtt.Client, msgQ mqtt.Message) {
+		msg := Message{msgQ.Topic(), msgQ.Payload()}
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		for i := range m.subscribers {
+			if m.subscribers[i].topic.match(msg.Topic) {
+				m.subscribers[i].publish(msg)
+			}
+		}
+
+	})
+	token.Wait()
+	if err := token.Error(); err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
 
 func (m *MQTT) Close() error {
@@ -55,18 +78,47 @@ func (m *MQTT) Publish(msg Message, qos QOS, retained bool) error {
 }
 
 func (m *MQTT) Subscribe(topic string, qos QOS) (<-chan Message, error) {
+	/*
+		c := make(chan Message)
+		token := m.client.Subscribe(topic, byte(qos), func(client mqtt.Client, msg mqtt.Message) {
+			c <- Message{msg.Topic(), msg.Payload()}
+		})
+		token.Wait()
+		return c, token.Error()
+	*/
+	p := parseTopic(topic)
+	if p == nil {
+		return nil, errors.New("invalid topic")
+	}
 	c := make(chan Message)
-	token := m.client.Subscribe(topic, byte(qos), func(client mqtt.Client, msg mqtt.Message) {
-		c <- Message{msg.Topic(), msg.Payload()}
-	})
-	token.Wait()
-	return c, token.Error()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.subscribers = append(m.subscribers, &subscription{topic: p, channel: c})
+	return c, nil
+
 }
 
 func (m *MQTT) Unsubscribe(topic string) error {
-	token := m.client.Unsubscribe(topic)
-	token.Wait()
-	return token.Error()
+	/*
+		token := m.client.Unsubscribe(topic)
+		token.Wait()
+		return token.Error()
+	*/
+	p := parseTopic(topic)
+	if p == nil {
+		return errors.New("invalid topic")
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i := range m.subscribers {
+		if m.subscribers[i].topic.isEqual(p) {
+			m.subscribers[i].Close()
+			copy(m.subscribers[i:], m.subscribers[i+1:])
+			m.subscribers = m.subscribers[:len(m.subscribers)-1]
+			return nil
+		}
+	}
+	return errors.New("subscription not found")
 }
 
 func (m *MQTT) Get(topic string, qos QOS) ([]Message, error) {
