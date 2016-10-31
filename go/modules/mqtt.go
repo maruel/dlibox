@@ -71,10 +71,13 @@ func (m *MQTT) Close() error {
 }
 
 func (m *MQTT) Publish(msg Message, qos QOS, retained bool) error {
-	// Make it back synchronous.
-	token := m.client.Publish(msg.Topic, byte(qos), retained, msg.Payload)
-	token.Wait()
-	return token.Error()
+	// TODO(maruel): Make it back synchronous.
+	m.client.Publish(msg.Topic, byte(qos), retained, msg.Payload)
+	return nil
+	// TODO(maruel): I think it may induce multi-second delay. Horrible hack.
+	//token := m.client.Publish(msg.Topic, byte(qos), retained, msg.Payload)
+	//token.Wait()
+	//return token.Error()
 }
 
 func (m *MQTT) Subscribe(topic string, qos QOS) (<-chan Message, error) {
