@@ -57,13 +57,13 @@ func initPIR(b modules.Bus, config *PIR) error {
 				// TODO(maruel): sub-second resolution?
 				now := time.Now()
 				nowStr := []byte(fmt.Sprintf("%d %s", now.Unix(), now))
-				err := b.Publish(modules.Message{"pir", nowStr}, modules.MinOnce, false)
+				err := b.Publish(modules.Message{"pir", nowStr}, modules.BestEffort, false)
 				if err != nil {
 					log.Printf("pir: failed to publish: %v", err)
 				}
 				config.Lock()
 				if config.Cmd.Topic != "" {
-					err = b.Publish(config.Cmd.ToMsg(), modules.ExactlyOnce, false)
+					err = b.Publish(config.Cmd.ToMsg(), modules.BestEffort, false)
 				}
 				config.Unlock()
 				if err != nil {

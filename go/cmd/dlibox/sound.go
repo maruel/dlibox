@@ -36,7 +36,7 @@ func (s *Sound) Validate() error {
 
 func initSound(b modules.Bus, config *Sound) (*sound, error) {
 	s := &sound{b: b, config: config}
-	c, err := b.Subscribe("sound", modules.ExactlyOnce)
+	c, err := b.Subscribe("sound", modules.BestEffort)
 	if err != nil {
 		return nil, err
 	}

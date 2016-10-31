@@ -151,7 +151,7 @@ func initPainter(b modules.Bus, leds devices.Display, fps int, config *Painter, 
 			return nil, err
 		}
 	}
-	c, err := b.Subscribe("painter/#", modules.ExactlyOnce)
+	c, err := b.Subscribe("painter/#", modules.BestEffort)
 	if err != nil {
 		return nil, err
 	}

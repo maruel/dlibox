@@ -20,7 +20,7 @@ func TestHalloween(t *testing.T) {
 	config.Cmds = map[State][]Command{Incoming: {{"bar", "1"}}}
 	h, err := initHalloween(modules.Rebase(&b, "foo"), &config)
 	ut.AssertEqual(t, nil, err)
-	ut.AssertEqual(t, nil, b.Publish(modules.Message{"foo/1", []byte("1")}, modules.ExactlyOnce, false))
+	ut.AssertEqual(t, nil, b.Publish(modules.Message{"foo/1", []byte("1")}, modules.BestEffort, false))
 	// TODO(maruel): Settle wasn't implement in a concurrent safe manner.
 	// b.Settle()
 	// This test is non-deterministic.

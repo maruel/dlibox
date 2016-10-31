@@ -85,7 +85,7 @@ func initLEDs(b modules.Bus, fake bool, config *APA102) (*leds, error) {
 		}
 		l = &leds{Display: a, b: b, s: s, fps: fps}
 	}
-	c, err := b.Subscribe("leds/#", modules.ExactlyOnce)
+	c, err := b.Subscribe("leds/#", modules.BestEffort)
 	if err != nil {
 		l.Close()
 		return nil, err

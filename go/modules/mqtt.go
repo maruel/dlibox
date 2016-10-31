@@ -45,7 +45,7 @@ func New(server, clientID, user, password string) (*MQTT, error) {
 	m := &MQTT{client: client}
 
 	// TODO(maruel): Temporary.
-	token := m.client.Subscribe("#", byte(ExactlyOnce), func(client mqtt.Client, msgQ mqtt.Message) {
+	token := m.client.Subscribe("#", byte(BestEffort), func(client mqtt.Client, msgQ mqtt.Message) {
 		msg := Message{msgQ.Topic(), msgQ.Payload()}
 		m.mu.Lock()
 		defer m.mu.Unlock()

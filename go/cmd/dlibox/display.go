@@ -60,7 +60,7 @@ func initDisplay(b modules.Bus, config *Display) (*display, error) {
 	if _, err = d.Write(img.Buf); err != nil {
 		return nil, err
 	}
-	c, err := b.Subscribe("display/#", modules.ExactlyOnce)
+	c, err := b.Subscribe("display/#", modules.BestEffort)
 	if err != nil {
 		return nil, err
 	}

@@ -64,7 +64,7 @@ func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
 	// Listen to all messages, since we don't know the one that could be keys in
 	// the config. Technically we know but it's easier to just get them all.
 	// Revisit this decision if it becomes a problem.
-	c, err := b.Subscribe("//#", modules.ExactlyOnce)
+	c, err := b.Subscribe("//#", modules.BestEffort)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (h *halloween) onMsg(m modules.Message) {
 		h.state = s
 		for _, cmd := range h.config.Cmds[h.state] {
 			// TODO(maruel): Run them in parallel.
-			if err := h.b.Publish(cmd.ToMsg(), modules.ExactlyOnce, false); err != nil {
+			if err := h.b.Publish(cmd.ToMsg(), modules.BestEffort, false); err != nil {
 				log.Printf("halloween: %s->%v: %v", h.state, cmd, err)
 			}
 		}
@@ -172,7 +172,7 @@ func (h *halloween) setIdle() {
 }
 
 func (h *halloween) publishState(s State) {
-	if err := h.b.Publish(modules.Message{"//dlibox/halloween/state", []byte(s)}, modules.ExactlyOnce, true); err != nil {
+	if err := h.b.Publish(modules.Message{"//dlibox/halloween/state", []byte(s)}, modules.BestEffort, true); err != nil {
 		log.Printf("halloween: failed to publish state: %v", err)
 	}
 }

@@ -73,12 +73,12 @@ func initButton(b modules.Bus, config *Button) error {
 				/*
 					if state == gpio.Low {
 						index = (index + 1) % len(names)
-						if err := b.Publish(modules.Message{"painter/setuser", r[names[index]]}, modules.ExactlyOnce, false); err != nil {
+						if err := b.Publish(modules.Message{"painter/setuser", r[names[index]]}, modules.BestEffort, false); err != nil {
 							log.Printf("button: failed to publish: %v", err)
 						}
 					}
 				*/
-				if err := b.Publish(modules.Message{"button", []byte(state.String())}, modules.ExactlyOnce, false); err != nil {
+				if err := b.Publish(modules.Message{"button", []byte(state.String())}, modules.BestEffort, false); err != nil {
 					log.Printf("button: failed to publish: %v", err)
 				}
 			}
