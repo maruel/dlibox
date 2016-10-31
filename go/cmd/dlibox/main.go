@@ -109,9 +109,11 @@ func mainImpl() error {
 	}
 	bus = modules.Logging(bus)
 	// Publish the config as a retained message.
+	/* TODO(maruel): temporary to help cut noise.
 	if err := bus.Publish(modules.Message{"config", b}, modules.MinOnce, true); err != nil {
 		log.Printf("Publishing failued: %v", err)
 	}
+	*/
 
 	_, err = initDisplay(bus, &config.Settings.Display)
 	if err != nil {

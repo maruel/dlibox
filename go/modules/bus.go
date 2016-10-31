@@ -143,7 +143,8 @@ func (r *rebaseSubscriber) Subscribe(topic string, qos QOS) (<-chan Message, err
 		return r.Bus.Subscribe(topic[2:], qos)
 	}
 	// TODO(maruel): Support mergeTopic().
-	c, err := r.Bus.Subscribe(r.root+topic, qos)
+	actual := r.root + topic
+	c, err := r.Bus.Subscribe(actual, qos)
 	if err != nil {
 		return c, err
 	}
@@ -153,7 +154,12 @@ func (r *rebaseSubscriber) Subscribe(topic string, qos QOS) (<-chan Message, err
 		defer close(c2)
 		// Translate the topics.
 		for msg := range c {
-			c2 <- Message{msg.Topic[offset:], msg.Payload}
+			if !strings.HasPrefix(msg.Topic, actual) {
+				// TODO(maruel): There's a bug when subscribing over MQTT.
+				log.Printf("bus: unexpected topic prefix %q, expected %q", msg.Topic, actual)
+			} else {
+				c2 <- Message{msg.Topic[offset:], msg.Payload}
+			}
 		}
 	}()
 	return c2, nil
