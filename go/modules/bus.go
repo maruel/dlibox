@@ -145,6 +145,7 @@ func (r *rebaseSubscriber) Subscribe(topic string, qos QOS) (<-chan Message, err
 	// TODO(maruel): Support mergeTopic().
 	actual := r.root + topic
 	c, err := r.Bus.Subscribe(actual, qos)
+	p := parseTopic(actual)
 	if err != nil {
 		return c, err
 	}
@@ -154,7 +155,7 @@ func (r *rebaseSubscriber) Subscribe(topic string, qos QOS) (<-chan Message, err
 		defer close(c2)
 		// Translate the topics.
 		for msg := range c {
-			if !strings.HasPrefix(msg.Topic, actual) {
+			if !p.match(msg.Topic) {
 				// TODO(maruel): There's a bug when subscribing over MQTT.
 				log.Printf("bus: unexpected topic prefix %q, expected %q", msg.Topic, actual)
 			} else {
