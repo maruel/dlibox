@@ -63,6 +63,7 @@ func initWeb(b modules.Bus, port int, config *Config, l io.WriterTo) (*webServer
 	// Dynamic replies.
 	http.HandleFunc("/api/pattern", s.patternHandler)
 	http.HandleFunc("/api/patterns", s.patternsHandler)
+	http.HandleFunc("/api/publish", s.publishHandler)
 	http.HandleFunc("/api/settings", s.settingsHandler)
 	http.HandleFunc("/thumbnail/", s.thumbnailHandler)
 	http.HandleFunc("/logs", s.logsHandler)
@@ -145,6 +146,33 @@ func (s *webServer) patternsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
 	json.NewEncoder(w).Encode(s.config.LRU.Patterns)
+}
+
+func (s *webServer) publishHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Ugh", http.StatusMethodNotAllowed)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
+	state := r.PostFormValue("state")
+	if len(state) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "state is required"})
+		return
+	}
+	if !State(state).Valid() {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "state is invalid"})
+		return
+	}
+	if err := s.b.Publish(modules.Message{"dlibox/halloween/state", []byte(state)}, modules.ExactlyOnce, false); err != nil {
+		log.Printf("web: failed to publish: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("failed to publish: %v", err)})
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"ok": "1"})
 }
 
 func (s *webServer) settingsHandler(w http.ResponseWriter, r *http.Request) {

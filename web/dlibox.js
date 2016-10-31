@@ -109,6 +109,16 @@ function fetchSettings() {
   })
 }
 
+function setState(state) {
+  var oReq = new XMLHttpRequest();
+  oReq.open('post', '/api/publish', true);
+  oReq.responseType = 'json';
+  // TODO(maruel): oReq.setRequestHeader('Content-type', 'application/json');
+  oReq.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+  oReq.send('state=' + state);
+  return false;
+}
+
 function setPattern() {
   try {
     document.getElementById('patternBox').value = JSON.stringify(

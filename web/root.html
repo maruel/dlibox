@@ -37,10 +37,15 @@
   </div>
   <div class="container content">
     <div class="row">
-      <div class="column">
-        <h1>dlibox - {{.Host}}</h1>
-        <h2 id="patterns">Choix d'animations</h2>
-      </div>
+      <h1>dlibox - {{.Host}}</h1>
+    </div>
+    <div class="row">
+      <button onclick="setState('idle')">Idle</button>
+      <button onclick="setState('incoming')">Incoming</button>
+      <button onclick="setState('porch')">Porch</button>
+    </div>
+    <div class="row">
+      <h2 id="patterns">Choix d'animations</h2>
     </div>
     <div class="row">
       <div id="boutons"></div>
@@ -56,7 +61,7 @@
     </div>
     <div class="row">
       <h2 id="color">Manual Color</h2>
-      <div class="six columns">
+      <div class="eight columns">
         <div class="colorpicker">
           <div id="picker-wrapper" class="picker-wrapper">
             <div id="picker" class="picker"></div>
@@ -68,7 +73,7 @@
           </div>
         </div>
       </div>
-      <div class="six columns">
+      <div class="three columns">
         <div class="colorRGB">
           <div>
             <label>RGB</label>
