@@ -53,6 +53,7 @@ func initPIR(b modules.Bus, config *PIR) error {
 		for {
 			p.WaitForEdge(-1)
 			if p.Read() == gpio.High {
+				log.Printf("pir: high")
 				// TODO(maruel): sub-second resolution?
 				now := time.Now()
 				nowStr := []byte(fmt.Sprintf("%d %s", now.Unix(), now))
@@ -68,6 +69,8 @@ func initPIR(b modules.Bus, config *PIR) error {
 				if err != nil {
 					log.Printf("pir: failed to publish: %v", err)
 				}
+			} else {
+				log.Printf("pir: low")
 			}
 		}
 	}()
