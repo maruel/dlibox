@@ -166,7 +166,7 @@ func (s *webServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]string{"error": "state is invalid"})
 		return
 	}
-	if err := s.b.Publish(modules.Message{"dlibox/halloween/state", []byte(state)}, modules.ExactlyOnce, false); err != nil {
+	if err := s.b.Publish(modules.Message{"//dlibox/halloween/state", []byte(state)}, modules.ExactlyOnce, false); err != nil {
 		log.Printf("web: failed to publish: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("failed to publish: %v", err)})

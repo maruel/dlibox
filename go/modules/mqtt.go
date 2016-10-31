@@ -59,6 +59,7 @@ func (m *MQTT) Subscribe(topic string, qos QOS) (<-chan Message, error) {
 	token := m.client.Subscribe(topic, byte(qos), func(client mqtt.Client, msg mqtt.Message) {
 		c <- Message{msg.Topic(), msg.Payload()}
 	})
+	token.Wait()
 	return c, token.Error()
 }
 
