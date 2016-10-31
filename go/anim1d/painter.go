@@ -149,6 +149,7 @@ func (p *Painter) runPattern(cGen <-chan Frame, cWrite chan<- Frame) {
 			if t, ok := root.(*Transition); ok {
 				if t.OffsetMS+t.TransitionMS < timeMS {
 					root = t.After.Pattern
+					since -= time.Duration(t.OffsetMS) * time.Millisecond
 				}
 			}
 
