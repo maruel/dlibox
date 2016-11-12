@@ -22,6 +22,9 @@ func (c *Command) ToMsg() modules.Message {
 
 func (c *Command) Validate() error {
 	switch c.Topic {
+	case "leds/temperature", "leds/intensity":
+		// TODO(maruel): Validate number?
+		return nil
 	case "painter/setautomated", "painter/setnow", "painter/setuser":
 		return Pattern(c.Payload).Validate()
 	case "":

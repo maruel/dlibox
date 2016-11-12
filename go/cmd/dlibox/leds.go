@@ -10,6 +10,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -137,20 +138,48 @@ func (l *leds) Close() error {
 	return err
 }
 
+// Support both relative and absolute values.
+func processRel(topic string, p []byte) (int, int, error) {
+	if len(p) == 0 {
+		return 0, 0, fmt.Errorf("leds: %s missing payload", topic)
+	}
+	s := string(p)
+	op := 0
+	if p[0] == '+' {
+		op = 1
+		s = s[1:]
+	} else if p[0] == '-' {
+		op = 2
+		s = s[1:]
+	}
+	v, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, 0, fmt.Errorf("leds: %s: %v", topic, err)
+	}
+	return v, op, nil
+}
+
 func (l *leds) onMsg(msg modules.Message) {
 	switch msg.Topic {
 	case "leds/fake":
 	case "leds/fps":
 	case "leds/intensity":
-		v, err := strconv.Atoi(string(msg.Payload))
-		if err != nil {
-			log.Printf("leds: %s: %v", msg, err)
-			return
-		}
 		a, ok := l.Display.(*apa102.Dev)
 		if !ok {
 			log.Printf("leds: can't set intensity with fake LED")
 			return
+		}
+		v, op, err := processRel(msg.Topic, msg.Payload)
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		switch op {
+		case 0:
+		case 1:
+			v = int(a.Intensity) + v
+		case 2:
+			v = int(a.Intensity) - v
 		}
 		if v < 0 {
 			v = 0
@@ -160,15 +189,22 @@ func (l *leds) onMsg(msg modules.Message) {
 		a.Intensity = uint8(v)
 	case "leds/num":
 	case "leds/temperature":
-		v, err := strconv.Atoi(string(msg.Payload))
-		if err != nil {
-			log.Printf("leds: %s: %v", msg, err)
-			return
-		}
 		a, ok := l.Display.(*apa102.Dev)
 		if !ok {
 			log.Printf("leds: can't set temperature with fake LED")
 			return
+		}
+		v, op, err := processRel(msg.Topic, msg.Payload)
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		switch op {
+		case 0:
+		case 1:
+			v = int(a.Temperature) + v
+		case 2:
+			v = int(a.Temperature) - v
 		}
 		if v < 1000 {
 			v = 1000

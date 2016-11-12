@@ -110,7 +110,7 @@ func (p *Painter) ResetDefault() {
 		"":            "{\"Curve\":\"easeinout\",\"Patterns\":[\"#ff0000\",\"#ff7f00\",\"#ffff00\",\"#00ff00\",\"#0000ff\",\"#4b0082\",\"#8b00ff\"],\"ShowMS\":1000000,\"TransitionMS\":10000000,\"_type\":\"Loop\"}",
 		"Rainbow":     "\"Rainbow\"",
 		"NightStars":  "{\"C\":\"#ff9000\",\"_type\":\"NightStars\"}",
-		"Chronometer": "{\"Child\":\"L010001ff000000ff000000ff\",\"_type\":\"Chronometer\"}",
+		"Chronometer": "{\"Child\":\"L0100010f0000000f0000000f\",\"_type\":\"Chronometer\"}",
 		"Morning":     morning,
 	}
 	p.Startup = "\"#010001\""
