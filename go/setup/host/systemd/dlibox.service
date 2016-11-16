@@ -2,14 +2,14 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
-# Copy to /etc/systemd/system/dlibox.service
-# Then run:
+# To install, run as root:
+#   cp dlibox.service /etc/systemd/system
 #   systemctl daemon-reload
 #   systemctl enable dlibox.service
 #   systemctl start dlibox.service
 #
 # To view logs:
-#   journalctl -u dlibox.service
+#   journalctl -f -u dlibox.service
 
 # All the flags in the following help pages apply:
 # - https://www.freedesktop.org/software/systemd/man/systemd.exec.html
@@ -31,6 +31,13 @@ Restart=always
 TimeoutStopSec=20s
 ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/pi/bin/dlibox
 ExecStart=/home/pi/bin/dlibox -port 80 -verbose -notime
+# High priority stuff:
+# Nice=-20
+# IOSchedulingClass=realtime
+# IOSchedulingPriority=0
+# CPUSchedulingPolicy=rr
+# CPUSchedulingPriority=99
+# CPUSchedulingResetOnFork=true
 
 [Install]
 WantedBy=multi-user.target

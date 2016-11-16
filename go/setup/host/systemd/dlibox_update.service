@@ -2,13 +2,16 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
-# Copy to /etc/systemd/system/dlibox_update.service
-# Then run:
+# To install, run as root:
+#   cp dlibox_update.service /etc/systemd/system
 #   systemctl daemon-reload
 #   systemctl enable dlibox_update.service
 #
+# To run manually, run as root:
+#   systemctl start dlibox_update.service
+#
 # To view logs:
-#   journalctl -u dlibox_update.service
+#   journalctl -f -u dlibox_update.service
 
 # All the flags in the following help pages apply:
 # - https://www.freedesktop.org/software/systemd/man/systemd.exec.html
@@ -24,3 +27,5 @@ Type=oneshot
 User=pi
 Group=pi
 ExecStart=/bin/sh -l -c "go get -v -u github.com/maruel/dlibox/go/cmd/..."
+WorkingDirectory=/home/pi
+# Environment=PATH=/home/pi/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin GOROOT=/home/pi/go
