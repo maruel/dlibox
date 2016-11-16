@@ -25,12 +25,17 @@ After=network-online.target
 [Service]
 User=pi
 Group=pi
-PermissionsStartOnly=true
 KillMode=mixed
 Restart=always
 TimeoutStopSec=20s
-ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/pi/bin/dlibox
 ExecStart=/home/pi/bin/dlibox -port 80 -verbose -notime
+
+# Systemd 229:
+#AmbientCapabilities=CAP_NET_BIND_SERVICE
+# Systemd 228 and below:
+SecureBits=keep-caps
+Capabilities=cap_net_bind_service+pie
+
 # High priority stuff:
 # Nice=-20
 # IOSchedulingClass=realtime
