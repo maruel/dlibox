@@ -45,4 +45,4 @@ Capabilities=cap_net_bind_service+pie
 # CPUSchedulingResetOnFork=true
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

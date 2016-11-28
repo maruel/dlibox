@@ -27,4 +27,4 @@ Restart=no
 ExecStart=/bin/sh -c '[ -f /opt/vc/bin/tvservice ] && /opt/vc/bin/tvservice -o || true'
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
