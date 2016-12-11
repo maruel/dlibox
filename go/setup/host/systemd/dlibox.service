@@ -28,13 +28,16 @@ Group=pi
 KillMode=mixed
 Restart=always
 TimeoutStopSec=20s
-ExecStart=/home/pi/bin/dlibox -port 80 -verbose -notime
+ExecStart=/home/pi/go/bin/dlibox -port 80 -verbose -notime
 
 # Systemd 229:
 #AmbientCapabilities=CAP_NET_BIND_SERVICE
 # Systemd 228 and below:
 SecureBits=keep-caps
 Capabilities=cap_net_bind_service+pie
+# Older systemd:
+PermissionsStartOnly=true
+ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/pi/go/bin/dlibox
 
 # High priority stuff:
 # Nice=-20
