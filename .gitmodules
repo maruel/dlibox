@@ -1,3 +1,6 @@
 [submodule "nanopb"]
 	path = proto/nanopb
 	url = https://github.com/nanopb/nanopb
+[submodule "esp8266/lib/homie-esp8266"]
+	path = esp8266/lib/homie-esp8266
+	url = https://github.com/marvinroger/homie-esp8266.git
