@@ -88,4 +88,5 @@ void loop() {
   if (httpSrv != NULL) {
     httpSrv->handleClient();
   }
+  Painter.loop();
 }
