@@ -46,7 +46,7 @@ type SPI struct {
 }
 
 func newSPI(busNumber, chipSelect int) (*SPI, error) {
-	if busNumber < 0 || busNumber > 255 {
+	if busNumber < 0 || busNumber > 32768 {
 		return nil, errors.New("invalid bus")
 	}
 	if chipSelect < 0 || chipSelect > 255 {
