@@ -56,6 +56,7 @@ func mainImpl() error {
 	useButton := true
 	useIR := true
 	usePir := true
+	name := flag.String("i2c", "", "I²C bus to use")
 	verbose := flag.Bool("v", false, "enable verbose logs")
 	flag.Parse()
 
@@ -83,7 +84,7 @@ func mainImpl() error {
 		return err
 	}
 
-	i, err := i2c.New(-1)
+	i, err := i2c.OpenByName(*name)
 	if err != nil {
 		return err
 	}

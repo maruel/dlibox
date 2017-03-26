@@ -19,13 +19,13 @@ import (
 // Display contains small embedded display settings.
 type Display struct {
 	sync.Mutex
-	I2CBus int
+	I2CBus string
 }
 
 func (d *Display) ResetDefault() {
 	d.Lock()
 	d.Unlock()
-	d.I2CBus = -1
+	d.I2CBus = ""
 }
 
 func (d *Display) Validate() error {
@@ -35,7 +35,7 @@ func (d *Display) Validate() error {
 }
 
 func initDisplay(b modules.Bus, config *Display) (*display, error) {
-	i2cBus, err := i2c.New(config.I2CBus)
+	i2cBus, err := i2c.OpenByName(config.I2CBus)
 	if err != nil {
 		return nil, err
 	}
