@@ -13,6 +13,7 @@ import (
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/conn/gpio"
+	"periph.io/x/periph/conn/gpio/gpioreg"
 )
 
 // PIR contains a motion detection behavior.
@@ -42,7 +43,7 @@ func initPIR(b modules.Bus, config *PIR) error {
 	if config.PinNumber == -1 {
 		return nil
 	}
-	p := gpio.ByNumber(config.PinNumber)
+	p := gpioreg.ByNumber(config.PinNumber)
 	if p == nil {
 		return fmt.Errorf("pir: failed to find pin %d", config.PinNumber)
 	}

@@ -20,7 +20,7 @@ import (
 
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/screen"
-	"periph.io/x/periph/conn/spi"
+	"periph.io/x/periph/conn/spi/spireg"
 	"periph.io/x/periph/devices"
 	"periph.io/x/periph/devices/apa102"
 	"periph.io/x/periph/host/cpu"
@@ -73,7 +73,7 @@ func initLEDs(b modules.Bus, fake bool, config *APA102) (*leds, error) {
 			// Use 30Hz on slower devices because it is too slow.
 			fps = 30
 		}
-		s, err := spi.OpenByName(config.BusName)
+		s, err := spireg.Open(config.BusName)
 		if err != nil {
 			return nil, err
 		}

@@ -11,7 +11,7 @@ import (
 
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/dlibox/go/psf"
-	"periph.io/x/periph/conn/i2c"
+	"periph.io/x/periph/conn/i2c/i2creg"
 	"periph.io/x/periph/devices/ssd1306"
 	"periph.io/x/periph/devices/ssd1306/image1bit"
 )
@@ -35,7 +35,7 @@ func (d *Display) Validate() error {
 }
 
 func initDisplay(b modules.Bus, config *Display) (*display, error) {
-	i2cBus, err := i2c.OpenByName(config.I2CBus)
+	i2cBus, err := i2creg.Open(config.I2CBus)
 	if err != nil {
 		return nil, err
 	}

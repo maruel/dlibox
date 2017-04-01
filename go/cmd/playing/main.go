@@ -22,7 +22,8 @@ import (
 	"github.com/maruel/dlibox/go/psf"
 	"github.com/maruel/interrupt"
 	"periph.io/x/periph/conn/gpio"
-	"periph.io/x/periph/conn/i2c"
+	"periph.io/x/periph/conn/gpio/gpioreg"
+	"periph.io/x/periph/conn/i2c/i2creg"
 	"periph.io/x/periph/conn/ir"
 	"periph.io/x/periph/devices"
 	"periph.io/x/periph/devices/bme280"
@@ -84,7 +85,7 @@ func mainImpl() error {
 		return err
 	}
 
-	i, err := i2c.OpenByName(*name)
+	i, err := i2creg.Open(*name)
 	if err != nil {
 		return err
 	}
@@ -119,7 +120,7 @@ func mainImpl() error {
 	}
 
 	if useButton {
-		p := gpio.ByNumber(24)
+		p := gpioreg.ByNumber(24)
 		if p == nil {
 			return errors.New("no pin 24")
 		}
@@ -136,7 +137,7 @@ func mainImpl() error {
 
 	/*
 		// Relays
-		p := gpio.ByNumber(17)
+		p := gpioreg.ByNumber(17)
 		if p == nil {
 			return errors.New("no pin 17")
 		}
@@ -144,7 +145,7 @@ func mainImpl() error {
 			return err
 		}
 		p.SetLow()
-		p = gpio.ByNumber(27)
+		p = gpioreg.ByNumber(27)
 		if p == nil {
 			return errors.New("no pin 27")
 		}
@@ -155,7 +156,7 @@ func mainImpl() error {
 	*/
 
 	if usePir {
-		p := gpio.ByNumber(19)
+		p := gpioreg.ByNumber(19)
 		if p == nil {
 			return errors.New("no pin 19")
 		}

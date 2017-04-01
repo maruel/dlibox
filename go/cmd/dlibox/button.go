@@ -14,6 +14,7 @@ import (
 	"github.com/maruel/interrupt"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/conn/gpio"
+	"periph.io/x/periph/conn/gpio/gpioreg"
 )
 
 // Button contains settings for controlling the lights through a button.
@@ -38,7 +39,7 @@ func initButton(b modules.Bus, config *Button) error {
 	if config.PinNumber == -1 {
 		return nil
 	}
-	p := gpio.ByNumber(config.PinNumber)
+	p := gpioreg.ByNumber(config.PinNumber)
 	if p == nil {
 		return fmt.Errorf("button: failed to find pin %d", config.PinNumber)
 	}
