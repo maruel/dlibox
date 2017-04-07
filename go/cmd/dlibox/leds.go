@@ -77,7 +77,7 @@ func initLEDs(b modules.Bus, fake bool, config *APA102) (*leds, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err = s.Speed(config.SPIspeed); err != nil {
+		if err = s.LimitSpeed(config.SPIspeed); err != nil {
 			return nil, err
 		}
 		a, err := apa102.New(s, config.NumberLights, 255, 6500)

@@ -5,7 +5,6 @@
 package main
 
 import (
-	"image"
 	"log"
 	"sync"
 
@@ -51,13 +50,11 @@ func initDisplay(b modules.Bus, config *Display) (*display, error) {
 	if err != nil {
 		return nil, err
 	}
-	img, err := image1bit.New(image.Rect(0, 0, d.W, d.H))
-	if err != nil {
-		return nil, err
-	}
+	bounds := d.Bounds()
+	img := image1bit.NewVerticalLSB(bounds)
 	f20.Draw(img, 0, 0, image1bit.On, nil, "dlibox!")
-	f12.Draw(img, 0, d.H-f12.H-1, image1bit.On, nil, "is awesome")
-	if _, err = d.Write(img.Buf); err != nil {
+	f12.Draw(img, 0, bounds.Dy()-f12.H-1, image1bit.On, nil, "is awesome")
+	if _, err = d.Write(img.Pix); err != nil {
 		return nil, err
 	}
 	c, err := b.Subscribe("display/#", modules.BestEffort)
@@ -76,7 +73,7 @@ func initDisplay(b modules.Bus, config *Display) (*display, error) {
 type display struct {
 	d   *ssd1306.Dev
 	b   modules.Bus
-	img *image1bit.Image
+	img *image1bit.VerticalLSB
 	f12 *psf.Font
 	f20 *psf.Font
 }
@@ -93,7 +90,7 @@ func (d *display) onMsg(msg modules.Message) {
 	switch msg.Topic {
 	case "display/settext":
 		d.f20.Draw(d.img, 0, 0, image1bit.On, nil, string(msg.Payload))
-		if _, err := d.d.Write(d.img.Buf); err != nil {
+		if _, err := d.d.Write(d.img.Pix); err != nil {
 			log.Printf("display write failure: %# v", msg)
 		}
 	default:

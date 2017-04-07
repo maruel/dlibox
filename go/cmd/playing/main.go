@@ -33,7 +33,7 @@ import (
 	"periph.io/x/periph/host"
 )
 
-func loadImg(path string) (*image1bit.Image, error) {
+func loadImg(path string) (*image1bit.VerticalLSB, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -44,10 +44,7 @@ func loadImg(path string) (*image1bit.Image, error) {
 		return nil, err
 	}
 	r := src.Bounds()
-	img, err := image1bit.New(image.Rect(0, 0, r.Max.X, r.Max.Y))
-	if err != nil {
-		return nil, err
-	}
+	img := image1bit.NewVerticalLSB(image.Rect(0, 0, r.Max.X, r.Max.Y))
 	draw.Draw(img, r, src, image.Point{}, draw.Src)
 	return img, nil
 }
@@ -57,7 +54,7 @@ func mainImpl() error {
 	useButton := true
 	useIR := true
 	usePir := true
-	name := flag.String("i2c", "", "I²C bus to use")
+	i2cName := flag.String("i2c", "", "I²C bus to use")
 	verbose := flag.Bool("v", false, "enable verbose logs")
 	flag.Parse()
 
@@ -65,7 +62,6 @@ func mainImpl() error {
 		log.SetOutput(ioutil.Discard)
 	}
 	log.SetFlags(log.Lmicroseconds)
-
 	// Initialize periph.
 	if _, err := host.Init(); err != nil {
 		return err
@@ -85,7 +81,7 @@ func mainImpl() error {
 		return err
 	}
 
-	i, err := i2creg.Open(*name)
+	i, err := i2creg.Open(*i2cName)
 	if err != nil {
 		return err
 	}
@@ -95,17 +91,15 @@ func mainImpl() error {
 	if err != nil {
 		return err
 	}
-	src.Inverse()
-	img, err := image1bit.New(image.Rect(0, 0, s.W, s.H))
-	if err != nil {
-		return err
-	}
+	//src.Inverse()
+	bounds := s.Bounds()
+	img := image1bit.NewVerticalLSB(bounds)
 	r := src.Bounds()
-	r = r.Add(image.Point{(img.W - r.Max.X), (img.H - r.Max.Y) / 2})
+	r = r.Add(image.Point{(bounds.Dx() - r.Max.X), (bounds.Dy() - r.Max.Y) / 2})
 	draw.Draw(img, r, src, image.Point{}, draw.Src)
 	f8.Draw(img, 0, 0, image1bit.On, nil, "dlibox!")
-	f8.Draw(img, 0, s.H-f8.H-1, image1bit.On, nil, "is awesome")
-	if _, err = s.Write(img.Buf); err != nil {
+	f8.Draw(img, 0, bounds.Dy()-f8.H-1, image1bit.On, nil, "is awesome")
+	if _, err = s.Write(img.Pix); err != nil {
 		return err
 	}
 	go displayLoop(s, f8, img, button, motion, env, keys)
@@ -185,7 +179,7 @@ func mainImpl() error {
 	return nil
 }
 
-func displayLoop(s *ssd1306.Dev, f *psf.Font, img *image1bit.Image, button, motion <-chan bool, env <-chan *devices.Environment, keys <-chan ir.Key) {
+func displayLoop(s *ssd1306.Dev, f *psf.Font, img *image1bit.VerticalLSB, button, motion <-chan bool, env <-chan *devices.Environment, keys <-chan ir.Key) {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
 	for {
@@ -223,7 +217,7 @@ func displayLoop(s *ssd1306.Dev, f *psf.Font, img *image1bit.Image, button, moti
 			break
 		}
 		if draw {
-			if _, err := s.Write(img.Buf); err != nil {
+			if _, err := s.Write(img.Pix); err != nil {
 				return
 			}
 		}
