@@ -109,7 +109,7 @@ func mainImpl() error {
 		if err != nil {
 			return err
 		}
-		defer b.Stop()
+		defer b.Halt()
 		go sensorLoop(b, env)
 	}
 
