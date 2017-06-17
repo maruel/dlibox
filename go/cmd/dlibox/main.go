@@ -21,7 +21,6 @@ import (
 	"runtime/pprof"
 	"syscall"
 
-	"github.com/kardianos/osext"
 	"github.com/maruel/circular"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/interrupt"
@@ -181,12 +180,7 @@ func mainImpl() error {
 	//}
 	//defer service.Close()
 
-	thisFile, err := osext.Executable()
-	if err != nil {
-		return err
-	}
-
-	return watchFile(thisFile)
+	return watchFile()
 }
 
 func main() {

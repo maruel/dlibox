@@ -11,7 +11,11 @@ import (
 	fsnotify "gopkg.in/fsnotify.v1"
 )
 
-func watchFile(fileName string) error {
+func watchFile() error {
+	fileName, err := os.Executable()
+	if err != nil {
+		return err
+	}
 	fi, err := os.Stat(fileName)
 	if err != nil {
 		return err

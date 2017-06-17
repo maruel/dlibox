@@ -8,7 +8,7 @@ package main
 
 import "github.com/maruel/interrupt"
 
-func watchFile(fileName string) error {
+func watchFile() error {
 	<-interrupt.Channel
 	return nil
 }
