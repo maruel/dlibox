@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/maruel/dlibox/go/modules"
-	"github.com/maruel/dlibox/go/psf"
+	"github.com/maruel/psf"
 	"periph.io/x/periph/conn/i2c/i2creg"
 	"periph.io/x/periph/devices/ssd1306"
 	"periph.io/x/periph/devices/ssd1306/image1bit"
