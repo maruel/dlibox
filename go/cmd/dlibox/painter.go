@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"sync"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/interrupt"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/devices"
 )
@@ -136,12 +138,12 @@ func (p *Painter) Validate() error {
 	return nil
 }
 
-func initPainter(b modules.Bus, leds devices.Display, fps int, config *Painter, lru *LRU) (*painter, error) {
+func initPainter(b modules.Bus, leds devices.Display, fps int, config *Painter, lru *LRU) (*painterNode, error) {
 	config.Lock()
 	defer config.Unlock()
 	lru.Lock()
 	defer lru.Unlock()
-	p := anim1d.NewPainter(leds, fps)
+	p := newPainter(leds, fps)
 	if len(config.Last) != 0 {
 		if err := p.SetPattern(string(config.Last), 500*time.Millisecond); err != nil {
 			return nil, err
@@ -155,7 +157,7 @@ func initPainter(b modules.Bus, leds devices.Display, fps int, config *Painter, 
 	if err != nil {
 		return nil, err
 	}
-	pp := &painter{p, b, config, lru}
+	pp := &painterNode{p, b, config, lru}
 	go func() {
 		for msg := range c {
 			pp.onMsg(msg)
@@ -164,14 +166,14 @@ func initPainter(b modules.Bus, leds devices.Display, fps int, config *Painter, 
 	return pp, nil
 }
 
-type painter struct {
-	p      *anim1d.Painter
+type painterNode struct {
+	p      *painterLoop
 	b      modules.Bus
 	config *Painter
 	lru    *LRU
 }
 
-func (p *painter) Close() error {
+func (p *painterNode) Close() error {
 	var err error
 	if err1 := p.b.Unsubscribe("painter/#"); err1 != nil {
 		log.Printf("painter: failed to unsubscribe: painter/#: %v", err1)
@@ -184,7 +186,7 @@ func (p *painter) Close() error {
 	return err
 }
 
-func (p *painter) onMsg(msg modules.Message) {
+func (p *painterNode) onMsg(msg modules.Message) {
 	switch msg.Topic {
 	case "painter/setautomated":
 		p.setautomated(msg.Payload)
@@ -197,7 +199,7 @@ func (p *painter) onMsg(msg modules.Message) {
 	}
 }
 
-func (p *painter) setautomated(payload []byte) {
+func (p *painterNode) setautomated(payload []byte) {
 	// Skip the LRU.
 	s := string(payload)
 	if err := p.p.SetPattern(s, 500*time.Millisecond); err != nil {
@@ -205,7 +207,7 @@ func (p *painter) setautomated(payload []byte) {
 	}
 }
 
-func (p *painter) setnow(payload []byte) {
+func (p *painterNode) setnow(payload []byte) {
 	// Skip the 500ms ease-out.
 	s := string(payload)
 	if err := p.p.SetPattern(s, 0); err != nil {
@@ -213,7 +215,7 @@ func (p *painter) setnow(payload []byte) {
 	}
 }
 
-func (p *painter) setuser(payload []byte) {
+func (p *painterNode) setuser(payload []byte) {
 	// Add it to the LRU.
 	s := string(payload)
 	if err := p.p.SetPattern(s, 500*time.Millisecond); err != nil {
@@ -232,4 +234,178 @@ func (p *painter) setuser(payload []byte) {
 	p.config.Lock()
 	defer p.config.Unlock()
 	p.config.Last = Pattern(s)
+}
+
+//
+
+// painterLoop handles the "draw frame, write" loop.
+type painterLoop struct {
+	d             devices.Display
+	c             chan newPattern
+	wg            sync.WaitGroup
+	frameDuration time.Duration
+}
+
+// SetPattern changes the current pattern to a new one.
+//
+// The pattern is in JSON encoded format. The function will return an error if
+// the encoding is bad. The function is synchronous, it returns only after the
+// pattern was effectively set.
+func (p *painterLoop) SetPattern(s string, transition time.Duration) error {
+	var pat anim1d.SPattern
+	if err := json.Unmarshal([]byte(s), &pat); err != nil {
+		return err
+	}
+	p.c <- newPattern{pat.Pattern, transition}
+	return nil
+}
+
+func (p *painterLoop) Close() error {
+	select {
+	case p.c <- newPattern{}:
+	default:
+	}
+	close(p.c)
+	p.wg.Wait()
+	return nil
+}
+
+// newPainter returns a painterLoop that manages updating the Patterns to the
+// strip.
+//
+// It Assumes the display uses native RGB packed pixels.
+func newPainter(d devices.Display, fps int) *painterLoop {
+	p := &painterLoop{
+		d:             d,
+		c:             make(chan newPattern),
+		frameDuration: time.Second / time.Duration(fps),
+	}
+	numLights := d.Bounds().Dx()
+	// Tripple buffering.
+	cGen := make(chan anim1d.Frame, 3)
+	cWrite := make(chan anim1d.Frame, cap(cGen))
+	for i := 0; i < cap(cGen); i++ {
+		cGen <- make(anim1d.Frame, numLights)
+	}
+	p.wg.Add(2)
+	go p.runPattern(cGen, cWrite)
+	go p.runWrite(cGen, cWrite, numLights)
+	return p
+}
+
+// Private stuff.
+
+var black = &anim1d.Color{}
+
+type newPattern struct {
+	p anim1d.Pattern
+	d time.Duration
+}
+
+func (p *painterLoop) runPattern(cGen <-chan anim1d.Frame, cWrite chan<- anim1d.Frame) {
+	defer func() {
+		// Tell runWrite() to quit.
+		for loop := true; loop; {
+			select {
+			case _, loop = <-cGen:
+			default:
+				loop = false
+			}
+		}
+		select {
+		case cWrite <- nil:
+		default:
+		}
+		close(cWrite)
+		p.wg.Done()
+	}()
+
+	var root anim1d.Pattern = black
+	var since time.Duration
+	for {
+		select {
+		case newPat, ok := <-p.c:
+			if newPat.p == nil || !ok {
+				// Request to terminate.
+				return
+			}
+
+			// New pattern.
+			if newPat.d == 0 {
+				root = newPat.p
+			} else {
+				root = &anim1d.Transition{
+					Before:       anim1d.SPattern{root},
+					After:        anim1d.SPattern{newPat.p},
+					OffsetMS:     uint32(since / time.Millisecond),
+					TransitionMS: uint32(newPat.d / time.Millisecond),
+					Curve:        anim1d.EaseOut,
+				}
+			}
+
+		case pixels, ok := <-cGen:
+			if !ok {
+				return
+			}
+			for i := range pixels {
+				pixels[i] = anim1d.Color{}
+			}
+			timeMS := uint32(since / time.Millisecond)
+			root.Render(pixels, timeMS)
+			since += p.frameDuration
+			cWrite <- pixels
+			if t, ok := root.(*anim1d.Transition); ok {
+				if t.OffsetMS+t.TransitionMS < timeMS {
+					root = t.After.Pattern
+					since -= time.Duration(t.OffsetMS) * time.Millisecond
+				}
+			}
+
+		case <-interrupt.Channel:
+			return
+		}
+	}
+}
+
+func (p *painterLoop) runWrite(cGen chan<- anim1d.Frame, cWrite <-chan anim1d.Frame, numLights int) {
+	defer func() {
+		// Tell runPattern() to quit.
+		for loop := true; loop; {
+			select {
+			case _, loop = <-cWrite:
+			default:
+				loop = false
+			}
+		}
+		select {
+		case cGen <- nil:
+		default:
+		}
+		close(cGen)
+		p.wg.Done()
+	}()
+
+	tick := time.NewTicker(p.frameDuration)
+	defer tick.Stop()
+	var err error
+	buf := make([]byte, numLights*3)
+	for {
+		pixels, ok := <-cWrite
+		if pixels == nil || !ok {
+			return
+		}
+		if err == nil {
+			pixels.ToRGB(buf)
+			if _, err = p.d.Write(buf); err != nil {
+				log.Printf("Writing failed: %s", err)
+			}
+		}
+		cGen <- pixels
+
+		select {
+		case <-tick.C:
+		case <-interrupt.Channel:
+			return
+		}
+	}
 }
