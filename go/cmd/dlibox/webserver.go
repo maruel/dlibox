@@ -18,8 +18,8 @@ import (
 	"path"
 	"time"
 
+	"github.com/maruel/anim1d"
 	"github.com/maruel/circular"
-	"github.com/maruel/dlibox/go/anim1d"
 	"github.com/maruel/dlibox/go/modules"
 )
 

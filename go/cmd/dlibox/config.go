@@ -11,7 +11,7 @@ import (
 	"os/user"
 	"path/filepath"
 
-	"github.com/maruel/dlibox/go/anim1d"
+	"github.com/maruel/anim1d"
 	"github.com/pkg/errors"
 )
 

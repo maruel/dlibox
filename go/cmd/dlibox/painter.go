@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/anim1d"
+	"github.com/maruel/anim1d"
 	"github.com/maruel/dlibox/go/modules"
 	"github.com/maruel/interrupt"
 	"github.com/pkg/errors"
