@@ -133,7 +133,7 @@ func TestFrame_isEqual(t *testing.T) {
 func TestRainbow(t *testing.T) {
 	f := make(Frame, 16)
 	r := Rainbow{}
-	r.NextFrame(f, 0)
+	r.Render(f, 0)
 	var expected Frame
 	if err := expected.UnmarshalJSON([]byte("\"L4d00818300ed1b00ff0056ff00c1ff00ff7f2bff0083ff00deff00ffc000ff5600ff0000ff0000dc00007e0000000000\"")); err != nil {
 		t.Fatal(err)
@@ -590,7 +590,7 @@ func testFrames(t *testing.T, p Pattern, expectations []expectation) {
 	var pixels Frame
 	for frame, e := range expectations {
 		pixels.reset(len(e.colors))
-		p.NextFrame(pixels, e.offsetMS)
+		p.Render(pixels, e.offsetMS)
 		if !e.colors.isEqual(pixels) {
 			x := marshalPattern(e.colors)
 			t.Fatalf("frame=%d bad expectation:\n%s\n%s", frame, x, marshalPattern(pixels))
@@ -600,7 +600,7 @@ func testFrames(t *testing.T, p Pattern, expectations []expectation) {
 
 func testFrame(t *testing.T, p Pattern, e expectation) {
 	pixels := make(Frame, len(e.colors))
-	p.NextFrame(pixels, e.offsetMS)
+	p.Render(pixels, e.offsetMS)
 	if !e.colors.isEqual(pixels) {
 		t.Fatalf("%s != %s", marshalPattern(e.colors), marshalPattern(pixels))
 	}

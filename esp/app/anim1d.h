@@ -12,7 +12,7 @@ struct Frame;
 struct IPattern {
   virtual ~IPattern() {}
   // 49.71 days is enough for everyone! After, it will reset to 0.
-  virtual String  NextFrame(Frame& f, uint32_t timeMS) = 0;
+  virtual String  Render(Frame& f, uint32_t timeMS) = 0;
 };
 
 // For compactness, differentiate bettwen the Pattern Color and a pixel color.
@@ -40,7 +40,7 @@ struct Frame : public IPattern {
     // TODO(maruel): Can't, this object is often copied.
     //delete pixels;
   }
-  virtual String NextFrame(Frame& f, uint32_t timeMS) {
+  virtual String Render(Frame& f, uint32_t timeMS) {
     memcpy(f.pixels, pixels, sizeof(Color)*min(f.len, len));
     return "Frame";
   }
@@ -70,7 +70,7 @@ struct PColor : public IPattern {
 
   PColor(const Color& c) : c(c) {};
   virtual ~PColor() {}
-  virtual String NextFrame(Frame& f, uint32_t timeMS) {
+  virtual String Render(Frame& f, uint32_t timeMS) {
     for (uint16_t i = 0; i < f.len; i++) {
       f.pixels[i] = c;
     }
@@ -86,7 +86,7 @@ struct Rainbow : public IPattern {
   // TODO(maruel): Keep a local buffer for performance.
 
   virtual ~Rainbow() {}
-  virtual String NextFrame(Frame& f, uint32_t timeMS);
+  virtual String Render(Frame& f, uint32_t timeMS);
 };
 
 struct Repeated : public IPattern {
@@ -95,7 +95,7 @@ struct Repeated : public IPattern {
   // TODO(maruel): The pixels are aliased.
   Repeated(const Frame& f) : frame(f) {}
   virtual ~Repeated() {}
-  virtual String NextFrame(Frame& f, uint32_t timeMS) {
+  virtual String Render(Frame& f, uint32_t timeMS) {
     for (uint16_t i = 0; i < f.len; i += frame.len) {
       memcpy(f.pixels+i, frame.pixels, sizeof(Color)*min(f.len-i, frame.len));
     }
@@ -122,10 +122,10 @@ struct Cycle : public IPattern {
     }
     delete children;
   }
-  virtual String NextFrame(Frame& f, uint32_t timeMS) {
+  virtual String Render(Frame& f, uint32_t timeMS) {
     if (nb_children != 0) {
       uint32_t x = timeMS/uint32_t(durationMS);
-      return children[x%nb_children]->NextFrame(f, timeMS);
+      return children[x%nb_children]->Render(f, timeMS);
     }
     return "Cycle";
   }
@@ -152,13 +152,13 @@ struct Rotate : public IPattern {
   virtual const char * Name() {
     return "Rotate";
   }
-  virtual String NextFrame(Frame& f, uint32_t timeMS) {
+  virtual String Render(Frame& f, uint32_t timeMS) {
     if (f.len == 0 || child == NULL) {
       return "Rotate{}";
     }
     buf.reset(f.len);
     String name("Rotate{");
-    name += child->NextFrame(buf, timeMS);
+    name += child->Render(buf, timeMS);
     uint16_t offset = (timeMS/uint32_t(moveMS)) % f.len;
     if (offset < 0) {
       offset = f.len + offset;

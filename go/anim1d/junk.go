@@ -24,7 +24,7 @@ import (
 type Aurore struct {
 }
 
-func (a *Aurore) NextFrame(pixels Frame, timeMS uint32) {
+func (a *Aurore) Render(pixels Frame, timeMS uint32) {
 	// TODO(maruel): Redo.
 	y := float32(timeMS) * .01
 	for i := range pixels {
@@ -43,7 +43,7 @@ type NightStars struct {
 	stars Frame
 }
 
-func (n *NightStars) NextFrame(pixels Frame, timeMS uint32) {
+func (n *NightStars) Render(pixels Frame, timeMS uint32) {
 	if len(n.stars) != len(pixels) {
 		r := rand.NewSource(0)
 		n.stars = make(Frame, len(pixels))
@@ -94,7 +94,7 @@ var lightningCycle = []struct {
 	{1500, 0},
 }
 
-func (l *Lightning) NextFrame(pixels Frame, timeMS uint32) {
+func (l *Lightning) Render(pixels Frame, timeMS uint32) {
 	// Will fail after 25 days.
 	offset := timeMS - uint32(l.StartMS.Eval(timeMS, len(pixels)))
 	intensity := uint8(0)
@@ -129,7 +129,7 @@ type Thunderstorm struct {
 	nextMS  uint32
 }
 
-func (t *Thunderstorm) NextFrame(pixels Frame, timeMS uint32) {
+func (t *Thunderstorm) Render(pixels Frame, timeMS uint32) {
 	/*
 		//freq := 3
 		if t.current == nil {
@@ -165,7 +165,7 @@ type WishingStar struct {
 	AverageDelay time.Duration // Average delay between each wishing star.
 }
 
-func (w *WishingStar) NextFrame(pixels Frame, timeMS uint32) {
+func (w *WishingStar) Render(pixels Frame, timeMS uint32) {
 	/*
 		// Create a deterministic replay by using the current number of
 		// the wishing star as the seed for the current flow. Make it independent of

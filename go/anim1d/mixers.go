@@ -18,14 +18,14 @@ type Gradient struct {
 	buf   Frame
 }
 
-func (g *Gradient) NextFrame(pixels Frame, timeMS uint32) {
+func (g *Gradient) Render(pixels Frame, timeMS uint32) {
 	l := len(pixels)
 	if l == 0 {
 		return
 	}
 	g.buf.reset(l)
-	g.Left.NextFrame(pixels, timeMS)
-	g.Right.NextFrame(g.buf, timeMS)
+	g.Left.Render(pixels, timeMS)
+	g.Right.Render(g.buf, timeMS)
 	if l == 1 {
 		pixels.Mix(g.buf, g.Curve.Scale8(65535>>1))
 	} else {
@@ -46,13 +46,13 @@ type Split struct {
 	Offset SValue // Point to split between both sides.
 }
 
-func (s *Split) NextFrame(pixels Frame, timeMS uint32) {
+func (s *Split) Render(pixels Frame, timeMS uint32) {
 	offset := MinMax(int(s.Offset.Eval(timeMS, len(pixels))), 0, len(pixels))
 	if s.Left.Pattern != nil && offset != 0 {
-		s.Left.NextFrame(pixels[:offset], timeMS)
+		s.Left.Render(pixels[:offset], timeMS)
 	}
 	if s.Right.Pattern != nil && offset != len(pixels) {
-		s.Right.NextFrame(pixels[offset:], timeMS)
+		s.Right.Render(pixels[offset:], timeMS)
 	}
 }
 
@@ -68,13 +68,13 @@ type Transition struct {
 	buf          Frame
 }
 
-func (t *Transition) NextFrame(pixels Frame, timeMS uint32) {
+func (t *Transition) Render(pixels Frame, timeMS uint32) {
 	if timeMS <= t.OffsetMS {
 		// Before transition.
-		t.Before.NextFrame(pixels, timeMS)
+		t.Before.Render(pixels, timeMS)
 		return
 	}
-	t.After.NextFrame(pixels, timeMS-t.OffsetMS)
+	t.After.Render(pixels, timeMS-t.OffsetMS)
 	if timeMS >= t.OffsetMS+t.TransitionMS {
 		// After transition.
 		t.buf = nil
@@ -83,7 +83,7 @@ func (t *Transition) NextFrame(pixels Frame, timeMS uint32) {
 	t.buf.reset(len(pixels))
 
 	// TODO(maruel): Add lateral animation and others.
-	t.Before.NextFrame(t.buf, timeMS)
+	t.Before.Render(t.buf, timeMS)
 	intensity := uint16((timeMS - t.OffsetMS) * 65535 / (t.TransitionMS))
 	pixels.Mix(t.buf, 255.-t.Curve.Scale8(intensity))
 }
@@ -102,7 +102,7 @@ type Loop struct {
 	buf          Frame
 }
 
-func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
+func (l *Loop) Render(pixels Frame, timeMS uint32) {
 	lp := uint32(len(l.Patterns))
 	if lp == 0 {
 		return
@@ -110,14 +110,14 @@ func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
 	cycleDuration := l.ShowMS + l.TransitionMS
 	if cycleDuration == 0 {
 		// Misconfigured. Lock to the first pattern.
-		l.Patterns[0].NextFrame(pixels, timeMS)
+		l.Patterns[0].Render(pixels, timeMS)
 		return
 	}
 
 	base := timeMS / cycleDuration
 	index := base % lp
 	a := l.Patterns[index]
-	a.NextFrame(pixels, timeMS)
+	a.Render(pixels, timeMS)
 	offset := timeMS - (base * cycleDuration)
 	if offset <= l.ShowMS {
 		return
@@ -126,7 +126,7 @@ func (l *Loop) NextFrame(pixels Frame, timeMS uint32) {
 	// Transition.
 	l.buf.reset(len(pixels))
 	b := l.Patterns[(index+1)%lp]
-	b.NextFrame(l.buf, timeMS)
+	b.Render(l.buf, timeMS)
 	offset -= l.ShowMS
 	intensity := uint16((l.TransitionMS - offset) * 65535 / l.TransitionMS)
 	pixels.Mix(l.buf, l.Curve.Scale8(65535-intensity))
@@ -145,10 +145,10 @@ type Rotate struct {
 	buf         Frame
 }
 
-func (r *Rotate) NextFrame(pixels Frame, timeMS uint32) {
+func (r *Rotate) Render(pixels Frame, timeMS uint32) {
 	l := len(pixels)
 	r.buf.reset(l)
-	r.Child.NextFrame(r.buf, timeMS)
+	r.Child.Render(r.buf, timeMS)
 	offset := r.MovePerHour.Eval(timeMS, len(pixels), l)
 	if offset < 0 {
 		// Reverse direction.
@@ -167,13 +167,13 @@ type Chronometer struct {
 	buf   Frame
 }
 
-func (r *Chronometer) NextFrame(pixels Frame, timeMS uint32) {
+func (r *Chronometer) Render(pixels Frame, timeMS uint32) {
 	l := uint32(len(pixels))
 	if l == 0 {
 		return
 	}
 	r.buf.reset(4)
-	r.Child.NextFrame(r.buf, timeMS)
+	r.Child.Render(r.buf, timeMS)
 
 	seconds := timeMS / 1000
 	mins := seconds / 60
@@ -211,12 +211,12 @@ type PingPong struct {
 	buf         Frame
 }
 
-func (p *PingPong) NextFrame(pixels Frame, timeMS uint32) {
+func (p *PingPong) Render(pixels Frame, timeMS uint32) {
 	if len(pixels) == 0 {
 		return
 	}
 	p.buf.reset(len(pixels)*2 - 1)
-	p.Child.NextFrame(p.buf, timeMS)
+	p.Child.Render(p.buf, timeMS)
 	// The last point of each extremity is only lit on one tick but every other
 	// points are lit twice during a full cycle. This means the full cycle is
 	// 2*(len(pixels)-1). For a 3 pixels line, the cycle is: x00, 0x0, 00x, 0x0.
@@ -273,12 +273,12 @@ type Crop struct {
 	buf    Frame
 }
 
-func (c *Crop) NextFrame(pixels Frame, timeMS uint32) {
+func (c *Crop) Render(pixels Frame, timeMS uint32) {
 	b := int(MinMax32(c.Before.Eval(timeMS, len(pixels)), 0, 1000))
 	a := int(MinMax32(c.After.Eval(timeMS, len(pixels)), 0, 1000))
 	// This is slightly wasteful as pixels are drawn just to be ditched.
 	c.buf.reset(len(pixels) + b + a)
-	c.Child.NextFrame(c.buf, timeMS)
+	c.Child.Render(c.buf, timeMS)
 	copy(pixels, c.buf[b:])
 }
 
@@ -289,13 +289,13 @@ type Subset struct {
 	Length SValue // Length of the pixels to carry over
 }
 
-func (s *Subset) NextFrame(pixels Frame, timeMS uint32) {
+func (s *Subset) Render(pixels Frame, timeMS uint32) {
 	if s.Child.Pattern == nil {
 		return
 	}
 	o := MinMax(int(s.Offset.Eval(timeMS, len(pixels))), 0, len(pixels)-1)
 	l := MinMax(int(s.Length.Eval(timeMS, len(pixels))), 0, len(pixels)-1-o)
-	s.Child.NextFrame(pixels[o:o+l], timeMS)
+	s.Child.Render(pixels[o:o+l], timeMS)
 }
 
 // Dim is a filter that dim the intensity of a buffer.
@@ -304,8 +304,8 @@ type Dim struct {
 	Intensity SValue   // 0 is transparent, 255 is fully opaque with original colors.
 }
 
-func (d *Dim) NextFrame(pixels Frame, timeMS uint32) {
-	d.Child.NextFrame(pixels, timeMS)
+func (d *Dim) Render(pixels Frame, timeMS uint32) {
+	d.Child.Render(pixels, timeMS)
 	i := MinMax32(d.Intensity.Eval(timeMS, len(pixels)), 0, 255)
 	pixels.Dim(uint8(i))
 }
@@ -317,11 +317,11 @@ type Add struct {
 	buf      Frame      //
 }
 
-func (a *Add) NextFrame(pixels Frame, timeMS uint32) {
+func (a *Add) Render(pixels Frame, timeMS uint32) {
 	a.buf.reset(len(pixels))
 	// Draw and merge each pattern.
 	for i := range a.Patterns {
-		a.Patterns[i].NextFrame(a.buf, timeMS)
+		a.Patterns[i].Render(a.buf, timeMS)
 		pixels.Add(a.buf)
 	}
 }
@@ -343,7 +343,7 @@ type Scale struct {
 	buf        Frame
 }
 
-func (s *Scale) NextFrame(pixels Frame, timeMS uint32) {
+func (s *Scale) Render(pixels Frame, timeMS uint32) {
 	if f, ok := s.Child.Pattern.(Frame); ok {
 		if s.RatioMilli.Eval(timeMS, len(pixels)) == 0 {
 			s.Interpolation.Scale(f, pixels)
@@ -352,6 +352,6 @@ func (s *Scale) NextFrame(pixels Frame, timeMS uint32) {
 	}
 	v := MinMax32(s.RatioMilli.Eval(timeMS, len(pixels)), 1, 1000000)
 	s.buf.reset((int(v)*len(pixels) + 500) / 1000)
-	s.Child.NextFrame(s.buf, timeMS)
+	s.Child.Render(s.buf, timeMS)
 	s.Interpolation.Scale(s.buf, pixels)
 }

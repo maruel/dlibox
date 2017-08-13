@@ -60,7 +60,7 @@ void waveLength2RGB(uint16_t w, Color* c) {
 }  // namespace
 
 
-String Rainbow::NextFrame(Frame& f, uint32_t timeMS) {
+String Rainbow::Render(Frame& f, uint32_t timeMS) {
   const uint16_t start = 380;
   const uint16_t end = 781;
   const uint16_t delta = end - start;

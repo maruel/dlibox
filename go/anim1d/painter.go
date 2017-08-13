@@ -16,18 +16,18 @@ import (
 
 // Pattern is a interface to draw an animated line.
 type Pattern interface {
-	// NextFrame fills the buffer with the image at this time frame.
+	// Render fills the buffer with the image at this time frame.
 	//
 	// The image should be derived from timeMS, which is the time since this
 	// pattern was started.
 	//
-	// Calling NextFrame() with a nil pattern is valid. Patterns should be
-	// callable without crashing with an object initialized with default values.
+	// Calling Render() with a nil pattern is valid. Patterns should be callable
+	// without crashing with an object initialized with default values.
 	//
 	// timeMS will cycle after 49.7 days. The reason it's not using time.Duration
 	// is that int64 calculation on ARM is very slow and abysmal on xtensa, which
 	// this code is transpiled to.
-	NextFrame(pixels Frame, timeMS uint32)
+	Render(pixels Frame, timeMS uint32)
 }
 
 // Painter handles the "draw frame, write" loop.
@@ -143,7 +143,7 @@ func (p *Painter) runPattern(cGen <-chan Frame, cWrite chan<- Frame) {
 				pixels[i] = Color{}
 			}
 			timeMS := uint32(since / time.Millisecond)
-			root.NextFrame(pixels, timeMS)
+			root.Render(pixels, timeMS)
 			since += p.frameDuration
 			cWrite <- pixels
 			if t, ok := root.(*Transition); ok {

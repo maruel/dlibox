@@ -82,11 +82,11 @@ type SPattern struct {
 	Pattern
 }
 
-func (s *SPattern) NextFrame(pixels Frame, timeMS uint32) {
+func (s *SPattern) Render(pixels Frame, timeMS uint32) {
 	if s.Pattern == nil {
 		return
 	}
-	s.Pattern.NextFrame(pixels, timeMS)
+	s.Pattern.Render(pixels, timeMS)
 }
 
 // UnmarshalJSON decodes a Pattern.

@@ -45,7 +45,7 @@ IPattern* p = &cycle;
 IPattern* pNew = NULL;
 
 void painterLoop() {
-  // We need both as we need 49 days roll over for NextFrame() call but we need
+  // We need both as we need 49 days roll over for Render() call but we need
   // the precision for Perf.
   uint32_t nowMS = millis();
   uint32_t nowUS = micros();
@@ -61,7 +61,7 @@ void painterLoop() {
   // that pixels not drawn on are black.
   memset(buf.pixels, 0, sizeof(Color) * buf.len);
   // TODO(maruel): Memory fragmentation.
-  lastRenderName = p->NextFrame(buf, nowMS-start);
+  lastRenderName = p->Render(buf, nowMS-start);
   uint32_t render = Write(buf, maxAPA102Out / 4);
   // Time taken to render.
   // Max that can be calculated is 64ms.

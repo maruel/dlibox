@@ -21,7 +21,7 @@ type Color struct {
 	R, G, B uint8
 }
 
-func (c *Color) NextFrame(pixels Frame, timeMS uint32) {
+func (c *Color) Render(pixels Frame, timeMS uint32) {
 	for i := range pixels {
 		pixels[i] = *c
 	}
@@ -120,7 +120,7 @@ func (c *Color) FromRGBString(s string) error {
 // (which is recursive).
 type Frame []Color
 
-func (f Frame) NextFrame(pixels Frame, timeMS uint32) {
+func (f Frame) Render(pixels Frame, timeMS uint32) {
 	copy(pixels, f)
 }
 
@@ -221,7 +221,7 @@ type Rainbow struct {
 	buf Frame
 }
 
-func (r *Rainbow) NextFrame(pixels Frame, timeMS uint32) {
+func (r *Rainbow) Render(pixels Frame, timeMS uint32) {
 	if len(r.buf) != len(pixels) {
 		r.buf.reset(len(pixels))
 		const start = 380
@@ -281,7 +281,7 @@ type Repeated struct {
 	Frame Frame
 }
 
-func (r *Repeated) NextFrame(pixels Frame, timeMS uint32) {
+func (r *Repeated) Render(pixels Frame, timeMS uint32) {
 	if len(pixels) == 0 || len(r.Frame) == 0 {
 		return
 	}

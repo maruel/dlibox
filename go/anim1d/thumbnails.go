@@ -77,7 +77,7 @@ func (t *ThumbnailsCache) GIF(serialized []byte) ([]byte, error) {
 	frameDuration := (100 + t.ThumbnailHz>>1) / t.ThumbnailHz
 	for frame := 0; frame < nbImg; frame++ {
 		since := uint32(1000 * frame / t.ThumbnailHz)
-		pat.NextFrame(pixels[frame&1], since)
+		pat.Render(pixels[frame&1], since)
 		if frame > 0 && pixels[0].isEqual(pixels[1]) {
 			// Skip a frame completely if its pixels didn't change at all from the
 			// previous frame.

@@ -17,9 +17,9 @@ func TestNilObject(t *testing.T) {
 	c := Frame{}
 	d := Frame{{}}
 	for _, p := range knownPatterns {
-		p.NextFrame(nil, 0)
-		p.NextFrame(c, 0)
-		p.NextFrame(d, 0)
+		p.Render(nil, 0)
+		p.Render(c, 0)
+		p.Render(d, 0)
 	}
 }
 
@@ -34,7 +34,7 @@ func TestJSONPatterns(t *testing.T) {
 			ut.AssertEqual(t, uint8('{'), b[0])
 		}
 		// Must not crash on nil members and empty frame.
-		p2.NextFrame(Frame{}, 0)
+		p2.Render(Frame{}, 0)
 		p2.Pattern = nil
 		ut.AssertEqualf(t, nil, json.Unmarshal(b, p2), "%s", b)
 	}
