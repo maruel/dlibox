@@ -308,11 +308,16 @@ func (p parsedTopic) match(topic string) bool {
 		return false
 	}
 	t := strings.Split(topic, "/")
+	// 4.7.2
+	isPrivate := strings.HasPrefix(t[len(t)-1], "$")
 	for i, e := range p {
 		if e == "#" {
-			return true
+			return !isPrivate
 		}
 		if e == "+" {
+			if isPrivate {
+				return false
+			}
 			if i == len(p)-1 && len(t) == len(p) || len(t) == len(p)-1 {
 				return true
 			}

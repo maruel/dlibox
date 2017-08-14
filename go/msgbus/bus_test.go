@@ -207,6 +207,8 @@ func TestMatchFail(t *testing.T) {
 		{"sport/+/player1", "sport/tennis/player2"},
 		{"sport/tennis", "sport/tennis/ball"},
 		{"sport/tennis/ball", "sport/tennis"},
+		{"sport/tennis/#", "sport/tennis/$player1"}, // 4.7.2
+		{"+/tennis/", "sport/tennis/$player1"},      // 4.7.2
 	}
 	for i, line := range data {
 		q := parseTopic(line[0])
