@@ -20,7 +20,7 @@ import (
 
 	"github.com/maruel/anim1d"
 	"github.com/maruel/circular"
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 )
 
 var (
@@ -37,7 +37,7 @@ func init() {
 }
 
 type webServer struct {
-	b      modules.Bus
+	b      msgbus.Bus
 	l      io.WriterTo
 	cache  anim1d.ThumbnailsCache
 	config *Config
@@ -45,7 +45,7 @@ type webServer struct {
 	server http.Server
 }
 
-func initWeb(b modules.Bus, port int, config *Config, l io.WriterTo) (*webServer, error) {
+func initWeb(b msgbus.Bus, port int, config *Config, l io.WriterTo) (*webServer, error) {
 	s := &webServer{
 		b: b,
 		l: l,
@@ -166,7 +166,7 @@ func (s *webServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]string{"error": "state is invalid"})
 		return
 	}
-	if err := s.b.Publish(modules.Message{"//dlibox/halloween/state", []byte(state)}, modules.BestEffort, false); err != nil {
+	if err := s.b.Publish(msgbus.Message{"//dlibox/halloween/state", []byte(state)}, msgbus.BestEffort, false); err != nil {
 		log.Printf("web: failed to publish: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("failed to publish: %v", err)})
@@ -279,7 +279,7 @@ func (s *webServer) patternHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.b.Publish(modules.Message{"painter/setuser", raw}, modules.BestEffort, false); err != nil {
+	if err := s.b.Publish(msgbus.Message{"painter/setuser", raw}, msgbus.BestEffort, false); err != nil {
 		log.Printf("web: failed to publish: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("failed to publish: %v", err)})

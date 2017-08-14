@@ -7,7 +7,7 @@ package main
 import (
 	"sync"
 
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 )
 
 // MQTT contains settings for connecting to a MQTT server, or not.
@@ -30,19 +30,20 @@ func (m *MQTT) Validate() error {
 	return nil
 }
 
-func initMQTT(config *MQTT) (modules.Bus, error) {
+func initMQTT(config *MQTT) (msgbus.Bus, error) {
 	bus, err := initMQTTInner(config)
-	return modules.Rebase(bus, "dlibox/"+hostName), err
+	root := "dlibox/" + hostName
+	return msgbus.RebaseSub(msgbus.RebasePub(bus, root), root), err
 }
 
-func initMQTTInner(config *MQTT) (modules.Bus, error) {
+func initMQTTInner(config *MQTT) (msgbus.Bus, error) {
 	if len(config.Host) == 0 {
-		return &modules.LocalBus{}, nil
+		return msgbus.New(), nil
 	}
-	server, err := modules.New(config.Host, hostName, config.User, config.Pass)
+	server, err := msgbus.NewMQTT(config.Host, hostName, config.User, config.Pass)
 	if err != nil {
 		// Fallback to a local bus.
-		return &modules.LocalBus{}, err
+		return msgbus.New(), err
 	}
 	return server, nil
 }

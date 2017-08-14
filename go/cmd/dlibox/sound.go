@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 )
 
 type Sound struct {
@@ -34,9 +34,9 @@ func (s *Sound) Validate() error {
 	return nil
 }
 
-func initSound(b modules.Bus, config *Sound) (*sound, error) {
+func initSound(b msgbus.Bus, config *Sound) (*sound, error) {
 	s := &sound{b: b, config: config}
-	c, err := b.Subscribe("sound", modules.BestEffort)
+	c, err := b.Subscribe("sound", msgbus.BestEffort)
 	if err != nil {
 		return nil, err
 	}
@@ -59,19 +59,16 @@ func play(card, path string) {
 }
 
 type sound struct {
-	b      modules.Bus
+	b      msgbus.Bus
 	config *Sound
 }
 
 func (s *sound) Close() error {
-	if err := s.b.Unsubscribe("sound"); err != nil {
-		log.Printf("failed to unsubscribe: sound: %v", err)
-		return err
-	}
+	s.b.Unsubscribe("sound")
 	return nil
 }
 
-func (s *sound) onMsg(m modules.Message) {
+func (s *sound) onMsg(m msgbus.Message) {
 	s.config.Lock()
 	defer s.config.Unlock()
 	p := filepath.Join(s.config.Root, filepath.Base(string(m.Payload))+".wav")

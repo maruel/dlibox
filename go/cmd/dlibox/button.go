@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/maruel/interrupt"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/conn/gpio"
@@ -35,7 +35,7 @@ func (b *Button) Validate() error {
 	return nil
 }
 
-func initButton(b modules.Bus, config *Button) error {
+func initButton(b msgbus.Bus, config *Button) error {
 	if config.PinNumber == -1 {
 		return nil
 	}
@@ -74,12 +74,12 @@ func initButton(b modules.Bus, config *Button) error {
 				/*
 					if state == gpio.Low {
 						index = (index + 1) % len(names)
-						if err := b.Publish(modules.Message{"painter/setuser", r[names[index]]}, modules.BestEffort, false); err != nil {
+						if err := b.Publish(msgbus.Message{"painter/setuser", r[names[index]]}, msgbus.BestEffort, false); err != nil {
 							log.Printf("button: failed to publish: %v", err)
 						}
 					}
 				*/
-				if err := b.Publish(modules.Message{"button", []byte(state.String())}, modules.BestEffort, false); err != nil {
+				if err := b.Publish(msgbus.Message{"button", []byte(state.String())}, msgbus.BestEffort, false); err != nil {
 					log.Printf("button: failed to publish: %v", err)
 				}
 			}

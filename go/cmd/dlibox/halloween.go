@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 )
 
 type Halloween struct {
@@ -45,7 +45,7 @@ func (h *Halloween) Validate() error {
 	return nil
 }
 
-func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
+func initHalloween(b msgbus.Bus, config *Halloween) (*halloween, error) {
 	if !config.Enabled {
 		return nil, errors.New("not the controller")
 	}
@@ -64,7 +64,7 @@ func initHalloween(b modules.Bus, config *Halloween) (*halloween, error) {
 	// Listen to all messages, since we don't know the one that could be keys in
 	// the config. Technically we know but it's easier to just get them all.
 	// Revisit this decision if it becomes a problem.
-	c, err := b.Subscribe("//#", modules.BestEffort)
+	c, err := b.Subscribe("//#", msgbus.BestEffort)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (s State) Valid() bool {
 }
 
 type halloween struct {
-	b         modules.Bus
+	b         msgbus.Bus
 	config    *Halloween
 	state     State
 	timerIdle *time.Timer
@@ -114,10 +114,11 @@ func (h *halloween) Close() error {
 	if h.timerIdle != nil {
 		h.timerIdle.Stop()
 	}
-	return h.b.Unsubscribe("//#")
+	h.b.Unsubscribe("//#")
+	return nil
 }
 
-func (h *halloween) onMsg(m modules.Message) {
+func (h *halloween) onMsg(m msgbus.Message) {
 	h.config.Lock()
 	defer h.config.Unlock()
 	if s, ok := h.config.Modes[m.Topic]; ok {
@@ -154,7 +155,7 @@ func (h *halloween) onMsg(m modules.Message) {
 		h.state = s
 		for _, cmd := range h.config.Cmds[h.state] {
 			// TODO(maruel): Run them in parallel.
-			if err := h.b.Publish(cmd.ToMsg(), modules.BestEffort, false); err != nil {
+			if err := h.b.Publish(cmd.ToMsg(), msgbus.BestEffort, false); err != nil {
 				log.Printf("halloween: %s->%v: %v", h.state, cmd, err)
 			}
 		}
@@ -172,7 +173,7 @@ func (h *halloween) setIdle() {
 }
 
 func (h *halloween) publishState(s State) {
-	if err := h.b.Publish(modules.Message{"//dlibox/halloween/state", []byte(s)}, modules.BestEffort, true); err != nil {
+	if err := h.b.Publish(msgbus.Message{"//dlibox/halloween/state", []byte(s)}, msgbus.BestEffort, true); err != nil {
 		log.Printf("halloween: failed to publish state: %v", err)
 	}
 }

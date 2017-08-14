@@ -9,7 +9,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/conn/ir"
 	"periph.io/x/periph/devices/lirc"
@@ -60,7 +60,7 @@ func (i *IR) Validate() error {
 	return nil
 }
 
-func initIR(b modules.Bus, config *IR) error {
+func initIR(b msgbus.Bus, config *IR) error {
 	bus, err := lirc.New()
 	if err != nil {
 		return err
@@ -78,11 +78,11 @@ func initIR(b modules.Bus, config *IR) error {
 					cmd := config.Mapping[msg.Key]
 					config.Unlock()
 					if len(cmd.Topic) != 0 {
-						if err := b.Publish(cmd.ToMsg(), modules.BestEffort, false); err != nil {
+						if err := b.Publish(cmd.ToMsg(), msgbus.BestEffort, false); err != nil {
 							log.Printf("ir: failed to publish: %v", err)
 						}
 					}
-					if err = b.Publish(modules.Message{"ir", []byte(msg.Key)}, modules.BestEffort, false); err != nil {
+					if err = b.Publish(msgbus.Message{"ir", []byte(msg.Key)}, msgbus.BestEffort, false); err != nil {
 						log.Printf("ir: failed to publish: %v", err)
 					}
 				}

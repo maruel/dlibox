@@ -22,7 +22,7 @@ import (
 	"syscall"
 
 	"github.com/maruel/circular"
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/maruel/interrupt"
 	"periph.io/x/periph/host"
 )
@@ -106,10 +106,10 @@ func mainImpl() error {
 		log.Printf("MQTT not connected: %v", err)
 		log.Printf("Config:\n%s", string(b))
 	}
-	bus = modules.Logging(bus)
+	bus = msgbus.Log(bus)
 	// Publish the config as a retained message.
 	/* TODO(maruel): temporary to help cut noise.
-	if err := bus.Publish(modules.Message{"config", b}, modules.MinOnce, true); err != nil {
+	if err := bus.Publish(msgbus.Message{"config", b}, msgbus.MinOnce, true); err != nil {
 		log.Printf("Publishing failued: %v", err)
 	}
 	*/

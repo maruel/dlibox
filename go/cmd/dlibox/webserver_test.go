@@ -13,7 +13,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/maruel/ut"
 	"periph.io/x/periph/devices/devicestest"
 )
@@ -24,7 +24,7 @@ func TestWeb(t *testing.T) {
 	config.ResetDefault()
 	config.LRU.Patterns = []Pattern{"\"#010101\"", "\"#020202\""}
 	d := &devicestest.Display{image.NewNRGBA(image.Rect(0, 0, 128, 1))}
-	b := &modules.LocalBus{}
+	b := msgbus.New()
 	painter, err := initPainter(b, d, 60, &Painter{}, &LRU{})
 	ut.AssertEqual(t, nil, err)
 	defer painter.Close()

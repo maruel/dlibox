@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/pkg/errors"
 )
 
@@ -79,7 +79,7 @@ func (a *Alarm) Next(now time.Time) time.Time {
 	return time.Time{}
 }
 
-func (a *Alarm) Reset(b modules.Bus) error {
+func (a *Alarm) Reset(b msgbus.Bus) error {
 	if a.timer != nil {
 		a.timer.Stop()
 		a.timer = nil
@@ -87,7 +87,7 @@ func (a *Alarm) Reset(b modules.Bus) error {
 	now := time.Now()
 	if next := a.Next(now); !next.IsZero() {
 		a.timer = time.AfterFunc(next.Sub(now), func() {
-			if err := b.Publish(a.Cmd.ToMsg(), modules.BestEffort, false); err != nil {
+			if err := b.Publish(a.Cmd.ToMsg(), msgbus.BestEffort, false); err != nil {
 				log.Printf("failed to publish command %v", a.Cmd)
 			}
 			a.Reset(b)
@@ -122,7 +122,7 @@ type Alarms struct {
 	Alarms []Alarm
 }
 
-func initAlarms(b modules.Bus, config *Alarms) error {
+func initAlarms(b msgbus.Bus, config *Alarms) error {
 	config.Lock()
 	defer config.Unlock()
 	var err error

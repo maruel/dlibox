@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/maruel/anim1d"
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/maruel/interrupt"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/devices"
@@ -138,7 +138,7 @@ func (p *Painter) Validate() error {
 	return nil
 }
 
-func initPainter(b modules.Bus, leds devices.Display, fps int, config *Painter, lru *LRU) (*painterNode, error) {
+func initPainter(b msgbus.Bus, leds devices.Display, fps int, config *Painter, lru *LRU) (*painterNode, error) {
 	config.Lock()
 	defer config.Unlock()
 	lru.Lock()
@@ -153,7 +153,7 @@ func initPainter(b modules.Bus, leds devices.Display, fps int, config *Painter, 
 			return nil, err
 		}
 	}
-	c, err := b.Subscribe("painter/#", modules.BestEffort)
+	c, err := b.Subscribe("painter/#", msgbus.BestEffort)
 	if err != nil {
 		return nil, err
 	}
@@ -168,25 +168,17 @@ func initPainter(b modules.Bus, leds devices.Display, fps int, config *Painter, 
 
 type painterNode struct {
 	p      *painterLoop
-	b      modules.Bus
+	b      msgbus.Bus
 	config *Painter
 	lru    *LRU
 }
 
 func (p *painterNode) Close() error {
-	var err error
-	if err1 := p.b.Unsubscribe("painter/#"); err1 != nil {
-		log.Printf("painter: failed to unsubscribe: painter/#: %v", err1)
-		err = err1
-	}
-	if err1 := p.p.Close(); err1 != nil {
-		log.Printf("painter: failed to close painter: %v", err1)
-		err = err1
-	}
-	return err
+	p.b.Unsubscribe("painter/#")
+	return p.p.Close()
 }
 
-func (p *painterNode) onMsg(msg modules.Message) {
+func (p *painterNode) onMsg(msg msgbus.Message) {
 	switch msg.Topic {
 	case "painter/setautomated":
 		p.setautomated(msg.Payload)

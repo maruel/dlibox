@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/conn/gpio"
 	"periph.io/x/periph/conn/gpio/gpioreg"
@@ -39,7 +39,7 @@ func (p *PIR) Validate() error {
 	return nil
 }
 
-func initPIR(b modules.Bus, config *PIR) error {
+func initPIR(b msgbus.Bus, config *PIR) error {
 	if config.PinNumber == -1 {
 		return nil
 	}
@@ -58,13 +58,13 @@ func initPIR(b modules.Bus, config *PIR) error {
 				// TODO(maruel): sub-second resolution?
 				now := time.Now()
 				nowStr := []byte(fmt.Sprintf("%d %s", now.Unix(), now))
-				err := b.Publish(modules.Message{"pir", nowStr}, modules.BestEffort, false)
+				err := b.Publish(msgbus.Message{"pir", nowStr}, msgbus.BestEffort, false)
 				if err != nil {
 					log.Printf("pir: failed to publish: %v", err)
 				}
 				config.Lock()
 				if config.Cmd.Topic != "" {
-					err = b.Publish(config.Cmd.ToMsg(), modules.BestEffort, false)
+					err = b.Publish(config.Cmd.ToMsg(), msgbus.BestEffort, false)
 				}
 				config.Unlock()
 				if err != nil {

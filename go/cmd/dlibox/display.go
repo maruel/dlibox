@@ -8,7 +8,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/maruel/psf"
 	"periph.io/x/periph/conn/i2c/i2creg"
 	"periph.io/x/periph/devices/ssd1306"
@@ -33,7 +33,7 @@ func (d *Display) Validate() error {
 	return nil
 }
 
-func initDisplay(b modules.Bus, config *Display) (*display, error) {
+func initDisplay(b msgbus.Bus, config *Display) (*display, error) {
 	i2cBus, err := i2creg.Open(config.I2CBus)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func initDisplay(b modules.Bus, config *Display) (*display, error) {
 	if _, err = d.Write(img.Pix); err != nil {
 		return nil, err
 	}
-	c, err := b.Subscribe("display/#", modules.BestEffort)
+	c, err := b.Subscribe("display/#", msgbus.BestEffort)
 	if err != nil {
 		return nil, err
 	}
@@ -72,21 +72,18 @@ func initDisplay(b modules.Bus, config *Display) (*display, error) {
 
 type display struct {
 	d   *ssd1306.Dev
-	b   modules.Bus
+	b   msgbus.Bus
 	img *image1bit.VerticalLSB
 	f12 *psf.Font
 	f20 *psf.Font
 }
 
 func (d *display) Close() error {
-	err := d.b.Unsubscribe("display/#")
-	if err != nil {
-		log.Printf("failed to unsubscribe: display/#: %v", err)
-	}
-	return err
+	d.b.Unsubscribe("display/#")
+	return nil
 }
 
-func (d *display) onMsg(msg modules.Message) {
+func (d *display) onMsg(msg msgbus.Message) {
 	switch msg.Topic {
 	case "display/settext":
 		d.f20.Draw(d.img, 0, 0, image1bit.On, nil, string(msg.Payload))

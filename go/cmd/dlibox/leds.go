@@ -18,7 +18,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/maruel/dlibox/go/screen"
 	"periph.io/x/periph/conn/spi/spireg"
 	"periph.io/x/periph/devices"
@@ -53,7 +53,7 @@ func (a *APA102) Validate() error {
 }
 
 // initLEDs initializes the LED strip.
-func initLEDs(b modules.Bus, fake bool, config *APA102) (*leds, error) {
+func initLEDs(b msgbus.Bus, fake bool, config *APA102) (*leds, error) {
 	if config.NumberLights == 0 {
 		return nil, nil
 	}
@@ -86,24 +86,24 @@ func initLEDs(b modules.Bus, fake bool, config *APA102) (*leds, error) {
 		}
 		l = &leds{Display: a, b: b, s: s, fps: fps}
 	}
-	c, err := b.Subscribe("leds/#", modules.BestEffort)
+	c, err := b.Subscribe("leds/#", msgbus.BestEffort)
 	if err != nil {
 		l.Close()
 		return nil, err
 	}
-	if err := b.Publish(modules.Message{"leds/fake", fakeBytes}, modules.MinOnce, true); err != nil {
+	if err := b.Publish(msgbus.Message{"leds/fake", fakeBytes}, msgbus.MinOnce, true); err != nil {
 		log.Printf("leds: publish failed: %v", err)
 	}
-	if err := b.Publish(modules.Message{"leds/fps", []byte(strconv.Itoa(l.fps))}, modules.MinOnce, true); err != nil {
+	if err := b.Publish(msgbus.Message{"leds/fps", []byte(strconv.Itoa(l.fps))}, msgbus.MinOnce, true); err != nil {
 		log.Printf("leds: publish failed: %v", err)
 	}
-	if err := b.Publish(modules.Message{"leds/num", []byte(strconv.Itoa(num))}, modules.MinOnce, true); err != nil {
+	if err := b.Publish(msgbus.Message{"leds/num", []byte(strconv.Itoa(num))}, msgbus.MinOnce, true); err != nil {
 		log.Printf("leds: publish failed: %v", err)
 	}
-	if err := b.Publish(modules.Message{"leds/intensity", []byte("255")}, modules.MinOnce, true); err != nil {
+	if err := b.Publish(msgbus.Message{"leds/intensity", []byte("255")}, msgbus.MinOnce, true); err != nil {
 		log.Printf("leds: publish failed: %v", err)
 	}
-	if err := b.Publish(modules.Message{"leds/temperature", []byte("6500")}, modules.MinOnce, true); err != nil {
+	if err := b.Publish(msgbus.Message{"leds/temperature", []byte("6500")}, msgbus.MinOnce, true); err != nil {
 		log.Printf("leds: publish failed: %v", err)
 	}
 	go func() {
@@ -118,23 +118,15 @@ type leds struct {
 	devices.Display
 	s   io.Closer
 	fps int
-	b   modules.Bus
+	b   msgbus.Bus
 }
 
 func (l *leds) Close() error {
-	err := l.b.Unsubscribe("leds/#")
-	if err != nil {
-		log.Printf("leds: failed to unsubscribe: leds/#: %v", err)
-	}
+	l.b.Unsubscribe("leds/#")
 	if l.s != nil {
-		if err1 := l.s.Close(); err1 != nil {
-			err = err1
-		}
-	} else {
-		if _, err1 := os.Stdout.Write([]byte("\033[0m\n")); err1 != nil {
-			err = err1
-		}
+		return l.s.Close()
 	}
+	_, err := os.Stdout.Write([]byte("\033[0m\n"))
 	return err
 }
 
@@ -159,7 +151,7 @@ func processRel(topic string, p []byte) (int, int, error) {
 	return v, op, nil
 }
 
-func (l *leds) onMsg(msg modules.Message) {
+func (l *leds) onMsg(msg msgbus.Message) {
 	switch msg.Topic {
 	case "leds/fake":
 	case "leds/fps":

@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/maruel/dlibox/go/modules"
+	"github.com/maruel/dlibox/go/msgbus"
 )
 
 type Command struct {
@@ -16,8 +16,8 @@ type Command struct {
 	Payload string
 }
 
-func (c *Command) ToMsg() modules.Message {
-	return modules.Message{c.Topic, []byte(c.Payload)}
+func (c *Command) ToMsg() msgbus.Message {
+	return msgbus.Message{c.Topic, []byte(c.Payload)}
 }
 
 func (c *Command) Validate() error {
