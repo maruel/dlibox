@@ -40,7 +40,7 @@ func initMQTTInner(config *MQTT) (msgbus.Bus, error) {
 	if len(config.Host) == 0 {
 		return msgbus.New(), nil
 	}
-	server, err := msgbus.NewMQTT(config.Host, hostName, config.User, config.Pass)
+	server, err := msgbus.NewMQTT(config.Host, hostName, config.User, config.Pass, msgbus.Message{})
 	if err != nil {
 		// Fallback to a local bus.
 		return msgbus.New(), err

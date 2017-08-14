@@ -12,7 +12,7 @@ import (
 )
 
 func TestNewMQTT_fail(t *testing.T) {
-	_, err := NewMQTT("", "client", "user", "pass")
+	_, err := NewMQTT("", "client", "user", "pass", Message{Topic: "status", Payload: []byte("dead")})
 	if err == nil {
 		t.Fatal("invalid host")
 	}

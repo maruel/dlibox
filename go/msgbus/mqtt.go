@@ -17,7 +17,7 @@ import (
 //
 // This main purpose of this library is to hide the horror that
 // paho.mqtt.golang is.
-func NewMQTT(server, clientID, user, password string) (Bus, error) {
+func NewMQTT(server, clientID, user, password string, will Message) (Bus, error) {
 	opts := mqtt.NewClientOptions().AddBroker(server).SetClientID(clientID)
 	// Use lower timeouts than the defaults since they are high and the current
 	// assumption is local network.
@@ -29,6 +29,9 @@ func NewMQTT(server, clientID, user, password string) (Bus, error) {
 	}
 	if len(password) != 0 {
 		opts.SetPassword(password)
+	}
+	if len(will.Topic) != 0 {
+		opts.SetBinaryWill(will.Topic, will.Payload, byte(ExactlyOnce), true)
 	}
 	// TODO(maruel): opts.SetTLSConfig()
 	// https://github.com/eclipse/paho.mqtt.golang/blob/master/samples/ssl.go
