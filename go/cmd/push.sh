@@ -6,15 +6,15 @@
 set -eu
 cd "$(dirname $0)"
 
-if [ "$#" != 2 ]; then
-  echo "usage: $0 <dlibox hostname> <tool name>"
+if [ "$#" != 1 ]; then
+  echo "usage: $0 <dlibox hostname>"
   exit 1
 fi
 
-NAME="${2%/}"
+NAME=dlibox
 HOST="$1"
 
-cd "$NAME"
+cd "./$NAME"
 GOOS=linux GOARCH=arm go build .
 scp "$NAME" "$HOST:bin/${NAME}2"
 ssh "$HOST" "mv bin/${NAME}2 bin/$NAME"
