@@ -8,7 +8,7 @@
 set -eu
 
 
-function() install_lirc() {
+function install_lirc() {
   echo "- Setting up lirc"
   sudo apt-get -y install lirc
 
@@ -109,12 +109,12 @@ function install_dlibox() {
   EXEC=$2
 
   echo "- Injecting history in .bash_history"
-  cat >> /home/pi/.bash_history <<'EOF'
+  cat >> /home/${AS_USER}/.bash_history <<'EOF'
 sudo systemctl stop dlibox
 sudo journalctl -f -u dlibox
 EOF
 
-  echo "- Installing as user - ${EXEC}"
+  echo "- Installing ${EXEC} as user {$AS_USER}"
   go get -u -v github.com/maruel/dlibox/go/cmd/${EXEC}
 
   echo "- Setting up ${EXEC} as system service"
@@ -195,17 +195,17 @@ function install_optional() {
 }
 
 
-
 function do_controller() {
   install_mqtt
-  install_dlibox pi dlibox-controller
-  install_optional
+  install_dlibox $USER dlibox-controller
+  #install_optional
 }
+
 
 function do_device() {
   install_lirc
-  install_dlibox pi dlibox-device
-  install_optional
+  install_dlibox $USER dlibox-device
+  #install_optional
 }
 
 
