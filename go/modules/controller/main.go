@@ -18,6 +18,7 @@ import (
 
 // Main is the main function when running as the controller.
 func Main(bus msgbus.Bus, port int) error {
+	log.Printf("controller.Main(..., %d)", port)
 	d := DBMgr{}
 	if err := d.Load(); err != nil {
 		log.Printf("Loading DB failed: %v", err)

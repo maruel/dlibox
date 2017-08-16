@@ -39,6 +39,7 @@ func (d *Dev) Close() error {
 
 // Main is the main function when running as a device (a node).
 func Main(server string, bus msgbus.Bus, port int) error {
+	log.Printf("device.Main(%s, ..., %d)", server, port)
 	// Initialize periph.
 	state, err := host.Init()
 	if err != nil {

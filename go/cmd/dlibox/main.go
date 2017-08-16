@@ -9,7 +9,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	_ "net/http/pprof"
 	"net/url"
@@ -40,15 +39,10 @@ func mainImpl() error {
 
 	cpuprofile := flag.String("cpuprofile", "", "dump CPU profile in file")
 	port := flag.Int("port", 80, "HTTP port to listen on")
-	mqttHost := flag.String("mqtt", "tcp://dlibox:1833", "MQTT host in the form tcp://user:pass@host:port")
-	verbose := flag.Bool("verbose", false, "enable log output")
+	mqttHost := flag.String("mqtt", "tcp://dlibox:1883", "MQTT host in the form tcp://user:pass@host:port")
 	flag.Parse()
 	if flag.NArg() != 0 {
 		return fmt.Errorf("unexpected argument: %s", flag.Args())
-	}
-
-	if !*verbose {
-		log.SetOutput(ioutil.Discard)
 	}
 
 	if *cpuprofile != "" {
@@ -63,8 +57,8 @@ func mainImpl() error {
 	}
 
 	bus := msgbus.New()
-	server := ""
-	isController := false
+	serverID := ""
+	isController := true
 	if len(*mqttHost) != 0 {
 		u, err := url.ParseRequestURI(*mqttHost)
 		if err != nil {
@@ -77,7 +71,7 @@ func mainImpl() error {
 		if len(parts[0]) == 0 {
 			return errors.New("mqtt host is required")
 		}
-		server = parts[0]
+		serverID = parts[0]
 		if i, err := strconv.Atoi(parts[1]); i == 0 || err != nil {
 			return errors.New("mqtt port is required")
 		}
@@ -90,7 +84,7 @@ func mainImpl() error {
 
 		// TODO(maruel): Standard way to figure out it's the same host? Likely by
 		// resolving the IP.
-		isController := server == shared.Hostname() || server == "localhost" || server == "127.0.0.1"
+		isController := serverID == shared.Hostname() || serverID == "localhost" || serverID == "127.0.0.1"
 		root := "dlibox"
 		if !isController {
 			root += shared.Hostname()
@@ -102,7 +96,11 @@ func mainImpl() error {
 			usr = u.User.Username()
 			pwd, _ = u.User.Password()
 		}
-		mqttServer, err := msgbus.NewMQTT(server, shared.Hostname(), usr, pwd, will)
+		server := u.Scheme + "://" + u.Host
+		clientID := shared.Hostname()
+
+		log.Printf("MQTT:%s ClientID:%s User:%s Pass:%s", server, clientID, usr, pwd)
+		mqttServer, err := msgbus.NewMQTT(server, clientID, usr, pwd, will)
 		if err != nil {
 			// TODO(maruel): Have it continuously try to automatically reconnect.
 			log.Printf("Failed to connect to server: %v", err)
@@ -116,7 +114,7 @@ func mainImpl() error {
 	if isController {
 		return controller.Main(bus, *port)
 	}
-	return device.Main(server, bus, *port)
+	return device.Main(serverID, bus, *port)
 }
 
 func main() {
