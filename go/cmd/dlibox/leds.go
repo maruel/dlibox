@@ -2,9 +2,6 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Packages the static files in a .go file.
-//go:generate go run ../package/main.go -out static_files_gen.go ../../../web
-
 // dlibox drives the dlibox LED strip on a Raspberry Pi. It runs a web server
 // for remote control.
 package main

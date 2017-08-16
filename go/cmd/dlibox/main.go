@@ -3,7 +3,7 @@
 // that can be found in the LICENSE file.
 
 // Packages the static files in a .go file.
-//go:generate go run ../package/main.go -out static_files_gen.go ../../../web
+//go:generate go run package.go -out static_files_gen.go ../../../web
 
 // dlibox drives the dlibox LED strip on a Raspberry Pi. It runs a web server
 // for remote control.
@@ -175,13 +175,8 @@ func mainImpl() error {
 	}
 	defer w.Close()
 
-	//service, err := initmDNS(*port, properties)
-	//if err != nil {
-	//	return err
-	//}
-	//defer service.Close()
-
-	return watchFile()
+	return mainDevice()
+	//return mainController()
 }
 
 func main() {

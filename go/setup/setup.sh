@@ -106,7 +106,6 @@ EOF
 
 function install_dlibox() {
   AS_USER=$1
-  EXEC=$2
 
   echo "- Injecting history in .bash_history"
   cat >> /home/${AS_USER}/.bash_history <<'EOF'
@@ -114,14 +113,14 @@ sudo systemctl stop dlibox
 sudo journalctl -f -u dlibox
 EOF
 
-  echo "- Installing ${EXEC} as user {$AS_USER}"
-  go get -u -v github.com/maruel/dlibox/go/cmd/${EXEC}
+  echo "- Installing dlibox as user {$AS_USER}"
+  go get -u -v github.com/maruel/dlibox/go/cmd/dlibox
 
-  echo "- Setting up ${EXEC} as system service"
+  echo "- Setting up dlibox as system service"
   sudo tee /etc/systemd/system/dlibox.service > /dev/null <<EOF
 # https://github.com/maruel/dlibox
 [Unit]
-Description=Runs ${EXEC} automatically upon boot
+Description=Runs dlibox automatically upon boot
 Wants=network-online.target
 After=network-online.target
 
@@ -131,7 +130,7 @@ Group=${AS_USER}
 KillMode=mixed
 Restart=always
 TimeoutStopSec=20s
-ExecStart=/home/${AS_USER}/go/bin/${EXEC}
+ExecStart=/home/${AS_USER}/go/bin/dlibox
 # Systemd 229:
 #AmbientCapabilities=CAP_NET_BIND_SERVICE
 # Systemd 228 and below:
@@ -139,7 +138,7 @@ SecureBits=keep-caps
 Capabilities=cap_net_bind_service+pie
 # Older systemd:
 PermissionsStartOnly=true
-ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/${AS_USER}/go/bin/${EXEC}
+ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/${AS_USER}/go/bin/dlibox
 # High priority stuff:
 # Nice=-20
 # IOSchedulingClass=realtime
@@ -162,7 +161,7 @@ Type=oneshot
 User=${AS_USER}
 Group=${AS_USER}
 # /bin/sh is necessary to load .profile to set $GOPATH:
-ExecStart=/bin/sh -l -c "go get -v -u github.com/maruel/dlibox/go/cmd/${EXEC}"
+ExecStart=/bin/sh -l -c "go get -v -u github.com/maruel/dlibox/go/cmd/dlibox"
 WorkingDirectory=/home/${AS_USER}
 EOF
 
@@ -197,14 +196,14 @@ function install_optional() {
 
 function do_controller() {
   install_mqtt
-  install_dlibox $USER dlibox-controller
+  install_dlibox $USER
   #install_optional
 }
 
 
 function do_device() {
   install_lirc
-  install_dlibox $USER dlibox-device
+  install_dlibox $USER
   #install_optional
 }
 
