@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package main
+package controller
 
 import (
 	"encoding/json"
@@ -18,14 +18,33 @@ import (
 	"periph.io/x/periph/devices"
 )
 
-// LRU is the list of recent patterns. The first is the oldest.
-type LRU struct {
+// Pattern is a JSON encoded pattern.
+type Pattern string
+
+// validatePattern verifies that the pattern can be decoded, reencoded and that
+// the format is the canonical one.
+func (p Pattern) Validate() error {
+	var obj anim1d.SPattern
+	if err := json.Unmarshal([]byte(p), &obj); err != nil {
+		return err
+	}
+	b, err := obj.MarshalJSON()
+	if err == nil && Pattern(b) != p {
+		err = fmt.Errorf("pattern not in canonical format: expected %v; got %v", string(b), p)
+	}
+	return err
+}
+
+const morning Pattern = "{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\",\"Before\":{\"After\":\"#ff7f00\",\"Before\":\"#000000\",\"Curve\":\"direct\",\"OffsetMS\":0,\"TransitionMS\":6000000,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"OffsetMS\":6000000,\"TransitionMS\":6000000,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"OffsetMS\":18000000,\"TransitionMS\":600000,\"_type\":\"Transition\"}"
+
+// AnimLRU is the list of recent patterns. The first is the oldest.
+type AnimLRU struct {
 	sync.Mutex
 	Max      int
 	Patterns []Pattern
 }
 
-func (l *LRU) ResetDefault() {
+func (l *AnimLRU) ResetDefault() {
 	l.Lock()
 	defer l.Unlock()
 	l.Max = 25
@@ -50,7 +69,7 @@ func (l *LRU) ResetDefault() {
 	}
 }
 
-func (l *LRU) Validate() error {
+func (l *AnimLRU) Validate() error {
 	l.Lock()
 	defer l.Unlock()
 	for i, s := range l.Patterns {
@@ -62,7 +81,7 @@ func (l *LRU) Validate() error {
 }
 
 // Inject moves the pattern at the top of LRU cache.
-func (l *LRU) Inject(pattern string) {
+func (l *AnimLRU) Inject(pattern string) {
 	l.Lock()
 	defer l.Unlock()
 	if l.Max == 0 {
@@ -138,7 +157,7 @@ func (p *Painter) Validate() error {
 	return nil
 }
 
-func initPainter(b msgbus.Bus, leds devices.Display, fps int, config *Painter, lru *LRU) (*painterNode, error) {
+func initPainter(b msgbus.Bus, leds devices.Display, fps int, config *Painter, lru *AnimLRU) (*painterNode, error) {
 	config.Lock()
 	defer config.Unlock()
 	lru.Lock()
@@ -170,7 +189,7 @@ type painterNode struct {
 	p      *painterLoop
 	b      msgbus.Bus
 	config *Painter
-	lru    *LRU
+	lru    *AnimLRU
 }
 
 func (p *painterNode) Close() error {

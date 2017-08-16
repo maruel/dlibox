@@ -26,7 +26,7 @@ var tmpl = template.Must(template.New("tmpl").Parse(`// Automatically generated 
 
 // +build !debug
 
-package main
+package controller
 
 const cacheControl30d = "Cache-Control:public, max-age=259200" // 30d
 const cacheControl5m = "Cache-Control:public, max-age=300" // 5m

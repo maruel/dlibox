@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package main
+package shared
 
 import (
 	"os"
@@ -11,7 +11,7 @@ import (
 	fsnotify "gopkg.in/fsnotify.v1"
 )
 
-func watchFile() error {
+func WatchFile() error {
 	fileName, err := os.Executable()
 	if err != nil {
 		return err

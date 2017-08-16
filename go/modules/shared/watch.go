@@ -4,11 +4,11 @@
 
 //+build !linux
 
-package main
+package shared
 
 import "github.com/maruel/interrupt"
 
-func watchFile() error {
+func WatchFile() error {
 	<-interrupt.Channel
 	return nil
 }

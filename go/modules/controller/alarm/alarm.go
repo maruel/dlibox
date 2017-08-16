@@ -7,7 +7,6 @@ package alarm
 import (
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/maruel/dlibox/go/modules"
@@ -118,43 +117,38 @@ func (a *Alarm) String() string {
 	return out
 }
 
-// Settings is what should be serialized.
-type Settings struct {
-	sync.Mutex
-	Alarms []Alarm
+// Config is what should be serialized.
+type Config struct {
+	Alarms map[string]*Alarm
 }
 
-func Init(b msgbus.Bus, config *Settings) error {
-	config.Lock()
-	defer config.Unlock()
+func Init(b msgbus.Bus, config *Config) error {
 	var err error
-	for i := range config.Alarms {
-		if err1 := config.Alarms[i].Reset(b); err1 != nil {
+	for _, a := range config.Alarms {
+		if err1 := a.Reset(b); err1 != nil {
 			err = err1
 		}
 	}
 	return err
 }
 
-func (s *Settings) ResetDefault() {
-	s.Lock()
-	defer s.Unlock()
-	s.Alarms = []Alarm{
-		{
+func (c *Config) ResetDefault() {
+	c.Alarms = map[string]*Alarm{
+		"Morning weekdays": {
 			Enabled: true,
 			Hour:    6,
 			Minute:  35,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
 			Cmd:     modules.Command{"painter/setautomated", "#010203"},
 		},
-		{
+		"Monring weekends": {
 			Enabled: true,
 			Hour:    6,
 			Minute:  55,
 			Days:    Saturday | Sunday,
 			Cmd:     modules.Command{"painter/setautomated", "\"#000000\""},
 		},
-		{
+		"Evening weekdays": {
 			Enabled: true,
 			Hour:    19,
 			Minute:  00,
@@ -164,12 +158,13 @@ func (s *Settings) ResetDefault() {
 	}
 }
 
-func (s *Settings) Validate() error {
-	s.Lock()
-	defer s.Unlock()
-	for i := range s.Alarms {
-		if err := s.Alarms[i].Validate(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("can't validate alarm %s", s.Alarms[i]))
+func (c *Config) Validate() error {
+	for name, a := range c.Alarms {
+		if len(name) == 0 {
+			return errors.New("alarm without a name")
+		}
+		if err := a.Validate(); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("can't validate alarm %s", name))
 		}
 	}
 	return nil

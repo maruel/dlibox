@@ -7,7 +7,7 @@
 
 // +build debug
 
-package main
+package controller
 
 import (
 	"fmt"

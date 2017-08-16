@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package main
+package device
 
 import (
 	"log"
@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/maruel/dlibox/go/modules/shared"
 	"github.com/maruel/dlibox/go/msgbus"
 )
 
@@ -24,8 +25,7 @@ func (s *Sound) ResetDefault() {
 	s.Lock()
 	defer s.Unlock()
 	s.Card = "hw:1,0"
-	home, _ := getHome()
-	s.Root = home
+	s.Root = shared.Home()
 }
 
 func (s *Sound) Validate() error {
