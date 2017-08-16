@@ -6,31 +6,12 @@
 # Install dlibox Armbian and Raspbian dependencies.
 # Change hardware settings to enable I²C, SPI and lower GPU memory usage.
 
-set -eu
-cd "$(dirname $0)"
-
-if [ "$(grep 'ID=' /etc/os-release)" == "ID=raspbian" ]; then
-  # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
-  # 0 means enabled.
-  raspi-config nonint do_spi 0
-  raspi-config nonint do_i2c 0
-  # Lowers GPU memory from 64Mb to 16Mb. Doing so means goodbye to startx.
-  raspi-config nonint do_memory_split 16
-fi
-
-
-# Remove thd service, there's no keyboard connected.
-
-apt-get -y remove triggerhappy
-
 
 # avahi-utils is not installed on armbian but is on Raspbian
-
 apt-get -y install avahi-utils
 
 
 ## lirc
-
 apt-get -y install lirc
 
 # Configure lirc to use the lir-rpi driver including in /boot/overlays.
