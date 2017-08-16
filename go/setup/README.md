@@ -1,11 +1,7 @@
 # Setup
 
-- [prep/](prep) contains the scripts to run on a workstation to prepare an
-  image.
-- [host/](host) contains the scripts to run on the host, the Raspberry Pi.
-
-This tooling is meant to be used along
-[github.com/periph/bootstrap](https://github.com/periph/bootstrap) but this is
+The script `setup.sh` is meant to be used along
+[github.com/periph/bootstrap](https://github.com/periph/bootstrap). This is
 still a work in progress.
 
 
