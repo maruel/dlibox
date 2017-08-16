@@ -42,8 +42,8 @@ app/%.cpp: rsc/%.html
 
 vpath %.html $(wildcard rsc/*.html)
 
-PROTO_DIR := ../proto
-NANOPB_DIR := ../proto/nanopb
+PROTO_DIR := proto
+NANOPB_DIR := proto/nanopb
 NANOPB_PROTO_DIR := $(NANOPB_DIR)/generator/proto
 NANOPB_CORE := $(NANOPB_DIR)/pb_encode.c $(NANOPB_DIR)/pb_decode.c $(NANOPB_DIR)/pb_common.c
 PROTOC := protoc

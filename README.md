@@ -1,82 +1,43 @@
 # dlibox
 
-The box for funny people. It's main purpose is to drive APA-102 LEDs and
-integrate into a home automation system by communicating via MQTT. It also have
-its own interface to create complex animations and can work standalone. It
-integrates sensor support (temperature) and output (small displays).
+Yet-another-home-automation project
 
-There is two versions, one in [Go](go/) to run on a Raspberry Pi/Orange
-Pi/Pine64/etc and one incomplete in [C++](esp/) to run on a ESP8266.
+Why another one?
 
-The [Raspberry Pi version](go/) can do more, but the [ESP8266 version](esp/)
-cost much less. Both can communicate together via MQTT and discovery is done
-through mDNS.
+- It is FAST.
+  - When there's a power outage, boots within 11 seconds on a RPi3.
+    - I don't want to wait 3 minutes for Java (OpenHAB) or node.js (node-red) to
+      startup. Go executables starts instantaneously.
+  - It is designed to run extremely well on single core systems like the
+    [C.H.I.P.](https://getchip.com/) or the Raspberry Pi Zero.
+- Optimized for maintainability:
+  - Devices are expected to be deployed via
+    [github.com/periph/bootstrap](https://github.com/periph/bootstrap). It
+    applies Debian security updates automatically every night.
+  - dlibox self updates every night.
+  - The controller and the device (node) are the same Go executable.
+  - The device has no local configuration beside the MQTT server and default to
+    the host 'dlibox'.
+  - Uses a derivative of the [Homie
+    convention](https://github.com/marvinroger/homie) which is well designed.
+    The tweak is that it's the *controller* that tells the device what nodes it
+    shall present. This simplifies management.
+- No internet connectivity is needed. Everything is local on the LAN.
+- Web App served directly from the controller. Everything is accessed via this
+  Web App. It is installable on mobile phones to use it like a App. It makes it
+  trivial to make dashboards with old tablets.
+- Can drive multiple strips of LEDs like the APA-102 in a **fully synchronous
+  manner**, thanks to
+  [github.com/maruel/anim1d][(https://github.com/maruel/anim1d). anim1d permits
+  to create complex animations that are synchronized across multiple nodes.
+  This permits very long runs of LEDs strips that are fully synchronized by
+  using multiple computers, one per few hundred LED.
+- Communicates over MQTT.
+- Supports general 'home automation' like sensors and displays.
+  - Leverages [periph.io](https://periph.io) for all hardware access.
 
 Look at [HARDWARE.md](HARDWARE.md) for more information about what to buy.
 
+There's an incomplete device implemented in [C++](esp/) to run on a ESP8266.
 
-## Related projects
-
-### Rule engine
-
-In this summary, I'm only looking at open sources projects that can run in
-standalone mode without the need of internet connectivity. Otherwise you can use
-https://ifttt.com, https://firebase.google.com/, the trash from Apple, etc.
-
-- http://www.openhab.org/
-  - Summary: by far the most popular and well supported rule engine. At the
-    moment of writing, openHAB 2 is still on beta but we'll assume this version.
-    It's only drawbacks are: server sluggishness (!!!) and hard requirement Java
-    8, which is tricky to install on Armbian (arm64).
-  - Doc: http://docs.openhab.org/
-  - Server version 2 in Java 8 (Java 7 for openHAB1)
-    - Server is extremely sluggish to start on a Raspberry Pi (several minutes!)
-  - Web frontend in Polymer
-  - Native Android and iOS apps.
-  - Rules uses complex [Xtend expression but syntax close to
-    Java](https://github.com/openhab/openhab/wiki/Scripts)
-    - Native tool to edit the rules, supported by Eclipse foundation
-  - Has a foundation to support the project long term
-  - Has broadest hardware support:
-    [Nest](https://github.com/openhab/openhab/wiki/Nest-Binding-Example),
-    Insteon, [Sonos](https://github.com/openhab/openhab/wiki/Sonos-Binding),
-    Philips Hue, Z-Wave,
-    [Asterix](https://github.com/openhab/openhab/wiki/Asterisk-Binding)(!), etc.
-  - Supports MQTT but requires a separate broker (e.g. mosquitto).
-  - Everything about this project sounds heavy weight.
-- https://home-assistant.io/
-  - Summary: a new lighter weight entrant that runs in a docker image.
-  - Samples: https://home-assistant.io/cookbook/
-  - Server in python 3.
-  - Web frontend in Polymer
-  - Rule language in yaml
-  - Supports MQTT but requires a separate broker (e.g. mosquitto).
-  - Supports Chromecast, Philips Hue,
-    [Z-Wave](https://home-assistant.io/getting-started/z-wave/).
-- https://git.io/homieiot
-  - Summary: lightweight esp8266 specific automation framework, also runs in a
-    docker image.
-  - Doc: https://homie-esp8266.readme.io/
-  - Server in nodeJS
-  - Rules are in JSON
-    - Rules are edited with [Node-RED ](http://nodered.org/), written by IBM,
-      also in nodeJS.
-  - Supports MQTT but requires a separate broker (e.g. mosquitto).
-    - Has a [nice
-      schema](https://github.com/marvinroger/homie/tree/master#device-properties)
-      for devices.
-
-
-## Tools for video surveillance integration
-
-- [ZoneMinder](https://www.zoneminder.com/) is a complete solution
-  - It finally (!) added an API in 2016
-  - Android and iOS app: http://pliablepixels.github.io/
-  - Someone made a [docker](https://github.com/QuantumObject/docker-zoneminder)
-- [Restreamer](https://datarhei.github.io/restreamer/) reencodes video on the
-  fly for web viewing; for simpler solution
-- [Motion](http://www.lavrsen.dk/foswiki/bin/view/Motion/WebHome) is a bit
-  anticated
-  - Someone made a [docker](https://github.com/kfei/dockmotion)
-- RAW ffpmeg; not to be ignored, [it's always an
-  option](https://docs.google.com/presentation/d/1EvaSzUjQc4zUNJxDPMzsDFTwGt1HssSBUX1-jF_HsQc)
+[![GoDoc](https://godoc.org/github.com/maruel/dlibox?status.svg)](https://godoc.org/github.com/maruel/dlibox)
