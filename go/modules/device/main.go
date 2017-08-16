@@ -53,7 +53,7 @@ func Main(server string, bus msgbus.Bus, port int) error {
 
 	// Poll until the controller is up and running. This ensures that the node
 	// are correctly published.
-	for {
+	for !interrupt.IsSet() {
 		m, err := bus.Retained("$online")
 		if err != nil || len(m) != 1 {
 			log.Printf("Failed to get retained message $online: %v", err)
