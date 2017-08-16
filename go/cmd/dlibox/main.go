@@ -10,57 +10,22 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	_ "net/http/pprof"
+	"net/url"
 	"os"
 	"os/signal"
 	"runtime/pprof"
+	"strings"
 	"syscall"
 
-	"github.com/maruel/circular"
-	"github.com/maruel/dlibox/go/modules/alarm"
-	"github.com/maruel/dlibox/go/msgbus"
 	"github.com/maruel/interrupt"
-	"periph.io/x/periph/host"
 )
 
 func mainImpl() error {
-	cpuprofile := flag.String("cpuprofile", "", "dump CPU profile in file")
-	port := flag.Int("port", 8010, "http port to listen on")
-	verbose := flag.Bool("verbose", false, "enable log output")
-	noTime := flag.Bool("notime", false, "disable timestamp when logging")
-	fake := flag.Bool("fake", false, "use a terminal mock, useful to test without the hardware")
-	flag.Parse()
-	if flag.NArg() != 0 {
-		return fmt.Errorf("unexpected argument: %s", flag.Args())
-	}
-
-	l := circular.New(1024 * 1024)
-	/* Circular is crashy. Shame on me.
-	defer func() {
-		// Flush ensures all readers have caught up.
-		l.Flush()
-		// Close gracefully closes the readers.
-		l.Close()
-	}()
-	log.SetOutput(l)
-
-	if *verbose {
-		// Asynchronously write to stderr.
-		go l.WriteTo(os.Stderr)
-	}
-	*/
-	if !*verbose {
-		log.SetOutput(ioutil.Discard)
-	}
-	if *noTime {
-		log.SetFlags(0)
-	}
-
 	interrupt.HandleCtrlC()
 	defer interrupt.Set()
 	chanSignal := make(chan os.Signal)
@@ -69,6 +34,22 @@ func mainImpl() error {
 		interrupt.Set()
 	}()
 	signal.Notify(chanSignal, syscall.SIGTERM)
+	log.SetFlags(0)
+
+	cpuprofile := flag.String("cpuprofile", "", "dump CPU profile in file")
+	port := flag.Int("port", 80, "HTTP port to listen on")
+	mqttHost := flag.String("host", "tcp://dlibox:1833", "MQTT host")
+	mqttUser := flag.String("user", "dlibox", "MQTT username")
+	mqttPass := flag.String("pass", "dlibox", "MQTT password")
+	verbose := flag.Bool("verbose", false, "enable log output")
+	flag.Parse()
+	if flag.NArg() != 0 {
+		return fmt.Errorf("unexpected argument: %s", flag.Args())
+	}
+
+	if !*verbose {
+		log.SetOutput(ioutil.Discard)
+	}
 
 	if *cpuprofile != "" {
 		// Run with cpuprofile, then use 'go tool pprof' to analyze it. See
@@ -81,102 +62,25 @@ func mainImpl() error {
 		defer pprof.StopCPUProfile()
 	}
 
-	// Initialize periph.
-	if _, err := host.Init(); err != nil {
-		return err
-	}
-
-	// Config.
-	config := ConfigMgr{}
-	config.ResetDefault()
-	if err := config.Load(); err != nil {
-		log.Printf("Loading config failed: %v", err)
-	}
-	defer config.Close()
-
-	b, err := json.MarshalIndent(config, "", "  ")
+	hostname, err := os.Hostname()
 	if err != nil {
 		return err
 	}
 
-	// Initialize modules.
-
-	bus, err := initMQTT(&config.Settings.MQTT)
-	if err != nil {
-		// Non-fatal.
-		log.Printf("MQTT not connected: %v", err)
-		log.Printf("Config:\n%s", string(b))
-	}
-	bus = msgbus.Log(bus)
-	// Publish the config as a retained message.
-	/* TODO(maruel): temporary to help cut noise.
-	if err := bus.Publish(msgbus.Message{"config", b}, msgbus.MinOnce, true); err != nil {
-		log.Printf("Publishing failued: %v", err)
-	}
-	*/
-
-	_, err = initDisplay(bus, &config.Settings.Display)
-	if err != nil {
-		// Non-fatal.
-		log.Printf("Display not connected: %v", err)
-	}
-
-	leds, err := initLEDs(bus, *fake, &config.Settings.APA102)
-	if err != nil {
-		// Non-fatal.
-		log.Printf("LEDs: %v", err)
-	} else if leds != nil {
-		defer leds.Close()
-		p, err := initPainter(bus, leds, leds.fps, &config.Settings.Painter, &config.LRU)
+	server := ""
+	if len(*mqttHost) != 0 {
+		u, err := url.ParseRequestURI(*mqttHost)
 		if err != nil {
 			return err
 		}
-		defer p.Close()
+		server = strings.SplitN(u.Host, ":", 2)[0]
 	}
 
-	h, err := initHalloween(bus, &config.Settings.Halloween)
-	if err != nil {
-		// Non-fatal.
-		log.Printf("Halloween: %v", err)
-	} else if h != nil {
-		defer h.Close()
+	// TODO(maruel): Standard way to figure out it's the same host?
+	if server == hostname || server == "localhost" || server == "127.0.0.1" {
+		return mainController(hostname, *mqttHost, *mqttUser, *mqttPass, *port)
 	}
-
-	if err = initButton(bus, &config.Settings.Button); err != nil {
-		// Non-fatal.
-		log.Printf("Button not connected: %v", err)
-	}
-
-	if err = initIR(bus, &config.Settings.IR); err != nil {
-		// Non-fatal.
-		log.Printf("IR not connected: %v", err)
-	}
-
-	if err = initPIR(bus, &config.Settings.PIR); err != nil {
-		// Non-fatal.
-		log.Printf("PIR not connected: %v", err)
-	}
-
-	if err = alarm.Init(bus, &config.Settings.Alarms); err != nil {
-		return err
-	}
-
-	s, err := initSound(bus, &config.Settings.Sound)
-	if err != nil {
-		// Non-fatal.
-		log.Printf("Sound failed: %v", err)
-	} else if s != nil {
-		defer s.Close()
-	}
-
-	w, err := initWeb(bus, *port, &config.Config, l)
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-
-	return mainDevice()
-	//return mainController()
+	return mainDevice(hostname, server, *mqttHost, *mqttUser, *mqttPass, *port)
 }
 
 func main() {

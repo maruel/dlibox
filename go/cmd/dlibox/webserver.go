@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/maruel/anim1d"
-	"github.com/maruel/circular"
 	"github.com/maruel/dlibox/go/msgbus"
+	"github.com/maruel/serve-dir/loghttp"
 )
 
 var (
@@ -66,7 +66,7 @@ func initWeb(b msgbus.Bus, port int, config *Config, l io.WriterTo) (*webServer,
 	http.HandleFunc("/api/publish", s.publishHandler)
 	http.HandleFunc("/api/settings", s.settingsHandler)
 	http.HandleFunc("/thumbnail/", s.thumbnailHandler)
-	http.HandleFunc("/logs", s.logsHandler)
+	//http.HandleFunc("/logs", s.logsHandler)
 
 	var err error
 	s.ln, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -75,7 +75,7 @@ func initWeb(b msgbus.Bus, port int, config *Config, l io.WriterTo) (*webServer,
 	}
 	s.server = http.Server{
 		Addr:           s.ln.Addr().String(),
-		Handler:        loggingHandler{http.DefaultServeMux},
+		Handler:        &loghttp.Handler{Handler: http.DefaultServeMux},
 		ReadTimeout:    60 * time.Second,
 		WriteTimeout:   60 * time.Second,
 		MaxHeaderBytes: 1 << 16,
@@ -309,39 +309,11 @@ func (s *webServer) thumbnailHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(data)
 }
 
+/*
 func (s *webServer) logsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	// Streams the log buffer over HTTP until Close() is called.
 	// AutoFlush ensures the log is not buffered locally indefinitely.
 	s.l.WriteTo(circular.AutoFlush(w, time.Second))
 }
-
-// Private details.
-
-type loggingHandler struct {
-	handler http.Handler
-}
-
-type loggingResponseWriter struct {
-	http.ResponseWriter
-	length int
-	status int
-}
-
-func (l *loggingResponseWriter) Write(data []byte) (size int, err error) {
-	size, err = l.ResponseWriter.Write(data)
-	l.length += size
-	return
-}
-
-func (l *loggingResponseWriter) WriteHeader(status int) {
-	l.ResponseWriter.WriteHeader(status)
-	l.status = status
-}
-
-// ServeHTTP logs each HTTP request if -verbose is passed.
-func (l loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	lrw := &loggingResponseWriter{ResponseWriter: w}
-	l.handler.ServeHTTP(lrw, r)
-	log.Printf("%s - %3d %6db %4s %s\n", r.RemoteAddr, lrw.status, lrw.length, r.Method, r.RequestURI)
-}
+*/
