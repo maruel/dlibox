@@ -5,6 +5,10 @@
 // Packages the static files in a .go file.
 //go:generate go run package.go -out static_files_gen.go ../../web
 
+// Package controller implements the dlibox controller.
+//
+// When acting as the controller, it connects to the MQTT server and instructs
+// devices what events to send back.
 package controller
 
 import (
@@ -12,8 +16,8 @@ import (
 	"log"
 	_ "net/http/pprof"
 
-	"github.com/maruel/dlibox/modules/shared"
 	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/dlibox/shared"
 )
 
 // Main is the main function when running as the controller.

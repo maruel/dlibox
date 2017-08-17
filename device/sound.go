@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/maruel/dlibox/modules/shared"
 	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/dlibox/shared"
 )
 
 type Sound struct {

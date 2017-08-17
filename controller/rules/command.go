@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package modules
+package rules
 
 import (
 	"errors"
@@ -11,15 +11,21 @@ import (
 	"github.com/maruel/dlibox/msgbus"
 )
 
+// Command is an MQTT message to send to take action.
+//
+// Most commands shall respect the Homie convention.
+// https://github.com/marvinroger/homie
 type Command struct {
 	Topic   string
 	Payload string
 }
 
+// ToMsg converts the command to a MQTT Message.
 func (c *Command) ToMsg() msgbus.Message {
 	return msgbus.Message{c.Topic, []byte(c.Payload)}
 }
 
+// Validate ensures the command is valid.
 func (c *Command) Validate() error {
 	switch c.Topic {
 	case "leds/temperature", "leds/intensity":

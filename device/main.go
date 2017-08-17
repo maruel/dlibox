@@ -2,6 +2,10 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// Package device implements the dlibox device.
+//
+// When running as a device, it connects to the MQTT server to listen to
+// commands from the controller.
 package device
 
 import (
@@ -13,9 +17,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/maruel/dlibox/modules/nodes"
-	"github.com/maruel/dlibox/modules/shared"
 	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/dlibox/nodes"
+	"github.com/maruel/dlibox/shared"
 	"github.com/maruel/interrupt"
 	"github.com/maruel/serve-dir/loghttp"
 	"periph.io/x/periph/host"

@@ -19,10 +19,10 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/maruel/dlibox/modules/controller"
-	"github.com/maruel/dlibox/modules/device"
-	"github.com/maruel/dlibox/modules/shared"
+	"github.com/maruel/dlibox/controller"
+	"github.com/maruel/dlibox/device"
 	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/dlibox/shared"
 	"github.com/maruel/interrupt"
 )
 

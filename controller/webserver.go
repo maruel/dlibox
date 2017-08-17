@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/maruel/anim1d"
-	"github.com/maruel/dlibox/modules/shared"
 	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/dlibox/shared"
 	"github.com/maruel/serve-dir/loghttp"
 )
 

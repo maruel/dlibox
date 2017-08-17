@@ -2,6 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// Package alarm defines the alarms based on the time of the day.
 package alarm
 
 import (
@@ -9,7 +10,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/maruel/dlibox/modules"
+	"github.com/maruel/dlibox/controller/rules"
 	"github.com/maruel/dlibox/msgbus"
 	"github.com/pkg/errors"
 )
@@ -52,7 +53,7 @@ type Alarm struct {
 	Hour    int
 	Minute  int
 	Days    WeekdayBit
-	Cmd     modules.Command
+	Cmd     rules.Command
 	timer   *time.Timer
 }
 
@@ -139,21 +140,21 @@ func (c *Config) ResetDefault() {
 			Hour:    6,
 			Minute:  35,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Cmd:     modules.Command{"painter/setautomated", "#010203"},
+			Cmd:     rules.Command{"painter/setautomated", "#010203"},
 		},
 		"Monring weekends": {
 			Enabled: true,
 			Hour:    6,
 			Minute:  55,
 			Days:    Saturday | Sunday,
-			Cmd:     modules.Command{"painter/setautomated", "\"#000000\""},
+			Cmd:     rules.Command{"painter/setautomated", "\"#000000\""},
 		},
 		"Evening weekdays": {
 			Enabled: true,
 			Hour:    19,
 			Minute:  00,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Cmd:     modules.Command{"painter/setautomated", "\"#010001\""},
+			Cmd:     rules.Command{"painter/setautomated", "\"#010001\""},
 		},
 	}
 }

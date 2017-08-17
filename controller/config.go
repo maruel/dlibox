@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/maruel/dlibox/modules/controller/alarm"
-	"github.com/maruel/dlibox/modules/controller/rules"
-	"github.com/maruel/dlibox/modules/nodes"
-	"github.com/maruel/dlibox/modules/shared"
+	"github.com/maruel/dlibox/controller/alarm"
+	"github.com/maruel/dlibox/controller/rules"
+	"github.com/maruel/dlibox/nodes"
+	"github.com/maruel/dlibox/shared"
 )
 
 // Config contains all the configuration that the user can specify.

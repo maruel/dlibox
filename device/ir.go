@@ -8,8 +8,8 @@ import (
 	"log"
 	"sync"
 
-	"github.com/maruel/dlibox/modules/nodes/ir"
 	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/dlibox/nodes/ir"
 	"periph.io/x/periph/devices/lirc"
 )
 

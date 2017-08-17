@@ -2,6 +2,8 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// Package nodes describes the shared nodes definition language between the
+// controller and the devices.
 package nodes
 
 import (
@@ -10,12 +12,12 @@ import (
 	_ "net/http/pprof"
 	"regexp"
 
-	"github.com/maruel/dlibox/modules/nodes/button"
-	"github.com/maruel/dlibox/modules/nodes/display"
-	"github.com/maruel/dlibox/modules/nodes/ir"
-	"github.com/maruel/dlibox/modules/nodes/leds"
-	"github.com/maruel/dlibox/modules/nodes/pir"
-	"github.com/maruel/dlibox/modules/nodes/sound"
+	"github.com/maruel/dlibox/nodes/button"
+	"github.com/maruel/dlibox/nodes/display"
+	"github.com/maruel/dlibox/nodes/ir"
+	"github.com/maruel/dlibox/nodes/leds"
+	"github.com/maruel/dlibox/nodes/pir"
+	"github.com/maruel/dlibox/nodes/sound"
 )
 
 // ID is a valid homie ID.

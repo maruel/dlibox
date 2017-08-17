@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/modules/nodes/pir"
 	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/dlibox/nodes/pir"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/conn/gpio"
 	"periph.io/x/periph/conn/gpio/gpioreg"

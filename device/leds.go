@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/maruel/dlibox/modules/nodes/leds"
 	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/dlibox/nodes/leds"
 	"periph.io/x/periph/conn/spi/spireg"
 	"periph.io/x/periph/devices"
 	"periph.io/x/periph/devices/apa102"

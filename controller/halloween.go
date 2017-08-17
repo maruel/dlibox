@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/modules"
+	"github.com/maruel/dlibox/controller/rules"
 	"github.com/maruel/dlibox/msgbus"
 )
 
@@ -19,7 +19,7 @@ type Halloween struct {
 	sync.Mutex
 	Enabled   bool
 	Modes     map[string]State
-	Cmds      map[State][]modules.Command
+	Cmds      map[State][]rules.Command
 	IdleAfter int // seconds
 }
 
