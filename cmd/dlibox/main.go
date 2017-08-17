@@ -21,9 +21,9 @@ import (
 
 	"github.com/maruel/dlibox/controller"
 	"github.com/maruel/dlibox/device"
-	"github.com/maruel/dlibox/msgbus"
 	"github.com/maruel/dlibox/shared"
 	"github.com/maruel/interrupt"
+	"github.com/maruel/msgbus"
 )
 
 func mainImpl() error {
@@ -108,8 +108,6 @@ func mainImpl() error {
 			bus = mqttServer
 		}
 		bus = msgbus.Log(bus)
-		// Everything is under the namespace "dlibox/"
-		bus = msgbus.RebasePub(msgbus.RebaseSub(bus, "dlibox"), "dlibox")
 	}
 
 	if isController {

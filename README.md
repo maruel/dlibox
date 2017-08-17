@@ -28,7 +28,7 @@ Why another one?
   trivial to make dashboards with old tablets.
 - Can drive multiple strips of LEDs like the APA-102 in a **fully synchronous
   manner**, thanks to
-  [github.com/maruel/anim1d][(https://github.com/maruel/anim1d). anim1d permits
+  [github.com/maruel/anim1d](https://github.com/maruel/anim1d). anim1d permits
   to create complex animations that are synchronized across multiple nodes.
   This permits very long runs of LEDs strips that are fully synchronized by
   using multiple computers, one per few hundred LED.
@@ -38,6 +38,7 @@ Why another one?
 
 Look at [HARDWARE.md](HARDWARE.md) for more information about what to buy.
 
-There's an incomplete device implemented in [C++](esp/) to run on a ESP8266.
+There's an incomplete device implemented in [C++](esp/) to run on a ESP8266 that
+will act as an Homie node.
 
-[![GoDoc](https://godoc.org/github.com/maruel/dlibox?status.svg)](https://godoc.org/github.com/maruel/dlibox)
+[![GoDoc](https://godoc.org/github.com/maruel/dlibox?status.svg)](https://godoc.org/github.com/maruel/dlibox) [![Go Report Card](https://goreportcard.com/badge/github.com/maruel/dlibox)](https://goreportcard.com/report/github.com/maruel/dlibox)

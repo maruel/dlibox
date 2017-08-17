@@ -13,7 +13,7 @@ import (
 	"os/user"
 	"strings"
 
-	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/msgbus"
 	"periph.io/x/periph"
 )
 

@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/maruel/anim1d"
-	"github.com/maruel/dlibox/msgbus"
 	"github.com/maruel/interrupt"
+	"github.com/maruel/msgbus"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/devices"
 )

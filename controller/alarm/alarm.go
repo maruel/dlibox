@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/controller/rules"
-	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/msgbus"
 	"github.com/pkg/errors"
 )
 

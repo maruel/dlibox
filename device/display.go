@@ -8,8 +8,8 @@ import (
 	"log"
 	"sync"
 
-	"github.com/maruel/dlibox/msgbus"
 	"github.com/maruel/dlibox/nodes/display"
+	"github.com/maruel/msgbus"
 	"github.com/maruel/psf"
 	"periph.io/x/periph/conn/i2c/i2creg"
 	"periph.io/x/periph/devices/ssd1306"

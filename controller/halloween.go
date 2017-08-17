@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/controller/rules"
-	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/msgbus"
 )
 
 type Halloween struct {

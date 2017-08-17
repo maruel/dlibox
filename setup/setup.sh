@@ -135,6 +135,7 @@ KillMode=mixed
 Restart=always
 TimeoutStopSec=20s
 ExecStart=/home/${AS_USER}/go/bin/dlibox
+Environment=GOTRACEBACK=all
 # Systemd 229:
 #AmbientCapabilities=CAP_NET_BIND_SERVICE
 # Systemd 228 and below:

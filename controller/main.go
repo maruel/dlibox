@@ -16,9 +16,9 @@ import (
 	"log"
 	_ "net/http/pprof"
 
-	"github.com/maruel/dlibox/msgbus"
 	"github.com/maruel/dlibox/shared"
 	"github.com/maruel/interrupt"
+	"github.com/maruel/msgbus"
 )
 
 // Main is the main function when running as the controller.
@@ -30,11 +30,15 @@ func Main(bus msgbus.Bus, port int) error {
 	}
 	defer d.Close()
 
+	// Everything is under the namespace "dlibox/"
+	dbus := msgbus.RebasePub(msgbus.RebaseSub(bus, "dlibox"), "dlibox")
+	// TODO(maruel): Also listen to homie/ for simple nodes.
+
 	// Note: <devID>/$online will not function properly for the controller, use
 	// $online.
-	shared.InitState(msgbus.RebasePub(bus, shared.Hostname()), nil)
+	shared.InitState(msgbus.RebasePub(dbus, shared.Hostname()), nil)
 
-	w, err := initWeb(bus, port, &d.DB, nil)
+	w, err := initWeb(dbus, port, &d.DB, nil)
 	if err != nil {
 		return err
 	}
@@ -42,7 +46,7 @@ func Main(bus msgbus.Bus, port int) error {
 
 	// Publish all the nodes.
 	for devID, dev := range d.DB.Config.Devices {
-		b := msgbus.RebasePub(bus, string(devID))
+		b := msgbus.RebasePub(dbus, string(devID))
 		retained(b, "$name", dev.Name)
 		for nodeID, def := range dev.ToNodes() {
 			bn := msgbus.RebasePub(b, string(nodeID))
@@ -59,7 +63,7 @@ func Main(bus msgbus.Bus, port int) error {
 		}
 	}
 	if !interrupt.IsSet() {
-		retained(bus, "$online", "true")
+		retained(dbus, "$online", "true")
 	}
 	return shared.WatchFile()
 }

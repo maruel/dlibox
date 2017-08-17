@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/maruel/dlibox/msgbus"
+	"github.com/maruel/msgbus"
 )
 
 // Command is an MQTT message to send to take action.

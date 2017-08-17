@@ -17,10 +17,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/maruel/dlibox/msgbus"
 	"github.com/maruel/dlibox/nodes"
 	"github.com/maruel/dlibox/shared"
 	"github.com/maruel/interrupt"
+	"github.com/maruel/msgbus"
 	"github.com/maruel/serve-dir/loghttp"
 	"periph.io/x/periph/host"
 )
@@ -73,6 +73,8 @@ func Main(server string, bus msgbus.Bus, port int) error {
 		break
 	}
 
+	// Everything is under the namespace "dlibox/"
+	bus = msgbus.RebasePub(msgbus.RebaseSub(bus, "dlibox"), "dlibox")
 	// TODO(maruel): Uses modified Homie convention. The main modification is
 	// that it is the controller that decides which nodes to expose ($nodes), not
 	// the device itself. This means no need for configuration on the device
