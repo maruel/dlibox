@@ -18,12 +18,12 @@ import (
 	"periph.io/x/periph/conn/gpio/gpioreg"
 )
 
-type Button struct {
+type buttonDev struct {
 	sync.Mutex
 	buttons []button.Dev
 }
 
-func (b *Button) init(bus msgbus.Bus) error {
+func (b *buttonDev) init(bus msgbus.Bus) error {
 	for _, cfg := range b.buttons {
 		pin := gpioreg.ByName(cfg.Pin)
 		if pin == nil {

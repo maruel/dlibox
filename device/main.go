@@ -13,7 +13,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	_ "net/http/pprof"
 	"strings"
 	"time"
 
@@ -25,19 +24,20 @@ import (
 	"periph.io/x/periph/host"
 )
 
-// Dev is the device (nodes).
+// dev is the device (nodes).
 //
 // The device doesn't store it, it's stored on the MQTT server.
-type Dev struct {
-	Buttons  []*Button
-	Displays []*Display
-	LEDs     []*LEDs
-	IRs      []IR
-	PIRs     []*PIR
-	Sound    []*Sound
+type dev struct {
+	buttons  []*buttonDev
+	displays []*displayDev
+	lEDs     []*ledDev
+	iRs      []irDev
+	pIRs     []*pirDev
+	sound    []*soundDev
 }
 
-func (d *Dev) Close() error {
+// Close implements io.Closer.
+func (d *dev) Close() error {
 	return nil
 }
 
@@ -99,15 +99,15 @@ func Main(server string, bus msgbus.Bus, port int) error {
 	if cfg == nil {
 		return nil
 	}
-	dev := Dev{}
+	d := dev{}
 	/*
-		dev.Buttons.init(cfg.Buttons)
-		dev.Displays.init(cfg.Displays)
-		dev.IRs.init(cfg.IRs)
-		dev.PIRs.init(cfg.PIRs)
-		dev.Sound.init(cfg.Sound)
+		d.buttons.init(cfg.Buttons)
+		d.displays.init(cfg.Displays)
+		d.iRs.init(cfg.IRs)
+		d.pIRs.init(cfg.PIRs)
+		d.sound.init(cfg.Sound)
 	*/
-	defer dev.Close()
+	defer d.Close()
 	if !interrupt.IsSet() {
 		rebased.Publish(msgbus.Message{"$online", []byte("true")}, msgbus.MinOnce, true)
 	}

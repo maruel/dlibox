@@ -14,17 +14,21 @@ import (
 // TODO(maruel): Define the language.
 type Signal string
 
+// Eval evaluates if a signal is a trigger for this rule.
 func (s Signal) Eval(input string) bool {
 	return string(s) == input
 }
 
+// Rule defines a signal that triggers a command.
 type Rule struct {
 	Signal Signal
 	Cmd    Command
 }
 
+// Rules is named rules.
 type Rules map[string]Rule
 
+// Default returns default rules that can be set on a fresh instance.
 func Default() []Rule {
 	return []Rule{
 		{Signal("ir/" + string(ir.KEY_CHANNELDOWN)), Command{"leds/temperature", "-500"}},

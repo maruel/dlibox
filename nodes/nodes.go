@@ -9,7 +9,6 @@ package nodes
 import (
 	"encoding/json"
 	"log"
-	_ "net/http/pprof"
 	"regexp"
 
 	"github.com/maruel/dlibox/nodes/button"
@@ -197,6 +196,7 @@ func (n Nodes) ToDev() *Dev {
 // Type is all the known node types.
 type Type string
 
+// All the known node types.
 const (
 	Anim1D  Type = "anim1d"
 	Button  Type = "button"
@@ -221,16 +221,16 @@ func (t Type) IsValid() bool {
 type Node struct {
 	Name       string          `json:"$name"`
 	Type       Type            `json:"$type"`
-	Properties map[ID]Property `json:"$properties`
-	Config     []byte          `json:"$config`
+	Properties map[ID]Property `json:"$properties"`
+	Config     []byte          `json:"$config"`
 }
 
 // Property defines one property of a node.
 type Property struct {
-	Unit     string `json:"$unit`
-	DataType string `json:"$datatype`
-	Format   string `json:"$format`
-	Settable bool   `json:"$settable`
+	Unit     string `json:"$unit"`
+	DataType string `json:"$datatype"`
+	Format   string `json:"$format"`
+	Settable bool   `json:"$settable"`
 }
 
 //

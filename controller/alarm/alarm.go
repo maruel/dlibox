@@ -18,6 +18,7 @@ import (
 // WeekdayBit is a bitmask of each day.
 type WeekdayBit int
 
+// Week days.
 const (
 	Sunday WeekdayBit = 1 << iota
 	Monday
@@ -31,6 +32,7 @@ const (
 
 const weekdayLetters = "SMTWTFS"
 
+// IsEnabledFor returns true if the bitmask is set for this week day.
 func (w WeekdayBit) IsEnabledFor(d time.Weekday) bool {
 	return (w & WeekdayBit(1<<uint(d))) != 0
 }
@@ -80,6 +82,7 @@ func (a *Alarm) Next(now time.Time) time.Time {
 	return time.Time{}
 }
 
+// Reset reinitializes with a message bus.
 func (a *Alarm) Reset(b msgbus.Bus) error {
 	if a.timer != nil {
 		a.timer.Stop()
@@ -97,6 +100,7 @@ func (a *Alarm) Reset(b msgbus.Bus) error {
 	return nil
 }
 
+// Validate confirms the settings are valid.
 func (a *Alarm) Validate() error {
 	if a.Days >= lastDay {
 		return errors.New("invalid days")
@@ -123,6 +127,7 @@ type Config struct {
 	Alarms map[string]*Alarm
 }
 
+// Init initializes the timers.
 func Init(b msgbus.Bus, config *Config) error {
 	var err error
 	for _, a := range config.Alarms {
@@ -133,6 +138,7 @@ func Init(b msgbus.Bus, config *Config) error {
 	return err
 }
 
+// ResetDefault initializes the default alarms.
 func (c *Config) ResetDefault() {
 	c.Alarms = map[string]*Alarm{
 		"Morning weekdays": {
@@ -140,25 +146,26 @@ func (c *Config) ResetDefault() {
 			Hour:    6,
 			Minute:  35,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Cmd:     rules.Command{"painter/setautomated", "#010203"},
+			Cmd:     rules.Command{Topic: "painter/setautomated", Payload: "#010203"},
 		},
 		"Monring weekends": {
 			Enabled: true,
 			Hour:    6,
 			Minute:  55,
 			Days:    Saturday | Sunday,
-			Cmd:     rules.Command{"painter/setautomated", "\"#000000\""},
+			Cmd:     rules.Command{Topic: "painter/setautomated", Payload: "\"#000000\""},
 		},
 		"Evening weekdays": {
 			Enabled: true,
 			Hour:    19,
 			Minute:  00,
 			Days:    Monday | Tuesday | Wednesday | Thursday | Friday,
-			Cmd:     rules.Command{"painter/setautomated", "\"#010001\""},
+			Cmd:     rules.Command{Topic: "painter/setautomated", Payload: "\"#010001\""},
 		},
 	}
 }
 
+// Validate confirms the settings are valid.
 func (c *Config) Validate() error {
 	for name, a := range c.Alarms {
 		if len(name) == 0 {

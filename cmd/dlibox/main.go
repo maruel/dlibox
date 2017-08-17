@@ -10,7 +10,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	_ "net/http/pprof"
 	"net/url"
 	"os"
 	"os/signal"
@@ -18,6 +17,9 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+
+	// Include debug http server.
+	_ "net/http/pprof"
 
 	"github.com/maruel/dlibox/controller"
 	"github.com/maruel/dlibox/device"

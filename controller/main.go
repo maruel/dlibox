@@ -14,7 +14,6 @@ package controller
 import (
 	"fmt"
 	"log"
-	_ "net/http/pprof"
 
 	"github.com/maruel/dlibox/shared"
 	"github.com/maruel/interrupt"
@@ -24,7 +23,7 @@ import (
 // Main is the main function when running as the controller.
 func Main(bus msgbus.Bus, port int) error {
 	log.Printf("controller.Main(..., %d)", port)
-	d := DBMgr{}
+	d := dbMgr{}
 	if err := d.Load(); err != nil {
 		log.Printf("Loading DB failed: %v", err)
 	}
@@ -38,14 +37,14 @@ func Main(bus msgbus.Bus, port int) error {
 	// $online.
 	shared.InitState(msgbus.RebasePub(dbus, shared.Hostname()), nil)
 
-	w, err := initWeb(dbus, port, &d.DB, nil)
+	w, err := initWeb(dbus, port, &d.db, nil)
 	if err != nil {
 		return err
 	}
 	defer w.Close()
 
 	// Publish all the nodes.
-	for devID, dev := range d.DB.Config.Devices {
+	for devID, dev := range d.db.Config.Devices {
 		b := msgbus.RebasePub(dbus, string(devID))
 		retained(b, "$name", dev.Name)
 		for nodeID, def := range dev.ToNodes() {

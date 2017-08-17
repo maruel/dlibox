@@ -15,22 +15,22 @@ import (
 	"github.com/maruel/msgbus"
 )
 
-type Halloween struct {
+type halloweenRule struct {
 	sync.Mutex
 	Enabled   bool
-	Modes     map[string]State
-	Cmds      map[State][]rules.Command
+	Modes     map[string]halloweenState
+	Cmds      map[halloweenState][]rules.Command
 	IdleAfter int // seconds
 }
 
-func (h *Halloween) ResetDefault() {
+func (h *halloweenRule) ResetDefault() {
 	h.Lock()
 	defer h.Unlock()
 	h.Enabled = false
 	h.IdleAfter = 15
 }
 
-func (h *Halloween) Validate() error {
+func (h *halloweenRule) Validate() error {
 	h.Lock()
 	defer h.Unlock()
 	for k, v := range h.Modes {
@@ -46,7 +46,7 @@ func (h *Halloween) Validate() error {
 	return nil
 }
 
-func initHalloween(b msgbus.Bus, config *Halloween) (*halloween, error) {
+func initHalloween(b msgbus.Bus, config *halloweenRule) (*halloween, error) {
 	if !config.Enabled {
 		return nil, errors.New("not the controller")
 	}
@@ -60,7 +60,7 @@ func initHalloween(b msgbus.Bus, config *Halloween) (*halloween, error) {
 	h := &halloween{
 		b:      b,
 		config: config,
-		state:  Idle,
+		state:  idle,
 	}
 	// Listen to all messages, since we don't know the one that could be keys in
 	// the config. Technically we know but it's easier to just get them all.
@@ -76,27 +76,28 @@ func initHalloween(b msgbus.Bus, config *Halloween) (*halloween, error) {
 			}
 		}
 	}()
-	// Trigger Idle on startup.
+	// Trigger idle on startup.
 	h.publishState(h.state)
 	return h, nil
 }
 
-// State is the state machine for the incoming children.
-type State string
+// halloweenState is the state machine for the incoming children.
+type halloweenState string
 
 const (
-	// Idle is the animation while nothing in happening.
-	Idle State = "idle"
-	// Incoming is when little monsters (children) are walking in front of the
+	// idle is the animation while nothing in happening.
+	idle halloweenState = "idle"
+	// incoming is when little monsters (children) are walking in front of the
 	// house.
-	Incoming State = "incoming"
-	// Porch is when the children are in front of the door.
-	Porch State = "porch"
+	incoming halloweenState = "incoming"
+	// porch is when the children are in front of the door.
+	porch halloweenState = "porch"
 )
 
-func (s State) Valid() bool {
+// Valid returns true if the halloweenState is a known value.
+func (s halloweenState) Valid() bool {
 	switch s {
-	case Idle, Incoming, Porch:
+	case idle, incoming, porch:
 		return true
 	}
 	return false
@@ -104,8 +105,8 @@ func (s State) Valid() bool {
 
 type halloween struct {
 	b         msgbus.Bus
-	config    *Halloween
-	state     State
+	config    *halloweenRule
+	state     halloweenState
 	timerIdle *time.Timer
 }
 
@@ -127,14 +128,14 @@ func (h *halloween) onMsg(m msgbus.Message) {
 			// Didn't change state, do not trigger anything.
 			return
 		}
-		if s == Porch && h.state == Incoming {
+		if s == porch && h.state == incoming {
 			// Ignore, we'll wait for going back to idle first.
 			return
 		}
-		if s != Idle {
+		if s != idle {
 			// Reset the timer. Note that the timer is only armed when the switch is
 			// triggered by Modes. If someone sends a state change manually via
-			// mosquitto_pub -t dlibox/halloween/state, the timer will not be armed.
+			// "mosquitto_pub -t dlibox/halloween/state", the timer will not be armed.
 			if h.timerIdle != nil {
 				h.timerIdle.Stop()
 			}
@@ -148,7 +149,7 @@ func (h *halloween) onMsg(m msgbus.Message) {
 	}
 
 	if m.Topic == "dlibox/halloween/state" {
-		s := State(m.Payload)
+		s := halloweenState(m.Payload)
 		if !s.Valid() {
 			log.Printf("halloween: state is invalid: %q", s)
 			return
@@ -166,14 +167,14 @@ func (h *halloween) onMsg(m msgbus.Message) {
 func (h *halloween) setIdle() {
 	h.config.Lock()
 	defer h.config.Unlock()
-	if h.state == Idle {
+	if h.state == idle {
 		return
 	}
 	log.Printf("halloween: going back idle")
-	h.publishState(Idle)
+	h.publishState(idle)
 }
 
-func (h *halloween) publishState(s State) {
+func (h *halloween) publishState(s halloweenState) {
 	if err := h.b.Publish(msgbus.Message{"//dlibox/halloween/state", []byte(s)}, msgbus.BestEffort, true); err != nil {
 		log.Printf("halloween: failed to publish state: %v", err)
 	}

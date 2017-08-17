@@ -17,12 +17,12 @@ import (
 	"periph.io/x/periph/conn/gpio/gpioreg"
 )
 
-type PIR struct {
+type pirDev struct {
 	sync.Mutex
 	pirs []pir.Dev
 }
 
-func (p *PIR) init(b msgbus.Bus) error {
+func (p *pirDev) init(b msgbus.Bus) error {
 	for _, cfg := range p.pirs {
 		pin := gpioreg.ByName(cfg.Pin)
 		if pin == nil {

@@ -8,6 +8,8 @@ package shared
 
 import "github.com/maruel/interrupt"
 
+// WatchFile returns when the process' executable is modified or interrupt is
+// set.
 func WatchFile() error {
 	<-interrupt.Channel
 	return nil

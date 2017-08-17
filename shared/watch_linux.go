@@ -11,6 +11,8 @@ import (
 	fsnotify "gopkg.in/fsnotify.v1"
 )
 
+// WatchFile returns when the process' executable is modified or interrupt is
+// set.
 func WatchFile() error {
 	fileName, err := os.Executable()
 	if err != nil {

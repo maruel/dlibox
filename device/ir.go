@@ -13,12 +13,12 @@ import (
 	"periph.io/x/periph/devices/lirc"
 )
 
-type IR struct {
+type irDev struct {
 	sync.Mutex
 	ir ir.Dev
 }
 
-func (i *IR) init(b msgbus.Bus) error {
+func (i *irDev) init(b msgbus.Bus) error {
 	bus, err := lirc.New()
 	if err != nil {
 		return err

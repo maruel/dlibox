@@ -7,10 +7,14 @@ package ir
 
 import "errors"
 
+// Dev is an InfraRed Remote receiver.
+//
+// In practice, only lirc is supported.
 type Dev struct {
 	Name string
 }
 
+// Validate returns true if Dev is correctly initialized.
 func (d *Dev) Validate() error {
 	if len(d.Name) == 0 {
 		return errors.New("ir: Name is required")

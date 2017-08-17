@@ -16,8 +16,7 @@ import (
 	"periph.io/x/periph/devices/ssd1306/image1bit"
 )
 
-// Display contains small embedded display settings.
-type Display struct {
+type displayDev struct {
 	sync.Mutex
 	cfg display.Dev
 
@@ -27,7 +26,7 @@ type Display struct {
 	f20 *psf.Font
 }
 
-func (d *Display) init(b msgbus.Bus) error {
+func (d *displayDev) init(b msgbus.Bus) error {
 	i2cBus, err := i2creg.Open(d.cfg.I2C.ID)
 	if err != nil {
 		return err
@@ -64,13 +63,13 @@ func (d *Display) init(b msgbus.Bus) error {
 }
 
 /*
-func (d *display) Close() error {
+func (d *displayDev) Close() error {
 	d.b.Unsubscribe("display/#")
 	return nil
 }
 */
 
-func (d *Display) onMsg(msg msgbus.Message) {
+func (d *displayDev) onMsg(msg msgbus.Message) {
 	switch msg.Topic {
 	case "display/settext":
 		d.f20.Draw(d.img, 0, 0, image1bit.On, nil, string(msg.Payload))

@@ -19,7 +19,7 @@ import (
 	"periph.io/x/periph/devices/apa102"
 )
 
-type LEDs struct {
+type ledDev struct {
 	sync.Mutex
 	strips []leds.Dev
 }
@@ -35,7 +35,7 @@ func fake() {
 	*/
 }
 
-func (l *LEDs) init(b msgbus.Bus) error {
+func (l *ledDev) init(b msgbus.Bus) error {
 	for _, cfg := range l.strips {
 		fps := 30
 		s, err := spireg.Open(cfg.SPI.ID)

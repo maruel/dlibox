@@ -16,8 +16,8 @@ import (
 	"github.com/maruel/dlibox/shared"
 )
 
-// Config contains all the configuration that the user can specify.
-type Config struct {
+// config contains all the configuration that the user can specify.
+type config struct {
 	// Not stored in MQTT
 	Alarms alarm.Config
 	Rules  rules.Rules
@@ -26,17 +26,16 @@ type Config struct {
 	Devices map[nodes.ID]*nodes.Dev
 }
 
-// DB is all the settings and values that are not directly addressable by the
-// user.
-type DB struct {
+// db is all the settings and values that are persisted on disk.
+type db struct {
 	mu     sync.Mutex
-	Config Config
-	// AnimLRU is saved aside Config because these are not meant to be
+	Config config
+	// AnimLRU is saved outside of Config because these are not meant to be
 	// "updated" by the user, they are a side-effect.
-	AnimLRU AnimLRU
+	AnimLRU animLRU
 }
 
-func (d *DB) load(n string) error {
+func (d *db) load(n string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	f, err := os.Open(n)
@@ -53,7 +52,7 @@ func (d *DB) load(n string) error {
 	return j.Decode(d)
 }
 
-func (d *DB) save(n string) error {
+func (d *db) save(n string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	b, err := json.MarshalIndent(d, "", "  ")
@@ -71,19 +70,19 @@ func (d *DB) save(n string) error {
 	return f.Close()
 }
 
-type DBMgr struct {
-	DB
+type dbMgr struct {
+	db
 	path string
 }
 
-func (d *DBMgr) Load() error {
+func (d *dbMgr) Load() error {
 	d.path = filepath.Join(shared.Home(), "dlibox.json")
-	return d.DB.load(d.path)
+	return d.db.load(d.path)
 }
 
-func (d *DBMgr) Close() error {
+func (d *dbMgr) Close() error {
 	if len(d.path) != 0 {
-		return d.DB.save(d.path)
+		return d.db.save(d.path)
 	}
 	return nil
 }

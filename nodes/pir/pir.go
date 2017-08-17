@@ -7,11 +7,13 @@ package pir
 
 import "errors"
 
+// Dev represents a GPIO physical pin that is connected to a motion detector.
 type Dev struct {
 	Name string
 	Pin  string
 }
 
+// Validate returns true if Dev is correctly initialized.
 func (d *Dev) Validate() error {
 	if len(d.Name) == 0 {
 		return errors.New("pir: Name is required")

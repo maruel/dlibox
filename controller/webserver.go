@@ -33,12 +33,12 @@ type webServer struct {
 	b      msgbus.Bus
 	l      io.WriterTo
 	cache  anim1d.ThumbnailsCache
-	db     *DB
+	db     *db
 	ln     net.Listener
 	server http.Server
 }
 
-func initWeb(b msgbus.Bus, port int, db *DB, l io.WriterTo) (*webServer, error) {
+func initWeb(b msgbus.Bus, port int, d *db, l io.WriterTo) (*webServer, error) {
 	s := &webServer{
 		b: b,
 		l: l,
@@ -47,7 +47,7 @@ func initWeb(b msgbus.Bus, port int, db *DB, l io.WriterTo) (*webServer, error) 
 			ThumbnailHz:      10,
 			ThumbnailSeconds: 10,
 		},
-		db: db,
+		db: d,
 	}
 	// Static replies.
 	http.HandleFunc("/", s.rootHandler)
@@ -183,7 +183,7 @@ func (s *webServer) settingsHandler(w http.ResponseWriter, r *http.Request) {
 		// TODO(maruel): Accept JSON.
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "Cache-Control:no-cache, no-store")
-		settings := Config{}
+		settings := config{}
 		rawEncoded := r.PostFormValue("settings")
 		if len(rawEncoded) == 0 {
 			w.WriteHeader(http.StatusBadRequest)

@@ -18,37 +18,37 @@ import (
 	"periph.io/x/periph/devices"
 )
 
-// Pattern is a JSON encoded pattern.
-type Pattern string
+// pattern is a JSON encoded pattern.
+type pattern string
 
 // validatePattern verifies that the pattern can be decoded, reencoded and that
 // the format is the canonical one.
-func (p Pattern) Validate() error {
+func (p pattern) Validate() error {
 	var obj anim1d.SPattern
 	if err := json.Unmarshal([]byte(p), &obj); err != nil {
 		return err
 	}
 	b, err := obj.MarshalJSON()
-	if err == nil && Pattern(b) != p {
+	if err == nil && pattern(b) != p {
 		err = fmt.Errorf("pattern not in canonical format: expected %v; got %v", string(b), p)
 	}
 	return err
 }
 
-const morning Pattern = "{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\",\"Before\":{\"After\":\"#ff7f00\",\"Before\":\"#000000\",\"Curve\":\"direct\",\"OffsetMS\":0,\"TransitionMS\":6000000,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"OffsetMS\":6000000,\"TransitionMS\":6000000,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"OffsetMS\":18000000,\"TransitionMS\":600000,\"_type\":\"Transition\"}"
+const morning pattern = "{\"After\":\"#000000\",\"Before\":{\"After\":\"#ffffff\",\"Before\":{\"After\":\"#ff7f00\",\"Before\":\"#000000\",\"Curve\":\"direct\",\"OffsetMS\":0,\"TransitionMS\":6000000,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"OffsetMS\":6000000,\"TransitionMS\":6000000,\"_type\":\"Transition\"},\"Curve\":\"direct\",\"OffsetMS\":18000000,\"TransitionMS\":600000,\"_type\":\"Transition\"}"
 
-// AnimLRU is the list of recent patterns. The first is the oldest.
-type AnimLRU struct {
+// animLRU is the list of recent patterns. The first is the oldest.
+type animLRU struct {
 	sync.Mutex
 	Max      int
-	Patterns []Pattern
+	Patterns []pattern
 }
 
-func (l *AnimLRU) ResetDefault() {
+func (l *animLRU) ResetDefault() {
 	l.Lock()
 	defer l.Unlock()
 	l.Max = 25
-	l.Patterns = []Pattern{
+	l.Patterns = []pattern{
 		"{\"_type\":\"Aurore\"}",
 		"{\"Child\":{\"Frame\":\"Lff0000ff0000ff0000ff0000ff0000ffffffffffffffffffffffffffffff\",\"_type\":\"Repeated\"},\"MovePerHour\":21600,\"_type\":\"Rotate\"}",
 		"{\"Patterns\":[{\"_type\":\"Aurore\"},{\"C\":\"#ff9000\",\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"_type\":\"Add\"}",
@@ -69,7 +69,7 @@ func (l *AnimLRU) ResetDefault() {
 	}
 }
 
-func (l *AnimLRU) Validate() error {
+func (l *animLRU) Validate() error {
 	l.Lock()
 	defer l.Unlock()
 	for i, s := range l.Patterns {
@@ -81,7 +81,7 @@ func (l *AnimLRU) Validate() error {
 }
 
 // Inject moves the pattern at the top of LRU cache.
-func (l *AnimLRU) Inject(pattern string) {
+func (l *animLRU) Inject(p string) {
 	l.Lock()
 	defer l.Unlock()
 	if l.Max == 0 {
@@ -89,7 +89,7 @@ func (l *AnimLRU) Inject(pattern string) {
 		l.Max = 25
 	}
 	for i, old := range l.Patterns {
-		if old == Pattern(pattern) {
+		if old == pattern(p) {
 			copy(l.Patterns[i:], l.Patterns[i+1:])
 			l.Patterns = l.Patterns[:len(l.Patterns)-1]
 			break
@@ -101,21 +101,21 @@ func (l *AnimLRU) Inject(pattern string) {
 	if len(l.Patterns) > 1 {
 		copy(l.Patterns[1:], l.Patterns)
 	}
-	l.Patterns[0] = Pattern(pattern)
+	l.Patterns[0] = pattern(p)
 }
 
-// Painter contains settings about patterns.
-type Painter struct {
+// painterCfg contains settings about patterns.
+type painterCfg struct {
 	sync.Mutex
-	Named   map[string]Pattern // Patterns that are 'named'.
-	Startup Pattern            // Startup pattern to use. If not set, use Last.
-	Last    Pattern            // Last pattern used.
+	Named   map[string]pattern // Patterns that are 'named'.
+	Startup pattern            // Startup pattern to use. If not set, use Last.
+	Last    pattern            // Last pattern used.
 }
 
-func (p *Painter) ResetDefault() {
+func (p *painterCfg) ResetDefault() {
 	p.Lock()
 	defer p.Unlock()
-	p.Named = map[string]Pattern{
+	p.Named = map[string]pattern{
 		"Aurora":      "{\"_type\":\"Aurore\"}",
 		"Candy":       "{\"Child\":{\"Frame\":\"Lff0000ff0000ff0000ff0000ff0000ffffffffffffffffffffffffffffff\",\"_type\":\"Repeated\"},\"MovePerHour\":21600,\"_type\":\"Rotate\"}",
 		"Night":       "{\"Patterns\":[{\"_type\":\"Aurore\"},{\"C\":\"#ff9000\",\"_type\":\"NightStars\"},{\"AverageDelay\":0,\"Duration\":0,\"_type\":\"WishingStar\"}],\"_type\":\"Add\"}",
@@ -138,7 +138,7 @@ func (p *Painter) ResetDefault() {
 	p.Last = "\"#010001\""
 }
 
-func (p *Painter) Validate() error {
+func (p *painterCfg) Validate() error {
 	p.Lock()
 	defer p.Unlock()
 	for k, v := range p.Named {
@@ -157,7 +157,7 @@ func (p *Painter) Validate() error {
 	return nil
 }
 
-func initPainter(b msgbus.Bus, leds devices.Display, fps int, config *Painter, lru *AnimLRU) (*painterNode, error) {
+func initPainter(b msgbus.Bus, leds devices.Display, fps int, config *painterCfg, lru *animLRU) (*painterNode, error) {
 	config.Lock()
 	defer config.Unlock()
 	lru.Lock()
@@ -188,8 +188,8 @@ func initPainter(b msgbus.Bus, leds devices.Display, fps int, config *Painter, l
 type painterNode struct {
 	p      *painterLoop
 	b      msgbus.Bus
-	config *Painter
-	lru    *AnimLRU
+	config *painterCfg
+	lru    *animLRU
 }
 
 func (p *painterNode) Close() error {
@@ -244,7 +244,7 @@ func (p *painterNode) setuser(payload []byte) {
 	}
 	p.config.Lock()
 	defer p.config.Unlock()
-	p.config.Last = Pattern(s)
+	p.config.Last = pattern(s)
 }
 
 //
@@ -346,8 +346,8 @@ func (p *painterLoop) runPattern(cGen <-chan anim1d.Frame, cWrite chan<- anim1d.
 				root = newPat.p
 			} else {
 				root = &anim1d.Transition{
-					Before:       anim1d.SPattern{root},
-					After:        anim1d.SPattern{newPat.p},
+					Before:       anim1d.SPattern{Pattern: root},
+					After:        anim1d.SPattern{Pattern: newPat.p},
 					OffsetMS:     uint32(since / time.Millisecond),
 					TransitionMS: uint32(newPat.d / time.Millisecond),
 					Curve:        anim1d.EaseOut,

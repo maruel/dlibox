@@ -10,9 +10,10 @@ import "errors"
 // Dev is a sound output device.
 type Dev struct {
 	Name     string
-	DeviceID int // Non-zero when there's more than one sound card installed.
+	DeviceID string // Empty to use the default sound card.
 }
 
+// Validate returns true if Dev is correctly initialized.
 func (d *Dev) Validate() error {
 	if len(d.Name) == 0 {
 		return errors.New("sound: Name is required")

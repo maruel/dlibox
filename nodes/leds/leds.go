@@ -24,6 +24,7 @@ type Dev struct {
 	NumberLights int
 }
 
+// Validate returns true if Dev is correctly initialized.
 func (d *Dev) Validate() error {
 	if len(d.Name) == 0 {
 		return errors.New("leds: Name is required")
