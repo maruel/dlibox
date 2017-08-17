@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <title>MQTT</title>
+    <meta name="description" content="Control Bolide with MQTT">
+    <meta name="author" content="Marc-Antoine Ruel">
+    <link rel="icon" type="image/png" href="favicon.ico">
+
+    <script src="mqttws31.min.js" type="text/javascript"></script>
+    <script src="index.js" type="text/javascript"></script>
+    <link href="skeleton.css" rel="stylesheet" type="text/css">
+    <style>
+      .state {
+        background: yellow;
+        border: 1;
+      }
+      .stop {
+        color: red;
+      }
+      .commandes td {
+        font-size: 2em;
+        border: 0;
+        text-align: center;
+      }
+      button {
+        font-size: 1em;
+      }
+    </style>
+  </head>
+  <body onload="onLoad()">
+    <div class="container">
+      <h1>MQTT sniffer</h1>
+      <div class="row">
+        <div id="state" class="state">Unconnected</div>
+      </div>
+      <!--
+      <div class="row">
+        <table class="commandes">
+          <tbody>
+            <tr>
+              <td></td>
+              <td>
+                <button onclick="forward()">▲</button>
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>
+                <button onclick="left()">◀</button>
+              </td>
+              <td>
+                <button onclick="stop()" class="stop">Stop</button>
+              </td>
+              <td>
+                <button onclick="right()">▶</button>
+              </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td>
+                <button onclick="backward()">▼</button>
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>
+                <label>
+                  <input id=LED type=checkbox onclick="onLED()"></input>
+                  LED
+                </label>
+              </td>
+              <td></td>
+              <td>
+                <label>
+                  <input id=BUZZER type=checkbox onclick="onBuzzer()"></input>
+                  Buzzer
+                </label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      -->
+      <h2>MQTT Messages</h2>
+      <div class="row">
+        <pre><code><div id=messages></div></code></pre>
+      </div>
+    </div>
+    <hr>
+    <div class="u-pull-left">Created with 💚 by <a href="https://maruel.net">Marc-Antoine Ruel</a></div>
+    <div class="u-pull-right">
+    Made with <a href="http://vanilla-js.com/">Vanilla JS</a>
+  </div>
+  </body>
+
+</html>

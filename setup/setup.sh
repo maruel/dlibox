@@ -80,10 +80,14 @@ EOF
 function install_mqtt() {
   echo "- Installing MQTT server"
   sudo apt-get -y install mosquitto
-  sudo tee --append /etc/mosquitto/conf.d/mosquitto.conf > /dev/null <<EOF
+  sudo tee /etc/mosquitto/conf.d/mosquitto.conf > /dev/null <<EOF
 # https://github.com/maruel/dlibox
 # TODO(maruel): Change!
 allow_anonymous true
+
+listener 1883
+listener 1884
+protocol websockets
 
 # General settings. Assumes Debian default mosquitto.conf was used.
 allow_duplicate_messages false
