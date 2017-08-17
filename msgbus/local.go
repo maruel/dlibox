@@ -6,6 +6,7 @@ package msgbus
 
 import (
 	"errors"
+	"log"
 	"sync"
 )
 
@@ -82,9 +83,9 @@ func (l *local) Publish(msg Message, qos QOS, retained bool) error {
 	return nil
 }
 
-func (l *local) Subscribe(topic string, qos QOS) (<-chan Message, error) {
+func (l *local) Subscribe(topic_query string, qos QOS) (<-chan Message, error) {
 	// QOS is ignored. Eventually it could be used to make the channel buffered.
-	p := parseTopic(topic)
+	p := parseTopic(topic_query)
 	if p == nil {
 		return nil, errors.New("invalid topic")
 	}
@@ -95,10 +96,10 @@ func (l *local) Subscribe(topic string, qos QOS) (<-chan Message, error) {
 	return s.channel, nil
 }
 
-func (l *local) Unsubscribe(topic string) {
-	p := parseTopic(topic)
+func (l *local) Unsubscribe(topic_query string) {
+	p := parseTopic(topic_query)
 	if p == nil {
-		// Invalid topic.
+		log.Printf("%s.Unsubscribe(%s): invalid topic", l, topic_query)
 		return
 	}
 	subscribers := func() []*subscription {
@@ -127,8 +128,8 @@ func (l *local) Unsubscribe(topic string) {
 	}
 }
 
-func (l *local) Retained(topic string) ([]Message, error) {
-	ps := parseTopic(topic)
+func (l *local) Retained(topic_query string) ([]Message, error) {
+	ps := parseTopic(topic_query)
 	if ps == nil {
 		return nil, errors.New("invalid topic")
 	}

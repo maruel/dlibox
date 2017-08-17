@@ -117,7 +117,7 @@ sudo systemctl stop dlibox
 sudo journalctl -f -u dlibox
 EOF
 
-  echo "- Installing dlibox as user {$AS_USER}"
+  echo "- Installing dlibox as user ${AS_USER}"
   go get -u -v github.com/maruel/dlibox/cmd/dlibox
 
   echo "- Setting up dlibox as system service"
@@ -200,14 +200,14 @@ function install_optional() {
 
 function do_controller() {
   install_mqtt
-  install_dlibox $USER
+  install_dlibox ${USER}
   #install_optional
 }
 
 
 function do_device() {
   install_lirc
-  install_dlibox $USER
+  install_dlibox ${USER}
   #install_optional
 }
 

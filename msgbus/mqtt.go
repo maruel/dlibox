@@ -23,23 +23,12 @@ import (
 func NewMQTT(server, clientID, user, password string, will Message) (Bus, error) {
 	opts := mqtt.NewClientOptions().AddBroker(server)
 	opts.ClientID = clientID
-	// Use lower timeouts than the defaults since they are high and the current
-	// assumption is local network.
-	/*
-		opts.ConnectTimeout = 10 * time.Second
-		opts.KeepAlive = 10 * time.Second
-		opts.PingTimeout = 5 * time.Second
-	*/
 	// Default 10min is too slow.
 	opts.MaxReconnectInterval = 30 * time.Second
 	// Global ordering flag.
 	// opts.Order = false
-	if len(user) != 0 {
-		opts.Username = user
-	}
-	if len(password) != 0 {
-		opts.Password = password
-	}
+	opts.Username = user
+	opts.Password = password
 	if len(will.Topic) != 0 {
 		opts.SetBinaryWill(will.Topic, will.Payload, byte(ExactlyOnce), true)
 	}
@@ -48,30 +37,12 @@ func NewMQTT(server, clientID, user, password string, will Message) (Bus, error)
 	opts.OnConnectionLost = m.onConnectionLost
 	opts.DefaultPublishHandler = m.unexpectedMessage
 	m.client = mqtt.NewClient(opts)
-	if token := m.client.Connect(); token.Wait() && token.Error() != nil {
-		return nil, token.Error()
+	token := m.client.Connect()
+	token.Wait()
+	if err := token.Error(); err != nil {
+		return nil, err
 	}
 	return m, nil
-	/*
-		// Subscribe to all messages and filter locally. This causes a huge amount
-		// of unnecessary traffic since it effectively acts as a local broker.
-		m := &mqttBus{client: client}
-		token := m.client.Subscribe("#", byte(BestEffort), func(client mqtt.Client, msgQ mqtt.Message) {
-			msg := Message{msgQ.Topic(), msgQ.Payload()}
-			m.mu.Lock()
-			defer m.mu.Unlock()
-			for i := range m.subscribers {
-				if m.subscribers[i].topic_query.match(msg.Topic) {
-					m.subscribers[i].publish(msg)
-				}
-			}
-		})
-		token.Wait()
-		if err := token.Error(); err != nil {
-			return nil, err
-		}
-		return m, nil
-	*/
 }
 
 //
@@ -85,8 +56,6 @@ type mqttBus struct {
 
 	mu               sync.Mutex
 	disconnectedOnce bool
-	// For local brokerage:
-	//subscribers []*subscription
 }
 
 func (m *mqttBus) String() string {
@@ -125,38 +94,21 @@ func (m *mqttBus) Subscribe(topic_query string, qos QOS) (<-chan Message, error)
 	})
 	token.Wait()
 	return c, token.Error()
-	/*
-		c := make(chan Message)
-		m.mu.Lock()
-		defer m.mu.Unlock()
-		m.subscribers = append(m.subscribers, &subscription{topic_query: p, channel: c})
-		return c, nil
-	*/
 }
 
 func (m *mqttBus) Unsubscribe(topic_query string) {
 	// Quick local check.
 	p := parseTopic(topic_query)
 	if p == nil {
-		// Invalid topic.
+		log.Printf("%s.Unsubscribe(%s): invalid topic", m, topic_query)
 		return
 	}
 
 	token := m.client.Unsubscribe(topic_query)
 	token.Wait()
-	// token.Error() is lost.
-	/*
-		m.mu.Lock()
-		defer m.mu.Unlock()
-		for i := range m.subscribers {
-			if m.subscribers[i].topic_query.isEqual(p) {
-				m.subscribers[i].closeSub()
-				copy(m.subscribers[i:], m.subscribers[i+1:])
-				m.subscribers = m.subscribers[:len(m.subscribers)-1]
-				return
-			}
-		}
-	*/
+	if err := token.Error(); err != nil {
+		log.Printf("%s.Unsubscribe(%s): %v", m, topic_query, err)
+	}
 }
 
 func (m *mqttBus) Retained(topic_query string) ([]Message, error) {
@@ -196,7 +148,7 @@ func (m *mqttBus) Retained(topic_query string) ([]Message, error) {
 }
 
 func (m *mqttBus) unexpectedMessage(c mqtt.Client, msg mqtt.Message) {
-	log.Printf("%s Unexpected message %s", m, msg.Topic())
+	log.Printf("%s: Unexpected message %s", m, msg.Topic())
 }
 
 func (m *mqttBus) onConnect(c mqtt.Client) {
@@ -204,12 +156,12 @@ func (m *mqttBus) onConnect(c mqtt.Client) {
 	d := m.disconnectedOnce
 	m.mu.Unlock()
 	if d {
-		log.Printf("%s connected", m)
+		log.Printf("%s: connected", m)
 	}
 }
 
 func (m *mqttBus) onConnectionLost(c mqtt.Client, err error) {
-	log.Printf("%s connection lost: %v", m, err)
+	log.Printf("%s: connection lost: %v", m, err)
 	m.mu.Lock()
 	m.disconnectedOnce = true
 	m.mu.Unlock()
