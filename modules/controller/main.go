@@ -3,7 +3,7 @@
 // that can be found in the LICENSE file.
 
 // Packages the static files in a .go file.
-//go:generate go run package.go -out static_files_gen.go ../../../web
+//go:generate go run package.go -out static_files_gen.go ../../web
 
 package controller
 
