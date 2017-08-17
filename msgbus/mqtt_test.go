@@ -20,7 +20,7 @@ func TestNewMQTT_fail(t *testing.T) {
 
 func TestMQTT(t *testing.T) {
 	c := clientFake{}
-	m := mqttBus{&c}
+	m := mqttBus{client: &c}
 
 	if err := m.Publish(Message{Topic: "a/#/b"}, BestEffort, false); err == nil {
 		t.Fatal("bad topic")

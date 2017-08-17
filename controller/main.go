@@ -18,6 +18,7 @@ import (
 
 	"github.com/maruel/dlibox/msgbus"
 	"github.com/maruel/dlibox/shared"
+	"github.com/maruel/interrupt"
 )
 
 // Main is the main function when running as the controller.
@@ -57,7 +58,9 @@ func Main(bus msgbus.Bus, port int) error {
 			retainedBytes(bn, "$config", def.Config)
 		}
 	}
-	retained(bus, "$online", "true")
+	if !interrupt.IsSet() {
+		retained(bus, "$online", "true")
+	}
 	return shared.WatchFile()
 }
 

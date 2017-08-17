@@ -106,7 +106,9 @@ func Main(server string, bus msgbus.Bus, port int) error {
 		dev.Sound.init(cfg.Sound)
 	*/
 	defer dev.Close()
-	rebased.Publish(msgbus.Message{"$online", []byte("true")}, msgbus.MinOnce, true)
+	if !interrupt.IsSet() {
+		rebased.Publish(msgbus.Message{"$online", []byte("true")}, msgbus.MinOnce, true)
+	}
 	return shared.WatchFile()
 }
 

@@ -24,6 +24,10 @@ type local struct {
 	subscribers      []*subscription
 }
 
+func (l *local) String() string {
+	return "LocalBus"
+}
+
 func (l *local) Close() error {
 	l.mu.Lock()
 	subs := l.subscribers

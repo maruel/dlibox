@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"os/user"
+	"strings"
 
 	"github.com/maruel/dlibox/msgbus"
 	"periph.io/x/periph"
@@ -18,27 +19,33 @@ import (
 
 // InitState initializes the MQTT node state.
 func InitState(bus msgbus.Bus, state *periph.State) {
-	// TODO(maruel): We need to get the MAC and IP of the network that is UP. In
-	// the case where multiple networks are up, too bad.
-	// TODO(maruel): Use priority eth > wlan > blan
-	var ip net.IP
-	var mask []byte
+	ip := ""
+	mac := ""
 	ifaces, _ := net.Interfaces()
 	for _, i := range ifaces {
+		if i.Flags&net.FlagUp == 0 || i.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		if strings.HasPrefix(i.Name, "virbr") || strings.HasPrefix(i.Name, "docker") {
+			continue
+		}
 		addrs, _ := i.Addrs()
+		mac = i.HardwareAddr.String()
 		for _, addr := range addrs {
 			switch v := addr.(type) {
 			case *net.IPNet:
-				ip = v.IP
-				mask = v.Mask
-			case *net.IPAddr:
-				//ip = v.IP
+				if v.IP.IsLoopback() || v.IP.IsUnspecified() {
+					continue
+				}
+				ip = v.IP.String()
+				goto done
 			}
 		}
 	}
+done:
 
-	bus.Publish(msgbus.Message{"$localip", []byte(ip.String())}, msgbus.MinOnce, true)
-	bus.Publish(msgbus.Message{"$mac", mask}, msgbus.MinOnce, true)
+	bus.Publish(msgbus.Message{"$localip", []byte(ip)}, msgbus.MinOnce, true)
+	bus.Publish(msgbus.Message{"$mac", []byte(mac)}, msgbus.MinOnce, true)
 	bus.Publish(msgbus.Message{"$implementation", []byte("dlibox")}, msgbus.MinOnce, true)
 	if state != nil {
 		bus.Publish(msgbus.Message{"$implementation/periph/state", []byte(fmt.Sprintf("%v", state))}, msgbus.MinOnce, true)

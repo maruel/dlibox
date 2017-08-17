@@ -63,6 +63,7 @@ type Message struct {
 // http://www.hivemq.com/blog/mqtt-essentials-part-8-retained-messages
 type Bus interface {
 	io.Closer
+	fmt.Stringer
 
 	// Publish publishes a message to a topic.
 	//
@@ -130,17 +131,26 @@ func RebaseSub(b Bus, root string) Bus {
 // Private code.
 
 type logging struct {
-	Bus
+	bus Bus
+}
+
+func (l *logging) String() string {
+	return l.bus.String()
+}
+
+func (l *logging) Close() error {
+	log.Printf("%s.Close()", l)
+	return l.bus.Close()
 }
 
 func (l *logging) Publish(msg Message, qos QOS, retained bool) error {
-	log.Printf("Publish({%s, %q}, %s, %t)", msg.Topic, string(msg.Payload), qos, retained)
-	return l.Bus.Publish(msg, qos, retained)
+	log.Printf("%s.Publish({%s, %q}, %s, %t)", l, msg.Topic, string(msg.Payload), qos, retained)
+	return l.bus.Publish(msg, qos, retained)
 }
 
 func (l *logging) Subscribe(topic_query string, qos QOS) (<-chan Message, error) {
-	log.Printf("Subscribe(%s, %s)", topic_query, qos)
-	c, err := l.Bus.Subscribe(topic_query, qos)
+	log.Printf("%s.Subscribe(%s, %s)", l, topic_query, qos)
+	c, err := l.bus.Subscribe(topic_query, qos)
 	if err != nil {
 		return c, err
 	}
@@ -148,11 +158,21 @@ func (l *logging) Subscribe(topic_query string, qos QOS) (<-chan Message, error)
 	go func() {
 		defer close(c2)
 		for msg := range c {
-			log.Printf("<- Message{%s, %q}", msg.Topic, string(msg.Payload))
+			log.Printf("%s <- Message{%s, %q}", l, msg.Topic, string(msg.Payload))
 			c2 <- msg
 		}
 	}()
 	return c2, nil
+}
+
+func (l *logging) Unsubscribe(topic_query string) {
+	log.Printf("%s.Unsubscribe(%s)", l, topic_query)
+	l.bus.Unsubscribe(topic_query)
+}
+
+func (l *logging) Retained(topic_query string) ([]Message, error) {
+	log.Printf("%s.Retained(%s)", l, topic_query)
+	return l.bus.Retained(topic_query)
 }
 
 // Rebase support.
@@ -160,6 +180,10 @@ func (l *logging) Subscribe(topic_query string, qos QOS) (<-chan Message, error)
 type rebasePublisher struct {
 	Bus
 	root string
+}
+
+func (r *rebasePublisher) String() string {
+	return r.Bus.String() + "/" + r.root
 }
 
 func (r *rebasePublisher) Publish(msg Message, qos QOS, retained bool) error {
@@ -170,6 +194,10 @@ func (r *rebasePublisher) Publish(msg Message, qos QOS, retained bool) error {
 type rebaseSubscriber struct {
 	Bus
 	root string
+}
+
+func (r *rebaseSubscriber) String() string {
+	return r.Bus.String() + "/" + r.root
 }
 
 func (r *rebaseSubscriber) Subscribe(topic_query string, qos QOS) (<-chan Message, error) {

@@ -6,6 +6,9 @@ package msgbus
 
 import (
 	"errors"
+	"fmt"
+	"log"
+	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -18,29 +21,37 @@ import (
 // This main purpose of this library is to hide the horror that
 // paho.mqtt.golang is.
 func NewMQTT(server, clientID, user, password string, will Message) (Bus, error) {
-	opts := mqtt.NewClientOptions().AddBroker(server).SetClientID(clientID)
+	opts := mqtt.NewClientOptions().AddBroker(server)
+	opts.ClientID = clientID
 	// Use lower timeouts than the defaults since they are high and the current
 	// assumption is local network.
-	opts.SetConnectTimeout(5 * time.Second)
-	opts.SetKeepAlive(4 * time.Second)
-	opts.SetPingTimeout(2 * time.Second)
+	/*
+		opts.ConnectTimeout = 10 * time.Second
+		opts.KeepAlive = 10 * time.Second
+		opts.PingTimeout = 5 * time.Second
+	*/
+	// Default 10min is too slow.
+	opts.MaxReconnectInterval = 30 * time.Second
+	// Global ordering flag.
+	// opts.Order = false
 	if len(user) != 0 {
-		opts.SetUsername(user)
+		opts.Username = user
 	}
 	if len(password) != 0 {
-		opts.SetPassword(password)
+		opts.Password = password
 	}
 	if len(will.Topic) != 0 {
 		opts.SetBinaryWill(will.Topic, will.Payload, byte(ExactlyOnce), true)
 	}
-	// TODO(maruel): opts.SetTLSConfig()
-	// https://github.com/eclipse/paho.mqtt.golang/blob/master/samples/ssl.go
-	// TODO(maruel): opts.SetBinaryWill()
-	client := mqtt.NewClient(opts)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
+	m := &mqttBus{server: server}
+	opts.OnConnect = m.onConnect
+	opts.OnConnectionLost = m.onConnectionLost
+	opts.DefaultPublishHandler = m.unexpectedMessage
+	m.client = mqtt.NewClient(opts)
+	if token := m.client.Connect(); token.Wait() && token.Error() != nil {
 		return nil, token.Error()
 	}
-	return &mqttBus{client: client}, nil
+	return m, nil
 	/*
 		// Subscribe to all messages and filter locally. This causes a huge amount
 		// of unnecessary traffic since it effectively acts as a local broker.
@@ -70,10 +81,16 @@ func NewMQTT(server, clientID, user, password string, will Message) (Bus, error)
 // This Bus is thread safe.
 type mqttBus struct {
 	client mqtt.Client
+	server string
 
+	mu               sync.Mutex
+	disconnectedOnce bool
 	// For local brokerage:
-	//mu          sync.Mutex
 	//subscribers []*subscription
+}
+
+func (m *mqttBus) String() string {
+	return fmt.Sprintf("MQTT{%s}", m.server)
 }
 
 func (m *mqttBus) Close() error {
@@ -149,9 +166,53 @@ func (m *mqttBus) Retained(topic_query string) ([]Message, error) {
 		return nil, errors.New("invalid topic")
 	}
 
-	// TODO(maruel): It looks it needs to do a quick Subscribe + poll every
-	// messages until one with !msg.Retained() or a timeout then Unsubscribe.
-	return nil, errors.New("implement me")
+	// Do a quick Subscribe(), retrieve all retained messages until one with
+	// !msg.Retained() or a timeout then Unsubscribe.
+	c := make(chan Message)
+	token := m.client.Subscribe(topic_query, byte(ExactlyOnce), func(client mqtt.Client, msg mqtt.Message) {
+		// TODO(maruel): This assumes that retained messages are sent first by the
+		// broker. This is likely not true.
+		if msg.Retained() {
+			c <- Message{msg.Topic(), msg.Payload()}
+		}
+	})
+	if err := token.Error(); err != nil {
+		// TODO(maruel): This will leak the channel.
+		return nil, err
+	}
+	var out []Message
+	// TODO(maruel): This is crappy.
+	for loop := true; loop; {
+		after := time.After(1 * time.Second)
+		select {
+		case i := <-c:
+			out = append(out, i)
+		case <-after:
+			loop = false
+		}
+	}
+	m.Unsubscribe(topic_query)
+	return out, nil
+}
+
+func (m *mqttBus) unexpectedMessage(c mqtt.Client, msg mqtt.Message) {
+	log.Printf("%s Unexpected message %s", m, msg.Topic())
+}
+
+func (m *mqttBus) onConnect(c mqtt.Client) {
+	m.mu.Lock()
+	d := m.disconnectedOnce
+	m.mu.Unlock()
+	if d {
+		log.Printf("%s connected", m)
+	}
+}
+
+func (m *mqttBus) onConnectionLost(c mqtt.Client, err error) {
+	log.Printf("%s connection lost: %v", m, err)
+	m.mu.Lock()
+	m.disconnectedOnce = true
+	m.mu.Unlock()
 }
 
 var _ Bus = &mqttBus{}

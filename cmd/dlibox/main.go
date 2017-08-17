@@ -84,10 +84,10 @@ func mainImpl() error {
 
 		// TODO(maruel): Standard way to figure out it's the same host? Likely by
 		// resolving the IP.
-		isController := serverID == shared.Hostname() || serverID == "localhost" || serverID == "127.0.0.1"
+		isController = serverID == shared.Hostname() || serverID == "localhost" || serverID == "127.0.0.1"
 		root := "dlibox"
 		if !isController {
-			root += shared.Hostname()
+			root += "/" + shared.Hostname()
 		}
 		will := msgbus.Message{root + "/$online", []byte("false")}
 		usr := ""
@@ -107,6 +107,7 @@ func mainImpl() error {
 		} else {
 			bus = mqttServer
 		}
+		bus = msgbus.Log(bus)
 		// Everything is under the namespace "dlibox/"
 		bus = msgbus.RebasePub(msgbus.RebaseSub(bus, "dlibox"), "dlibox")
 	}
