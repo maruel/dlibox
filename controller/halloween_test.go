@@ -9,7 +9,6 @@ import (
 
 	"github.com/maruel/dlibox/controller/rules"
 	"github.com/maruel/msgbus"
-	"github.com/maruel/ut"
 )
 
 func TestHalloween(t *testing.T) {
@@ -20,11 +19,17 @@ func TestHalloween(t *testing.T) {
 	c.Modes = map[string]halloweenState{"foo/1": incoming}
 	c.Cmds = map[halloweenState][]rules.Command{incoming: {{Topic: "bar", Payload: "1"}}}
 	h, err := initHalloween(msgbus.RebaseSub(msgbus.RebasePub(b, "foo"), "foo"), &c)
-	ut.AssertEqual(t, nil, err)
-	ut.AssertEqual(t, nil, b.Publish(msgbus.Message{"foo/1", []byte("1")}, msgbus.BestEffort, false))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := b.Publish(msgbus.Message{"foo/1", []byte("1")}, msgbus.BestEffort, false); err != nil {
+		t.Fatal(err)
+	}
 	// TODO(maruel): Settle wasn't implement in a concurrent safe manner.
 	// b.Settle()
 	// This test is non-deterministic.
-	//ut.AssertEqual(t, incoming, h.state)
-	ut.AssertEqual(t, nil, h.Close())
+	//if incoming != h.state { t.Fatal(...) }
+	if err := h.Close(); err != nil {
+		t.Fatal(err)
+	}
 }

@@ -6,13 +6,13 @@
 package alarm
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/maruel/dlibox/controller/rules"
 	"github.com/maruel/msgbus"
-	"github.com/pkg/errors"
 )
 
 // WeekdayBit is a bitmask of each day.
@@ -172,7 +172,7 @@ func (c *Config) Validate() error {
 			return errors.New("alarm without a name")
 		}
 		if err := a.Validate(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("can't validate alarm %s", name))
+			return fmt.Errorf("can't validate alarm %s: %v", name, err)
 		}
 	}
 	return nil

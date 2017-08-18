@@ -14,7 +14,6 @@ import (
 	"github.com/maruel/anim1d"
 	"github.com/maruel/interrupt"
 	"github.com/maruel/msgbus"
-	"github.com/pkg/errors"
 	"periph.io/x/periph/devices"
 )
 
@@ -74,7 +73,7 @@ func (l *animLRU) Validate() error {
 	defer l.Unlock()
 	for i, s := range l.Patterns {
 		if err := s.Validate(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("can't load recent pattern %d", i))
+			return fmt.Errorf("can't load recent pattern %d: %v", i, err)
 		}
 	}
 	return nil
@@ -143,12 +142,12 @@ func (p *painterCfg) Validate() error {
 	defer p.Unlock()
 	for k, v := range p.Named {
 		if err := v.Validate(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("can't load pattern %s", k))
+			return fmt.Errorf("can't load pattern %s: %v", k, err)
 		}
 	}
 	if len(p.Startup) != 0 {
 		if err := p.Startup.Validate(); err != nil {
-			return errors.Wrap(err, "can't load pattern for Last")
+			return fmt.Errorf("can't load pattern for Last: %v", err)
 		}
 	}
 	if len(p.Last) != 0 {

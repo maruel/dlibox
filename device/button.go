@@ -12,7 +12,6 @@ import (
 	"github.com/maruel/dlibox/nodes"
 	"github.com/maruel/interrupt"
 	"github.com/maruel/msgbus"
-	"github.com/pkg/errors"
 	"periph.io/x/periph/conn/gpio"
 	"periph.io/x/periph/conn/gpio/gpioreg"
 )
@@ -28,7 +27,7 @@ func (b *buttonDev) init(bus msgbus.Bus) error {
 		return fmt.Errorf("%s: failed to find pin %s", b, b.Cfg.Pin)
 	}
 	if err := pin.In(gpio.PullDown, gpio.BothEdges); err != nil {
-		return errors.Wrapf(err, "%s: failed to pull down %s", b, pin)
+		return fmt.Errorf("%s: failed to pull down %s: %v", b, pin, err)
 	}
 	go b.run(bus, pin)
 	return nil
