@@ -8,224 +8,156 @@ package nodes
 
 import (
 	"encoding/json"
-	"log"
+	"errors"
+	"fmt"
+	"reflect"
 	"regexp"
-
-	"github.com/maruel/dlibox/nodes/button"
-	"github.com/maruel/dlibox/nodes/display"
-	"github.com/maruel/dlibox/nodes/ir"
-	"github.com/maruel/dlibox/nodes/leds"
-	"github.com/maruel/dlibox/nodes/pir"
-	"github.com/maruel/dlibox/nodes/sound"
+	"strings"
 )
+
+// Validator ensures a configuration is valid.
+type Validator interface {
+	Validate() error
+}
 
 // ID is a valid homie ID.
 type ID string
 
-// IsValid returns true if this is a valid id.
-func (i ID) IsValid() bool {
-	return re.MatchString(string(i))
+// Validate implements Validator.
+func (i ID) Validate() error {
+	if !re.MatchString(string(i)) {
+		return fmt.Errorf("invalid id: %q", i)
+	}
+	return nil
 }
 
 // Dev is the configuration for all the nodes on a device.
 //
-// The device doesn't store it, it's stored on the MQTT server.
+// The Dev is the micro-computer (a Rasberry Pi, C.H.I.P., ESP8266) that
+// exposes nodes.
+//
+// The controller stores this data on the MQTT server upon startup and
+// upon configuration update.
+//
+// The device fetches this data from the MQTT server upon startup. So when a
+// device configuration occurs, the device should restart. This is really just
+// restarting the Go process so this is nearly instant.
 type Dev struct {
-	// Name is the display name of this nodes collection, the device.
-	Name     string // $name
-	Buttons  map[ID]button.Dev
-	Displays map[ID]display.Dev
-	IRs      map[ID]ir.Dev
-	LEDs     map[ID]leds.Dev
-	PIRs     map[ID]pir.Dev
-	Sound    map[ID]sound.Dev
+	// Name is the display name of this nodes collection: the device.
+	Name  string
+	Nodes map[ID]*Node
 }
 
-// ToNodes is used by the controller to serialize the device description.
-func (d *Dev) ToNodes() Nodes {
-	n := Nodes{}
-	for id, v := range d.Buttons {
-		c, _ := json.Marshal(v)
-		n[id] = Node{
-			Name: v.Name,
-			Type: Button,
-			Properties: map[ID]Property{
-				// TODO(maruel): Support double-click.
-				"button": {DataType: "boolean"},
-			},
-			Config: c,
+// ToSerialized is used by the controller to serialize the device description.
+//
+// Serialization should never fail.
+func (d *Dev) ToSerialized() *SerializedDev {
+	nds := &SerializedDev{Name: d.Name}
+	for id, n := range d.Nodes {
+		c, err := json.Marshal(n.Config)
+		if err != nil {
+			panic(err)
+		}
+		nds.Nodes[id] = &SerializedNode{
+			Name:       n.Name,
+			Type:       n.Type(),
+			Properties: n.Config.toProperties(),
+			Config:     c,
 		}
 	}
-	for id, v := range d.Displays {
-		c, _ := json.Marshal(v)
-		n[id] = Node{
-			Name: v.Name,
-			Type: SSD1306,
-			Properties: map[ID]Property{
-				"markee": {
-					DataType: "string",
-					Settable: true,
-				},
-				"content": {
-					DataType: "string",
-					Settable: true,
-				},
-			},
-			Config: c,
-		}
-	}
-	for id, v := range d.Displays {
-		c, _ := json.Marshal(v)
-		n[id] = Node{
-			Name: v.Name,
-			Type: IR,
-			Properties: map[ID]Property{
-				"ir": {DataType: "string"},
-			},
-			Config: c,
-		}
-	}
-	for id, v := range d.LEDs {
-		c, _ := json.Marshal(v)
-		n[id] = Node{
-			Name: v.Name,
-			Type: Anim1D,
-			Properties: map[ID]Property{
-				// A pattern.
-				"anim1d": {
-					DataType: "string",
-					Settable: true,
-				},
-			},
-			Config: c,
-		}
-	}
-	for id, v := range d.PIRs {
-		c, _ := json.Marshal(v)
-		n[id] = Node{
-			Name: v.Name,
-			Type: PIR,
-			Properties: map[ID]Property{
-				"pir": {DataType: "boolean"},
-			},
-			Config: c,
-		}
-	}
-	for id, v := range d.Sound {
-		c, _ := json.Marshal(v)
-		n[id] = Node{
-			Name: v.Name,
-			Type: Sound,
-			Properties: map[ID]Property{
-				// An URL.
-				"speakers": {
-					DataType: "string",
-					Settable: true,
-				},
-			},
-			Config: c,
-		}
-	}
-	return n
+	return nds
 }
 
-// Nodes is the serialized form of Dev as stored on the MQTT server.
-type Nodes map[ID]Node
+// Validate implements Validator.
+func (d *Dev) Validate() error {
+	if len(d.Name) == 0 {
+		return errors.New("dev: missing Name")
+	}
+	// TODO(maruel): Maybe do it in order to have deterministic result?
+	for id, node := range d.Nodes {
+		if err := id.Validate(); err != nil {
+			return fmt.Errorf("dev %s: %v", d.Name, err)
+		}
+		if err := node.Validate(); err != nil {
+			return fmt.Errorf("dev %s: node %s: %v", d.Name, id, err)
+		}
+	}
+	return nil
+}
+
+// Node is the descriptor for a configured node on a device.
+type Node struct {
+	// Name is the display name of this node.
+	Name   string
+	Config NodeCfg
+}
+
+// Type returns the node's Type.
+func (n *Node) Type() Type {
+	return Type(strings.ToLower(reflect.TypeOf(n.Config).Elem().Name()))
+}
+
+// isValid returns true if the node type is valid.
+func (n *Node) Validate() error {
+	if len(n.Name) == 0 {
+		return errors.New("node: missing Name")
+	}
+	if err := n.Type().Validate(); err != nil {
+		//return err
+		return fmt.Errorf("node %s: unknown Config %T", n.Name, n.Config)
+	}
+	return n.Config.Validate()
+}
+
+// Serialized form.
+
+// SerializedDev is the serialized form of Dev as stored on the MQTT server.
+type SerializedDev struct {
+	Name  string `json:"$name"`
+	Nodes map[ID]*SerializedNode
+}
 
 // ToDev is used by the device to deserialize the configuration.
-func (n Nodes) ToDev() *Dev {
+func (s *SerializedDev) ToDev() (*Dev, error) {
 	// Parse every nodes, return a processed config.
-	d := &Dev{}
-	for id, node := range n {
-		switch node.Type {
-		case Anim1D:
-			v := leds.Dev{}
-			if err := json.Unmarshal(node.Config, &v); err != nil {
-				log.Printf("failed to unmarshal %s", id)
-				continue
-			}
-			d.LEDs[id] = v
-
-		case Button:
-			v := button.Dev{}
-			if err := json.Unmarshal(node.Config, &v); err != nil {
-				log.Printf("failed to unmarshal %s", id)
-				continue
-			}
-			d.Buttons[id] = v
-
-		case SSD1306:
-			v := display.Dev{}
-			if err := json.Unmarshal(node.Config, &v); err != nil {
-				log.Printf("failed to unmarshal %s", id)
-				continue
-			}
-			d.Displays[id] = v
-
-		case IR:
-			v := ir.Dev{}
-			if err := json.Unmarshal(node.Config, &v); err != nil {
-				log.Printf("failed to unmarshal %s", id)
-				continue
-			}
-			d.IRs[id] = v
-
-		case PIR:
-			v := pir.Dev{}
-			if err := json.Unmarshal(node.Config, &v); err != nil {
-				log.Printf("failed to unmarshal %s", id)
-				continue
-			}
-			d.PIRs[id] = v
-
-		case Sound:
-			v := sound.Dev{}
-			if err := json.Unmarshal(node.Config, &v); err != nil {
-				log.Printf("failed to unmarshal %s", id)
-				continue
-			}
-			d.Sound[id] = v
-
-		default:
-			log.Printf("id %s unknown type %s", id, node.Type)
+	d := &Dev{Name: s.Name, Nodes: map[ID]*Node{}}
+	for id, n := range s.Nodes {
+		nd, err := n.toNode(id)
+		if err != nil {
+			return nil, err
 		}
+		d.Nodes[id] = nd
 	}
-	return d
+	return d, nil
 }
 
-// Type is all the known node types.
-type Type string
-
-// All the known node types.
-const (
-	Anim1D  Type = "anim1d"
-	Button  Type = "button"
-	SSD1306 Type = "ssd1306"
-	IR      Type = "ir"
-	PIR     Type = "pir"
-	Sound   Type = "sound"
-)
-
-// IsValid returns true if the node type is known.
-func (t Type) IsValid() bool {
-	switch t {
-	case Anim1D, Button, SSD1306, IR, PIR, Sound:
-		return true
-	default:
-		return false
-	}
-}
-
-// Node is loosely based on
+// SerializedNode is loosely based on
 // https://github.com/marvinroger/homie#node-attributes
-type Node struct {
+//
+// It is the serialized form of Node.
+type SerializedNode struct {
 	Name       string          `json:"$name"`
 	Type       Type            `json:"$type"`
 	Properties map[ID]Property `json:"$properties"`
 	Config     []byte          `json:"$config"`
 }
 
+func (s *SerializedNode) toNode(id ID) (*Node, error) {
+	r := TypesMap[s.Type]
+	if r == nil {
+		return nil, fmt.Errorf("node %s: unknown type %s", id, s.Type)
+	}
+	v := reflect.New(r).Interface().(NodeCfg)
+	if err := json.Unmarshal(s.Config, v); err != nil {
+		return nil, fmt.Errorf("node %s: failed to unmarshal config: %v", id, err)
+	}
+	return &Node{Name: s.Name, Config: v}, nil
+}
+
 // Property defines one property of a node.
+//
+// A Node can have multiple properties. For example a buzzer could have separate
+// knob for frequency and intensity.
 type Property struct {
 	Unit     string `json:"$unit"`
 	DataType string `json:"$datatype"`

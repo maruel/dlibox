@@ -6,16 +6,15 @@ package device
 
 import (
 	"log"
-	"sync"
 
-	"github.com/maruel/dlibox/nodes/ir"
+	"github.com/maruel/dlibox/nodes"
 	"github.com/maruel/msgbus"
 	"periph.io/x/periph/devices/lirc"
 )
 
 type irDev struct {
-	sync.Mutex
-	ir ir.Dev
+	NodeBase
+	Cfg *nodes.IR
 }
 
 func (i *irDev) init(b msgbus.Bus) error {
@@ -23,11 +22,11 @@ func (i *irDev) init(b msgbus.Bus) error {
 	if err != nil {
 		return err
 	}
-	go runIR(b, bus, i.ir)
+	go i.run(b, bus)
 	return nil
 }
 
-func runIR(b msgbus.Bus, bus *lirc.Conn, cfg ir.Dev) {
+func (i *irDev) run(b msgbus.Bus, bus *lirc.Conn) {
 	c := bus.Channel()
 	for {
 		select {
@@ -36,8 +35,8 @@ func runIR(b msgbus.Bus, bus *lirc.Conn, cfg ir.Dev) {
 				break
 			}
 			if !msg.Repeat {
-				if err := b.Publish(msgbus.Message{cfg.Name + "/ir", []byte(msg.Key)}, msgbus.BestEffort, false); err != nil {
-					log.Printf("ir %s: failed to publish: %v", cfg.Name, err)
+				if err := b.Publish(msgbus.Message{"ir", []byte(msg.Key)}, msgbus.BestEffort, false); err != nil {
+					log.Printf("%s: failed to publish: %v", i, err)
 				}
 			}
 		}

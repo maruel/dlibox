@@ -7,10 +7,9 @@ package device
 import (
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
-	"github.com/maruel/dlibox/nodes/button"
+	"github.com/maruel/dlibox/nodes"
 	"github.com/maruel/interrupt"
 	"github.com/maruel/msgbus"
 	"github.com/pkg/errors"
@@ -19,25 +18,23 @@ import (
 )
 
 type buttonDev struct {
-	sync.Mutex
-	buttons []button.Dev
+	NodeBase
+	Cfg *nodes.Button
 }
 
 func (b *buttonDev) init(bus msgbus.Bus) error {
-	for _, cfg := range b.buttons {
-		pin := gpioreg.ByName(cfg.Pin)
-		if pin == nil {
-			return fmt.Errorf("button %s: failed to find pin %s", cfg.Name, cfg.Pin)
-		}
-		if err := pin.In(gpio.PullDown, gpio.BothEdges); err != nil {
-			return errors.Wrapf(err, "button %s: failed to pull down %s", cfg.Name, pin)
-		}
-		go runButton(bus, cfg, pin)
+	pin := gpioreg.ByName(b.Cfg.Pin)
+	if pin == nil {
+		return fmt.Errorf("%s: failed to find pin %s", b, b.Cfg.Pin)
 	}
+	if err := pin.In(gpio.PullDown, gpio.BothEdges); err != nil {
+		return errors.Wrapf(err, "%s: failed to pull down %s", b, pin)
+	}
+	go b.run(bus, pin)
 	return nil
 }
 
-func runButton(bus msgbus.Bus, cfg button.Dev, pin gpio.PinIn) {
+func (b *buttonDev) run(bus msgbus.Bus, pin gpio.PinIn) {
 	//index := 0
 	last := gpio.High
 	for {
@@ -49,20 +46,20 @@ func runButton(bus msgbus.Bus, cfg button.Dev, pin gpio.PinIn) {
 		pin.WaitForEdge(-1)
 		if state := pin.Read(); state != last {
 			last = state
-			log.Printf("button %s: %s", cfg.Name, state)
+			log.Printf("%s: %s", b, state)
 			// TODO(maruel): sub-second resolution?
 			now := time.Now()
 			nowStr := []byte(fmt.Sprintf("%d %s", now.Unix(), now))
 			// Fix convention.
-			err := bus.Publish(msgbus.Message{cfg.Name + "/button", nowStr}, msgbus.BestEffort, false)
+			err := bus.Publish(msgbus.Message{"button", nowStr}, msgbus.BestEffort, false)
 			if err != nil {
-				log.Printf("button %s: failed to publish: %v", cfg.Name, err)
+				log.Printf("%s: failed to publish: %v", b, err)
 			}
 			if err != nil {
-				log.Printf("button %s: failed to publish: %v", cfg.Name, err)
+				log.Printf("%s: failed to publish: %v", b, err)
 			}
 		} else {
-			log.Printf("button %s: %s", cfg.Name, state)
+			log.Printf("%s: %s", b, state)
 		}
 		select {
 		case <-interrupt.Channel:

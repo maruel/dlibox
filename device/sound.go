@@ -10,21 +10,20 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/maruel/dlibox/nodes/sound"
+	"github.com/maruel/dlibox/nodes"
 	"github.com/maruel/msgbus"
 )
 
 type soundDev struct {
-	cfg  *sound.Dev
-	b    msgbus.Bus
+	NodeBase
+	Cfg  *nodes.Sound
 	root string
 }
 
-func initSound(b msgbus.Bus, cfg *sound.Dev) (*soundDev, error) {
-	s := &soundDev{b: b, cfg: cfg}
+func (s *soundDev) init(b msgbus.Bus) error {
 	c, err := b.Subscribe("sound", msgbus.BestEffort)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	go func() {
 		for {
@@ -33,21 +32,16 @@ func initSound(b msgbus.Bus, cfg *sound.Dev) (*soundDev, error) {
 			}
 		}
 	}()
-	return s, nil
-}
-
-func (s *soundDev) Close() error {
-	s.b.Unsubscribe("sound")
 	return nil
 }
 
 func (s *soundDev) onMsg(m msgbus.Message) {
 	p := filepath.Join(s.root, filepath.Base(string(m.Payload))+".wav")
 	if _, err := os.Stat(p); err != nil {
-		log.Printf("sound: file not present: %s", p)
+		log.Printf("%s: file not present: %s", s, p)
 		return
 	}
-	play(s.cfg.DeviceID, p)
+	play(s.Cfg.DeviceID, p)
 }
 
 // play plays a wav.

@@ -43,11 +43,13 @@ func Main(bus msgbus.Bus, port int) error {
 	}
 	defer w.Close()
 
-	// Publish all the nodes.
+	// Publish all the devices.
 	for devID, dev := range d.db.Config.Devices {
 		b := msgbus.RebasePub(dbus, string(devID))
 		retained(b, "$name", dev.Name)
-		for nodeID, def := range dev.ToNodes() {
+
+		// Publish all the device's nodes.
+		for nodeID, def := range dev.ToSerialized().Nodes {
 			bn := msgbus.RebasePub(b, string(nodeID))
 			retained(bn, "$name", def.Name)
 			retained(bn, "$type", string(def.Type))

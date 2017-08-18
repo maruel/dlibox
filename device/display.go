@@ -6,9 +6,8 @@ package device
 
 import (
 	"log"
-	"sync"
 
-	"github.com/maruel/dlibox/nodes/display"
+	"github.com/maruel/dlibox/nodes"
 	"github.com/maruel/msgbus"
 	"github.com/maruel/psf"
 	"periph.io/x/periph/conn/i2c/i2creg"
@@ -17,8 +16,8 @@ import (
 )
 
 type displayDev struct {
-	sync.Mutex
-	cfg display.Dev
+	NodeBase
+	Cfg *nodes.Display
 
 	d   *ssd1306.Dev
 	img *image1bit.VerticalLSB
@@ -27,11 +26,11 @@ type displayDev struct {
 }
 
 func (d *displayDev) init(b msgbus.Bus) error {
-	i2cBus, err := i2creg.Open(d.cfg.I2C.ID)
+	i2cBus, err := i2creg.Open(d.Cfg.I2C.ID)
 	if err != nil {
 		return err
 	}
-	d.d, err = ssd1306.NewI2C(i2cBus, d.cfg.W, d.cfg.H, false)
+	d.d, err = ssd1306.NewI2C(i2cBus, d.Cfg.W, d.Cfg.H, false)
 	if err != nil {
 		return err
 	}
