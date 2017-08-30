@@ -46,35 +46,25 @@ func Main(bus msgbus.Bus, port int) error {
 	// Publish all the devices.
 	for devID, dev := range d.db.Config.Devices {
 		b := msgbus.RebasePub(dbus, string(devID))
-		retained(b, "$name", dev.Name)
+		shared.RetainedStr(b, "$name", dev.Name)
 
 		// Publish all the device's nodes.
 		for nodeID, def := range dev.ToSerialized().Nodes {
 			bn := msgbus.RebasePub(b, string(nodeID))
-			retained(bn, "$name", def.Name)
-			retained(bn, "$type", string(def.Type))
+			shared.RetainedStr(bn, "$name", def.Name)
+			shared.RetainedStr(bn, "$type", string(def.Type))
 			for pID, p := range def.Properties {
 				bp := msgbus.RebasePub(bn, string(pID))
-				retained(bp, "$unit", p.Unit)
-				retained(bp, "$datatype", p.DataType)
-				retained(bp, "$format", p.Format)
-				retained(bp, "$settable", fmt.Sprintf("%t", p.Settable))
+				shared.RetainedStr(bp, "$unit", p.Unit)
+				shared.RetainedStr(bp, "$datatype", p.DataType)
+				shared.RetainedStr(bp, "$format", p.Format)
+				shared.RetainedStr(bp, "$settable", fmt.Sprintf("%t", p.Settable))
 			}
-			retainedBytes(bn, "$config", def.Config)
+			shared.Retained(bn, "$config", def.Config)
 		}
 	}
 	if !interrupt.IsSet() {
-		retained(dbus, "$online", "true")
+		shared.RetainedStr(dbus, "$online", "true")
 	}
 	return shared.WatchFile()
-}
-
-func retained(b msgbus.Bus, topic, payload string) {
-	retainedBytes(b, topic, []byte(payload))
-}
-
-func retainedBytes(b msgbus.Bus, topic string, payload []byte) {
-	if err := b.Publish(msgbus.Message{topic, payload}, msgbus.MinOnce, true); err != nil {
-		log.Printf("Failed to publish %s: %v", topic, err)
-	}
 }

@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/maruel/dlibox/nodes"
+	"github.com/maruel/dlibox/shared"
 	"github.com/maruel/msgbus"
 	"periph.io/x/periph/conn/spi/spireg"
 	"periph.io/x/periph/devices"
@@ -44,18 +45,10 @@ func (a *anim1DDev) init(b msgbus.Bus) error {
 	//if err := b.Publish(msgbus.Message{"$fake", fakeBytes}, msgbus.MinOnce, true); err != nil {
 	//	log.Printf("anim1d: publish failed: %v", err)
 	//}
-	if err := b.Publish(msgbus.Message{"$fps", []byte(strconv.Itoa(str.fps))}, msgbus.MinOnce, true); err != nil {
-		log.Printf("anim1d: publish failed: %v", err)
-	}
-	if err := b.Publish(msgbus.Message{"$num", []byte(strconv.Itoa(a.Cfg.NumberLights))}, msgbus.MinOnce, true); err != nil {
-		log.Printf("anim1d: publish failed: %v", err)
-	}
-	if err := b.Publish(msgbus.Message{"intensity", []byte("255")}, msgbus.MinOnce, true); err != nil {
-		log.Printf("anim1d: publish failed: %v", err)
-	}
-	if err := b.Publish(msgbus.Message{"temperature", []byte("6500")}, msgbus.MinOnce, true); err != nil {
-		log.Printf("anim1d: publish failed: %v", err)
-	}
+	shared.RetainedStr(b, "$fps", strconv.Itoa(str.fps))
+	shared.RetainedStr(b, "$num", strconv.Itoa(a.Cfg.NumberLights))
+	shared.RetainedStr(b, "intensity", "255")
+	shared.RetainedStr(b, "temperature", "6500")
 	go func() {
 		for msg := range c {
 			str.onMsg(msg)

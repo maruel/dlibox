@@ -8,14 +8,15 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"reflect"
 	"testing"
+	"time"
 )
 
 func TestNew_Publish_ephemeral_sync(t *testing.T) {
-	t.Parallel()
 	b := New()
 
-	if err := b.Publish(Message{Topic: "foo", Payload: []byte("a")}, ExactlyOnce, false); err != nil {
+	if err := b.Publish(Message{Topic: "foo", Payload: []byte("a")}, ExactlyOnce); err != nil {
 		t.Fatal(err)
 	}
 
@@ -31,7 +32,7 @@ func TestNew_Publish_ephemeral_sync(t *testing.T) {
 	}
 
 	go func() {
-		if err := b.Publish(Message{Topic: "foo", Payload: []byte("b")}, ExactlyOnce, false); err != nil {
+		if err := b.Publish(Message{Topic: "foo", Payload: []byte("b")}, ExactlyOnce); err != nil {
 			t.Fatal(err)
 		}
 	}()
@@ -47,13 +48,12 @@ func TestNew_Publish_ephemeral_sync(t *testing.T) {
 }
 
 func TestNew_Publish_ephemeral_async(t *testing.T) {
-	t.Parallel()
 	b := New()
 	c, err := b.Subscribe("foo", BestEffort)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := b.Publish(Message{Topic: "foo", Payload: make([]byte, 1)}, BestEffort, false); err != nil {
+	if err := b.Publish(Message{Topic: "foo", Payload: make([]byte, 1)}, BestEffort); err != nil {
 		t.Fatal(err)
 	}
 	if i := <-c; i.Topic != "foo" {
@@ -66,7 +66,6 @@ func TestNew_Publish_ephemeral_async(t *testing.T) {
 }
 
 func TestNew_Subscribe_Close(t *testing.T) {
-	t.Parallel()
 	b := New()
 
 	if _, err := b.Subscribe("foo", ExactlyOnce); err != nil {
@@ -78,20 +77,21 @@ func TestNew_Subscribe_Close(t *testing.T) {
 }
 
 func TestNew_Publish_Retained(t *testing.T) {
-	t.Parallel()
 	// Without subscription.
 	b := New()
-	if err := b.Publish(Message{Topic: "foo", Payload: make([]byte, 1)}, ExactlyOnce, true); err != nil {
+	if err := b.Publish(Message{Topic: "foo", Payload: []byte("yo"), Retained: true}, ExactlyOnce); err != nil {
 		t.Fatal(err)
 	}
-	if l, err := b.Retained("foo"); err != nil || len(l) != 1 {
+	expected := map[string][]byte{"foo": []byte("yo")}
+	if l, err := Retained(b, time.Second, "foo"); err != nil || !reflect.DeepEqual(l, expected) {
 		t.Fatal(l, err)
 	}
 	// Deleted retained message.
-	if err := b.Publish(Message{Topic: "foo"}, ExactlyOnce, true); err != nil {
+	if err := b.Publish(Message{Topic: "foo", Retained: true}, ExactlyOnce); err != nil {
 		t.Fatal(err)
 	}
-	if l, err := b.Retained("foo"); err != nil || len(l) != 0 {
+	// Just enough time to "wait" but not enough to make this test too slow.
+	if l, err := Retained(b, 10*time.Millisecond, "foo"); err != nil || len(l) != 0 {
 		t.Fatal(l, err)
 	}
 
@@ -101,7 +101,6 @@ func TestNew_Publish_Retained(t *testing.T) {
 }
 
 func TestNew_UnSubscribe_Cap(t *testing.T) {
-	t.Parallel()
 	b := New()
 
 	for i := 0; i < 17; i++ {
@@ -127,17 +126,16 @@ func TestNew_UnSubscribe_Cap(t *testing.T) {
 }
 
 func TestNew_Err(t *testing.T) {
-	// Can't be t.Parallel() due to log.SetOutput().
 	if !testing.Verbose() {
 		log.SetOutput(ioutil.Discard)
 		defer log.SetOutput(os.Stderr)
 	}
 	b := New()
 
-	if err := b.Publish(Message{Payload: make([]byte, 1)}, ExactlyOnce, false); err == nil {
+	if b.Publish(Message{Payload: []byte("yo")}, ExactlyOnce) == nil {
 		t.Fatal("bad topic")
 	}
-	if err := b.Publish(Message{Topic: "#", Payload: make([]byte, 1)}, ExactlyOnce, false); err == nil {
+	if b.Publish(Message{Topic: "#", Payload: make([]byte, 1)}, ExactlyOnce) == nil {
 		t.Fatal("topic is query")
 	}
 
@@ -147,7 +145,7 @@ func TestNew_Err(t *testing.T) {
 
 	b.Unsubscribe("")
 
-	if l, err := b.Retained(""); err == nil || len(l) != 0 {
+	if l, err := Retained(b, time.Second, ""); err == nil || len(l) != 0 {
 		t.Fatal("bad topic")
 	}
 
@@ -156,8 +154,9 @@ func TestNew_Err(t *testing.T) {
 	}
 }
 
-func TestNew_subscription(t *testing.T) {
-	t.Parallel()
+//
+
+func TestSubscription(t *testing.T) {
 	s := subscription{}
 	// Check for s.channel == nil
 	s.publish(Message{})
@@ -166,4 +165,20 @@ func TestNew_subscription(t *testing.T) {
 	s.closeSub()
 
 	// Second check for s.channel == nil is in local_closesub_test.go.
+}
+
+func TestNew_dump(t *testing.T) {
+	b := New().(*local)
+	if err := b.Publish(Message{Topic: "foo", Payload: []byte("yo"), Retained: true}, ExactlyOnce); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.Subscribe("bar", ExactlyOnce); err != nil {
+		t.Fatal(err)
+	}
+	if s := b.dump(); s != "Persistent topics:\n- foo: yo\nSubscriptions:\n- bar\n" {
+		t.Fatalf("%q", s)
+	}
+	if err := b.Close(); err != nil {
+		t.Fatal(err)
+	}
 }

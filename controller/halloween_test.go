@@ -22,7 +22,7 @@ func TestHalloween(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := b.Publish(msgbus.Message{"foo/1", []byte("1")}, msgbus.BestEffort, false); err != nil {
+	if err := b.Publish(msgbus.Message{Topic: "foo/1", Payload: []byte("1")}, msgbus.BestEffort); err != nil {
 		t.Fatal(err)
 	}
 	// TODO(maruel): Settle wasn't implement in a concurrent safe manner.

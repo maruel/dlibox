@@ -5,32 +5,33 @@
 package msgbus
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
 // QOS defines the quality of service to use when publishing and subscribing to
 // messages.
+//
+// The normative definition is
+// http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html#_Toc442180912
 type QOS int8
 
 const (
-	// BestEffort means the broker/client will deliver the message once, with no
-	// confirmation.
-	//
-	// This enables asynchronous operation.
+	// BestEffort means the broker/client will deliver the message at most once,
+	// with no confirmation.
 	BestEffort QOS = 0
 	// MinOnce means the broker/client will deliver the message at least once,
-	// with confirmation required.
+	// potentially duplicate.
 	//
 	// Do not use if message duplication is problematic.
 	MinOnce QOS = 1
 	// ExactlyOnce means the broker/client will deliver the message exactly once
 	// by using a four step handshake.
-	//
-	// This enforces synchronous operation.
 	ExactlyOnce QOS = 2
 )
 
@@ -55,6 +56,9 @@ type Message struct {
 	// Publishing a message with no Payload deleted a retained Topic, and has no
 	// effect on non-retained topic.
 	Payload []byte
+	// Retained signifies that the message is permanent until explicitly changed.
+	// Otherwise it is ephemeral.
+	Retained bool
 }
 
 // Bus is a publisher-subscriber bus.
@@ -64,9 +68,10 @@ type Message struct {
 //
 // For more information about retained message behavior, see
 // http://www.hivemq.com/blog/mqtt-essentials-part-8-retained-messages
+//
+// Implementation of Bus are expected to implement fmt.Stringer.
 type Bus interface {
 	io.Closer
-	fmt.Stringer
 
 	// Publish publishes a message to a topic.
 	//
@@ -74,7 +79,7 @@ type Bus interface {
 	//
 	// It is not guaranteed that messages are propagated in order, unless
 	// qos ExactlyOnce is used.
-	Publish(msg Message, qos QOS, retained bool) error
+	Publish(msg Message, qos QOS) error
 
 	// Subscribe sends updates to this topic query through the returned channel.
 	Subscribe(topicQuery string, qos QOS) (<-chan Message, error)
@@ -87,10 +92,6 @@ type Bus interface {
 	// BUG: while Subscribe() can be called multiple times with a topic query, a
 	// single Unsubscribe() call will unregister all subscriptions.
 	Unsubscribe(topicQuery string)
-
-	// Retained retrieves a copy of all matching messages for a retained topic
-	// query.
-	Retained(topicQuery string) ([]Message, error)
 }
 
 // Log returns a Bus that logs all operations done on it, via log standard
@@ -105,12 +106,24 @@ func Log(b Bus) Bus {
 //
 // Messages retrieved are unaffected.
 //
+// Returns nil if root is an invalid topic or if it is a topic query.
+//
 // It is possible to publish a message topic outside of root with:
 //  - "../" to backtrack closer to root
 //  - "//" to ignore the root
 func RebasePub(b Bus, root string) Bus {
 	if len(root) != 0 && root[len(root)-1] != '/' {
 		root += "/"
+	}
+	t := root[:len(root)-1]
+	p, err := parseTopic(t)
+	if err != nil {
+		log.Printf("RebasePub(%s, %q): %v", b, t, err)
+		return nil
+	}
+	if p.isQuery() {
+		log.Printf("RebasePub(%s, %q): cannot use topic query", b, t)
+		return nil
 	}
 	return &rebasePublisher{b, root}
 }
@@ -121,6 +134,8 @@ func RebasePub(b Bus, root string) Bus {
 //
 // Messages published are unaffected.
 //
+// Returns nil if root is an invalid topic or if it is a topic query.
+//
 // It is possible to subscribe to a message topic outside of root with:
 //  - "../" to backtrack closer to root
 //  - "//" to ignore the root
@@ -128,32 +143,117 @@ func RebaseSub(b Bus, root string) Bus {
 	if len(root) != 0 && root[len(root)-1] != '/' {
 		root += "/"
 	}
+	t := root[:len(root)-1]
+	p, err := parseTopic(t)
+	if err != nil {
+		log.Printf("RebaseSub(%s, %q): %v", b, t, err)
+		return nil
+	}
+	if p.isQuery() {
+		log.Printf("RebaseSub(%s, %q): cannot use topic query", b, t)
+		return nil
+	}
 	return &rebaseSubscriber{b, root}
+}
+
+// Retained retrieves all matching messages for one or multiple topics.
+//
+// Topic queries cannot be used.
+//
+// If a topic is missing, will wait for up to d for it to become available. If
+// all topics are available, returns as soon as they are all retrieved.
+func Retained(b Bus, d time.Duration, topic ...string) (map[string][]byte, error) {
+	// Quick local check.
+	var ps []parsedTopic
+	for i, t := range topic {
+		p, err := parseTopic(t)
+		if err != nil {
+			return nil, fmt.Errorf("invalid topic %q: %v", t, err)
+		}
+		if p.isQuery() {
+			return nil, fmt.Errorf("cannot use topic query %q", t)
+		}
+		for j := 0; j < i; j++ {
+			if topic[j] == topic[i] {
+				return nil, fmt.Errorf("cannot specify topic %q twice", t)
+			}
+		}
+		ps = append(ps, p)
+	}
+
+	// Subscribes to all topics concurrently. This reduces the effect of round
+	// trip latency.
+	type result struct {
+		c   <-chan Message
+		err error
+	}
+	channels := make(chan result, len(topic))
+	for _, t := range topic {
+		go func(t string) {
+			c, err := b.Subscribe(t, MinOnce)
+			channels <- result{c, err}
+		}(t)
+	}
+
+	// Ensure all topics are unsubscribed even in case of error. This also
+	// ensures the channels are closed, so the goroutine started below do not
+	// leak.
+	defer func() {
+		for _, t := range topic {
+			b.Unsubscribe(t)
+		}
+	}()
+
+	// Look at all topic subscription to ensures they all succeeded.
+	master := make(chan Message)
+	for range topic {
+		r := <-channels
+		if r.err != nil {
+			return nil, r.err
+		}
+		go func(c <-chan Message) {
+			v, ok := <-c
+			if !ok || !v.Retained {
+				return
+			}
+			master <- v
+		}(r.c)
+	}
+
+	// Retrieve results.
+	out := map[string][]byte{}
+	for loop := true; loop && len(out) < len(topic); {
+		// Reset the timer after every message retrieved.
+		a := time.After(d)
+		select {
+		case v := <-master:
+			out[v.Topic] = v.Payload
+		case <-a:
+			loop = false
+		}
+	}
+	return out, nil
 }
 
 // Private code.
 
 type logging struct {
-	bus Bus
-}
-
-func (l *logging) String() string {
-	return l.bus.String()
+	Bus
 }
 
 func (l *logging) Close() error {
 	log.Printf("%s.Close()", l)
-	return l.bus.Close()
+	return l.Bus.Close()
 }
 
-func (l *logging) Publish(msg Message, qos QOS, retained bool) error {
-	log.Printf("%s.Publish({%s, %q}, %s, %t)", l, msg.Topic, string(msg.Payload), qos, retained)
-	return l.bus.Publish(msg, qos, retained)
+func (l *logging) Publish(msg Message, qos QOS) error {
+	log.Printf("%s.Publish({%s, %q, %t}, %s)", l, msg.Topic, string(msg.Payload), msg.Retained, qos)
+	return l.Bus.Publish(msg, qos)
 }
 
 func (l *logging) Subscribe(topicQuery string, qos QOS) (<-chan Message, error) {
 	log.Printf("%s.Subscribe(%s, %s)", l, topicQuery, qos)
-	c, err := l.bus.Subscribe(topicQuery, qos)
+	c, err := l.Bus.Subscribe(topicQuery, qos)
 	if err != nil {
 		return c, err
 	}
@@ -170,12 +270,7 @@ func (l *logging) Subscribe(topicQuery string, qos QOS) (<-chan Message, error) 
 
 func (l *logging) Unsubscribe(topicQuery string) {
 	log.Printf("%s.Unsubscribe(%s)", l, topicQuery)
-	l.bus.Unsubscribe(topicQuery)
-}
-
-func (l *logging) Retained(topicQuery string) ([]Message, error) {
-	log.Printf("%s.Retained(%s)", l, topicQuery)
-	return l.bus.Retained(topicQuery)
+	l.Bus.Unsubscribe(topicQuery)
 }
 
 // Rebase support.
@@ -186,12 +281,12 @@ type rebasePublisher struct {
 }
 
 func (r *rebasePublisher) String() string {
-	return r.Bus.String() + "/" + r.root
+	return fmt.Sprintf("%s/%s", r.Bus, r.root)
 }
 
-func (r *rebasePublisher) Publish(msg Message, qos QOS, retained bool) error {
+func (r *rebasePublisher) Publish(msg Message, qos QOS) error {
 	msg.Topic = mergeTopic(r.root, msg.Topic)
-	return r.Bus.Publish(msg, qos, retained)
+	return r.Bus.Publish(msg, qos)
 }
 
 type rebaseSubscriber struct {
@@ -200,7 +295,7 @@ type rebaseSubscriber struct {
 }
 
 func (r *rebaseSubscriber) String() string {
-	return r.Bus.String() + "/" + r.root
+	return fmt.Sprintf("%s/%s", r.Bus, r.root)
 }
 
 func (r *rebaseSubscriber) Subscribe(topicQuery string, qos QOS) (<-chan Message, error) {
@@ -209,10 +304,13 @@ func (r *rebaseSubscriber) Subscribe(topicQuery string, qos QOS) (<-chan Message
 	}
 	// BUG: Support mergeTopic().
 	actual := r.root + topicQuery
-	c, err := r.Bus.Subscribe(actual, qos)
-	p := parseTopic(actual)
+	p, err := parseTopic(actual)
 	if err != nil {
-		return c, err
+		return nil, err
+	}
+	c, err := r.Bus.Subscribe(actual, qos)
+	if err != nil {
+		return nil, err
 	}
 	c2 := make(chan Message)
 	offset := len(r.root)
@@ -223,7 +321,7 @@ func (r *rebaseSubscriber) Subscribe(topicQuery string, qos QOS) (<-chan Message
 			if !p.match(msg.Topic) {
 				panic(fmt.Errorf("bus: unexpected topic prefix %q, expected %q", msg.Topic, actual))
 			}
-			c2 <- Message{msg.Topic[offset:], msg.Payload}
+			c2 <- Message{Topic: msg.Topic[offset:], Payload: msg.Payload, Retained: msg.Retained}
 		}
 	}()
 	return c2, nil
@@ -236,19 +334,6 @@ func (r *rebaseSubscriber) Unsubscribe(topicQuery string) {
 	}
 	// BUG: Support mergeTopic().
 	r.Bus.Unsubscribe(r.root + topicQuery)
-}
-
-func (r *rebaseSubscriber) Retained(topicQuery string) ([]Message, error) {
-	// BUG: Support mergeTopic().
-	msgs, err := r.Bus.Retained(r.root + topicQuery)
-	if err != nil {
-		return msgs, err
-	}
-	offset := len(r.root)
-	for i := range msgs {
-		msgs[i].Topic = msgs[i].Topic[offset:]
-	}
-	return msgs, err
 }
 
 // Topic parsing.
@@ -280,35 +365,41 @@ func mergeTopic(root, topic string) string {
 // parsedTopic is either a query or a static topic.
 type parsedTopic []string
 
-func parseTopic(topic string) parsedTopic {
-	if len(topic) == 0 || len(topic) > 65535 || strings.ContainsRune(topic, rune(0)) || !utf8.ValidString(topic) {
-		return nil
+func parseTopic(topic string) (parsedTopic, error) {
+	if len(topic) == 0 {
+		return nil, errors.New("empty topic")
+	}
+	if len(topic) > 65535 {
+		return nil, fmt.Errorf("topic length %d over 65535 characters", len(topic))
+	}
+	if strings.ContainsRune(topic, rune(0)) || !utf8.ValidString(topic) {
+		return nil, errors.New("topic must be valid UTF-8")
 	}
 	p := parsedTopic(strings.Split(topic, "/"))
-	if !p.isValid() {
-		return nil
+	if err := p.Validate(); err != nil {
+		return nil, err
 	}
-	return p
+	return p, nil
 }
 
-func (p parsedTopic) isValid() bool {
-	// http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html#_Toc442180921
-	// section 4.7.2 about '$' prefix and section 4.7.3
-	if len(p[0]) != 0 && p[0][0] == '$' {
-		return false
-	}
+func (p parsedTopic) String() string {
+	return strings.Join(p, "/")
+}
+
+func (p parsedTopic) Validate() error {
 	for i, e := range p {
-		// As per the spec, empty sections are valid.
 		if i != len(p)-1 && e == "#" {
-			// # can only appear at the end.
-			return false
+			return errors.New("wildcard # can only appear at the end of a topic query")
 		} else if e != "+" && e != "#" {
-			if strings.HasSuffix(e, "#") || strings.HasSuffix(e, "+") {
-				return false
+			if strings.HasSuffix(e, "#") {
+				return errors.New("wildcard # can not appear inside a topic section")
+			}
+			if strings.HasSuffix(e, "+") {
+				return errors.New("wildcard + can not appear inside a topic section")
 			}
 		}
 	}
-	return true
+	return nil
 }
 
 func (p parsedTopic) isQuery() bool {
@@ -360,5 +451,3 @@ func (p parsedTopic) match(topic string) bool {
 	}
 	return len(t) == len(p)
 }
-
-var _ Bus = &local{}

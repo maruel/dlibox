@@ -16,17 +16,24 @@ import (
 
 // NewMQTT returns an initialized active MQTT connection.
 //
-// The connection timeouts are fine tuned for a LAN.
+// The connection timeouts are fine tuned for a LAN. It will likely fail on a
+// slower connection or when used over the internet.
+//
+// will is the message to send if the connection is not closed correctly; when
+// Close() is not called.
+//
+// order determines is messages are processed in order or not. Out of order
+// processing means that a subscription will not be blocked by another one that
+// fails to process its queue in time.
 //
 // This main purpose of this library is to hide the horror that
 // paho.mqtt.golang is.
-func NewMQTT(server, clientID, user, password string, will Message) (Bus, error) {
+func NewMQTT(server, clientID, user, password string, will Message, order bool) (Bus, error) {
 	opts := mqtt.NewClientOptions().AddBroker(server)
 	opts.ClientID = clientID
 	// Default 10min is too slow.
 	opts.MaxReconnectInterval = 30 * time.Second
-	// Global ordering flag.
-	// opts.Order = false
+	opts.Order = order
 	opts.Username = user
 	opts.Password = password
 	if len(will.Topic) != 0 {
@@ -62,19 +69,26 @@ func (m *mqttBus) String() string {
 	return fmt.Sprintf("MQTT{%s}", m.server)
 }
 
+// Close gracefully closes the connection to the server.
+//
+// Waits 1s for the connection to terminate correctly. If this function is not
+// called, the will message in NewMQTT() will be activated.
 func (m *mqttBus) Close() error {
-	m.client.Disconnect(500)
+	m.client.Disconnect(1000)
 	m.client = nil
 	return nil
 }
 
-func (m *mqttBus) Publish(msg Message, qos QOS, retained bool) error {
+func (m *mqttBus) Publish(msg Message, qos QOS) error {
 	// Quick local check.
-	p := parseTopic(msg.Topic)
-	if p == nil || p.isQuery() {
-		return errors.New("invalid topic")
+	p, err := parseTopic(msg.Topic)
+	if err != nil {
+		return err
 	}
-	token := m.client.Publish(msg.Topic, byte(qos), retained, msg.Payload)
+	if p.isQuery() {
+		return errors.New("cannot publish to a topic query")
+	}
+	token := m.client.Publish(msg.Topic, byte(qos), msg.Retained, msg.Payload)
 	if qos > BestEffort {
 		token.Wait()
 	}
@@ -83,14 +97,13 @@ func (m *mqttBus) Publish(msg Message, qos QOS, retained bool) error {
 
 func (m *mqttBus) Subscribe(topicQuery string, qos QOS) (<-chan Message, error) {
 	// Quick local check.
-	p := parseTopic(topicQuery)
-	if p == nil {
-		return nil, errors.New("invalid topic")
+	if _, err := parseTopic(topicQuery); err != nil {
+		return nil, err
 	}
 
 	c := make(chan Message)
 	token := m.client.Subscribe(topicQuery, byte(qos), func(client mqtt.Client, msg mqtt.Message) {
-		c <- Message{msg.Topic(), msg.Payload()}
+		c <- Message{Topic: msg.Topic(), Payload: msg.Payload(), Retained: msg.Retained()}
 	})
 	token.Wait()
 	return c, token.Error()
@@ -98,9 +111,8 @@ func (m *mqttBus) Subscribe(topicQuery string, qos QOS) (<-chan Message, error) 
 
 func (m *mqttBus) Unsubscribe(topicQuery string) {
 	// Quick local check.
-	p := parseTopic(topicQuery)
-	if p == nil {
-		log.Printf("%s.Unsubscribe(%s): invalid topic", m, topicQuery)
+	if _, err := parseTopic(topicQuery); err != nil {
+		log.Printf("%s.Unsubscribe(%s): %v", m, topicQuery, err)
 		return
 	}
 
@@ -109,42 +121,6 @@ func (m *mqttBus) Unsubscribe(topicQuery string) {
 	if err := token.Error(); err != nil {
 		log.Printf("%s.Unsubscribe(%s): %v", m, topicQuery, err)
 	}
-}
-
-func (m *mqttBus) Retained(topicQuery string) ([]Message, error) {
-	// Quick local check.
-	p := parseTopic(topicQuery)
-	if p == nil {
-		return nil, errors.New("invalid topic")
-	}
-
-	// Do a quick Subscribe(), retrieve all retained messages until one with
-	// !msg.Retained() or a timeout then Unsubscribe.
-	c := make(chan Message)
-	token := m.client.Subscribe(topicQuery, byte(ExactlyOnce), func(client mqtt.Client, msg mqtt.Message) {
-		// TODO(maruel): This assumes that retained messages are sent first by the
-		// broker. This is likely not true.
-		if msg.Retained() {
-			c <- Message{msg.Topic(), msg.Payload()}
-		}
-	})
-	if err := token.Error(); err != nil {
-		// TODO(maruel): This will leak the channel.
-		return nil, err
-	}
-	var out []Message
-	// TODO(maruel): This is crappy.
-	for loop := true; loop; {
-		after := time.After(1 * time.Second)
-		select {
-		case i := <-c:
-			out = append(out, i)
-		case <-after:
-			loop = false
-		}
-	}
-	m.Unsubscribe(topicQuery)
-	return out, nil
 }
 
 func (m *mqttBus) unexpectedMessage(c mqtt.Client, msg mqtt.Message) {

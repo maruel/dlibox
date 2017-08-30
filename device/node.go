@@ -12,6 +12,7 @@ import (
 	"github.com/maruel/dlibox/nodes"
 )
 
+// NodeBase is the base type for all kind of supported nodes.
 type NodeBase struct {
 	id   nodes.ID
 	name string

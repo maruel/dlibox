@@ -35,7 +35,7 @@ func (i *irDev) run(b msgbus.Bus, bus *lirc.Conn) {
 				break
 			}
 			if !msg.Repeat {
-				if err := b.Publish(msgbus.Message{"ir", []byte(msg.Key)}, msgbus.BestEffort, false); err != nil {
+				if err := b.Publish(msgbus.Message{Topic: "ir", Payload: []byte(msg.Key)}, msgbus.BestEffort); err != nil {
 					log.Printf("%s: failed to publish: %v", i, err)
 				}
 			}

@@ -11,8 +11,7 @@ import (
 	"testing"
 )
 
-func TestNew_subscription_closeSub(t *testing.T) {
-	t.Parallel()
+func TestSubscription_closeSub(t *testing.T) {
 	s := subscription{}
 	// Second check for s.channel == nil.
 	// This one is not deterministic but as long as we can cover this often

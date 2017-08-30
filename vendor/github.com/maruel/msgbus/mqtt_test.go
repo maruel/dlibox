@@ -15,29 +15,28 @@ import (
 )
 
 func TestNewMQTT_fail(t *testing.T) {
-	_, err := NewMQTT("", "client", "user", "pass", Message{Topic: "status", Payload: []byte("dead")})
+	_, err := NewMQTT("", "client", "user", "pass", Message{Topic: "status", Payload: []byte("dead"), Retained: true}, true)
 	if err == nil {
 		t.Fatal("invalid host")
 	}
 }
 
 func TestMQTT(t *testing.T) {
-	// Can't be t.Parallel() due to log.SetOutput().
 	if !testing.Verbose() {
 		log.SetOutput(ioutil.Discard)
 		defer log.SetOutput(os.Stderr)
 	}
 	c := clientFake{}
-	m := mqttBus{client: &c}
+	m := &mqttBus{client: &c}
 
-	if err := m.Publish(Message{Topic: "a/#/b"}, BestEffort, false); err == nil {
+	if err := m.Publish(Message{Topic: "a/#/b"}, BestEffort); err == nil {
 		t.Fatal("bad topic")
 	}
 	if _, err := m.Subscribe("a/#/b", BestEffort); err == nil {
 		t.Fatal("bad topic")
 	}
 	m.Unsubscribe("a/#/b")
-	if l, err := m.Retained("a/#/b"); err == nil || len(l) != 0 {
+	if l, err := Retained(m, time.Second, "a/#/b"); err == nil || len(l) != 0 {
 		t.Fatal("bad topic")
 	}
 	if err := m.Close(); err != nil {

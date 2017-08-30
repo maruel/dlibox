@@ -9,6 +9,7 @@
 package device
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -29,12 +30,12 @@ func Main(server string, bus msgbus.Bus, port int) error {
 	bus = msgbus.RebasePub(msgbus.RebaseSub(bus, "dlibox"), "dlibox")
 	root := shared.Hostname()
 	dbus := msgbus.RebaseSub(msgbus.RebasePub(bus, root), root)
-	retained(dbus, "$online", "initializing")
+	shared.RetainedStr(dbus, "$online", "initializing")
 
 	// Initialize periph.
 	state, err := host.Init()
 	if err != nil {
-		retained(dbus, "$online", err.Error())
+		shared.RetainedStr(dbus, "$online", err.Error())
 		return err
 	}
 
@@ -44,29 +45,30 @@ func Main(server string, bus msgbus.Bus, port int) error {
 		}
 	}
 
-	// Poll until the controller is up and running. This ensures that the node
+	// Wait until the controller is up and running. This ensures that the node
 	// are correctly published.
-	// TODO(maruel): Polling is not useful, Subscribe($online) will work.
-	polled := false
-	for !interrupt.IsSet() {
-		m, err := bus.Retained("$online")
-		if err == nil && len(m) == 1 {
-			s := string(m[0].Payload)
+	c, err := bus.Subscribe("$online", msgbus.ExactlyOnce)
+	if err != nil {
+		return err
+	}
+	for {
+		select {
+		case msg, ok := <-c:
+			if !ok {
+				return errors.New("MQTT server died")
+			}
+			s := string(msg.Payload)
 			if s == "true" {
-				break
+				goto done
 			}
 			log.Printf("$online: %q", s)
-		} else {
-			log.Printf("Failed to get retained message $online: %v", err)
+		case <-interrupt.Channel:
+			break
 		}
-		if !polled {
-			retained(dbus, "$online", "waiting for "+server)
-			polled = true
-		}
-		time.Sleep(time.Second)
 	}
-	if polled {
-		retained(dbus, "$online", "initializing")
+done:
+	if !interrupt.IsSet() {
+		shared.RetainedStr(dbus, "$online", "initializing")
 	}
 
 	// TODO(maruel): Uses modified Homie convention. The main modification is
@@ -103,94 +105,66 @@ func Main(server string, bus msgbus.Bus, port int) error {
 	}
 
 	if !interrupt.IsSet() {
-		retained(dbus, "$online", "true")
+		shared.RetainedStr(dbus, "$online", "true")
 	}
 	return shared.WatchFile()
 }
 
 func getConfig(b msgbus.Bus) (*nodes.Dev, error) {
-	msgs, err := b.Retained("#")
+	msgs, err := msgbus.Retained(b, 10*time.Second, "$name", "$nodes")
 	if err != nil {
 		return nil, err
 	}
-
-	// Unpack all the node definitions.
-	defs := map[nodes.ID]map[string][]byte{}
-	nds := nodes.SerializedDev{}
-	for _, msg := range msgs {
-		if msg.Topic == "$name" {
-			nds.Name = string(msg.Payload)
-			continue
+	nds := nodes.SerializedDev{Name: string(msgs["$name"])}
+	nodesID := string(msgs["nodes"])
+	if len(nodesID) != 0 {
+		for _, id := range strings.Split(nodesID, ",") {
+			nodeID := nodes.ID(id)
+			if err := nodeID.Validate(); err != nil {
+				return nil, err
+			}
+			// TODO(maruel): Query all nodes concurrently to reduce the effect of round
+			// trip latency.
+			n, err := processNode(b, id)
+			if err != nil {
+				return nil, fmt.Errorf("node %q: %v", nodeID, err)
+			}
+			nds.Nodes[nodeID] = n
 		}
-		if strings.HasPrefix(msg.Topic, "$") {
-			// Device description.
-			continue
-		}
-		parts := strings.SplitN(msg.Topic, "/", 2)
-		if len(parts) != 2 {
-			// Node value.
-			continue
-		}
-		nodeID := nodes.ID(parts[0])
-		if err := nodeID.Validate(); err != nil {
-			return nil, err
-		}
-		if _, ok := defs[nodeID]; !ok {
-			defs[nodeID] = map[string][]byte{}
-		}
-		defs[nodeID][parts[1]] = msg.Payload
-	}
-
-	// Process each node.
-	for nodeID, nodedef := range defs {
-		n, err := processNode(nodedef)
-		if err != nil {
-			return nil, fmt.Errorf("node %q: %v", nodeID, err)
-		}
-		nds.Nodes[nodeID] = n
 	}
 	return nds.ToDev()
 }
 
-func processNode(nodedef map[string][]byte) (*nodes.SerializedNode, error) {
+func processNode(b msgbus.Bus, nodeID string) (*nodes.SerializedNode, error) {
+	msgs, err := msgbus.Retained(b, 10*time.Second, "$name", "$properties", "$types")
+	if err != nil {
+		return nil, err
+	}
+
 	n := &nodes.SerializedNode{
-		Name: string(nodedef["$name"]),
-		Type: nodes.Type(string(nodedef["$type"])),
+		Name: string(msgs["$name"]),
+		Type: nodes.Type(string(msgs["$type"])),
 	}
 	if err := n.Type.Validate(); err != nil {
 		return nil, fmt.Errorf("node %q: %v", n.Name, err)
 	}
-	propdefs := map[nodes.ID]map[string][]byte{}
-	for topic, payload := range nodedef {
-		if strings.HasPrefix(topic, "$") {
-			continue
-		}
-		parts := strings.SplitN(topic, "/", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		propID := nodes.ID(parts[0])
-		if err := propID.Validate(); err != nil {
-			return nil, fmt.Errorf("invalid property %s/%s: %v", propID, err)
-		}
-		if _, ok := propdefs[propID]; !ok {
-			propdefs[propID] = map[string][]byte{}
-		}
-		propdefs[propID][parts[1]] = payload
-	}
 
-	propnames := strings.Split(string(nodedef["$properties"]), ",")
+	// TODO(maruel): Query concurrently.
+	propnames := strings.Split(string(msgs["$properties"]), ",")
 	for _, propname := range propnames {
 		propID := nodes.ID(propname)
 		if err := propID.Validate(); err != nil {
-			return nil, fmt.Errorf("invalid property %s/%s: %v", propID, err)
+			return nil, fmt.Errorf("invalid property %s/%s: %v", nodeID, propID, err)
 		}
-		propdef := propdefs[propID]
+		pm, err := msgbus.Retained(b, 10*time.Second, "$datatype", "$format", "$settable", "$unit")
+		if err != nil {
+			return nil, err
+		}
 		n.Properties[propID] = nodes.Property{
-			Unit:     string(propdef["$unit"]),
-			DataType: string(propdef["$datatype"]),
-			Format:   string(propdef["$format"]),
-			Settable: string(propdef["$settable"]) == "true",
+			Unit:     string(pm["$unit"]),
+			DataType: string(pm["$datatype"]),
+			Format:   string(pm["$format"]),
+			Settable: string(pm["$settable"]) == "true",
 		}
 	}
 	return n, nil
@@ -201,15 +175,5 @@ func processNode(nodedef map[string][]byte) (*nodes.SerializedNode, error) {
 func pubErr(b msgbus.Bus, f string, arg ...interface{}) {
 	msg := fmt.Sprintf(f, arg)
 	log.Print(msg)
-	b.Publish(msgbus.Message{Topic: "$error", Payload: []byte(msg)}, msgbus.ExactlyOnce, false)
-}
-
-func retained(b msgbus.Bus, topic, payload string) {
-	retainedBytes(b, topic, []byte(payload))
-}
-
-func retainedBytes(b msgbus.Bus, topic string, payload []byte) {
-	if err := b.Publish(msgbus.Message{topic, payload}, msgbus.MinOnce, true); err != nil {
-		log.Printf("Failed to publish %s: %v", topic, err)
-	}
+	b.Publish(msgbus.Message{Topic: "$error", Payload: []byte(msg)}, msgbus.ExactlyOnce)
 }

@@ -6,9 +6,7 @@
 // guidelines.
 //
 // The main difference with MQTT topic is the support for relative message on
-// rebased bus.
-//  - "../" to backtrack closer to root
-//  - "//" to ignore the root
+// rebased bus. See RebasePub() for more details.
 //
 // Spec
 //

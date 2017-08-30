@@ -5,14 +5,17 @@
 package msgbus
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"reflect"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestQOS_String(t *testing.T) {
-	t.Parallel()
 	data := []struct {
 		v        QOS
 		expected string
@@ -28,7 +31,6 @@ func TestQOS_String(t *testing.T) {
 }
 
 func TestLog(t *testing.T) {
-	// Can't be t.Parallel() due to log.SetOutput().
 	if !testing.Verbose() {
 		log.SetOutput(ioutil.Discard)
 		defer log.SetOutput(os.Stderr)
@@ -38,7 +40,7 @@ func TestLog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := b.Publish(Message{Topic: "foo", Payload: make([]byte, 1)}, BestEffort, false); err != nil {
+	if err := b.Publish(Message{Topic: "foo", Payload: make([]byte, 1)}, BestEffort); err != nil {
 		t.Fatal(err)
 	}
 	if i := <-c; i.Topic != "foo" {
@@ -51,7 +53,6 @@ func TestLog(t *testing.T) {
 }
 
 func TestLog_Subscribe(t *testing.T) {
-	// Can't be t.Parallel() due to log.SetOutput().
 	if !testing.Verbose() {
 		log.SetOutput(ioutil.Discard)
 		defer log.SetOutput(os.Stderr)
@@ -71,18 +72,35 @@ func TestRebasePub(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := b.Publish(Message{Topic: "bar", Payload: make([]byte, 1)}, BestEffort, true); err != nil {
+	if err := b.Publish(Message{Topic: "bar", Payload: []byte("yo"), Retained: true}, BestEffort); err != nil {
 		t.Fatal(err)
 	}
 	if i := <-c; i.Topic != "foo/bar" {
 		t.Fatalf("%s != foo/bar", i.Topic)
 	}
 	b.Unsubscribe("foo")
-	if l, err := b.Retained("foo/bar"); err != nil || len(l) != 1 || l[0].Topic != "foo/bar" {
+	expected := map[string][]byte{"foo/bar": []byte("yo")}
+	if l, err := Retained(b, time.Second, "foo/bar"); err != nil || !reflect.DeepEqual(l, expected) {
 		t.Fatal(l, err)
+	}
+	if s := b.(fmt.Stringer).String(); s != "LocalBus/foo/" {
+		t.Fatal(s)
 	}
 	if err := b.Close(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRebasePub_err(t *testing.T) {
+	if !testing.Verbose() {
+		log.SetOutput(ioutil.Discard)
+		defer log.SetOutput(os.Stderr)
+	}
+	if RebasePub(New(), "a\000") != nil {
+		t.Fatal("bad topic")
+	}
+	if RebasePub(New(), "#") != nil {
+		t.Fatal("can't use a query")
 	}
 }
 
@@ -92,18 +110,35 @@ func TestRebaseSub(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := b.Publish(Message{Topic: "foo/bar", Payload: make([]byte, 1)}, BestEffort, true); err != nil {
+	if err := b.Publish(Message{Topic: "foo/bar", Payload: []byte("yo"), Retained: true}, BestEffort); err != nil {
 		t.Fatal(err)
 	}
 	if i := <-c; i.Topic != "bar" {
 		t.Fatalf("%s != bar", i.Topic)
 	}
 	b.Unsubscribe("bar")
-	if l, err := b.Retained("bar"); err != nil || len(l) != 1 || l[0].Topic != "bar" {
+	expected := map[string][]byte{"bar": []byte("yo")}
+	if l, err := Retained(b, time.Second, "bar"); err != nil || !reflect.DeepEqual(l, expected) {
 		t.Fatal(l, err)
+	}
+	if s := b.(fmt.Stringer).String(); s != "LocalBus/foo/" {
+		t.Fatal(s)
 	}
 	if err := b.Close(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRebaseSub_err(t *testing.T) {
+	if !testing.Verbose() {
+		log.SetOutput(ioutil.Discard)
+		defer log.SetOutput(os.Stderr)
+	}
+	if RebaseSub(New(), "a\000") != nil {
+		t.Fatal("bad topic")
+	}
+	if RebaseSub(New(), "#") != nil {
+		t.Fatal("can't use a query")
 	}
 }
 
@@ -113,18 +148,17 @@ func TestRebaseSub_root(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := b.Publish(Message{Topic: "bar", Payload: make([]byte, 1)}, BestEffort, true); err != nil {
+	if err := b.Publish(Message{Topic: "bar", Payload: []byte("yo"), Retained: true}, BestEffort); err != nil {
 		t.Fatal(err)
 	}
 	if i := <-c; i.Topic != "bar" {
 		t.Fatalf("%s != bar", i.Topic)
 	}
 	b.Unsubscribe("//bar")
-	/*
-		if l, err := b.Retained("//bar"); err != nil || len(l) != 1 || l[0].Topic != "bar" {
-			t.Fatal(l, err)
-		}
-	*/
+	expected := map[string][]byte{"bar": []byte("yo")}
+	if l, err := Retained(b, time.Second, "//bar"); err != nil || !reflect.DeepEqual(l, expected) {
+		t.Fatal(l, err)
+	}
 	if err := b.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -135,16 +169,26 @@ func TestRebaseSub_Err(t *testing.T) {
 	if _, err := b.Subscribe("#/a", BestEffort); err == nil {
 		t.Fatal("bad topic")
 	}
-	if _, err := b.Retained("#/a"); err == nil {
+	if _, err := Retained(b, time.Second, "#/a"); err == nil {
 		t.Fatal("bad topic")
+	}
+}
+
+func TestRetained(t *testing.T) {
+	if _, err := Retained(nil, 0, "#"); err == nil {
+		t.Fatal("can't use query")
+	}
+	if _, err := Retained(nil, 0, "a", "a"); err == nil {
+		t.Fatal("can't use same topic twice")
 	}
 }
 
 //
 
 func TestParseTopicGood(t *testing.T) {
-	t.Parallel()
 	data := []string{
+		"$",
+		"/",
 		"//",
 		"+/+/+",
 		"+/+/#",
@@ -153,33 +197,32 @@ func TestParseTopicGood(t *testing.T) {
 		"sport/tennis/player1",
 		"sport/tennis/player1/ranking",
 		"sport/tennis/+/score/wimbledon",
+		strings.Repeat("a", 65535),
 	}
 	for i, line := range data {
-		if parseTopic(line) == nil {
-			t.Fatalf("%d: parseTopic(%#v) returned nil", i, line)
+		if _, err := parseTopic(line); err != nil {
+			t.Fatalf("%d: parseTopic(%#v) returned %v", i, line, err)
 		}
 	}
 }
 
 func TestParseTopicBad(t *testing.T) {
-	t.Parallel()
 	data := []string{
 		"",
-		"$",
 		"sport/tennis#",
 		"sport/tennis/#/ranking",
 		"sport/tennis+",
 		"sport/#/tennis",
+		strings.Repeat("a", 65536),
 	}
 	for i, line := range data {
-		if parseTopic(line) != nil {
+		if _, err := parseTopic(line); err == nil {
 			t.Fatalf("%d: parseTopic(%#v) returned non nil", i, line)
 		}
 	}
 }
 
 func TestMatchSuccess(t *testing.T) {
-	t.Parallel()
 	data := [][2]string{
 		{"sport/tennis/#", "sport/tennis"},
 		{"sport/tennis/#", "sport/tennis/player1"},
@@ -189,7 +232,10 @@ func TestMatchSuccess(t *testing.T) {
 		{"sport/+/player1", "sport/tennis/player1"},
 	}
 	for i, line := range data {
-		q := parseTopic(line[0])
+		q, err := parseTopic(line[0])
+		if err != nil {
+			t.Fatalf("%d: %#v.match(%#v): %v", i, line[0], line[1], err)
+		}
 		if !q.match(line[1]) {
 			t.Fatalf("%d: %#v.match(%#v) returned false", i, line[0], line[1])
 		}
@@ -197,7 +243,6 @@ func TestMatchSuccess(t *testing.T) {
 }
 
 func TestMatchFail(t *testing.T) {
-	t.Parallel()
 	data := [][2]string{
 		{"sport/tennis/#", ""},
 		{"sport/tennis/#", "sport"},
@@ -211,7 +256,10 @@ func TestMatchFail(t *testing.T) {
 		{"+/tennis/", "sport/tennis/$player1"},      // 4.7.2
 	}
 	for i, line := range data {
-		q := parseTopic(line[0])
+		q, err := parseTopic(line[0])
+		if err != nil {
+			t.Fatalf("%d: %#v.match(%#v): %v", i, line[0], line[1], err)
+		}
 		if q.match(line[1]) {
 			t.Fatalf("%d: %#v.match(%#v) returned true", i, line[0], line[1])
 		}

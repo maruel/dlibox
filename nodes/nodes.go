@@ -97,7 +97,7 @@ func (n *Node) Type() Type {
 	return Type(strings.ToLower(reflect.TypeOf(n.Config).Elem().Name()))
 }
 
-// isValid returns true if the node type is valid.
+// Validate implements Validator.
 func (n *Node) Validate() error {
 	if len(n.Name) == 0 {
 		return errors.New("node: missing Name")

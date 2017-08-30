@@ -22,7 +22,7 @@ type Command struct {
 
 // ToMsg converts the command to a MQTT Message.
 func (c *Command) ToMsg() msgbus.Message {
-	return msgbus.Message{c.Topic, []byte(c.Payload)}
+	return msgbus.Message{Topic: c.Topic, Payload: []byte(c.Payload)}
 }
 
 // Validate ensures the command is valid.

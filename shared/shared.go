@@ -8,6 +8,7 @@ package shared
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/user"
@@ -44,13 +45,27 @@ func InitState(bus msgbus.Bus, state *periph.State) {
 	}
 done:
 
-	bus.Publish(msgbus.Message{"$localip", []byte(ip)}, msgbus.MinOnce, true)
-	bus.Publish(msgbus.Message{"$mac", []byte(mac)}, msgbus.MinOnce, true)
-	bus.Publish(msgbus.Message{"$implementation", []byte("dlibox")}, msgbus.MinOnce, true)
+	RetainedStr(bus, "$localip", ip)
+	RetainedStr(bus, "$mac", mac)
+	RetainedStr(bus, "$implementation", "dlibox")
 	if state != nil {
-		bus.Publish(msgbus.Message{"$implementation/periph/state", []byte(fmt.Sprintf("%v", state))}, msgbus.MinOnce, true)
+		RetainedStr(bus, "$implementation/periph/state", fmt.Sprintf("%v", state))
 	}
 }
+
+// Retained sets a retained message.
+func Retained(b msgbus.Bus, topic string, payload []byte) {
+	if err := b.Publish(msgbus.Message{Topic: topic, Payload: payload, Retained: true}, msgbus.MinOnce); err != nil {
+		log.Printf("%s.Publish(%s): %v", b, topic, err)
+	}
+}
+
+// RetainedStr sets a retained message.
+func RetainedStr(b msgbus.Bus, topic, payload string) {
+	Retained(b, topic, []byte(payload))
+}
+
+//
 
 var (
 	hostname string

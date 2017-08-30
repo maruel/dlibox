@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/maruel/dlibox/controller/rules"
+	"github.com/maruel/dlibox/shared"
 	"github.com/maruel/msgbus"
 )
 
@@ -157,7 +158,7 @@ func (h *halloween) onMsg(m msgbus.Message) {
 		h.state = s
 		for _, cmd := range h.config.Cmds[h.state] {
 			// TODO(maruel): Run them in parallel.
-			if err := h.b.Publish(cmd.ToMsg(), msgbus.BestEffort, false); err != nil {
+			if err := h.b.Publish(cmd.ToMsg(), msgbus.BestEffort); err != nil {
 				log.Printf("halloween: %s->%v: %v", h.state, cmd, err)
 			}
 		}
@@ -175,7 +176,5 @@ func (h *halloween) setIdle() {
 }
 
 func (h *halloween) publishState(s halloweenState) {
-	if err := h.b.Publish(msgbus.Message{"//dlibox/halloween/state", []byte(s)}, msgbus.BestEffort, true); err != nil {
-		log.Printf("halloween: failed to publish state: %v", err)
-	}
+	shared.RetainedStr(h.b, "//dlibox/halloween/state", string(s))
 }

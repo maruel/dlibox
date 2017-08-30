@@ -20,10 +20,10 @@
   version = "v1.0.1"
 
 [[projects]]
+  branch = "api"
   name = "github.com/maruel/msgbus"
   packages = ["."]
-  revision = "4b870f087fb696b05f72a4662ce5200b9b98fe07"
-  version = "v1.0.0"
+  revision = "4cd7d24f9faf84c53bc54acdf49691bcfbb5fedc"
 
 [[projects]]
   name = "github.com/maruel/paho.mqtt.golang"
@@ -64,6 +64,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f8627843a2032f243d0c15a44b3f54d91530556cc3ad2c3dc370989878a3c0a7"
+  inputs-digest = "2f6670d519161954e8ca734676f0a723de621f9636662456d16807fb81b76624"
   solver-name = "gps-cdcl"
   solver-version = 1

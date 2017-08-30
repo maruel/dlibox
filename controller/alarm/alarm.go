@@ -91,7 +91,7 @@ func (a *Alarm) Reset(b msgbus.Bus) error {
 	now := time.Now()
 	if next := a.Next(now); !next.IsZero() {
 		a.timer = time.AfterFunc(next.Sub(now), func() {
-			if err := b.Publish(a.Cmd.ToMsg(), msgbus.BestEffort, false); err != nil {
+			if err := b.Publish(a.Cmd.ToMsg(), msgbus.BestEffort); err != nil {
 				log.Printf("failed to publish command %v", a.Cmd)
 			}
 			a.Reset(b)

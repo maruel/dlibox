@@ -41,11 +41,7 @@ func (p *pirDev) run(b msgbus.Bus, pin gpio.PinIn) {
 			now := time.Now()
 			nowStr := []byte(fmt.Sprintf("%d %s", now.Unix(), now))
 			// Fix convention.
-			err := b.Publish(msgbus.Message{"pir", nowStr}, msgbus.BestEffort, false)
-			if err != nil {
-				log.Printf("%s: failed to publish: %v", p, err)
-			}
-			if err != nil {
+			if err := b.Publish(msgbus.Message{Topic: "pir", Payload: nowStr}, msgbus.BestEffort); err != nil {
 				log.Printf("%s: failed to publish: %v", p, err)
 			}
 		} else {

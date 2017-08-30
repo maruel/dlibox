@@ -91,7 +91,7 @@ func mainImpl() error {
 		if !isController {
 			root += "/" + shared.Hostname()
 		}
-		will := msgbus.Message{root + "/$online", []byte("false")}
+		will := msgbus.Message{Topic: root + "/$online", Payload: []byte("false"), Retained: true}
 		usr := ""
 		pwd := ""
 		if u.User != nil {
@@ -102,7 +102,7 @@ func mainImpl() error {
 		clientID := shared.Hostname()
 
 		log.Printf("MQTT:%s ClientID:%s User:%s Pass:%s", server, clientID, usr, pwd)
-		mqttServer, err := msgbus.NewMQTT(server, clientID, usr, pwd, will)
+		mqttServer, err := msgbus.NewMQTT(server, clientID, usr, pwd, will, true)
 		if err != nil {
 			// TODO(maruel): Have it continuously try to automatically reconnect.
 			log.Printf("Failed to connect to server: %v", err)

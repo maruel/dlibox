@@ -6,7 +6,9 @@ package msgbus
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"sort"
 	"sync"
 )
 
@@ -14,9 +16,7 @@ import (
 //
 // This Bus is thread safe. It is useful for unit tests or as a local broker.
 func New() Bus {
-	return &local{
-		persistentTopics: map[string][]byte{},
-	}
+	return &local{persistentTopics: map[string][]byte{}}
 }
 
 type local struct {
@@ -42,10 +42,13 @@ func (l *local) Close() error {
 	return nil
 }
 
-func (l *local) Publish(msg Message, qos QOS, retained bool) error {
-	p := parseTopic(msg.Topic)
-	if p == nil || p.isQuery() {
-		return errors.New("invalid topic")
+func (l *local) Publish(msg Message, qos QOS) error {
+	p, err := parseTopic(msg.Topic)
+	if err != nil {
+		return err
+	}
+	if p.isQuery() {
+		return errors.New("cannot publish to a topic query")
 	}
 	subscribers := func() []*subscription {
 		l.mu.Lock()
@@ -54,7 +57,7 @@ func (l *local) Publish(msg Message, qos QOS, retained bool) error {
 			delete(l.persistentTopics, msg.Topic)
 			return nil
 		}
-		if retained {
+		if msg.Retained {
 			b := make([]byte, len(msg.Payload))
 			copy(b, msg.Payload)
 			l.persistentTopics[msg.Topic] = b
@@ -85,21 +88,39 @@ func (l *local) Publish(msg Message, qos QOS, retained bool) error {
 
 func (l *local) Subscribe(topicQuery string, qos QOS) (<-chan Message, error) {
 	// QOS is ignored. Eventually it could be used to make the channel buffered.
-	p := parseTopic(topicQuery)
-	if p == nil {
-		return nil, errors.New("invalid topic")
+	p, err := parseTopic(topicQuery)
+	if err != nil {
+		return nil, err
 	}
 	s := &subscription{topicQuery: p, channel: make(chan Message)}
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.subscribers = append(l.subscribers, s)
-	return s.channel, nil
+	c := s.channel
+	topics := func() []*Message {
+		l.mu.Lock()
+		defer l.mu.Unlock()
+		l.subscribers = append(l.subscribers, s)
+		var out []*Message
+		// If there is any retained topic matching, send them.
+		for topic, payload := range l.persistentTopics {
+			if p.match(topic) {
+				out = append(out, &Message{Topic: topic, Payload: payload, Retained: true})
+			}
+		}
+		return out
+	}()
+
+	// Asynchronous.
+	go func() {
+		for _, t := range topics {
+			c <- *t
+		}
+	}()
+	return c, nil
 }
 
 func (l *local) Unsubscribe(topicQuery string) {
-	p := parseTopic(topicQuery)
-	if p == nil {
-		log.Printf("%s.Unsubscribe(%s): invalid topic", l, topicQuery)
+	p, err := parseTopic(topicQuery)
+	if err != nil {
+		log.Printf("%s.Unsubscribe(%s): %v", l, topicQuery, err)
 		return
 	}
 	subscribers := func() []*subscription {
@@ -128,22 +149,24 @@ func (l *local) Unsubscribe(topicQuery string) {
 	}
 }
 
-func (l *local) Retained(topicQuery string) ([]Message, error) {
-	ps := parseTopic(topicQuery)
-	if ps == nil {
-		return nil, errors.New("invalid topic")
-	}
+// dump returns the internal state.
+func (l *local) dump() string {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	var out []Message
-	for t, payload := range l.persistentTopics {
-		if ps.match(t) {
-			p := make([]byte, len(payload))
-			copy(p, payload)
-			out = append(out, Message{t, p})
-		}
+	out := "Persistent topics:\n"
+	topics := make([]string, 0, len(l.persistentTopics))
+	for t := range l.persistentTopics {
+		topics = append(topics, t)
 	}
-	return out, nil
+	sort.Strings(topics)
+	for _, t := range topics {
+		out += fmt.Sprintf("- %s: %s\n", t, l.persistentTopics[t])
+	}
+	out += "Subscriptions:\n"
+	for _, s := range l.subscribers {
+		out += "- " + s.dump() + "\n"
+	}
+	return out
 }
 
 func (l *local) getSubscribers(t string) []*subscription {
@@ -212,3 +235,10 @@ func (s *subscription) closeSub() {
 	close(s.channel)
 	s.channel = nil
 }
+
+// dump returns the internal state.
+func (s *subscription) dump() string {
+	return s.topicQuery.String()
+}
+
+var _ Bus = &local{}
