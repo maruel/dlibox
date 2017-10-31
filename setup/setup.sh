@@ -137,13 +137,13 @@ TimeoutStopSec=20s
 ExecStart=/home/${AS_USER}/go/bin/dlibox
 Environment=GOTRACEBACK=all
 # Systemd 229:
-#AmbientCapabilities=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 # Systemd 228 and below:
-SecureBits=keep-caps
-Capabilities=cap_net_bind_service+pie
+#SecureBits=keep-caps
+#Capabilities=cap_net_bind_service+pie
 # Older systemd:
-PermissionsStartOnly=true
-ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/${AS_USER}/go/bin/dlibox
+#PermissionsStartOnly=true
+#ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /home/${AS_USER}/go/bin/dlibox
 # High priority stuff:
 # Nice=-20
 # IOSchedulingClass=realtime
@@ -207,7 +207,8 @@ function do_controller() {
 
 
 function do_device() {
-  install_lirc
+  # Broken on Raspbian Stretch.
+  #install_lirc
   install_dlibox ${USER}
   #install_optional
 }
