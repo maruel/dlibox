@@ -20,10 +20,10 @@
   version = "v1.0.1"
 
 [[projects]]
-  branch = "api"
   name = "github.com/maruel/msgbus"
   packages = ["."]
-  revision = "4cd7d24f9faf84c53bc54acdf49691bcfbb5fedc"
+  revision = "047bdeaac190d61f9aac5a86963de37940eac020"
+  version = "v2.0.0"
 
 [[projects]]
   name = "github.com/maruel/paho.mqtt.golang"
@@ -47,7 +47,7 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "2d6f6f883a06fc0d5f4b14a81e4c28705ea64c15"
+  revision = "95c6576299259db960f6c5b9b69ea52422860fce"
 
 [[projects]]
   name = "gopkg.in/fsnotify.v1"
@@ -64,6 +64,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2f6670d519161954e8ca734676f0a723de621f9636662456d16807fb81b76624"
+  inputs-digest = "e52f6cc5f1d74c3f689a82134307f9aac975d95a75dfd63348267bf2241374a8"
   solver-name = "gps-cdcl"
   solver-version = 1

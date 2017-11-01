@@ -318,7 +318,7 @@ func (r *rebaseSubscriber) Subscribe(topicQuery string, qos QOS) (<-chan Message
 		defer close(c2)
 		// Translate the topics.
 		for msg := range c {
-			if !p.match(msg.Topic) {
+			if !p.isQuery() && !p.match(msg.Topic) {
 				panic(fmt.Errorf("bus: unexpected topic prefix %q, expected %q", msg.Topic, actual))
 			}
 			c2 <- Message{Topic: msg.Topic[offset:], Payload: msg.Payload, Retained: msg.Retained}
