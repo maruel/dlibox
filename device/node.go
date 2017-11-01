@@ -10,6 +10,7 @@ import (
 	"reflect"
 
 	"github.com/maruel/dlibox/nodes"
+	"github.com/maruel/msgbus"
 )
 
 // NodeBase is the base type for all kind of supported nodes.
@@ -35,6 +36,7 @@ func (n *NodeBase) wrap(err error) error {
 type nodeDev interface {
 	fmt.Stringer
 	io.Closer
+	init(b msgbus.Bus) error
 }
 
 // dev is the device (nodes).
@@ -42,6 +44,18 @@ type nodeDev interface {
 // The device doesn't store it, it's stored on the MQTT server.
 type dev struct {
 	nodes map[nodes.ID]nodeDev
+}
+
+func (d *dev) init(b msgbus.Bus) error {
+	var err error
+	for id, n := range d.nodes {
+		s := string(id)
+		bdev := msgbus.RebasePub(msgbus.RebaseSub(b, s), s)
+		if err2 := n.init(bdev); err == nil {
+			err = err2
+		}
+	}
+	return err
 }
 
 var knownTypes = map[interface{}]interface{}{

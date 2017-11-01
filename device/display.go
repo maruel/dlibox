@@ -49,7 +49,7 @@ func (d *displayDev) init(b msgbus.Bus) error {
 	if _, err = d.d.Write(d.img.Pix); err != nil {
 		return err
 	}
-	c, err := b.Subscribe("display/#", msgbus.ExactlyOnce)
+	c, err := b.Subscribe("#", msgbus.ExactlyOnce)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (d *displayDev) Close() error {
 
 func (d *displayDev) onMsg(msg msgbus.Message) {
 	switch msg.Topic {
-	case "display/settext":
+	case "settext":
 		d.f20.Draw(d.img, 0, 0, image1bit.On, nil, string(msg.Payload))
 		if _, err := d.d.Write(d.img.Pix); err != nil {
 			log.Printf("display write failure: %# v", msg)

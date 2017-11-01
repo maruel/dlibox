@@ -17,16 +17,20 @@ type NodeCfg interface {
 	toProperties() map[ID]Property
 }
 
+type I2CRef struct {
+	ID string
+}
+
+type SPIRef struct {
+	ID string
+	Hz int64
+}
+
 // Anim1D is an APA102 LED strip.
 type Anim1D struct {
 	APA102 bool
-	I2C    struct {
-		ID string
-	}
-	SPI struct {
-		ID string
-		Hz int64
-	}
+	I2C    I2CRef
+	SPI    SPIRef
 	// NumberLights is the number of lights controlled by this device. If lower
 	// than the actual number of lights, the remaining lights will flash oddly.
 	NumberLights int

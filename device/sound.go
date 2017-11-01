@@ -48,6 +48,12 @@ func (s *soundDev) onMsg(m msgbus.Message) {
 //
 // If a sound was already playing, the command will fail, ignore.
 func play(card, path string) {
-	c := exec.Command("aplay", "-D", card, path)
-	go c.Run()
+	log.Printf("Playing %s", path)
+	if card != "" {
+		c := exec.Command("aplay", "-D", card, path)
+		go c.Run()
+	} else {
+		c := exec.Command("aplay", path)
+		go c.Run()
+	}
 }
