@@ -107,6 +107,7 @@ done:
 	if !interrupt.IsSet() {
 		shared.RetainedStr(dbus, "$online", "true")
 	}
+	go d.hack(dbus)
 	return shared.WatchFile()
 }
 
@@ -177,5 +178,58 @@ func pubErr(b msgbus.Bus, f string, arg ...interface{}) {
 	log.Print(msg)
 	if err := b.Publish(msgbus.Message{Topic: "$error", Payload: []byte(msg)}, msgbus.ExactlyOnce); err != nil {
 		log.Print(err)
+	}
+}
+
+func (d *dev) hack(b msgbus.Bus) {
+	switch shared.Hostname() {
+	case "raspberrypi-e59e":
+		d.nodes["apa"] = &anim1DDev{
+			NodeBase: NodeBase{id: "apa", name: "apa"},
+			Cfg: &nodes.Anim1D{
+				APA102:       true,
+				SPI:          nodes.SPIRef{"", 2000000},
+				NumberLights: 250,
+				FPS:          60,
+			},
+		}
+		d.nodes["pir"] = &pirDev{
+			NodeBase: NodeBase{id: "pir", name: "pir"},
+			Cfg:      &nodes.PIR{Pin: "GPIO4"},
+		}
+		d.nodes["sound"] = &soundDev{
+			NodeBase: NodeBase{id: "sound", name: "sound"},
+			Cfg:      &nodes.Sound{},
+			root:     "/home/pi",
+		}
+	case "raspberrypi-73f5":
+		d.nodes["apa"] = &anim1DDev{
+			NodeBase: NodeBase{id: "apa", name: "apa"},
+			Cfg: &nodes.Anim1D{
+				APA102:       true,
+				SPI:          nodes.SPIRef{"", 2000000},
+				NumberLights: 150,
+				FPS:          60,
+			},
+		}
+		d.nodes["sound"] = &soundDev{
+			NodeBase: NodeBase{id: "sound", name: "sound"},
+			Cfg:      &nodes.Sound{},
+			root:     "/home/pi",
+		}
+	case "raspberrypi-681e":
+		d.nodes["apa"] = &anim1DDev{
+			NodeBase: NodeBase{id: "apa", name: "apa"},
+			Cfg: &nodes.Anim1D{
+				APA102:       true,
+				SPI:          nodes.SPIRef{"", 2000000},
+				NumberLights: 50,
+				FPS:          60,
+			},
+		}
+	default:
+	}
+	if err := d.init(b); err != nil {
+		pubErr(b, "Failed to initialize: %v", err)
 	}
 }
