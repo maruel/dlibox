@@ -21,7 +21,7 @@ type soundDev struct {
 }
 
 func (s *soundDev) init(b msgbus.Bus) error {
-	c, err := b.Subscribe("sound", msgbus.BestEffort)
+	c, err := b.Subscribe("sound", msgbus.ExactlyOnce)
 	if err != nil {
 		return err
 	}

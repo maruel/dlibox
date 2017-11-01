@@ -55,7 +55,7 @@ done:
 
 // Retained sets a retained message.
 func Retained(b msgbus.Bus, topic string, payload []byte) {
-	if err := b.Publish(msgbus.Message{Topic: topic, Payload: payload, Retained: true}, msgbus.MinOnce); err != nil {
+	if err := b.Publish(msgbus.Message{Topic: topic, Payload: payload, Retained: true}, msgbus.ExactlyOnce); err != nil {
 		log.Printf("%s.Publish(%s): %v", b, topic, err)
 	}
 }

@@ -66,7 +66,7 @@ func initHalloween(b msgbus.Bus, config *halloweenRule) (*halloween, error) {
 	// Listen to all messages, since we don't know the one that could be keys in
 	// the config. Technically we know but it's easier to just get them all.
 	// Revisit this decision if it becomes a problem.
-	c, err := b.Subscribe("//#", msgbus.BestEffort)
+	c, err := b.Subscribe("//#", msgbus.ExactlyOnce)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (h *halloween) onMsg(m msgbus.Message) {
 		h.state = s
 		for _, cmd := range h.config.Cmds[h.state] {
 			// TODO(maruel): Run them in parallel.
-			if err := h.b.Publish(cmd.ToMsg(), msgbus.BestEffort); err != nil {
+			if err := h.b.Publish(cmd.ToMsg(), msgbus.ExactlyOnce); err != nil {
 				log.Printf("halloween: %s->%v: %v", h.state, cmd, err)
 			}
 		}

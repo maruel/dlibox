@@ -171,7 +171,7 @@ func initPainter(b msgbus.Bus, leds devices.Display, fps int, config *painterCfg
 			return nil, err
 		}
 	}
-	c, err := b.Subscribe("painter/#", msgbus.BestEffort)
+	c, err := b.Subscribe("painter/#", msgbus.ExactlyOnce)
 	if err != nil {
 		return nil, err
 	}

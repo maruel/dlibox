@@ -50,7 +50,7 @@ func (b *buttonDev) run(bus msgbus.Bus, pin gpio.PinIn) {
 			now := time.Now()
 			nowStr := []byte(fmt.Sprintf("%d %s", now.Unix(), now))
 			// Fix convention.
-			err := bus.Publish(msgbus.Message{Topic: "button", Payload: nowStr}, msgbus.BestEffort)
+			err := bus.Publish(msgbus.Message{Topic: "button", Payload: nowStr}, msgbus.ExactlyOnce)
 			if err != nil {
 				log.Printf("%s: failed to publish: %v", b, err)
 			}

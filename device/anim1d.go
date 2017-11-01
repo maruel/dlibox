@@ -37,12 +37,12 @@ func (a *anim1DDev) init(b msgbus.Bus) error {
 		return err
 	}
 	str := &strip{Display: apa, b: b, s: s, fps: a.Cfg.FPS}
-	c, err := b.Subscribe("anim1d/#", msgbus.BestEffort)
+	c, err := b.Subscribe("anim1d/#", msgbus.ExactlyOnce)
 	if err != nil {
 		str.Close()
 		return err
 	}
-	//if err := b.Publish(msgbus.Message{"$fake", fakeBytes}, msgbus.MinOnce, true); err != nil {
+	//if err := b.Publish(msgbus.Message{"$fake", fakeBytes}, msgbus.ExactlyOnce, true); err != nil {
 	//	log.Printf("anim1d: publish failed: %v", err)
 	//}
 	shared.RetainedStr(b, "$fps", strconv.Itoa(str.fps))

@@ -49,7 +49,7 @@ func (d *displayDev) init(b msgbus.Bus) error {
 	if _, err = d.d.Write(d.img.Pix); err != nil {
 		return err
 	}
-	c, err := b.Subscribe("display/#", msgbus.BestEffort)
+	c, err := b.Subscribe("display/#", msgbus.ExactlyOnce)
 	if err != nil {
 		return err
 	}

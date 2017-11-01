@@ -161,7 +161,7 @@ func (s *webServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	*/
-	if err := s.b.Publish(msgbus.Message{Topic: "//dlibox/halloween/state", Payload: []byte(state)}, msgbus.BestEffort); err != nil {
+	if err := s.b.Publish(msgbus.Message{Topic: "//dlibox/halloween/state", Payload: []byte(state)}, msgbus.ExactlyOnce); err != nil {
 		log.Printf("web: failed to publish: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("failed to publish: %v", err)})
@@ -276,7 +276,7 @@ func (s *webServer) patternHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.b.Publish(msgbus.Message{Topic: "painter/setuser", Payload: raw}, msgbus.BestEffort); err != nil {
+	if err := s.b.Publish(msgbus.Message{Topic: "painter/setuser", Payload: raw}, msgbus.ExactlyOnce); err != nil {
 		log.Printf("web: failed to publish: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("failed to publish: %v", err)})
