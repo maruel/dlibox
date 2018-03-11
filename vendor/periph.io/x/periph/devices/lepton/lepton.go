@@ -142,7 +142,7 @@ func New(p spi.Port, i i2c.Bus, cs gpio.PinOut) (*Dev, error) {
 		return nil, err
 	} else if status.CameraStatus != cci.SystemReady {
 		// The lepton takes < 1 second to boot so it should not happen normally.
-		return nil, fmt.Errorf("lepton: camera is not ready: %s", status)
+		return nil, fmt.Errorf("lepton: camera is not ready: %#v", status)
 	}
 	if err := d.Init(); err != nil {
 		return nil, err
@@ -454,5 +454,5 @@ func verifyCRC(d []byte) bool {
 	return internal.CRC16(tmp) == internal.Big16.Uint16(d[2:])
 }
 
-var _ devices.Device = &Dev{}
+var _ conn.Resource = &Dev{}
 var _ fmt.Stringer = &Dev{}
