@@ -2,9 +2,6 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// Packages the static files in a .go file.
-//go:generate go run package.go -out static_files_gen.go ../../web
-
 // Package controller implements the dlibox controller.
 //
 // When acting as the controller, it connects to the MQTT server and instructs
@@ -37,7 +34,7 @@ func Main(bus msgbus.Bus, port int) error {
 	// $online.
 	shared.InitState(msgbus.RebasePub(dbus, shared.Hostname()), nil)
 
-	w, err := initWeb(dbus, port, &d.db, nil)
+	w, err := newWebServer(fmt.Sprintf("0.0.0.0:%d", port), true, dbus, &d.db, nil)
 	if err != nil {
 		return err
 	}

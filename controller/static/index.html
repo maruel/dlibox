@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="blue" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="dlibox web UI">
+<meta name="author" content="Marc-Antoine Ruel">
+<title>dlibox</title>
+
+<!-- old stuff -->
+<link rel="stylesheet" href="/static/normalize.css">
+<link rel="stylesheet" href="/static/skeleton.css">
+<link rel="stylesheet" href="/static/dlibox.css">
+<script type="text/javascript" src="/static/colorpicker.js"></script>
+
+<style>
+* {
+  font-family: sans-serif;
+  font-size: 14px;
+}
+h1 {
+  font-size: 24px;
+}
+h2 {
+  font-size: 20px;
+}
+h3 {
+  font-size: 16px;
+}
+h1, h2, h3 {
+  margin-bottom: 0.2em;
+  margin-top: 0.2em;
+}
+.err {
+  background: #F44;
+  border: 1px solid #888;
+  border-radius: 10px;
+  padding: 10px;
+  display: none;
+}
+
+@media only screen and (max-width: 500px) {
+  * {
+    font-size: 12px;
+  }
+}
+</style>
+
+<!-- *** Javascript logic *** -->
+
+<script>
+"use strict";
+/* *** Generic Javascript tools *** */
+
+// log logs to the console, only if enabled.
+function log(v) {
+  //console.log(v);
+}
+
+// Pure javascript event system that implements EventTarget.
+// https://devdocs.io/dom/eventtarget
+class EventSource {
+  constructor() {
+    this._triggers = {};
+  }
+  // https://devdocs.io/dom/eventtarget/addeventlistener
+  addEventListener(type, listener, options) {
+    if (!this._triggers[type]) {
+      this._triggers[type] = [];
+    }
+    let opt = options || {};
+    let v = {
+      capture: opt.capture,
+      listener: listener,
+      once: opt.once,
+      passive: opt.passive,
+    };
+    this._triggers[type].push(v);
+  }
+  // https://devdocs.io/dom/eventtarget/removeeventlistener
+  removeEventListener(type, listener, options) {
+    if (!this._triggers[type]) {
+      return;
+    }
+    let l = this._triggers[type].slice();
+    let opt = options || {};
+    for (let i = l.length; i > 0; i--) {
+      let v = l[i-1];
+      if (v.callback === callback &&
+          v.capture === opt.capture &&
+          v.passive === opt.passive) {
+        this._triggers[type].pop(i);
+      }
+    }
+  }
+  // https://devdocs.io/dom/eventtarget/dispatchevent
+  dispatchEvent(type, params) {
+    log("dispatchEvent("+type+", "+params+")");
+    let l = this._triggers[type];
+    if (!l) {
+      return;
+    }
+    // The challenge here is that during the dispatch, an addEventListener()
+    // may have been called. This needs to be handled explicitly.
+    let rm = [];
+    for (let i = 0; i < l.length; i++) {
+      let opt = l[i];
+      opt.listener.call(params);
+      if (opt.once) {
+        rm.push(opt);
+      }
+    }
+    for (let i = 0; i < rm.length; i++) {
+      // This is inefficient but safe.
+      for (let j = 0; j < l.length; l++) {
+        if (l[j] === rm[i]) {
+         l.pop(j);
+         break;
+       }
+      }
+    }
+  }
+}
+
+// postJSON sends a HTTPS POST to a JSON API and calls the callback with the
+// decoded JSON reply.
+function postJSON(url, data, callback) {
+  function checkStatus(res) {
+    if (res.status == 401) {
+      throw new Error("Please refresh the page");
+    }
+    if (res.status >= 200 && res.status < 300) {
+      return res.json();
+    }
+    throw new Error(res.statusText);
+  }
+  function onError(url, err) {
+    console.log(err);
+    alertError(url + ": " + err.toString());
+  }
+  let hdr = {
+    body: JSON.stringify(data),
+    credentials: "same-origin",
+    headers: {"Content-Type": "application/json; charset=utf-8"},
+    method: "POST",
+  };
+  fetch(url, hdr).then(checkStatus).then(callback).catch(err => onError(url, err));
+}
+
+// alertError shows or appends the error message in a top red bubble.
+function alertError(errText) {
+  let e = document.getElementById("err");
+  if (e.innerText) {
+    e.innerText = e.innerText + "\n";
+  }
+  e.innerText = e.innerText + errText + "\n";
+  e.style.display = "block";
+}
+
+/* *** dlibox specific Javascript logic *** */
+
+// Controller is the app controller. It is a singleton.
+var Controller = new class {
+  constructor() {
+    // State transitions.
+    this.patterns = [];
+    this.settings = [];
+
+    // Initialization.
+    document.addEventListener("DOMContentLoaded", () => {
+      // Both are asynchronous.
+      this._fetchPatterns();
+      this._fetchSettings();
+
+      // Set background.
+      var text = "";
+      for (var i=0; i<50; i++) {
+        text += "🐉🐢🐇🌴";
+      }
+      document.getElementById("background").innerText = text;
+
+      /*
+      var slideInd = document.getElementById("slide-indicator");
+      var pickerInd = document.getElementById("picker-indicator");
+      ColorPicker(
+          document.getElementById("slide"),
+          document.getElementById("picker"),
+          function(hex, hsv, rgb, pickerCoordinate, slideCoordinate) {
+            ColorPicker.positionIndicators(slideInd, pickerInd, slideCoordinate, pickerCoordinate);
+            this.updateColor(rgb.r, rgb.g, rgb.b);
+          });
+      */
+    }, {once: true});
+  }
+
+  // Reconstructs the pattern buttons.
+  loadButtons() {
+    var dst = document.getElementById("boutons");
+    dst.innerHTML = "";
+    for (var k in this.patterns) {
+      var node = document.createElement("button");
+      var v = this.patterns[k];
+      var i = parseInt(k);
+      node.id = "button-" + i + 1;
+      node.attributes["data-mode"] = v;
+      node.innerHTML = '<img src="/thumbnail/' + encodeURI(btoa(v)) + '" /> ' + (i + 1);
+      node.addEventListener("click", function (event) {
+        this.updatePattern(this.attributes["data-mode"]);
+      });
+      dst.appendChild(node);
+      dst.appendChild(document.createElement("br"));
+    }
+  }
+
+  // Updates the textarea and set the new pattern.
+  updatePattern(data) {
+    document.getElementById("patternBox").value = data;
+    this.setPattern();
+  }
+
+  updateColor(r, g, b) {
+    var hex = "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+    document.body.style.backgroundColor = hex;
+    document.getElementById("rgb_r").value = r;
+    document.getElementById("rgb_g").value = g;
+    document.getElementById("rgb_b").value = b;
+    document.getElementById("rgb").value = hex;
+    this.updatePattern('"' + hex + '"');
+  }
+
+  updateFromHEX() {
+    var hex = document.getElementById("rgb").value;
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (result) {
+      this.updateColor(parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16));
+    }
+  }
+
+  updateFromRGB() {
+    this.updateColor(
+        parseInt(document.getElementById("rgb_r").value, 10),
+        parseInt(document.getElementById("rgb_g").value, 10),
+        parseInt(document.getElementById("rgb_b").value, 10));
+  }
+
+  setState(state) {
+    postJSON("/api/dlibox/v1/publish", state, res => {});
+    return false;
+  }
+
+  setPattern() {
+    try {
+      document.getElementById("patternBox").value = JSON.stringify(
+          JSON.parse(document.getElementById("patternBox").value), null, 2);
+    } catch(e) {
+      // Tell the user the problem.
+      document.getElementById("patternError").innerText = e;
+      return;
+    }
+    document.getElementById("patternError").innerText = "";
+    postJSON(
+        "/api/dlibox/v1/pattern/get",
+        document.getElementById("patternBox").value,
+        res => { fetchPatterns() });
+    return false;
+  }
+
+  setSettings() {
+    try {
+      document.getElementById("settingsBox").value = JSON.stringify(
+          JSON.parse(document.getElementById("settingsBox").value), null, 2);
+    } catch(e) {
+      // Tell the user the problem.
+      document.getElementById("settingsError").innerText = e;
+      return;
+    }
+    document.getElementById("settingsError").innerText = "";
+    postJSON(
+      "/api/dlibox/v1/settings/get",
+      document.getElementById("settingsBox").value,
+      res => {
+          document.getElementById("settingsBox").value = JSON.stringify(res, null, 2);
+          fetchPatterns();
+    });
+    return false;
+  }
+
+  _fetchPatterns() {
+    postJSON("/api/dlibox/v1/pattern/list", {}, res => {
+      this.patterns = res;
+      this.loadButtons();
+    });
+  }
+
+  _fetchSettings() {
+    postJSON("/api/dlibox/v1/settings/get", {}, res => {
+      this.settings = res;
+      document.getElementById("settingsBox").value = JSON.stringify(res, null, 2);
+    });
+  }
+};
+
+function componentToHex(c) {
+  let hex = c.toString(16);
+  return hex.length == 1 ? "0" + hex : hex;
+}
+
+
+function patternKeyDown() {
+  if (event.keyCode == 13) {
+    Controller.setPattern();
+  }
+  return false;
+}
+
+
+// HTMLElementTemplate is a base class for a custom element that uses a template
+// element and stores it in its shadowDOM.
+class HTMLElementTemplate extends HTMLElement {
+  constructor(template_name) {
+    super();
+    let tmpl = document.querySelector("template#" + template_name);
+    this.attachShadow({mode: "open"}).appendChild(tmpl.content.cloneNode(true));
+  }
+  static get observedAttributes() {return [];}
+  emitEvent(name, detail) {
+    this.dispatchEvent(new CustomEvent(name, {detail, bubbles: true}));
+  }
+}
+</script>
+
+<!-- *** Custom elements *** -->
+
+<!-- Generic custom elements -->
+
+<!-- A generic table -->
+<template id="template-data-table-elem">
+  <style>
+    th {
+      background-color: #4CAF50;
+      color: white;
+    }
+    th, td {
+      padding: 0.5rem;
+      border-bottom: 1px solid #ddd;
+    }
+    tr:hover {
+      background-color: #CCC;
+    }
+    tr:nth-child(even):not(:hover) {
+      background: #f5f5f5;
+    }
+    .inline {
+      display: inline-block;
+      margin-bottom: 1rem;
+      margin-right: 2rem;
+      vertical-align: top;
+    }
+  </style>
+  <div class="inline">
+    <table>
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</template>
+<script>
+"use strict";
+(function() {
+  window.customElements.define("data-table-elem", class extends HTMLElementTemplate {
+    constructor() {super("template-data-table-elem");}
+    setupTable(hdr) {
+      let root = this.shadowRoot.querySelector("thead");
+      for (let i = 0; i < hdr.length; i++) {
+        root.appendChild(document.createElement("th")).innerText = hdr[i];
+      }
+    }
+    appendRow(line) {
+      let tr = this.shadowRoot.querySelector("tbody").appendChild(document.createElement("tr"));
+      let items = [];
+      for (let i = 0; i < line.length; i++) {
+        let cell = tr.appendChild(document.createElement("td"));
+        if (line[i] instanceof Element) {
+          cell.appendChild(line[i]);
+          items[i] = line[i];
+        } else {
+          cell.innerText = line[i];
+          items[i] = cell;
+        }
+      }
+      return items;
+    }
+  });
+}());
+</script>
+
+<!-- A generic checkbox -->
+<template id="template-checkout-elem">
+  <style>
+    @keyframes popIn {
+      0% { transform: scale(1, 1); }
+      25% { transform: scale(1.2, 1); }
+      50% { transform: scale(1.4, 1); }
+      100% { transform: scale(1, 1); }
+    }
+    @keyframes popOut {
+      0% { transform: scale(1, 1); }
+      25% { transform: scale(1.2, 1); }
+      50% { transform: scale(1.4, 1); }
+      100% { transform: scale(1, 1); }
+    }
+    div {
+      display: inline-block;
+      height: 20px;
+      position: relative;
+      vertical-align: bottom;
+    }
+    input {
+      bottom: 0;
+      cursor: pointer;
+      display: block;
+      height: 0%;
+      left: 0;
+      margin: 0 0;
+      opacity: 0;
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 0%;
+    }
+    span {
+      cursor: pointer;
+      margin-left: 0.25em;
+      padding-left: 40px;
+      user-select: none;
+    }
+    span:before {
+      background: rgba(100, 100, 100, .2);
+      border-radius: 20px;
+      box-shadow: inset 0 0 5px rgba(0, 0, 0, .8);
+      content: "";
+      display: inline-block;
+      height: 20px;
+      left: 0px;
+      position: absolute;
+      transition: background .2s ease-out;
+      width: 40px;
+    }
+    span:after {
+      background-clip: padding-box;
+      background: #fff;
+      border-radius: 20px;
+      border: solid green 2px;
+      content: "";
+      display: block;
+      font-weight: bold;
+      height: 20px;
+      left: -2px;
+      position: absolute;
+      text-align: center;
+      top: -2px;
+      transition: margin-left 0.1s ease-in-out;
+      width: 20px;
+    }
+    input:checked + span:after {
+      margin-left: 20px;
+    }
+    input:checked + span:before {
+      transition: background .2s ease-in;
+    }
+    input:not(:checked) + span:after {
+      animation: popOut ease-in .3s normal;
+    }
+    input:checked + span:after {
+      animation: popIn ease-in .3s normal;
+      background-clip: padding-box;
+      margin-left: 20px;
+    }
+    input:checked + span:before {
+      background: #20c997;
+    }
+    input:disabled + span:before {
+      box-shadow: 0 0 0 black;
+    }
+    input:disabled + span {
+      color: #adb5bd;
+    }
+    input:disabled:checked + span:before {
+      background: #adb5bd;
+    }
+    input:indeterminate + span:after {
+      margin-left: 10px;
+    }
+    input:focus + span:before {
+      outline: solid #cce5ff 2px;
+    }
+  </style>
+  <div>
+    <label>
+      <input type="checkbox"><span><slot></slot></span>
+    </label>
+  </div>
+</template>
+<script>
+"use strict";
+(function() {
+  window.customElements.define("checkout-elem", class extends HTMLElementTemplate {
+    constructor() {super("template-checkout-elem");}
+    connectedCallback() {
+      // Note: I tried to have this custom element sync the embedded checkbox
+      // attributes "checked", "disabled" and "indeterminate" through
+      // observedAttributes() and attributeChangedCallback() but I failed. This
+      // would be useful to style <checkout-elem> based on its state.
+      // A contribution for this would be appreciated!
+      this.contentElem = this.shadowRoot.querySelector("span");
+      this.checkboxElem = this.shadowRoot.querySelector("input");
+      this.checkboxElem.addEventListener("click", e => {
+        // Trigger "change" instead of "click" because click mistriggers.
+        this.emitEvent("change", {});
+      }, {passive: true});
+    }
+    _setClearVal(obj, name, v) {
+      if (v !== false && v !== true) {
+        alert("internal error");
+      }
+      obj[name] = v;
+    }
+    get checked() {
+      return this.checkboxElem.checked;
+    }
+    set checked(v) {
+      this._setClearVal(this.checkboxElem, "checked", v);
+    }
+    get disabled() {
+      return this.checkboxElem.disabled;
+    }
+    set disabled(v) {
+      this._setClearVal(this.checkboxElem, "disabled", v);
+    }
+    get indeterminate() {
+      return this.checkboxElem.indeterminate;
+    }
+    set indeterminate(v) {
+      this._setClearVal(this.checkboxElem, "indeterminate", v);
+    }
+    get text() {
+      return this.contentElem.innerText;
+    }
+    set text(v) {
+      this.contentElem.innerText = v;
+    }
+  });
+}());
+</script>
+
+<!-- dlibox specific custom elements -->
+
+
+<!-- A single Header -->
+<template id="template-header-view">
+  <data-table-elem></data-table-elem>
+</template>
+<script>
+"use strict";
+(function() {
+  window.customElements.define("header-view", class extends HTMLElementTemplate {
+    constructor() {super("template-header-view");}
+    setupHeader(name) {
+      this.header = Controller.headers[name];
+      let data = this.shadowRoot.querySelector("data-table-elem");
+      let cols = 1;
+      if (this.header.pins) {
+        cols = this.header.pins[0].length;
+      }
+      let hdr = [this.header.name];
+      for (let i = 1; i < cols; i++) {
+        hdr[i] = "";
+      }
+      data.setupTable(hdr);
+      for (let y = 0; y < this.header.pins.length; y++) {
+        let row = this.header.pins[y];
+        let items = [];
+        for (let x = 0; x < row.length; x++) {
+          items[x] = document.createElement("gpio-view");
+        }
+        items = data.appendRow(items);
+        for (let x = 0; x < items.length; x++) {
+          items[x].setupPin(row[x]);
+        }
+      }
+    }
+  });
+}());
+</script>
+
+<!-- *** Content *** -->
+
+<div class="err" id="err"></div>
+
+<!-- old stuff -->
+
+  <!-- TODO navbar ? -->
+  <div id="background"></div>
+  <div class="navbar">
+    <ul>
+      <li><a href="#patterns">Patterns</a></li>
+      <li><a href="#color">Color</a></li>
+      <li><a href="#configuration">Configuration</a></li>
+    </ul>
+  </div>
+  <div class="container content">
+    <div class="row">
+    </div>
+    <div class="row">
+      <button onclick="setState('idle')">Idle</button>
+      <button onclick="setState('incoming')">Incoming</button>
+      <button onclick="setState('porch')">Porch</button>
+    </div>
+    <div class="row">
+      <h2 id="patterns">Choix d'animations</h2>
+    </div>
+    <div class="row">
+      <div id="boutons"></div>
+    </div>
+    <div class="row">
+      <h2>Custom</h2>
+      <textarea id="patternBox" name="pattern" rows="10"></textarea>
+      <br>
+      <button onclick="Controller.setPattern()">Set</button>
+      <br>
+      <div id="patternError"/>
+      <br>
+    </div>
+    <div class="row">
+      <h2 id="color">Manual Color</h2>
+      <div class="eight columns">
+        <div class="colorpicker">
+          <div id="picker-wrapper" class="picker-wrapper">
+            <div id="picker" class="picker"></div>
+            <div id="picker-indicator" class="picker-indicator"></div>
+          </div>
+          <div id="slide-wrapper" class="slide-wrapper">
+            <div id="slide" class="slide"></div>
+            <div id="slide-indicator" class="slide-indicator"></div>
+          </div>
+        </div>
+      </div>
+      <div class="three columns">
+        <div class="colorRGB">
+          <div>
+            <label>RGB</label>
+            <input id="rgb" type="text" value="#FFFFFF" onchange="updateFromHEX()" />
+          </div>
+          <div>
+            <label>R:</label>
+            <input id="rgb_r" type="number" value="255" onchange="updateFromRGB()" />
+          </div>
+          <div>
+            <label>G:</label>
+            <input id="rgb_g" type="number" value="255" onchange="updateFromRGB()" />
+          </div>
+          <div>
+            <label>B:</label>
+            <input id="rgb_b" type="number" value="255" onchange="updateFromRGB()" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <h2 id="configuration">Configuration</h2>
+      <textarea id="settingsBox" name="settings" rows="10"></textarea>
+      <br>
+      <button onclick="Controller.setSettings()">Set</button>
+      <br>
+      <div id="settingsError"/>
+      <br>
+    </div>
+  </div>
