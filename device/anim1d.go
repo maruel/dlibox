@@ -19,8 +19,8 @@ import (
 	"github.com/maruel/dlibox/shared"
 	"github.com/maruel/interrupt"
 	"github.com/maruel/msgbus"
+	"periph.io/x/periph/conn/display"
 	"periph.io/x/periph/conn/spi/spireg"
-	"periph.io/x/periph/devices"
 	"periph.io/x/periph/devices/apa102"
 )
 
@@ -37,11 +37,14 @@ func (a *anim1DDev) init(b msgbus.Bus) error {
 	if err = s.LimitSpeed(a.Cfg.SPI.Hz); err != nil {
 		return err
 	}
-	apa, err := apa102.New(s, a.Cfg.NumberLights, 255, 6500)
+	opts := apa102.DefaultOpts
+	opts.NumPixels = a.Cfg.NumberLights
+	opts.Temperature = 6500
+	apa, err := apa102.New(s, &opts)
 	if err != nil {
 		return err
 	}
-	str := &strip{Display: apa, b: b, s: s, fps: a.Cfg.FPS}
+	str := &strip{Drawer: apa, b: b, s: s, fps: a.Cfg.FPS}
 	if err != nil {
 		str.Close()
 		return err
@@ -74,7 +77,7 @@ func (a *anim1DDev) init(b msgbus.Bus) error {
 }
 
 type strip struct {
-	devices.Display
+	display.Drawer
 	s   io.Closer
 	fps int
 	b   msgbus.Bus
@@ -122,7 +125,7 @@ func (l *strip) onMsg(p *painterLoop, msg msgbus.Message) {
 	case "fake":
 	case "fps":
 	case "intensity":
-		a, ok := l.Display.(*apa102.Dev)
+		a, ok := l.Drawer.(*apa102.Dev)
 		if !ok {
 			log.Printf("anim1d: can't set intensity with fake LED")
 			return
@@ -147,7 +150,7 @@ func (l *strip) onMsg(p *painterLoop, msg msgbus.Message) {
 		a.Intensity = uint8(v)
 	case "num":
 	case "temperature":
-		a, ok := l.Display.(*apa102.Dev)
+		a, ok := l.Drawer.(*apa102.Dev)
 		if !ok {
 			log.Printf("anim1d: can't set temperature with fake LED")
 			return
@@ -182,7 +185,7 @@ func (l *strip) onMsg(p *painterLoop, msg msgbus.Message) {
 
 // painterLoop handles the "draw frame, write" loop.
 type painterLoop struct {
-	d             devices.Display
+	d             display.Drawer
 	c             chan newPattern
 	wg            sync.WaitGroup
 	frameDuration time.Duration
@@ -216,7 +219,7 @@ func (p *painterLoop) Close() error {
 // strip.
 //
 // It Assumes the display uses native RGB packed pixels.
-func newPainter(d devices.Display, fps int) *painterLoop {
+func newPainter(d display.Drawer, fps int) *painterLoop {
 	p := &painterLoop{
 		d:             d,
 		c:             make(chan newPattern),
@@ -327,6 +330,8 @@ func (p *painterLoop) runWrite(cGen chan<- anim1d.Frame, cWrite <-chan anim1d.Fr
 	defer tick.Stop()
 	var err error
 	buf := make([]byte, numLights*3)
+	// TODO(maruel): This is wrong.
+	w := p.d.(io.Writer)
 	for {
 		pixels, ok := <-cWrite
 		if pixels == nil || !ok {
@@ -334,7 +339,7 @@ func (p *painterLoop) runWrite(cGen chan<- anim1d.Frame, cWrite <-chan anim1d.Fr
 		}
 		if err == nil {
 			pixels.ToRGB(buf)
-			if _, err = p.d.Write(buf); err != nil {
+			if _, err = w.Write(buf); err != nil {
 				log.Printf("Writing failed: %s", err)
 			}
 		}

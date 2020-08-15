@@ -7,6 +7,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"sync"
 	"time"
@@ -14,7 +15,7 @@ import (
 	"github.com/maruel/anim1d"
 	"github.com/maruel/interrupt"
 	"github.com/maruel/msgbus"
-	"periph.io/x/periph/devices"
+	"periph.io/x/periph/conn/display"
 )
 
 // pattern is a JSON encoded pattern.
@@ -156,7 +157,7 @@ func (p *painterCfg) Validate() error {
 	return nil
 }
 
-func initPainter(b msgbus.Bus, leds devices.Display, fps int, config *painterCfg, lru *animLRU) (*painterNode, error) {
+func initPainter(b msgbus.Bus, leds display.Drawer, fps int, config *painterCfg, lru *animLRU) (*painterNode, error) {
 	config.Lock()
 	defer config.Unlock()
 	lru.Lock()
@@ -250,7 +251,7 @@ func (p *painterNode) setuser(payload []byte) {
 
 // painterLoop handles the "draw frame, write" loop.
 type painterLoop struct {
-	d             devices.Display
+	d             display.Drawer
 	c             chan newPattern
 	wg            sync.WaitGroup
 	frameDuration time.Duration
@@ -284,7 +285,7 @@ func (p *painterLoop) Close() error {
 // strip.
 //
 // It Assumes the display uses native RGB packed pixels.
-func newPainter(d devices.Display, fps int) *painterLoop {
+func newPainter(d display.Drawer, fps int) *painterLoop {
 	p := &painterLoop{
 		d:             d,
 		c:             make(chan newPattern),
@@ -399,6 +400,8 @@ func (p *painterLoop) runWrite(cGen chan<- anim1d.Frame, cWrite <-chan anim1d.Fr
 	defer tick.Stop()
 	var err error
 	buf := make([]byte, numLights*3)
+	// TODO(maruel): This is wrong.
+	w := p.d.(io.Writer)
 	for {
 		pixels, ok := <-cWrite
 		if pixels == nil || !ok {
@@ -406,7 +409,7 @@ func (p *painterLoop) runWrite(cGen chan<- anim1d.Frame, cWrite <-chan anim1d.Fr
 		}
 		if err == nil {
 			pixels.ToRGB(buf)
-			if _, err = p.d.Write(buf); err != nil {
+			if _, err = w.Write(buf); err != nil {
 				log.Printf("Writing failed: %s", err)
 			}
 		}

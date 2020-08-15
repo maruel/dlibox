@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"periph.io/x/periph/conn/physic"
 )
 
 // NodeCfg is the descriptor of a node.
@@ -23,7 +25,7 @@ type I2CRef struct {
 
 type SPIRef struct {
 	ID string
-	Hz int64
+	Hz physic.Frequency
 }
 
 // Anim1D is an APA102 LED strip.
@@ -50,7 +52,7 @@ func (a *Anim1D) Validate() error {
 		if len(a.SPI.ID) == 0 {
 			return errors.New("anim1d: SPI.ID is required")
 		}
-		if a.SPI.Hz < 1000 {
+		if a.SPI.Hz < physic.KiloHertz {
 			return errors.New("anim1d: SPI.Hz is required")
 		}
 	}

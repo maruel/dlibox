@@ -67,7 +67,7 @@ func Main(bus msgbus.Bus, port int) error {
 }
 
 func pubErr(b msgbus.Bus, f string, arg ...interface{}) {
-	msg := fmt.Sprintf(f, arg)
+	msg := fmt.Sprintf(f, arg...)
 	log.Print(msg)
 	if err := b.Publish(msgbus.Message{Topic: "$error", Payload: []byte(msg)}, msgbus.ExactlyOnce); err != nil {
 		log.Print(err)

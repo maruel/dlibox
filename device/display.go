@@ -30,7 +30,10 @@ func (d *displayDev) init(b msgbus.Bus) error {
 	if err != nil {
 		return err
 	}
-	d.d, err = ssd1306.NewI2C(i2cBus, d.Cfg.W, d.Cfg.H, false)
+	opts := ssd1306.DefaultOpts
+	opts.W = d.Cfg.W
+	opts.H = d.Cfg.H
+	d.d, err = ssd1306.NewI2C(i2cBus, &opts)
 	if err != nil {
 		return err
 	}
